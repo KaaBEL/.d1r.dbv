@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.0.3 -->
+<!-- v.0.0.4 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -22,7 +22,7 @@
   </style>
 </head>
 <body>
-  <div id="8">
+  <main id="8">
     <canvas id="0"></canvas>
     <!--div style="position: absolute;color:white;top:0;">
       <div id="87"><span></span></div>
@@ -30,7 +30,7 @@
       <div id="89"><span></span></div>
       <div id="85" style="color:#59b"><span></span></div>
     </div-->
-  </div>
+  </main>
   <script>
     "use strict";
     var _ge;
@@ -53,6 +53,10 @@
     }
 
     var press = function press(x, y) {
+      return console.log(x, y);
+    }
+
+    var contextmenu = function contextmenu(x, y) {
       return console.log(x, y);
     }
 
@@ -106,7 +110,7 @@
       window.onresize = resizeWindow;
 
       bd.onwheel = function (e) {
-        if (!e.ctrlKey)
+        if (!e.ctrlKey || e.target !== canvas)
           return;
         var prev = sc, w = canvas.width / 2, h = canvas.height / 2;
         sc -= sc / e.deltaY * 10;
@@ -115,14 +119,16 @@
         e.preventDefault();
         render();
       };
-      var pX = 0, pY = 0;
+      var foreign = !1, pX = 0, pY = 0;
       bd.onmousedown = function (e) {
-        cStart = Date.now();
+        foreign = e.target !== canvas;
+        if (e.buttons & 1)
+          cStart = Date.now();
         pX = gX = e.pageX - canvas.offsetLeft;
         pY = gY = e.pageY - canvas.offsetTop;
       }
       bd.onmousemove = function (e) {
-        if (!(e.buttons & 1))
+        if (!(e.buttons & 1) || foreign)
           return;
         var x = e.pageX - canvas.offsetLeft,
           y = e.pageY - canvas.offsetTop;
@@ -133,13 +139,17 @@
         render();
       };
       bd.onmouseup = function (e) {
-        if (Date.now() > cStart + pressLength)
+        if (Date.now() > cStart + pressLength || foreign)
           return;
         var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop;
         if (Math.abs(gX - x) > clickP && Math.abs(gY - y) > clickP)
           return;
         press(x, y);
       }
+      window.oncontextmenu = function (e) {
+        var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop;
+        contextmenu(x, y);
+      };
 
       /** touch logs
        * @namespace init
@@ -352,8 +362,7 @@
 
       bd.ontouchstart = function (e) {
         console.log();
-        checkTouches(0, e);
-        return;
+        // checkTouches(0, e);return;
         tStart = Date.now();
         touch = e.changedTouches[0];
         fX = vX;
@@ -363,15 +372,13 @@
         render();
       };
       bd.ontouchmove = function (e) {
-        checkTouches(1, e);
-        return;
+        // checkTouches(1, e);return;
         vX = fX + touch.pageX - gX;
         vY = fY + touch.pageY - gY;
         render();
       };
       bd.ontouchend = bd.ontouchcancel = function (e) {
-        checkTouches(2, e);
-        return;
+        // checkTouches(2, e);return;
         if (Date.now() > tStart + pressLength)
           return;
         console.log("?");
