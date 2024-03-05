@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<!-- v.0.0.3 -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="https://kaabel.github.io/favicon.ico" type="image/x-icon">
+  <link rel="icon shortcut" href="./../favicon.svg" type="image/svg+xml">
+  <title>D1R DBV editor</title>
+  <style>
+    body {
+      margin: 0;
+      position: relative;
+      background-color: #111111;
+      overflow: hidden;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="8">
+    <canvas id="0"></canvas>
+    <!--div style="position: absolute;color:white;top:0;">
+      <div id="87"><span></span></div>
+      <div id="88"><span></span></div>
+      <div id="89"><span></span></div>
+      <div id="85" style="color:#59b"><span></span></div>
+    </div-->
+  </div>
+  <script>
+    "use strict";
+    var _ge;
+    function GE(v) {return document.getElementById(typeof v=="number"&&v==v?
+      (_ge=v+1)-1:v==void 0?v=_ge++:v)}
+    var canvas = GE(0), ctx = canvas.getContext("2d");
+
+    // press is touch or click
+
+    // vX/vY = view x, y (position)
+    // fX/fY = from x, y (start view position)
+    // gX/gY = grab x, y (start press posistion)
+    // sc = scale
+    // cStart = press start
+    var vX = 0, vY = 0, fX, fY, gX, gY, sc = 16, cStart = 0, tStart = 0,
+      touch = null, touch_2 = null, bd = GE(8);
+
+    var render = function render() {
+      return;
+    }
+
+    var press = function press(x, y) {
+      return console.log(x, y);
+    }
+
+    /**
+     * @param {string} name
+     * @param {function} find
+     * @param {function} job
+     */
+    function Gesture(name, find, job) {
+    /** @type {string} as type */
+      this.name = name;
+    /** @type {Array<TouchDat>} */
+      this.touches = [];
+    /** @type {function} Gesture activates when it's added to TouchDat */
+      this.inactive = find;
+    /** @type {function} process the gesture */
+      this.active = job;
+    /** @type {Array<number>} scores */
+      this.score = [];
+    }
+
+    /** @type {Array<Gesture>} */
+    var globalGestures = [];
+
+    document.body.onload = function init() {
+      // settings: press time legth, precision, <-, allowed touch-start-times
+      // spread of multiple-touch gesture (didn't get sitting short name)
+      var pressLength = 350, clickP = 7, touchP = 13, touchSync = 100;
+
+      function resizeWindow() {
+        var  w = window.innerWidth, h = window.innerHeight;
+        if (w > 4096 || h > 4096)
+          if (w > h) {
+            h = h * 4096 / w;
+            w = 4096;
+          } else {
+            w = w * 4096 / h;
+            h = 4096;
+          }
+        vX -= (canvas.width - w) / 2;
+        vY -= (canvas.height - h) / 2;
+        canvas.width = w;
+        canvas.height = h;
+        render();
+      }
+
+      vX = 128;
+      vY = 64;
+      resizeWindow();
+
+      window.onresize = resizeWindow;
+
+      bd.onwheel = function (e) {
+        if (!e.ctrlKey)
+          return;
+        var prev = sc, w = canvas.width / 2, h = canvas.height / 2;
+        sc -= sc / e.deltaY * 10;
+        vX = (vX - w) * sc / prev + w;
+        vY = (vY - h) * sc / prev + h;
+        e.preventDefault();
+        render();
+      };
+      var pX = 0, pY = 0;
+      bd.onmousedown = function (e) {
+        cStart = Date.now();
+        pX = gX = e.pageX - canvas.offsetLeft;
+        pY = gY = e.pageY - canvas.offsetTop;
+      }
+      bd.onmousemove = function (e) {
+        if (!(e.buttons & 1))
+          return;
+        var x = e.pageX - canvas.offsetLeft,
+          y = e.pageY - canvas.offsetTop;
+        vX += x - pX;
+        vY += y - pY;
+        pX = x;
+        pY = y;
+        render();
+      };
+      bd.onmouseup = function (e) {
+        if (Date.now() > cStart + pressLength)
+          return;
+        var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop;
+        if (Math.abs(gX - x) > clickP && Math.abs(gY - y) > clickP)
+          return;
+        press(x, y);
+      }
+
+      /** touch logs
+       * @namespace init
+       * @typedef {string} color
+       */
+      var logIdx = 0,
+      prevClr = 0,
+      /** @type {Array<color>} */
+      clr = ["#ffffff", "#447c55", "#d11943"],
+      /** @type {HTMLDivElement} */
+      logSrc,
+      touchErrors = false;
+      (function () {
+        // that's actualy very funny trick (overwriting existing function)
+        // :D
+        var error = console.error;
+        return function () {
+          for (var i = arguments.length, arr = [],
+          el = document.createElement("span"); i-- > 0;)
+            arr[i] = arguments[i];
+          el.style.color = "#d11943";
+          el.innerText = arr.join("");
+          GE(85).appendChild(el);
+          error.apply(console, arr);
+        };
+      });
+      function spanLog(clrId, s) {
+        if (logIdx && prevClr === clrId)
+          return logSrc.childNodes[logIdx - 1].innerText += s;
+        var el = document.createElement("span");
+        el.style.color = clr[prevClr = clrId];
+        el.innerText = s;
+        if (logSrc.childNodes[logIdx])
+          logSrc.replaceChild(el, logSrc.childNodes[logIdx]);
+        else
+          logSrc.appendChild(el);
+        logIdx++;
+      }
+      function completeSpanLog() {
+        while (logIdx < logSrc.childNodes.length)
+          logSrc.removeChild(logSrc.childNodes[logIdx]);
+      }
+
+      function getTouch(e) {
+        for (var ts = e.touches, l = ts.length; l-- > 0;)
+          if (ts[l].identifier === touch.identifier)
+            return touch = ts[l];
+        return touch = null;
+      };
+      
+      function touchesStr(t) {
+        var s = "[", list = 2, touchList = [t.touches, t.changedTouches];
+        while (list--) {
+          s += "[";
+          for (var ts = touchList[list], i = ts.length; i-- > 0;)
+            s += ts[i].identifier + ",";
+              //+ ":" + (ts[i].pageX | 0) + "_" + (ts[i].pageY | 0) + ",";
+          s = s.slice(0, -1) + "],";
+        }
+        return s.slice(0, -1);
+      }
+
+      // draft idea of touches gestures
+      // By given TouchDat objects checkStart funcions of gestures book
+      // certian touches and hold them while pressed and movems as definded
+      // which the gesture process functions checks, and does stuff with it.
+      // No precedences are checked or 
+      /** @param {Array<Gesture>} gestures */
+      function processGestures(gestures, ended) {
+        for (var i = gestures.length; i-- > 0;)
+          if (gestures[i].touches)
+            gestures[i].checkStart(tchs, ended);
+          else
+            gestures[i].process(tchs, ended);
+      }
+
+      /** @typedef {number} integer */
+
+      function TouchDat(touch) {
+      /** @type {Touch} current touch source */
+        this.src = touch;
+      /** @type {integer} */
+        this.x = Math.floor(touch.pageX - canvas.offsetLeft);
+      /** @type {integer} */
+        this.y = Math.floor(touch.pageY - canvas.offsetTop);
+      /** @type {integer} movement */
+        this.movX = 0;
+      /** @type {integer} movement */
+        this.movY = 0;
+      /** @type {integer} movement */
+        this.strtX = this.x;
+      /** @type {integer} movement */
+        this.strtY = this.y;
+      /** @type {number} start time touched */
+        this.s = Date.now();
+      /** @type {number} (signed) score of allow (not prevent) default */
+        this.stats = 0;
+      /** @type {Gesture} */
+        this.gesture = null;
+      }
+
+      /** @type {Array<TouchDat>} global touches */
+      var tchs = [],
+      /** @type {Array<number>} Touch.identifier-s of global touches */
+        tIds = [],
+      /** @type {number} index of touch which allows default */
+        allowDefaultIdx = -1,
+      /** @type {Array<Gesture>} default gestures */
+        baseGestures = [
+          new Gesture("move", moveInit, movePrcs)
+        ];
+      /** functions type of ones in Gestrure
+       * @param {Array<TouchDat>} current touches
+       * @param {Array<TouchDat>} ended touches
+       */
+      var allowDefault = new Gesture("allowDefault", function () {
+        // void
+      }, function allowdefActive() {
+        if (this.touches.length)
+          ;
+      });
+      function moveInit(current, ended) {
+        ;
+      }
+      function movePrcs(current, ended) {
+        ;
+      }
+
+      /** updates global touches to current
+       * @param {0|1|2} typ type of touch event
+       * @param {TouchEvent} touches
+       */
+      function updateTouches(touches, prev1) {
+        var i = 0, j, l = touches.length, x, y, tStr = "global touches", t;
+        spanLog(0, i < l ? "[" : "");
+        while (i < l) {
+          if ((j = tIds.indexOf(touches[i].identifier)) < 0)
+            throw new Error("touch identifier not found within " + tStr);
+          spanLog((tchs[j] === touches[i]) << 1, j + "],"[+(i + 1 < l)]);
+          (t = tchs[j]).src = touches[i++];
+          x = Math.floor(t.src.pageX - canvas.offsetLeft);
+          y = Math.floor(t.src.pageY - canvas.offsetTop);
+          t.movX = x - t.x;
+          t.movY = y - t.y;
+          t.x = x;
+          t.y = y;
+        }
+        //if ((j = allowDefaultIdx) !== -1) {
+        //  tchs[j].aDefault += tchs[j].movY * 2 - Math.abs(tchs[j].movX);
+        //  tchs[j].aDefault < 0 ? allowDefaultIdx = -1 : 0;
+        //}
+      }
+      /** 
+       * @param {0|1|2} typ type of touch event
+       * 0: start, 1: move, 2: end|cancel
+       * @param {TouchEvent} e
+       */
+      function checkTouches(typ, e) {
+        var ended = typ > 1 ? [] : null;
+        logIdx = 0, logSrc = GE(87 + typ);
+        if (typ > 1)
+          updateTouches(e.touches);
+        if (typ !== 1)
+          spanLog(0, "changedTouches:[");
+        /** i = index for changedTouches, j = index for tchs and tIds */
+        var i = 0, j, l, tStr = "global touches", touches = e.changedTouches;
+        // repeat for length happens only for touchstart or touch-end|cancel
+        if(1>1)console.log("Breakpointlog");
+        for (l = touches.length * (typ !== 1); i < l; i++) {
+          if (typ === 0 ^ (j = tIds.indexOf(touches[i].identifier)) < 0) {
+            if (typ === 0 && touchErrors) {
+              tchs[j] = new TouchDat(touches[i]);
+              console.error("index: " + j + " should not be within " + tStr);
+            } else if (typ === 0)
+              tchs[j] = new TouchDat(touches[i]);
+            else if (touchErrors)
+              console.error("touch id: " + j + " is missing within " + tStr);
+          } else if (typ === 0) {
+          // for touchstart // tchs[j] same as tchs[j] !== null
+            for (j = 0; j < tchs.length && tchs[j];)
+              j++;
+            tIds.length = tchs.length += j >= tchs.length;
+            tchs[j] = new TouchDat(touches[i]);
+            tIds[j] = touches[i].identifier;
+            if (allowDefaultIdx == -1 && touches[i].clientY < touchP * 2)
+              tchs[allowDefaultIdx = j].aDefault = 21;
+          } else {
+          // for touchend // !tchs[j] same as tchs[j] === null
+            ended.push(tchs[j]);
+            tchs[j] = null;
+            tIds[j] = -1;
+            j === allowDefaultIdx ? allowDefaultIdx = -1 : 0;
+            while (j === tchs.length && !tchs[j])
+              tIds.length = --tchs.length;
+          }
+          spanLog(0, j + "],"[+(i + 1 < l)]);
+        }
+        if (typ <= 1)
+          updateTouches(e.touches);
+        completeSpanLog();
+        if (allowDefaultIdx === -1)
+          e.preventDefault();
+
+        // allow default
+        allowDefault(ended);
+
+        processGestures(baseGestures, ended);
+        processGestures(globalGestures, ended);
+      }
+
+      bd.ontouchstart = function (e) {
+        console.log();
+        checkTouches(0, e);
+        return;
+        tStart = Date.now();
+        touch = e.changedTouches[0];
+        fX = vX;
+        fY = vY;
+        gX = touch.pageX;
+        gY = touch.pageY;
+        render();
+      };
+      bd.ontouchmove = function (e) {
+        checkTouches(1, e);
+        return;
+        vX = fX + touch.pageX - gX;
+        vY = fY + touch.pageY - gY;
+        render();
+      };
+      bd.ontouchend = bd.ontouchcancel = function (e) {
+        checkTouches(2, e);
+        return;
+        if (Date.now() > tStart + pressLength)
+          return;
+        console.log("?");
+        var x = touch.pageX - canvas.offsetLeft,
+          y = touch.pageY - canvas.offsetTop;
+        touch = null;
+        if (Math.abs(gX - x) > touchP && Math.abs(gY - y) > touchP)
+          return;
+        press(x, y);
+      }
+
+      document.body.removeAttribute("onload");
+    }
+  </script>
+  <script type="text/javascript" src="editor.js"></script>
+</body>
+</html>
