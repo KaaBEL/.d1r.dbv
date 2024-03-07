@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.0.4 -->
+<!-- v.0.0.5 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -48,16 +48,20 @@
     var vX = 0, vY = 0, fX, fY, gX, gY, sc = 16, cStart = 0, tStart = 0,
       touch = null, touch_2 = null, bd = GE(8);
 
-    var render = function render() {
-      return;
-    }
-
     var press = function press(x, y) {
       return console.log(x, y);
     }
 
     var contextmenu = function contextmenu(x, y) {
       return console.log(x, y);
+    }
+
+    var over = function (ev) {
+      return console.log(ev);
+    }
+
+    var render = function render() {
+      return;
     }
 
     /**
@@ -109,11 +113,11 @@
 
       window.onresize = resizeWindow;
 
-      bd.onwheel = function (e) {
+      bd.onmousewheel = bd.onwheel = function (e) {
         if (!e.ctrlKey || e.target !== canvas)
           return;
         var prev = sc, w = canvas.width / 2, h = canvas.height / 2;
-        sc -= sc / e.deltaY * 10;
+        sc -= sc / (e.deltaY || e.wheelDelta || 0) * 10;
         vX = (vX - w) * sc / prev + w;
         vY = (vY - h) * sc / prev + h;
         e.preventDefault();
@@ -121,14 +125,17 @@
       };
       var foreign = !1, pX = 0, pY = 0;
       bd.onmousedown = function (e) {
-        foreign = e.target !== canvas;
+        if (foreign = e.target !== canvas)
+          over(e);
         if (e.buttons & 1)
           cStart = Date.now();
         pX = gX = e.pageX - canvas.offsetLeft;
         pY = gY = e.pageY - canvas.offsetTop;
       }
       bd.onmousemove = function (e) {
-        if (!(e.buttons & 1) || foreign)
+        if (foreign)
+          return over(e);
+        if (!(e.buttons & 1))
           return;
         var x = e.pageX - canvas.offsetLeft,
           y = e.pageY - canvas.offsetTop;
@@ -139,7 +146,9 @@
         render();
       };
       bd.onmouseup = function (e) {
-        if (Date.now() > cStart + pressLength || foreign)
+        if (foreign)
+          return over(e);
+        if (Date.now() > cStart + pressLength)
           return;
         var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop;
         if (Math.abs(gX - x) > clickP && Math.abs(gY - y) > clickP)
