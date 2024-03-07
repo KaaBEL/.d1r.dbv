@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.1
+// v.0.1.2
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -8,25 +8,45 @@ function EL(e) {
   return document.createElement(typeof e == "string" ? e : "div");
 }
 
+var storage = typeof localStorage == "undefined" ? {
+    /** @param {string} key */
+    getItem: function (key) {
+      return null;
+    },
+    /** @param {string} key @param {string} value */
+    setItem: function (key, value) {}
+  } :
+  localStorage;
+if (typeof TouchEvent == "undefined")
+  //@ts-ignore
+  var TouchEvent = function TouchEvent() {};
+
 /** @typedef addingStyles */
 (function addingStyles(css) {
   var s = "style", e = GE(s) || document.head.appendChild(EL(s)), t = null;
   for (e.id = s; t = e.childNodes[0];)
     e.removeChild(t);
   e.appendChild(document.createTextNode(css));
-})("#commandsTab" +
+})(
+  "#commandsTab" +
   "{position:fixed;width: 350px;height: 500px;border-radius: 10px;" +
-  "background-color: #000a;color: #888;" +
-  "font-family:monospace,sans-serif,Courier,Consolas;}" +
-  "#commandsTab div:first-child" +
+  "background-color: #000a;}" +
+  "#commandsTab, #commandsTab button{color: #999;" +
+  "font-size: 16px;font-family:monospace,sans-serif,Courier,Consolas;}" +
+  "#commandsTab header:first-child" +
   "{display: flex;flex-direction: row;border-bottom: 1px solid #777;}" +
-  "#commandsTab div:first-child *{padding: 5px;}" +
-  "#commandsTab button" +
-  "{border: none;background-color: inherit;color: inherit;}" +
-  "#commandsTab div:first-child button" +
-  "{font-weight: bold;padding-top: 3px;}" +
-  "#commandsTab header{flex-grow: 1;}" +
-  "#commandsTab .content button{display: block}"
+  "#commandsTab header:first-child div{padding: 5px;}" +
+  "#commandsTab button{border: 2px solid #0000;" +
+  "background-color: inherit;-webkit-user-select: text;}" +
+  "#commandsTab header:first-child button{font-weight: bold;}" +
+  "#commandsTab button:hover, #commandsTab button:focus" +
+  "{border: 2px solid #777;}" +
+  "#commandsTab button:active{background-color: #333;color: #bbb;}" +
+  "#commandsTab header div{flex-grow: 1;}" +
+  "#commandsTab .content button, #commandsTab .items button" +
+  "{display: block;width: 350px;}" +
+  "#commandsTab button div" +
+  "{display: inline-block;position: absolute;right: 5px;}"
 );
 
 var imgOverlay = document.body.appendChild(document.createElement("img"));
@@ -72,9 +92,9 @@ i8h+9hum13tnjACAAdnVAnNCHPAAC4BAAAVED0bprqEXRR3k7IG8nY62HH+QG/1lE7wbqpXSNkVb\
 B9l4lAAYDUG6gdwN6FQAg7is5O4C99r/siOTHEKMmYD2I7Z231hJGFQAAAuCXArSgkznwqIPmLHG\
 jDsDsAxgHfCqQ1YJyUwYH3HXAs5yUzBMFrqQA/x3pSrvJWk6nwCc1MChOzix1CgAAAABJRU5ErkJ\
 ggg==";
-var dbcBackg = document.body.appendChild(document.createElement("img"));
-dbcBackg.style.display = "none";
-dbcBackg.src = "./assets/_dbc_background.png";
+var imgBackg = document.body.appendChild(document.createElement("img"));
+imgBackg.style.display = "none";
+imgBackg.src = "./assets/_dbc_background.png";
 var helpCanvas = document.createElement("canvas"),
   rc = function (rc) {
     return rc instanceof CanvasRenderingContext2D ?
@@ -165,12 +185,42 @@ Ship.fromObject = function fromObject(object) {
   return new Ship(name, ver, time, blocks, props);
 };
 
+var settings = {
+  /** (default) true: image pattern, false: color */
+  editorBackground: typeof DOMMatrix != "undefined",
+  /** mumst be in #xxxxxx hex color format */
+  editorBackgroundColor: "#111111"
+};
+// naming may change? + meaningless comment
+function saveSettings() {
+  var n = 0, arr = [+settings.editorBackground];
+  if (isNaN(n = Number("0x" + settings.editorBackgroundColor.slice(1))))
+    throw new Error("Wrong format of editorBackgroundColor setting");
+  arr[0] += (n & 0x7fff) << 1;
+  arr[1] = n >> 15 & 0xffff;
+  storage.setItem("D1R_DBV_editor", String.fromCharCode.apply(String, arr));
+}
+function loadSettings() {
+  var s = storage.getItem("D1R_DBV_editor") || "";
+  if (s.length !== 2)
+    return !s.length ? void 0 :
+      console.error("Unsupported length of localStorage item");
+  var n = 0, arr = s.split("").map(function (e) {
+    return e.charCodeAt(0);
+  });
+  settings.editorBackground = !!(arr[0] & 1);
+  s = ((arr[0] & 0x7fff) + ((arr[1] & 0x01ff) << 16) >> 1).toString(16);
+  settings.editorBackgroundColor = "#" + "000000".slice(s.length) + s;
+}
+loadSettings();
+
 var renderedShip = Ship.fromObject({name: "Starter Droneboi"});
 // var block = new Block("Block", [0, 0, 0], [0, 0, 0]),
 //   ship = new Ship("None", [0, 9], "never", [block]);
 
 /** timeToString @param {number} [t=Date.now()] @param {number} [f=1] ?1 */
 function dateTime(t, f) {
+  // uses unix timestamp input
   if (typeof t !== "number")
     t = Math.floor(Date.now() / 1000);
   var i = 0, n, s, months = [30, 27, 30, 29, 30, 29, 30, 30, 29, 30, 29, 30];
@@ -239,6 +289,169 @@ var placingBlock = function () {
     "Reaction Wheel","Small Hydrogen Tank", "Small Battery"
     ][Math.random() * 7 | 0];
 };
+/** @param {string} s */
+function blockBind(s) {
+  return function () {
+    placingBlock = function () {
+      return s;
+    };
+  };
+}
+
+/**
+ * @typedef {{name:string,type:string,fn:(ev:Event)=>any}} CommandItem
+ * @param {string} name 
+ * @param {string} description 
+ * @param {CommandItem[]} items indefinite
+ * @param {boolean} [setting=false] */
+function Command(name, description, items, setting) {
+  this.name = name;
+  this.description = !setting ? description : "";
+  if (setting && items.length !== 1)
+    throw new Error("Setting must contain only boolean handler.");
+  this.items = items;
+  this.setting = !!setting;
+  Object.freeze(this);
+}
+Command.list = [new Command("Select block", "Select block from list of block\
+s. Last item \"remove\" removes existing block.", function () {
+  var ar = "remove,Small Battery,Small Hydrogen Tank,Reaction Wheel,Small Hy\
+drogen Thruster,Wedge,Block,Core".split(","),
+    /** @type {CommandItem[]} */
+    items = [];
+  for (var i = ar.length; i-- > 0;)
+    items.push({
+      name: ar[i],
+      type: "button",
+      fn: blockBind(ar[i])
+    });
+  return items;
+}())];
+/**
+ * @type {{
+ *   (name: string, items: [{name:string,type:string,
+ *     fn:(ev:Event)=>any}], setting: true): number,
+ *   (name: string, items: {name:string,type:string,
+ *     fn:(ev:Event)=>any}[], description: string): number
+ * }}
+ * @param {string} name @param {CommandItem[]} items
+ * @param {string|true} desc */
+Command.add = function add(name, items, desc) {
+  if (desc === !0)
+    var o = new Command(name, "", items, !0);
+  else
+    o = new Command(name, desc, items, !1);
+  return this.list.push(o);
+};
+Command.add("Change editor background", [
+  {name: "Image pattern", type: "checkbox", fn: function (ev) {
+    if (!(this instanceof HTMLInputElement))
+      return;
+    render_background =
+      (settings.editorBackground = this.checked) ?
+        render_backgPattern :
+        render_backgColor;
+    saveSettings()
+    render();
+  }},
+  {name: "Background color", type: "input", fn: function (ev) {
+    var r = this instanceof HTMLInputElement ?
+      new RegExp("#([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])|#(\
+[0-9a-f])([0-9a-f])([0-9a-f])").exec(this.value.slice(0, 7)) :
+      null;
+    console.log(r);
+    if (r)
+      settings.editorBackgroundColor = "#" + (r[0].length < 5 ?
+        r[4] + r[4] + r[5] + r[5] + r[6] + r[6] :
+        r[1] + r[2] + + r[3]);
+    saveSettings()
+    render();
+  }}
+], "");
+
+var cmdsHeader = EL(), cmds = (function () {
+  /** for #commandsTab styles @see {addingStyles} */
+  var nav = EL("nav");
+  nav.id = "commandsTab";
+  nav.style.display = "none";
+  /** @type {HTMLElement} */
+  var e0 = nav.appendChild(EL("header")),
+    /** @type {HTMLElement} */
+    e1 = e0.appendChild(EL("button")),
+    back = e1.style;
+  e1.appendChild(document.createTextNode("<"));//\xa0
+  back.visibility = "hidden";
+  e1.onclick = function () {
+    content.style.display = cmdsHeader.innerText = "";
+    items.style.display = "none";
+    back.visibility = "hidden";
+  }
+  e0.appendChild(cmdsHeader);
+  e1 = e0.appendChild(EL("button"));
+  e1.appendChild(document.createTextNode("X"));//\xa0
+  e1.onclick = function () {
+    nav.style.display = "none";
+  };
+  var content = nav.appendChild(EL()), items = nav.appendChild(EL());
+  content.className = "content";
+  items.className = "items";
+  (e1 = nav.appendChild(EL())).style.display = items.style.display = "none";
+  e1.appendChild(document.createTextNode("Search commads... coming spoon"));
+  /** @param {Command} item */
+  function initItems(item) {
+    return function () {
+      var arr = item.items;
+      cmdsHeader.innerText = item.name;
+      content.style.display = "none";
+      items.style.display = "";
+      back.visibility = "visible";
+      for (; items.firstChild;)
+        items.removeChild(items.firstChild);
+      for (var i = 0; i < arr.length; i++) {
+        var s = arr[i].type, isBtn = s === "button";
+        var isChck = s === "checkbox", e = EL(isChck ? "input" : s);
+        if (isChck && e instanceof HTMLInputElement)
+          e.type = "checkbox";
+        e[isBtn ? "onclick" : isChck ? "onchange" : "oninput"] = arr[i].fn;
+        (isBtn ? e : items).appendChild(document.createTextNode(
+          arr[i].name + (isBtn ? "" : ": ")));
+        items.appendChild(e);
+        !isBtn && items.appendChild(EL());
+      }
+      items.appendChild(EL()).innerText = item.description;
+    }
+  }
+  for (var i = 0; i < Command.list.length; i++) {
+    var item = Command.list[i];
+    content.appendChild(e0 = EL("button"));
+    e0.appendChild(document.createTextNode(item.name));
+    e0.onclick = initItems(item);
+    e0.appendChild(EL()).appendChild(document.createTextNode(">"));
+  };
+  return (bd || EL()).appendChild(nav);
+})();
+
+function render_backgPattern() {
+  try {
+    helpCanvas.width = imgBackg.naturalWidth || imgBackg.offsetWidth;
+    helpCanvas.height = imgBackg.naturalHeight || imgBackg.offsetHeight;
+    ctx.fillStyle = ctx.createPattern(imgBackg, "repeat") || "";
+    var n = sc / 2, sx = vX - sc * 37, sy = vY - sc * 37;
+    // ctx.fillStyle instanceof CanvasPattern &&
+    //   ctx.fillStyle.setTransform(new DOMMatrix([n, 0, 0, n, sx, sy]));
+    ctx.translate(sx, sy);
+    ctx.scale(n, n);
+    ctx.fillRect(-vX / n + 74, -vY / n + 74, canvas.width / n, canvas.height / n);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+  } catch (e) {
+    console.debug(e, "at drawing background");
+  }
+}
+function render_backgColor() {
+  canvas.style.backgroundColor = settings.editorBackgroundColor;
+}
+var render_background = settings.editorBackground ?
+  render_backgPattern : render_backgColor;
 
 press = function press(x, y) {
   x = Math.floor((x - vX - 1) / 2 / sc) * 2;
@@ -253,63 +466,41 @@ press = function press(x, y) {
         arr[i].rotation[2] = arr[i].rotation[2] + 1 & 3;
       return render();
     }
-  arr.push(new Block(placingBlock() ,[y, 0, -x], [0, !0, 0]));
+  placingBlock() !== "remove" &&
+    arr.push(new Block(placingBlock(), [y, 0, -x], [0, !0, 0]));
   render();
 };
-
 contextmenu = function commands(x, y) {
-  var id = "commandsTab", nav = GE(id) || EL("nav");
-  nav.style.left = x - 175 + "px";
-  nav.style.top = y - 250 + "px";
-  if (GE(nav.id = id))
+  cmds.style.left = (x > 178 ? x - 175 : 5) + "px";
+  cmds.style.top = (y > 255 ? y - 250 : 5) + "px";
+  cmds.style.display = "";
+}
+
+var cmdsMove = !1, cmdsX = 0, cmdsY = 0;
+over = function over(e) {
+  if (e instanceof TouchEvent)
     return;
-  (bd || EL()).appendChild(nav);
-  /** for #commandsTab styles @see {addingStyles} */
-  var e0 = nav.appendChild(EL()),
-  /** @type {HTMLElement} */
-    e1 = e0.appendChild(EL("button"));
-  e1.appendChild(document.createTextNode("\xa0<"));
-  e1 = e0.appendChild(EL("header"));
-  e1.appendChild(document.createTextNode("Hello there is h\u0435cker."));
-  e1 = e0.appendChild(EL("button"));
-  e1.onclick = function () {
-    (bd || EL()).removeChild(nav);
-  };
-  e1.appendChild(document.createTextNode("X\xa0"));
-  (e0 = nav.appendChild(EL())).className = "content";
-  /** @param {string} s */
-  function blockBind(s) {
-    e1 = e0.appendChild(EL("button"));
-    e1.appendChild(document.createTextNode(s));
-    e1.onclick = function () {
-      placingBlock = function () {
-        return s;
-      };
-    };
-  }
-  blockBind("Core");
-  blockBind("Block");
-  blockBind("Wedge");
-  blockBind("Small Hydrogen Thruster");
-  blockBind("Reaction Wheel");
-  blockBind("Small Hydrogen Tank");
-  blockBind("Small Battery");
-  blockBind("remove");
+  if (e.type === "mousedown" && e.target === cmdsHeader) {
+    var st = cmds.style,
+      x = Number(st.left.slice(0, -2)) || 0,
+      y = Number(st.top.slice(0, -2)) || 0;
+    cmdsX = x - e.pageX - canvas.offsetLeft;
+    cmdsY = y - e.pageY - canvas.offsetTop;
+    cmdsMove = !0;
+  } else if (e.type === "mousemove" && cmdsMove) {
+    var st = cmds.style,
+      x = cmdsX + e.pageX - canvas.offsetLeft,
+      y = cmdsY + e.pageY - canvas.offsetTop;
+    st.left = (x > 3 ? x : 5) + "px";
+    st.top = (y > 5 ? y : 5) + "px";
+  } else if (e.type === "mouseup")
+    cmdsMove = !1;
+  // TODO: some nice system to account for end/'hoverleave'
 }
 
 render = function expensiveRenderer() {
   canvas.width = canvas.width;
-  try {
-    helpCanvas.width = dbcBackg.naturalWidth || dbcBackg.offsetWidth;
-    helpCanvas.height = dbcBackg.naturalHeight || dbcBackg.offsetHeight;
-    ctx.fillStyle = ctx.createPattern(dbcBackg, "repeat") || "";
-    var n = sc / 2, sx = vX - sc * 37, sy = vY - sc * 37;
-    ctx.fillStyle instanceof CanvasPattern &&
-      ctx.fillStyle.setTransform(new DOMMatrix([n, 0, 0, n, sx, sy]));
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-  } catch (e) {
-    console.debug(e, "at drawing background");
-  }
+  render_background();
   ctx.imageSmoothingEnabled = false;
   var objs = renderedShip.blocks, names = ["Core", "Block", "Wedge",
     "Small Hydrogen Thruster", "Reaction Wheel",
@@ -325,7 +516,8 @@ render = function expensiveRenderer() {
     rc.translate(rot > 1 ? -32 : 0, rot && rot < 3 ? -32 : 0);
     rc.drawImage(imgMask, sx, sy, 32, 32, 0, 0, 32, 32);
     rc.globalCompositeOperation = "source-in";
-    rc.fillStyle = "#49ff68";
+    rc.fillStyle = ["#fff", "#a1a1a1", "#ffd400", "#cece0c", "#49ff68"
+      ][[0, 0, 0, 2, 1, 3, 1][idx]];
     rc.fillRect(0, 0, 32, 32);
     rc.globalCompositeOperation = "source-over";
     rc.drawImage(imgOverlay, sx, sy, 32, 32, 0, 0, 32, 32);
