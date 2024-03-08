@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.2
+// v.0.1.3
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -359,15 +359,16 @@ Command.add("Change editor background", [
       new RegExp("#([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])|#(\
 [0-9a-f])([0-9a-f])([0-9a-f])").exec(this.value.slice(0, 7)) :
       null;
-    console.log(r);
     if (r)
       settings.editorBackgroundColor = "#" + (r[0].length < 5 ?
         r[4] + r[4] + r[5] + r[5] + r[6] + r[6] :
-        r[1] + r[2] + + r[3]);
+        r[1] + r[2] + r[3]);
     saveSettings()
     render();
   }}
-], "");
+], "When \"Image pattern\" chexbox is checked, Droneboi: Conquest background\
+ is used. Else color from \"Background color\" input is used. If it is in he\
+xadecimal format #111133 for example, the setting will update.");
 
 var cmdsHeader = EL(), cmds = (function () {
   /** for #commandsTab styles @see {addingStyles} */
@@ -379,7 +380,7 @@ var cmdsHeader = EL(), cmds = (function () {
     /** @type {HTMLElement} */
     e1 = e0.appendChild(EL("button")),
     back = e1.style;
-  e1.appendChild(document.createTextNode("<"));//\xa0
+  e1.appendChild(document.createTextNode("<"));
   back.visibility = "hidden";
   e1.onclick = function () {
     content.style.display = cmdsHeader.innerText = "";
@@ -388,7 +389,7 @@ var cmdsHeader = EL(), cmds = (function () {
   }
   e0.appendChild(cmdsHeader);
   e1 = e0.appendChild(EL("button"));
-  e1.appendChild(document.createTextNode("X"));//\xa0
+  e1.appendChild(document.createTextNode("X"));
   e1.onclick = function () {
     nav.style.display = "none";
   };
@@ -418,6 +419,7 @@ var cmdsHeader = EL(), cmds = (function () {
         items.appendChild(e);
         !isBtn && items.appendChild(EL());
       }
+      items.appendChild(EL("br"));
       items.appendChild(EL()).innerText = item.description;
     }
   }
@@ -437,11 +439,10 @@ function render_backgPattern() {
     helpCanvas.height = imgBackg.naturalHeight || imgBackg.offsetHeight;
     ctx.fillStyle = ctx.createPattern(imgBackg, "repeat") || "";
     var n = sc / 2, sx = vX - sc * 37, sy = vY - sc * 37;
-    // ctx.fillStyle instanceof CanvasPattern &&
-    //   ctx.fillStyle.setTransform(new DOMMatrix([n, 0, 0, n, sx, sy]));
     ctx.translate(sx, sy);
     ctx.scale(n, n);
-    ctx.fillRect(-vX / n + 74, -vY / n + 74, canvas.width / n, canvas.height / n);
+    ctx.fillRect(-vX / n + 74, -vY / n + 74,
+      canvas.width / n, canvas.height / n);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
   } catch (e) {
     console.debug(e, "at drawing background");
