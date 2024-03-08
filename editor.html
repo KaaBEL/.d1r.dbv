@@ -1,23 +1,65 @@
 <!DOCTYPE html>
-<!-- v.0.0.5 -->
+<!-- v.0.0.7 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Check out the early state of Droneboi opensource online Vehicle editor.">
   <link rel="icon" href="https://kaabel.github.io/favicon.ico" type="image/x-icon">
   <link rel="icon shortcut" href="./../favicon.svg" type="image/svg+xml">
-  <title>D1R DBV editor</title>
+  <title>Droneboi: Conquest online Vehicle editor</title>
+  <link rel="canonical" content="https://kaabel.github.io/.d1r.dbv/editor.html">
   <style>
     body {
       margin: 0;
       position: relative;
-      background-color: #111111;
+      background-color: #000;
       overflow: hidden;
     }
     canvas {
       width: 100%;
       height: 100%;
+    }
+    #info a {
+      color: #77b;
+    }
+    #info a:visited {
+      color: #95c;
+    }
+    #info p {
+      max-width: 1080px;
+      margin: 0 auto 1em auto;
+    }
+    #info svg {
+      vertical-align: middle;
+    }
+    #info pre {
+      display: inline-block;
+      padding-left: 5px;
+      padding-right: 21%;
+      margin: 0;
+    }
+    #info {
+      position: absolute;
+      top: 0;
+      margin: 70px;
+      border: 3px solid #112;
+      border-radius: 15px;
+      padding: 27px;
+      background-color: #223;
+      color: #aaa;
+    }
+    #info h1 {
+      font-size: 36px;
+      margin: 0;
+    }
+    #info h2 {
+      font-size: 24px;
+    }
+    #auth {
+      margin-top: 25px;
+      text-align: center;
     }
   </style>
 </head>
@@ -31,6 +73,37 @@
       <div id="85" style="color:#59b"><span></span></div>
     </div-->
   </main>
+  <footer id="info">
+    <h1>Welcome to very beggining of Droneboi Vehicle editor</h1>
+    <h2>What is it?</h2>
+    It is a fan made online opensource tool for modifying and cerating
+    Droneboi: Conquest Vehicles. Droneboi: Conquest is the ultimate
+    open-world sandbox space drone building, exploration, and combat
+    mobile game made by Rizen Planet Studios. Compared to game which
+    focuses on gameplay, this webapp is planned to provide rich spaceship
+    editor with many building functions, more powerfull and customizable
+    tools for advanced drone designs. It is currently in development.
+    <h2>How to use it?</h2>
+    At first look games preserves initial functionality: use mouse to
+    move around while holding left mouse button. By clicking on exesting
+    blocks you can rotate them, click elswhere to build a random block.
+    Use Ctrl and scroll to zoom in and out. In last update (v.0.1.2),
+    a option to select block was added. Open contextmenu, which is usually
+    done by pressing right mouse button, to also open commands tab where
+    you were pointing. There is list of commads, used to change settings
+    or enable different tools. They show their description when they are
+    opened. Click on Welcome message to close it.
+    <div id="auth" itemprop="dateModified" content="2023-03-08" datetime="2023-03-08">Made by:
+      <a href="https://github.com/KaaBEL">
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="16" height="16" viewBox="0,0,16,16">
+          <g data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill-rule="nonzero" stroke="none" style="mix-blend-mode: normal">
+            <path d="M8,0c4.416,0 8,3.576 8,8c0,4.416 -3.576,8 -8,8c-4.416,0 -8,-3.576 -8,-8c0,-4.416 3.576,-8 8,-8z" fill="#f9c00f"/>
+            <path d="M3,2h5v4h4v-4h1v5h-2l2,7h-1.3l-2,-7h-1.7v7h-5z" fill="#000"/>
+          </g>
+        </svg><pre>KaaBEL</pre></a>
+      <time itemprop="dateModified" content="2023-03-08" datetime="2023-03-08">Last updated, March 8, 2023</time>
+    </div>
+  </footer>
   <script>
     "use strict";
     var _ge;
@@ -400,6 +473,17 @@
       }
 
       document.body.removeAttribute("onload");
+
+      document.body.style.overflowY = "scroll";
+      GE("info").onclick = function () {
+        document.body.style.overflowY = "";
+        document.body.removeChild(this);
+      };
+      document.head.appendChild(document.createComment(navigator.userAgent +
+        JSON.stringify(navigator.userAgentData || {})));
+      for (var i = 0, ch = document.head.childNodes; i < ch.length; i++)
+        if (ch[i].nodeName === "TITLE")
+          ch[i].text = "D1R DBV editor";
     }
   </script>
   <script type="text/javascript" src="editor.js"></script>
