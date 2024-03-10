@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.0.7 -->
+<!-- v.0.0.8 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -137,6 +137,10 @@
       return;
     }
 
+    var init = function init() {
+      return;
+    }
+
     /**
      * @param {string} name
      * @param {function} find
@@ -158,7 +162,7 @@
     /** @type {Array<Gesture>} */
     var globalGestures = [];
 
-    document.body.onload = function init() {
+    document.body.onload = function initDoc() {
       // settings: press time legth, precision, <-, allowed touch-start-times
       // spread of multiple-touch gesture (didn't get sitting short name)
       var pressLength = 350, clickP = 7, touchP = 13, touchSync = 100;
@@ -180,20 +184,15 @@
         render();
       }
 
-      vX = 128;
-      vY = 64;
-      resizeWindow();
-
       window.onresize = resizeWindow;
 
       bd.onmousewheel = bd.onwheel = function (e) {
-        if (!e.ctrlKey || e.target !== canvas)
+        if (e.target !== canvas)
           return;
         var prev = sc, w = canvas.width / 2, h = canvas.height / 2;
         sc -= sc / (e.deltaY || e.wheelDelta || 0) * 10;
         vX = (vX - w) * sc / prev + w;
         vY = (vY - h) * sc / prev + h;
-        e.preventDefault();
         render();
       };
       var foreign = !1, pX = 0, pY = 0;
@@ -484,8 +483,15 @@
       for (var i = 0, ch = document.head.childNodes; i < ch.length; i++)
         if (ch[i].nodeName === "TITLE")
           ch[i].text = "D1R DBV editor";
+
+      init();
+
+      vX = 128;
+      vY = 64;
+      resizeWindow();
     }
   </script>
-  <script type="text/javascript" src="editor.js"></script>
+  <script type="text/javascript" src="./assets/code.js"></script>
+  <script type="text/javascript" src="./editor.js"></script>
 </body>
 </html>
