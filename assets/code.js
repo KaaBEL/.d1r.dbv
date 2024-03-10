@@ -426,8 +426,9 @@ Ship.toDBV = function toDBV(ship) {
     b: ship.blocks.map(function (e) {
       return {
         n: e.internalName,
-        p: [e.position[2] / 2, e.position[0] / 2],
-        r: e.rotation[2] * 90,
+        p: [Math.floor(e.position[2] / 2),
+          Math.floor(e.position[0] / 2)],
+        r: Math.floor(e.rotation[2] * 90),
         f: e.rotation[1],
         s: e.properties.color,
         c: e.properties.control,
