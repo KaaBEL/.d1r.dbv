@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.4
+// v.0.1.5
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -44,9 +44,11 @@ if (typeof TouchEvent == "undefined")
   "#commandsTab button:active{background-color: #333;color: #bbb;}" +
   "#commandsTab header div{flex-grow: 1;}" +
   "#commandsTab .content button, #commandsTab .items button" +
-  "{display: block;width: 350px;}" +
+  "{display: block;width: 333px;}" +
   "#commandsTab button div" +
-  "{display: inline-block;position: absolute;right: 5px;}"
+  "{display: inline-block;position: absolute;right: 21px;}" +
+  "#commandsTab .items, #commandsTab .content" +
+  "{overflow-x: hidden;max-height: 470px;}"
 );
 
 var imgOverlay = document.body.appendChild(document.createElement("img"));
@@ -654,17 +656,18 @@ function Command(name, description, items, setting) {
   Object.freeze(this);
 }
 Command.list = [new Command("Select block", "Select block from list of block\
-s. Last item \"remove\" removes existing block.", function () {
-  var ar = "remove,Small Battery,Small Hydrogen Tank,Reaction Wheel,Small Hy\
-drogen Thruster,Wedge,Block,Core".split(","),
-    /** @type {CommandItem[]} */
-    items = [];
-  for (var i = ar.length; i-- > 0;)
-    items.push({
-      name: ar[i],
-      type: "button",
-      fn: blockBind(ar[i])
-    });
+s. First item \"remove\" removes existing block. (Note: blocks: Large Storag\
+e Rack, Piston, Dial, Digital Display does not display properly or not at al\
+l)", function () {
+  /** @type {CommandItem[]} */
+  var items = [{name: "remove", type: "button", fn: blockBind("remove")}];
+  for (var i = 690; i < Block.NAME.length; i++)
+    if (Block.NAME[i])
+      items.push({
+        name: Block.NAME[i],
+        type: "button",
+        fn: blockBind(Block.NAME[i])
+      });
   return items;
 }())];
 /**
@@ -683,6 +686,135 @@ Command.add = function add(name, items, desc) {
     o = new Command(name, desc, items, !1);
   return this.list.push(o);
 };
+
+Command.add("Import/Export DBV", [
+  {
+    name: ".dbv file content",
+    type: "input",
+    fn: function (e) {
+      e.target instanceof HTMLElement && (e.target.id = "saveFile");
+    }
+  },
+  {
+    name: "Export",
+    type: "button",
+    fn: function (e) {
+      /** @type {ChildNode|null} */
+      var inp = GE("saveFile");
+      if (!inp && e.target instanceof HTMLElement) {
+        inp = (e.target || EL()).previousSibling;
+        inp = (inp || EL()).previousSibling;
+      }
+      if (inp instanceof HTMLInputElement)
+        try {
+          inp.id = "saveFile";
+          inp.value = JSON.stringify(Ship.toDBV(renderedShip));
+        } catch (err) {
+          console.error(err);
+        }
+      else
+        return console.warn("element not found:" + inp);
+    }
+  },
+  {
+    name: "Import",
+    type: "button",
+    fn: function (e) {
+      var inp = GE("saveFile");
+      if (inp instanceof HTMLInputElement)
+        try {
+          renderedShip = Ship.fromObject(JSON.parse(inp.value));
+        } catch (err) {
+          console.error(err);
+        }
+      else
+        return console.warn("element not found:" + inp);
+      render();
+    }
+  }
+], "Export and Import are .");
+
+Command.add("Precise Block Position", [
+  {
+    name: "precise x",
+    type: "input",
+    fn: function (e) {
+      e.target instanceof HTMLElement && (e.target.id = "prcsX");
+    }
+  },
+  {
+    name: "precise y",
+    type: "input",
+    fn: function (e) {
+      e.target instanceof HTMLElement && (e.target.id = "prcsY");
+    }
+  },
+  {
+    name: "apply",
+    type: "button",
+    fn: function (e) {
+      var x = GE("prcsX"), y = GE("prcsY"),
+        nx = x instanceof HTMLInputElement ? Number(x.value) : 0,
+        ny = y instanceof HTMLInputElement ? Number(y.value) : 0;
+      foundBlocks.map(function (e) {
+        var pos = e.position;
+        nx > 0 && nx < 1 ? pos[2] = (Math.floor(pos[2] / 2) + nx) * 2 :
+          console.warn("precise x must be between 0 and 1: " + nx);
+        ny > 0 && ny < 1 ? pos[0] = (Math.floor(pos[0] / 2) + ny) * 2 :
+          console.warn("precise y must be between 0 and 1: " + ny);
+      });
+      render();
+    }
+  }], "Press on block (it will rotate) to \
+  select it, write values between 0 and 1 into precise x and y inputs and pres\
+  s apply to set the position of block.")
+
+Command.add("Set camera view", [
+  {
+    name: "view x",
+    type: "input",
+    fn: function (e) {
+      e.target instanceof HTMLElement && (e.target.id = "viewX");
+    }
+  },
+  {
+    name: "view y",
+    type: "input",
+    fn: function (e) {
+      e.target instanceof HTMLElement && (e.target.id = "viewY");
+    }
+  },
+  {
+    name: "zoom",
+    type: "input",
+    fn: function (e) {
+      e.target instanceof HTMLElement && (e.target.id = "zoomXY");
+    }
+  },
+  {
+    name: "get",
+    type: "button",
+    fn: function (e) {
+      var x = GE("viewX"), y = GE("viewY"), z = GE("zoomXY");
+      x instanceof HTMLInputElement ? x.value = "" + vX : 0,
+      y instanceof HTMLInputElement ? y.value = "" + vY : 0,
+      z instanceof HTMLInputElement ? z.value = "" + sc : 0;
+    }
+  },
+  {
+    name: "set",
+    type: "button",
+    fn: function (e) {
+      var x = GE("viewX"), y = GE("viewY"), z = GE("zoomXY");
+      x instanceof HTMLInputElement ? vX = Number(x.value) || 99 : 0,
+      y instanceof HTMLInputElement ? vY = Number(y.value) || 99 : 0,
+      z instanceof HTMLInputElement ? sc = Number(z.value) || 16 : 0;
+      render();
+    }
+  }
+], "Let's you to set zoom and camera position also on other than PC devices \
+(until movement is fixed for mobile devices) or just with keyboeard. It requ\
+ires writing anything into the inputs first before get set works.");
 Command.add("Change editor background", [
   {name: "Image pattern", type: "checkbox", fn: function (ev) {
     if (!(this instanceof HTMLInputElement))
@@ -757,7 +889,7 @@ var cmdsHeader = EL(), cmds = (function () {
         (isBtn ? e : items).appendChild(document.createTextNode(
           arr[i].name + (isBtn ? "" : ": ")));
         items.appendChild(e);
-        !isBtn && items.appendChild(EL());
+        !isBtn && items.appendChild(EL("br"));
       }
       items.appendChild(EL("br"));
       items.appendChild(EL()).innerText = item.description;
@@ -772,6 +904,8 @@ var cmdsHeader = EL(), cmds = (function () {
   };
   return (bd || EL()).appendChild(nav);
 })();
+
+/** renderedShip moved to @see {renderedShip} */
 
 function render_backgPattern() {
   try {
@@ -804,26 +938,48 @@ function render_initColors() {
 }
 var render_colors = render_initColors();
 
+/** @type {Block[]} */
+var foundBlocks = [];
 press = function press(x, y) {
-  x = Math.floor((x - vX - 1) / 2 / sc) * 2;
-  y = Math.floor((y - vY - 1) / 2 / sc) * 2;
+  x = Math.floor((x - vX - 1) / 2 / sc);
+  y = Math.floor((y - vY - 1) / 2 / sc);
+  var found = [];
   for (var i = 0, arr = renderedShip.blocks; i < arr.length; i++)
-    if (arr[i].position[0] === y && arr[i].position[2] === -x) {
-      if (placingBlock() === "remove") {
-        arr[i] = arr.slice(-1)[0];
-        arr.length--;
-      } else
-        //@ts-ignore
-        arr[i].rotation[2] = arr[i].rotation[2] + 1 & 3;
-      return render();
-    }
+    if (Math.floor(arr[i].position[0] / 2) === y &&
+      Math.floor(arr[i].position[2] / 2) === -x)
+        found.push(i);
+  found = found.map(function (i) {
+    var e = arr[i];
+    if (placingBlock() === "remove") {
+      arr[i] = arr.slice(-1)[0];
+      arr.length--;
+    } else
+      //@ts-ignore
+      e.rotation[2] = e.rotation[2] + 1 & 3;
+    return e;
+  })
+  if (found.length) {
+    foundBlocks = found;
+    return render();
+  }
+  /** @param {string} name @return {Colors} */
+  function getColor(name) {
+    if (/Hydrogen Thruster/.test(name))
+      return "Yellow";
+    if (/Wheel|Battery|Weight|Armor/.test(name))
+      return "Light Gray";
+    if (/Fuel/.test(name))
+      return "Fuel";
+    if (/Drill|Storage Rack/.test(name))
+      return "Orange";
+    if (/Ion Thruster/.test(name))
+      return "Lime"
+    return "White";
+  }
   var rand = placingBlock();
   rand !== "remove" &&
-    arr.push(new Block(rand, [y, 0, -x], [0, !0, 0],
-      {color: {Block: "White", Core: "White", Wedge: "White",
-    "Small Hydrogen Thruster": "Yellow", "Small Hydrogen Tank": "Fuel",
-    "Reaction Wheel": "Light Gray", "Small Battery": "Light Gray"}
-    [rand]}));
+    arr.push(new Block(rand, [y * 2, 0, -x * 2], [0, !0, 0],
+      {color: getColor(rand)}));
   render();
 };
 contextmenu = function commands(x, y) {
@@ -854,30 +1010,44 @@ over = function over(e) {
   // TODO: some nice system to account for end/'hoverleave'
 }
 
-render = function expensiveRenderer() {
+render = /*async*/ function expensiveRenderer() {
   canvas.width = canvas.width;
   render_background();
   ctx.imageSmoothingEnabled = false;
   var objs = renderedShip.blocks;
-  for (var i = objs.length, id = 0, pos = [0, 0, 0]; i-- > 0;) {
+  for (var i = 0, id = 0, pos = [0, 0, 0]; i < objs.length; i++) {
+    /** @see {Block} @see {Block.Size.VALUE} */
     var size = Block.Size.VALUE[Block.ID[objs[i].internalName]];
     size || console.log(objs[i]);
     pos = objs[i].position;
-    var w = helpCanvas.width = size.w, h = helpCanvas.height = size.h;
-    var dx = -pos[2] * sc + vX, dy = pos[0] * sc + vY;
     var rot = 10 - objs[i].rotation[2] & 3;
+    var w = size.w, h = size.h, sw = 0, sh = 0;
+    var dx = -pos[2] * sc + vX, dy = pos[0] * sc + vY;
+    dy -= rot === 3 ? (w - 32) * sc / 16 : rot === 0 ? (h - 32) * sc / 16 : 0;
+    dx -= rot === 2 ? (w - 32) * sc / 16 : rot === 3 ? (h - 32) * sc / 16 : 0;
+    helpCanvas.width = sw = rot & 1 ? h : w;
+    helpCanvas.height = sh = rot & 1 ? w : h;
     rc.fillStyle = render_colors[Color.ID[objs[i].properties.color]];
-    rc.fillRect(0, 0, w, h);
+    rc.fillRect(0, 0, sw, sh);
     rc.rotate(rot * Math.PI / 2);
     rc.translate(rot > 1 ? -w : 0, rot && rot < 3 ? -h : 0);
     rc.globalCompositeOperation = "destination-in";
     rc.drawImage(imgMask, size.x, size.y, w, h, 0, 0, w, h);
     rc.globalCompositeOperation = "source-over";
     rc.drawImage(imgOverlay, size.x, size.y, w, h, 0, 0, w, h);
-    ctx.drawImage(helpCanvas, dx, dy, sc * w / 16, sc * h / 16);
+    sw *= sc / 16;
+    sh *= sc / 16;
+    ctx.drawImage(helpCanvas, dx, dy, sw, sh);
+    // await new Promise(function (res) {
+    //   var tfn = expensiveRenderer;//@ts-ignore
+    //   clearTimeout(tfn.tOut);tfn.tOut = setTimeout(res, 100);
+    // }); /// ASYNC!!!!!!!!
   }
 };
 
 init = function () {
-  render_colors = render_initColors();
+  // renderedShip.blocks =
+  //   Ship.fromObject({"n":"all_blocks_0.7.2","gv":"0.7.2","dt":"07.01.2024 16:35:37","ls":2,"b":[{"n":"Core","p":[-10.0,15.0],"r":0,"f":false,"s":"White","c":[],"ni":[]},{"n":"Block","p":[-10.0,14.0],"r":0,"f":false,"s":"White","c":[],"ni":[]},{"n":"Wedge","p":[-10.0,13.0],"r":0,"f":false,"s":"White","c":[],"ni":[]},{"n":"Small Hydrogen Thruster","p":[-10.0,12.0],"r":0,"f":false,"s":"Yellow","c":[3000.0],"ni":[1]},{"n":"Reaction Wheel","p":[-10.0,11.0],"r":0,"f":false,"s":"Light Gray","c":[5000.0],"ni":[]},{"n":"Small Hydrogen Tank","p":[-10.0,10.0],"r":0,"f":false,"s":"Fuel","c":[],"ni":[]},{"n":"Small Battery","p":[-10.0,9.0],"r":0,"f":false,"s":"Light Gray","c":[],"ni":[]},{"n":"Wedge","p":[-9.0,15.0],"r":0,"f":false,"s":"White","c":[],"ni":[]},{"n":"Wedge 1x2","p":[-9.0,13.0],"r":0,"f":false,"s":"White","c":[],"ni":[]},{"n":"Wedge 1x4","p":[-9.0,9.0],"r":0,"f":false,"s":"White","c":[],"ni":[]},{"n":"Pyramid","p":[-9.0,8.0],"r":0,"f":false,"s":"White","c":[],"ni":[]},{"n":"Slab","p":[-9.0,7.0],"r":0,"f":false,"s":"White","c":[],"ni":[]},{"n":"Smooth Corner","p":[-9.0,6.0],"r":0,"f":false,"s":"White","c":[],"ni":[]},{"n":"Smooth Corner 1x2","p":[-9.0,4.0],"r":0,"f":false,"s":"White","c":[],"ni":[]},{"n":"Smooth Corner 1x4","p":[-9.0,0.0],"r":0,"f":false,"s":"White","c":[],"ni":[]},{"n":"Struct","p":[-9.0,-1.0],"r":0,"f":false,"s":null,"c":[],"ni":[]},{"n":"Small Hydrogen Thruster","p":[-8.0,15.0],"r":0,"f":false,"s":"Yellow","c":[3000.0],"ni":[2]},{"n":"Medium Hydrogen Thruster","p":[-8.0,13.0],"r":0,"f":false,"s":"Yellow","c":[12000.0],"ni":[3]},{"n":"Large Hydrogen Thruster","p":[-8.0,9.0],"r":0,"f":false,"s":"Yellow","c":[36000.0],"ni":[5]},{"n":"Small Ion Thruster","p":[-8.0,8.0],"r":0,"f":false,"s":"Lime","c":[3000.0],"ni":[4]},{"n":"Medium Ion Thruster","p":[-8.0,6.0],"r":0,"f":false,"s":"Lime","c":[6000.0],"ni":[7]},{"n":"Large Ion Thruster","p":[-8.0,3.0],"r":0,"f":false,"s":"Lime","c":[18000.0],"ni":[8]},{"n":"Reaction Wheel","p":[-8.0,2.0],"r":0,"f":false,"s":"Light Gray","c":[5000.0],"ni":[]},{"n":"Small Hydrogen Tank","p":[-5.0,15.0],"r":0,"f":false,"s":"Fuel","c":[],"ni":[]},{"n":"Medium Hydrogen Tank","p":[-5.0,13.0],"r":0,"f":false,"s":"Fuel","c":[],"ni":[]},{"n":"Large Hydrogen Tank","p":[-5.0,10.0],"r":0,"f":false,"s":"Fuel","c":[],"ni":[]},{"n":"Small Battery","p":[-5.0,9.0],"r":0,"f":false,"s":"Light Gray","c":[],"ni":[]},{"n":"Medium Battery","p":[-5.0,7.0],"r":0,"f":false,"s":"Light Gray","c":[],"ni":[]},{"n":"Large Battery","p":[-5.0,4.0],"r":0,"f":false,"s":"Light Gray","c":[],"ni":[]},{"n":"Small Storage Rack","p":[-5.0,3.0],"r":0,"f":false,"s":"Orange","c":[],"ni":[]},{"n":"Medium Storage Rack","p":[-5.0,1.0],"r":0,"f":false,"s":"Orange","c":[],"ni":[]},{"n":"Large Storage Rack","p":[-5.0,-2.0],"r":0,"f":false,"s":"Orange","c":[],"ni":[]},{"n":"Cannon","p":[-2.0,15.0],"r":0,"f":false,"s":"White","c":[],"ni":[6]},{"n":"Rotary Cannon","p":[-2.0,14.0],"r":0,"f":false,"s":"White","c":[],"ni":[9]},{"n":"Plasma Cannon","p":[-2.0,13.0],"r":0,"f":false,"s":"White","c":[],"ni":[10]},{"n":"Pulse Laser","p":[-2.0,12.0],"r":0,"f":false,"s":"White","c":[],"ni":[11]},{"n":"Beam Laser","p":[-2.0,11.0],"r":0,"f":false,"s":"White","c":[],"ni":[12]},{"n":"Small Hydraulic Drill","p":[-1.0,15.0],"r":0,"f":false,"s":"Orange","c":[],"ni":[13]},{"n":"Weight Block","p":[0.0,15.0],"r":0,"f":false,"s":"Dark Gray","c":[],"ni":[]},{"n":"Armor Block","p":[0.0,14.0],"r":0,"f":false,"s":"Dark Gray","c":[],"ni":[]},{"n":"Solar Block","p":[0.0,13.0],"r":0,"f":false,"s":null,"c":[],"ni":[]},{"n":"Small Solar Panel","p":[0.0,11.0],"r":0,"f":false,"s":null,"c":[],"ni":[]},{"n":"Hinge","p":[0.0,10.0],"r":0,"f":false,"s":null,"c":[],"ni":[14]},{"n":"Separator","p":[0.0,9.0],"r":0,"f":false,"s":"White","c":[],"ni":[15]},{"n":"Constant On Signal","p":[1.0,15.0],"r":0,"f":false,"s":"White","c":[],"ni":[16]},{"n":"Control Block","p":[1.0,14.0],"r":0,"f":false,"s":"White","c":["Up"],"ni":[17]},{"n":"AND Gate","p":[1.0,13.0],"r":0,"f":false,"s":"White","c":[],"ni":[18,19,21]},{"n":"NAND Gate","p":[1.0,12.0],"r":0,"f":false,"s":"White","c":[],"ni":[22,23,24]},{"n":"OR Gate","p":[1.0,11.0],"r":0,"f":false,"s":"White","c":[],"ni":[25,26,27]},{"n":"NOR Gate","p":[1.0,10.0],"r":0,"f":false,"s":"White","c":[],"ni":[28,29,30]},{"n":"XOR Gate","p":[1.0,9.0],"r":0,"f":false,"s":"White","c":[],"ni":[31,33,35]},{"n":"XNOR Gate","p":[1.0,8.0],"r":0,"f":false,"s":"White","c":[],"ni":[37,39,41]},{"n":"NOT Gate","p":[1.0,7.0],"r":0,"f":false,"s":"White","c":[],"ni":[43,44]},{"n":"LED","p":[1.0,6.0],"r":0,"f":false,"s":"White","c":[],"ni":[45]},{"n":"Delay","p":[1.0,5.0],"r":0,"f":false,"s":"White","c":[1.0],"ni":[46,47]},{"n":"Constant Number","p":[1.0,4.0],"r":0,"f":false,"s":"White","c":[0.0],"ni":[49]},{"n":"Speed Sensor","p":[1.0,3.0],"r":0,"f":false,"s":"White","c":[],"ni":[48]},{"n":"Tilt Sensor","p":[1.0,2.0],"r":0,"f":false,"s":"White","c":[],"ni":[50]},{"n":"Distance Sensor","p":[1.0,1.0],"r":0,"f":false,"s":"White","c":[],"ni":[51]},{"n":"GPS Sensor","p":[1.0,0.0],"r":0,"f":false,"s":"White","c":[],"ni":[52,53]},{"n":"Numerical Inverter","p":[1.0,-1.0],"r":0,"f":false,"s":"White","c":[],"ni":[54,55]},{"n":"Clamp","p":[1.0,-2.0],"r":0,"f":false,"s":"White","c":[0.0,1.0],"ni":[56,57]},{"n":"Abs","p":[1.0,-3.0],"r":0,"f":false,"s":"White","c":[],"ni":[58,59]},{"n":"Threshold Gate","p":[1.0,-4.0],"r":0,"f":false,"s":"White","c":[0.0,1.0],"ni":[60,61]},{"n":"Numerical Switchbox","p":[1.0,-5.0],"r":0,"f":false,"s":"White","c":[],"ni":[62,63,64,65]},{"n":"Function Block","p":[1.0,-6.0],"r":0,"f":false,"s":"White","c":[""],"ni":[66,67,68,69]},{"n":"Memory Register","p":[1.0,-7.0],"r":0,"f":false,"s":"White","c":[],"ni":[70,71,72,73]},{"n":"Gauge","p":[1.0,-8.0],"r":0,"f":false,"s":null,"c":[-1.0,1.0],"ni":[74]},{"n":"Dial","p":[1.0,-9.0],"r":0,"f":false,"s":null,"c":[-1.0,1.0],"ni":[75]},{"n":"Digital Display","p":[1.0,-10.0],"r":0,"f":false,"s":null,"c":[2],"ni":[76]}],"nc":[]})
+  //   .blocks;
+   render_colors = render_initColors();
 };

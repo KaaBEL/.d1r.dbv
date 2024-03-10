@@ -1,7 +1,8 @@
 //@ts-check
 "use strict";
 // see version of editor.js
-var UDF = void 0, OP = Object.prototype.hasOwnProperty;
+var UDF = void 0, OP = Object.prototype.hasOwnProperty, OBJ;
+OBJ = {};
 
 /** check dictionary definitions
  * @overload
@@ -13,9 +14,7 @@ var UDF = void 0, OP = Object.prototype.hasOwnProperty;
  * @param {string} dicVal
  * @returns {void} */
 function dicDefs(dicNum, dicVal, AT) {
-  var disabled = true;
-  //@ts-ignore
-  if (disabled === !0)
+  if (location.origin.slice(0, 4) === "http" && location.port !== "5500")
     return;
   console.time();
   AT = ". At " + (AT || dicVal) + ".";
@@ -64,7 +63,7 @@ function dicDefs(dicNum, dicVal, AT) {
  * @typedef {[0|1|2,boolean,0|1|2|3]} Rotation
  * @typedef {keyof typeof Color.ID | ""} Colors
  * @param {string} name
- * @param {XYZPosition} pos [x: p[0], /: 0, y: p[1]]
+ * @param {XYZPosition} pos [y: p[1] * 2, /: 0, x: p[0] * 2]
  * @param {Rotation} rot [/: 0, /: !0, r: Math.floor(r / 90)]
  * @param {{[key: string]: any}|0} [prop={color:""}]
  * @param {keyof typeof Color.ID} [color=""] */
@@ -184,6 +183,7 @@ Block.ID = {
   "rocket_thruster_small": 9,
   "cockpit_fighter": 10,
   "cockpit_cruiser": 11,
+  "__unknown__": 511,
   "Core": 690,
   "Block": 691,
   "Wedge": 692,
@@ -200,9 +200,9 @@ Block.ID = {
   "Tiny Hydrogen Thruster": 736,
   "Small Hydrogen Thruster": 737,
   "Medium Hydrogen Thruster": 738,
-  "Tiny Ion Thruster": 739,
-  "Small Ion Thruster": 740,
-  "Large Hydrogen Thruster": 741,
+  "Large Hydrogen Thruster": 739,
+  "Tiny Ion Thruster": 740,
+  "Small Ion Thruster": 741,
   "Medium Ion Thruster": 742,
   "Large Ion Thruster": 743,
   "Reaction Wheel": 744,
@@ -270,27 +270,29 @@ Block.arrayFromObjects = function arrayFromObjects(blocks) {
       name: block.internalName || block.name || block.n,
       pos: block.position || block.pos || block.p,
       rot: block.rotation || block.rot || block.r,
-      prop: block.properties || block.prop || {color: "White"}
+      prop: block.properties || block.prop || {color: "White"},
+      flip: block.f || block.flipped
     };
     o.prop.color = block.color || block.s || o.prop.color || "";
     /**
      * @TODO properties control and nodeIndex will work differently
-     * evntually (in next update I guess) */
-    o.prop.control = block.p || o.prop.control;
+     * evntually (not in this update I guess) */
+    o.prop.control = block.c || o.prop.control;
     o.prop.nodeIndex = block.ni || o.prop.nodeIndex;
     var name = typeof o.name == "string" ? o.name : "__unknown__",
       pos = (o.pos instanceof Array ?
-        o.pos.length === 2 ? [o.pos[0], 0, o.pos[1]] : o.pos :
+        o.pos.length === 2 ? [o.pos[1] * 2, 0, o.pos[0] *  2] : o.pos :
         []).map(function (e) {
           return Number(e) || 0;
         }).concat([0, 0, 0]),
+      flip = typeof o.flip == "boolean" ? o.flip : !1,
       /** @type {Rotation} *///@ts-ignore
       rot = o.rot instanceof Array && o.rot.length === 3 ?
         [o.rot[0] >= 0 && o.rot[0] < 3 && typeof o.rot[0] == "number" ?
           o.rot[0] : 0,
         typeof o.rot[1] == "boolean" ? o.rot[1] : !1,
         typeof o.rot[2] == "number" ? o.rot[2] & 3 : 0] :
-        [0, !1, typeof o.rot == "number" && o.rot || 0 & 3];
+        [0, flip, typeof o.rot == "number" && o.rot / 90 || 0 & 3];
     Block.ID[name] || (o.prop.invalidName = name);
     r[i] = new Block(name, [pos[0], pos[1], pos[2]], rot, o.prop);
   }
@@ -337,13 +339,20 @@ Block.Size.genterateSizes = function () {
   var r = {690: new this(0, 0, 2, 2)},
     /** @type {{[key: number]: SizeDef|SizeDef[], length: number}} */
     a = arguments;
-  for (var i = 0, j = 0, l = 690; l < Block.NAME.length; l++)
+  for (var i = 0, j = 0, l = 690, nw = 0; l < Block.NAME.length; l++)
     if (Block.NAME[l]) {
       /** @type {[number]|[number,number,number]} *///@ts-ignore
       var v = a[i];
       //@ts-ignore
       v instanceof Array && v[j] instanceof Array ? v = v[j++] : j = 3;
       var x = (v[0] % this.width) * 32, y = v[0] / this.width << 5;
+      if (typeof nw == "object") { 
+        var vup = v[0] / this.width << 0;
+        console.log(Block.NAME[l], v[0] % this.width, vup, v);
+        v[0] += vup * 1;
+        //@ts-ignore
+        nw.push(v);
+      }
       r[l] = new this(x, y, (v[1] || 1) * 32, (v[2] || 1) * 32);
       if (j >= a[i].length)
         if (++i < a.length)
@@ -351,19 +360,15 @@ Block.Size.genterateSizes = function () {
         else
           break;
     }
+  typeof nw == "object" &&
+    console.log(JSON.stringify(nw).replace(/,/g, ", "));
   return r;
 };
-// missing larg cargo, piston, coloring fo inversed dock
+// missing larg cargo, piston, coloring of inversed dock in it,
+// mask for separator?, [Dial, Digital Display, Red magnet, inversed
+// Dock dont get displayed at all
 // !default colors on older vehicles are set as nulls!
-Block.Size.VALUE = Block.Size.genterateSizes([[0], [1], [2], [7, 1, 2]],
-  [[8, 1, 4], [30], [31, 1, .5], [32], [67, 1, 2], [9, 1, 4], [33]],
-  [[34], [35], [36, .5, .5], [3], [60, 2, 2], [10, 3, 4], [62, .5, .5]],
-  [[92], [63, 1, 2], [13, 2, 3], [4], [5], [64, 2, 2], [15, 3, 3], [6]],
-  [[18, 2, 2], [20, 2, 3], [93], [68, 2, 2], [49, 3, 3], [107], [66]],
-  [[96], [104], [105], [106], [109], [110], [111], [22], [23, 1, 2]],
-  [[52], [82], [53], [83], [112], [113], [112], [24], [54], [84], [114], [25]],
-  [[55], [85], [115], [26], [56], [86], [116], [27], [57], [87], [117]],
-  [[28], [58], [88], [118], [29], [59], [89], [119], [30], [50]]);
+Block.Size.VALUE = Block.Size.genterateSizes([[0], [1], [2], [7, 1, 2], [8, 1, 4], [30], [32, 1, 1], [33], [69, 1, 2], [9, 1, 4], [34], [35], [36], [37, 1, 1], [3], [62, 2, 2], [10, 3, 4], [64, 1, 1], [95], [65, 1, 2], [13, 2, 3], [4], [5], [66, 2, 2], [15, 3, 3], [6], [18, 2, 2], [20, 2, 3], [106], [80, 2, 2], [50, 3, 3], [110], [68], [99], [107], [108], [109], [113], [114], [22], [23, 1, 2], [53], [84], [174], [85], [115], [116], [133], [24], [55], [86], [117], [25], [56], [87], [118], [26], [57], [88], [119], [27], [58], [89], [120], [28], [59], [90], [121], [29], [60], [91], [122], [30], [61]]);
 
 /**
  * @param {string} name
@@ -376,7 +381,7 @@ function Ship(name, version, time, blocks, properties) {
   this.gameVersion = version;
   this.dateTime = time;
   this.blocks = blocks;
-  /** Ship properties (shorthened since it is db/dr non-standard) */
+  /** Ship properties (shortcut since it is db/dr non-standard) */
   this.prop = properties || null;
   Object.seal(this);
 }
@@ -405,8 +410,33 @@ Ship.fromObject = function fromObject(object) {
       Block.generateArray(-69),
     // something more was supposed to be done like ...?
     props = o.props;
+  if (o.add) {
+    (props = props || OBJ).launchpadSize = o.add.grid;
+    props.nodeConnections = o.add.logic;
+  }
   return new Ship(name, ver, time, blocks, props);
 };
+/** @param {Ship} ship */
+Ship.toDBV = function toDBV(ship) {
+  return {
+    n: ship.name,
+    gv: ship.gameVersion.join("."),
+    dt: ship.dateTime,
+    ls: (ship.prop || {}).launchpadSize || 0,
+    b: ship.blocks.map(function (e) {
+      return {
+        n: e.internalName,
+        p: [e.position[2] / 2, e.position[0] / 2],
+        r: e.rotation[2] * 90,
+        f: e.rotation[1],
+        s: e.properties.color,
+        c: e.properties.control,
+        ni: e.properties.nodeIndex
+      };
+    }),
+    nc: (ship.prop || {}).nodeConnections
+  };
+}
 function Color() {
   this.prop = "";
   throw new TypeError("Illegal constructor");
@@ -415,7 +445,7 @@ Color.NAME = {
   0: "White",
   1: "Light Gray",
   2: "Dark Gray",
-  3: "BLack",
+  3: "Black",
   4: "Yellow",
   5: "Orange",
   6: "Red",
@@ -439,7 +469,7 @@ Color.ID = {
   "White": 0,
   "Light Gray": 1,
   "Dark Gray": 2,
-  "BLack": 3,
+  "Black": 3,
   "Yellow": 4,
   "Orange": 5,
   "Red": 6,
@@ -465,8 +495,6 @@ dicDefs(Color.NAME, Color.ID, "Color definitions");
 var renderedShip = Ship.fromObject({name: "Starter Droneboi"});
 // var block = new Block("Block", [0, 0, 0], [0, !0, 0]),
 //   ship = new Ship("None", [0, 9], "never", [block]);
-
-/** renderedShip moved to @see {renderedShip} */
 
 /** timeToString @param {number} [t=Date.now()] @param {number} [f=1] ?1 */
 function dateTime(t, f) {
