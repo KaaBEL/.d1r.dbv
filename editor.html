@@ -8,7 +8,7 @@
   <meta name="description" content="Check out the early state of Droneboi opensource online Vehicle editor.">
   <link rel="icon" href="https://kaabel.github.io/favicon.ico" type="image/x-icon">
   <link rel="icon shortcut" href="./../favicon.svg" type="image/svg+xml">
-  <title>Droneboi: Conquest online Vehicle editor</title>
+  <title>Droneboi online Vehicle editor</title>
   <link rel="canonical" content="https://kaabel.github.io/.d1r.dbv/editor.html">
   <style>
     body {
@@ -74,26 +74,27 @@
     </div-->
   </main>
   <footer id="info">
-    <h1>Welcome to very beggining of Droneboi Vehicle editor</h1>
+    <h1>Welcome to the beggining of Droneboi Vehicle editor</h1>
     <h2>What is it?</h2>
-    It is a fan made online opensource tool for modifying and cerating
-    Droneboi: Conquest Vehicles. Droneboi: Conquest is the ultimate
+    It is a fan made opensource tool for modifying and cerating Droneboi
+    Vehicles online. DBC (third game of Droneboi sereies) is the ultimate
     open-world sandbox space drone building, exploration, and combat
-    mobile game made by Rizen Planet Studios. Compared to game which
+    mobile game made by Rizen Planet Studios. Compared to the game which
     focuses on gameplay, this webapp is planned to provide rich spaceship
     editor with many building functions, more powerfull and customizable
     tools for advanced drone designs. It is currently in development.
     <h2>How to use it?</h2>
-    At first look games preserves initial functionality: use mouse to
-    move around while holding left mouse button. By clicking on exesting
-    blocks you can rotate them, click elswhere to build a random block.
-    Use Ctrl and scroll to zoom in and out. In last update (v.0.1.2),
-    a option to select block was added. Open contextmenu, which is usually
+    Disclaimer: Vehicles builded in way that it cannot be replicated by
+    using only vanilla in game editor after clearing building grid, can
+    result in ban if used in (multiplayer) 'Conquest' mode. Because of
+    that Exporting feature is limited to existing blocks and usuall
+    positions/rotations. Open contextmenu, which is usually
     done by pressing right mouse button, to also open commands tab where
     you were pointing. There is list of commads, used to change settings
     or enable different tools. They show their description when they are
-    opened. Click on Welcome message to close it.
-    <div id="auth" itemprop="dateModified" content="2023-03-08" datetime="2023-03-08">Made by:
+    opened. Click on Welcome message to close it, rightclicking around to
+    open commands tab also closes Welcome message.
+    <div id="auth" itemprop="dateModified" content="2023-03-14" datetime="2023-03-14">Made by:
       <a href="https://github.com/KaaBEL">
         <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="16" height="16" viewBox="0,0,16,16">
           <g data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill-rule="nonzero" stroke="none" style="mix-blend-mode: normal">
@@ -101,7 +102,7 @@
             <path d="M3,2h5v4h4v-4h1v5h-2l2,7h-1.3l-2,-7h-1.7v7h-5z" fill="#000"/>
           </g>
         </svg><pre>KaaBEL</pre></a>
-      <time itemprop="dateModified" content="2023-03-08" datetime="2023-03-08">Last updated, March 8, 2023</time>
+      <time itemprop="dateModified" content="2023-03-14" datetime="2023-03-14">Last updated, March 14, 2023</time>
     </div>
   </footer>
   <script>
@@ -190,7 +191,7 @@
         if (e.target !== canvas)
           return;
         var prev = sc, w = canvas.width / 2, h = canvas.height / 2;
-        sc -= sc / (e.deltaY || e.wheelDelta || 0) * 10;
+        sc -= sc / (e.deltaY || -e.wheelDelta || 0) * 10;
         vX = (vX - w) * sc / prev + w;
         vY = (vY - h) * sc / prev + h;
         render();
@@ -228,6 +229,12 @@
         press(x, y);
       }
       window.oncontextmenu = function (e) {
+        for (var el = e.target; el instanceof Node;)
+          if (!(el = el.parentNode))
+            return;
+          else if (el === bd)
+            break;
+        console.log(e);
         var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop;
         contextmenu(x, y);
       };
@@ -474,7 +481,7 @@
       document.body.removeAttribute("onload");
 
       document.body.style.overflowY = "scroll";
-      GE("info").onclick = function () {
+      GE("info").onclick = function (e) {
         document.body.style.overflowY = "";
         document.body.removeChild(this);
       };
