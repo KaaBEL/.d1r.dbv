@@ -66,6 +66,8 @@ function dictionaryDefs(dicNum, dicVal, AT) {
   console.timeEnd();
 }
 
+/** block names in dbv are case insesitve loaded by game,
+ * Block name definitions require strict letter cases here */
 /**
  * @typedef {[number,number,number]} XYZPosition
  * @typedef {[0|1|2,boolean,0|1|2|3]} Rotation
@@ -115,113 +117,113 @@ Block.NAME = {
   700: "Struct",
   701: "Glass Block",
   702: "Glass Wedge",
-  736: "Tiny Hydrogen Thruster",
-  737: "Small Hydrogen Thruster",
-  738: "Medium Hydrogen Thruster",
-  739: "Large Hydrogen Thruster",
-  740: "Tiny Ion Thruster",
-  741: "Small Ion Thruster",
-  742: "Medium Ion Thruster",
-  743: "Large Ion Thruster",
-  744: "Reaction Wheel",
-  752: "Small Hydrogen Tank",
-  753: "Medium Hydrogen Tank",
-  754: "Large Hydrogen Tank",
-  755: "Small Battery",
-  756: "Medium Battery",
-  757: "Large Battery",
-  758: "Small Storage Rack",
-  759: "Medium Storage Rack",
-  760: "Large Storage Rack",
-  768: "Small Hydraulic Drill",
-  769: "Cannon",
-  770: "Rotary Cannon",
-  771: "Plasma Cannon",
-  772: "Pulse Laser",
-  773: "Beam Laser",
+  738: "Tiny Hydrogen Thruster",
+  739: "Small Hydrogen Thruster",
+  740: "Medium Hydrogen Thruster",
+  741: "Large Hydrogen Thruster",
+  742: "Tiny Ion Thruster",
+  743: "Small Ion Thruster",
+  744: "Medium Ion Thruster",
+  745: "Large Ion Thruster",
+  746: "Reaction Wheel",
+  754: "Small Hydrogen Tank",
+  755: "Medium Hydrogen Tank",
+  756: "Large Hydrogen Tank",
+  757: "Small Battery",
+  758: "Medium Battery",
+  759: "Large Battery",
+  760: "Small Storage Rack",
+  761: "Medium Storage Rack",
+  762: "Large Storage Rack",
+  770: "Small Hydraulic Drill",
+  771: "Cannon",
+  772: "Rotary Cannon",
+  773: "Plasma Cannon",
+  774: "Pulse Laser",
+  775: "Beam Laser",
   // TNT
-  774: "__placeholder774__",
-  784: "Weight Block",
-  785: "Armor Block",
-  786: "Solar Block",
-  787: "Small Solar Panel",
-  788: "Hinge",
-  789: "Separator",
-  790: "Piston",
-  791: "Camera Block",
-  792: "Ghost Block",
-  793: "Dock",
+  776: "__placeholder776__",
+  786: "Weight Block",
+  787: "Armor Block",
+  788: "Solar Block",
+  789: "Small Solar Panel",
+  790: "Hinge",
+  791: "Separator",
+  792: "Piston",
+  793: "Camera Block",
+  794: "Ghost Block",
+  795: "Dock",
   // Red Magnet
-  798: "__placeholder798__",
+  780: "__placeholder798__",
   // Inversed Dock
-  799: "__placeholder799__",
-  800: "Constant On Signal",
-  801: "Control Block",
-  802: "AND Gate",
-  803: "NAND Gate",
-  804: "OR Gate",
-  805: "NOR Gate",
-  806: "XOR Gate",
-  807: "XNOR Gate",
-  808: "NOT Gate",
-  809: "LED",
-  810: "Delay",
-  811: "Constant Number",
-  812: "Speed Sensor",
-  813: "Tilt Sensor",
-  814: "Distance Sensor",
-  815: "GPS Sensor",
-  816: "Numerical Inverter",
-  817: "Clamp",
-  818: "Abs",
-  819: "Threshold Gate",
-  820: "Numerical Switchbox",
-  821: "Function Block",
-  822: "Memory Register",
-  823: "Gauge",
-  824: "Dial",
-  825: "Digital Display",
+  781: "__placeholder799__",
+  802: "Constant On Signal",
+  803: "Control Block",
+  804: "AND Gate",
+  805: "NAND Gate",
+  806: "OR Gate",
+  807: "NOR Gate",
+  808: "XOR Gate",
+  809: "XNOR Gate",
+  810: "NOT Gate",
+  811: "LED",
+  812: "Delay",
+  813: "Constant Number",
+  814: "Speed Sensor",
+  815: "Tilt Sensor",
+  816: "Distance Sensor",
+  817: "GPS Sensor",
+  818: "Numerical Inverter",
+  819: "Clamp",
+  820: "Abs",
+  821: "Threshold Gate",
+  822: "Numerical Switchbox",
+  823: "Function Block",
+  824: "Memory Register",
+  825: "Gauge",
+  826: "Dial",
+  827: "Digital Display",
   // station wall 4 sides LBRU
-  832: "__placeholder832__",
-  // station wall 2 sides corner LB
-  833: "__placeholder833__",
-  // station wall 1 side B
   834: "__placeholder834__",
-  // station wall 0 sides
+  // station wall 2 sides corner LB
   835: "__placeholder835__",
-  // station wall 3 sides LBR
+  // station wall 1 side B
   836: "__placeholder836__",
-  // station wall 2 sides opposite LR
+  // station wall 0 sides
   837: "__placeholder837__",
-  // station solar block
+  // station wall 3 sides LBR
   838: "__placeholder838__",
-  // station launchpad door casing
+  // station wall 2 sides opposite LR
   839: "__placeholder839__",
-  // station launchpad door middle
+  // station solar block
   840: "__placeholder840__",
-  // station launchpad door ending
+  // station launchpad door casing
   841: "__placeholder841__",
-  // station floor 1 1x1
+  // station launchpad door middle
   842: "__placeholder842__",
-  // station floor 1 2x2
+  // station launchpad door ending
   843: "__placeholder843__",
-  // station floor 2 2x2
+  // station floor 1 1x1
   844: "__placeholder844__",
-  // station door casing
+  // station floor 1 2x2
   845: "__placeholder845__",
-  // station door middle
+  // station floor 2 2x2
   846: "__placeholder846__",
-  // station door ending
+  // station door casing
   847: "__placeholder847__",
-  // station terminal
+  // station door middle
   848: "__placeholder848__",
-  // station bench
+  // station door ending
   849: "__placeholder849__",
-  // station wardrobe
+  // station terminal
   850: "__placeholder850__",
-  // station telescope
+  // station bench
   851: "__placeholder851__",
-  length: 852
+  // station wardrobe
+  852: "__placeholder852__",
+  // station telescope
+  853: "__placeholder853__",
+  length: 854
 };
 Block.ID = {
   "block": 0,
@@ -250,71 +252,69 @@ Block.ID = {
   "Struct": 700,
   "Glass Block": 701,
   "Glass Wedge": 702,
-  "Tiny Hydrogen Thruster": 736,
-  "Small Hydrogen Thruster": 737,
-  "Medium Hydrogen Thruster": 738,
-  "Large Hydrogen Thruster": 739,
-  "Tiny Ion Thruster": 740,
-  "Small Ion Thruster": 741,
-  "Medium Ion Thruster": 742,
-  "Large Ion Thruster": 743,
-  "Reaction Wheel": 744,
-  "Small Hydrogen Tank": 752,
-  "Medium Hydrogen Tank": 753,
-  "Large Hydrogen Tank": 754,
-  "Small Battery": 755,
-  "Medium Battery": 756,
-  "Large Battery": 757,
-  "Small Storage Rack": 758,
-  "Medium Storage Rack": 759,
-  "Large Storage Rack": 760,
-  "Small Hydraulic Drill": 768,
-  "Cannon": 769,
-  "Rotary Cannon": 770,
-  "Plasma Cannon": 771,
-  "Pulse Laser": 772,
-  "Beam Laser": 773,
-  "__placeholder774__": 774,
-  "Weight Block": 784,
-  "Armor Block": 785,
-  "Solar Block": 786,
-  "Small Solar Panel": 787,
-  "Hinge": 788,
-  "Separator": 789,
-  "Piston": 790,
-  "Camera Block": 791,
-  "Ghost Block": 792,
-  "Dock": 793,
-  "__placeholder798__": 798,
-  "__placeholder799__": 799,
-  "Constant On Signal": 800,
-  "Control Block": 801,
-  "AND Gate": 802,
-  "NAND Gate": 803,
-  "OR Gate": 804,
-  "NOR Gate": 805,
-  "XOR Gate": 806,
-  "XNOR Gate": 807,
-  "NOT Gate": 808,
-  "LED": 809,
-  "Delay": 810,
-  "Constant Number": 811,
-  "Speed Sensor": 812,
-  "Tilt Sensor": 813,
-  "Distance Sensor": 814,
-  "GPS Sensor": 815,
-  "Numerical Inverter": 816,
-  "Clamp": 817,
-  "Abs": 818,
-  "Threshold Gate": 819,
-  "Numerical Switchbox": 820,
-  "Function Block": 821,
-  "Memory Register": 822,
-  "Gauge": 823,
-  "Dial": 824,
-  "Digital Display": 825,
-  "__placeholder832__": 832,
-  "__placeholder833__": 833,
+  "Tiny Hydrogen Thruster": 738,
+  "Small Hydrogen Thruster": 739,
+  "Medium Hydrogen Thruster": 740,
+  "Large Hydrogen Thruster": 741,
+  "Tiny Ion Thruster": 742,
+  "Small Ion Thruster": 743,
+  "Medium Ion Thruster": 744,
+  "Large Ion Thruster": 745,
+  "Reaction Wheel": 746,
+  "Small Hydrogen Tank": 754,
+  "Medium Hydrogen Tank": 755,
+  "Large Hydrogen Tank": 756,
+  "Small Battery": 757,
+  "Medium Battery": 758,
+  "Large Battery": 759,
+  "Small Storage Rack": 760,
+  "Medium Storage Rack": 761,
+  "Large Storage Rack": 762,
+  "Small Hydraulic Drill": 770,
+  "Cannon": 771,
+  "Rotary Cannon": 772,
+  "Plasma Cannon": 773,
+  "Pulse Laser": 774,
+  "Beam Laser": 775,
+  "__placeholder776__": 776,
+  "__placeholder798__": 780,
+  "__placeholder799__": 781,
+  "Weight Block": 786,
+  "Armor Block": 787,
+  "Solar Block": 788,
+  "Small Solar Panel": 789,
+  "Hinge": 790,
+  "Separator": 791,
+  "Piston": 792,
+  "Camera Block": 793,
+  "Ghost Block": 794,
+  "Dock": 795,
+  "Constant On Signal": 802,
+  "Control Block": 803,
+  "AND Gate": 804,
+  "NAND Gate": 805,
+  "OR Gate": 806,
+  "NOR Gate": 807,
+  "XOR Gate": 808,
+  "XNOR Gate": 809,
+  "NOT Gate": 810,
+  "LED": 811,
+  "Delay": 812,
+  "Constant Number": 813,
+  "Speed Sensor": 814,
+  "Tilt Sensor": 815,
+  "Distance Sensor": 816,
+  "GPS Sensor": 817,
+  "Numerical Inverter": 818,
+  "Clamp": 819,
+  "Abs": 820,
+  "Threshold Gate": 821,
+  "Numerical Switchbox": 822,
+  "Function Block": 823,
+  "Memory Register": 824,
+  "Gauge": 825,
+  "Dial": 826,
+  "Digital Display": 827,
   "__placeholder834__": 834,
   "__placeholder835__": 835,
   "__placeholder836__": 836,
@@ -332,7 +332,9 @@ Block.ID = {
   "__placeholder848__": 848,
   "__placeholder849__": 849,
   "__placeholder850__": 850,
-  "__placeholder851__": 851
+  "__placeholder851__": 851,
+  "__placeholder852__": 852,
+  "__placeholder853__": 853
 };
 Object.freeze(Block.NAME);
 Object.freeze(Block.ID);
@@ -351,7 +353,7 @@ Block.arrayFromObjects = function arrayFromObjects(blocks) {
     o.prop.color = block.color || block.s || o.prop.color || "";
     /**
      * @TODO properties control and nodeIndex will work differently
-     * evntually (not in this update I guess) */
+     * eventually (not in this update I guess) */
     o.prop.control = block.c || o.prop.control;
     o.prop.nodeIndex = block.ni || o.prop.nodeIndex;
     var name = typeof o.name == "string" ? o.name : "__unknown__",
@@ -572,7 +574,7 @@ dictionaryDefs(Color.NAME, Color.ID, "Color definitions");
 Color.default = function getColor(name) {
   if (/Hydrogen Thruster/.test(name))
     return "Yellow";
-  if (/Wheel|Battery|Weight|Armor|__placeholder84[236]__/.test(name))
+  if (/Wheel|Battery|Weight|Armor|__placeholder84[456]__/.test(name))
     return "Light Gray";
   if (/Hydrogen Tank/.test(name))
     return "Fuel";
@@ -580,7 +582,7 @@ Color.default = function getColor(name) {
     return "Orange";
   if (/Ion Thruster/.test(name))
     return "Lime"
-  if (/__placeholder774__/.test(name))
+  if (/__placeholder776__/.test(name))
     return "Red";
   return "White";
 };
