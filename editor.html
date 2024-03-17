@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.0.8 -->
+<!-- v.0.0.10 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -43,10 +43,11 @@
     #info {
       position: absolute;
       top: 0;
-      margin: 70px;
+      width: 80%;
+      margin: 70px 5%;
       border: 3px solid #112;
       border-radius: 15px;
-      padding: 27px;
+      padding: 27px 4%;
       background-color: #223;
       color: #aaa;
     }
@@ -66,12 +67,6 @@
 <body>
   <main id="8">
     <canvas id="0"></canvas>
-    <!--div style="position: absolute;color:white;top:0;">
-      <div id="87"><span></span></div>
-      <div id="88"><span></span></div>
-      <div id="89"><span></span></div>
-      <div id="85" style="color:#59b"><span></span></div>
-    </div-->
   </main>
   <footer id="info">
     <h1>Welcome to the beggining of Droneboi Vehicle editor</h1>
@@ -85,15 +80,16 @@
     tools for advanced drone designs. It is currently in development.
     <h2>How to use it?</h2>
     Disclaimer: Vehicles builded in way that it cannot be replicated by
-    using only vanilla in game editor after clearing building grid, can
+    using only vanilla in-game editor after clearing building grid, can
     result in ban if used in (multiplayer) 'Conquest' mode. Because of
     that Exporting feature is limited to existing blocks and usuall
-    positions/rotations. Open contextmenu, which is usually
-    done by pressing right mouse button, to also open commands tab where
-    you were pointing. There is list of commads, used to change settings
-    or enable different tools. They show their description when they are
-    opened. Click on Welcome message to close it, rightclicking around to
-    open commands tab also closes Welcome message.
+    positions/rotations. While holding mouse and moving view position is
+    grabbed and moves. Scroll to zoom in/out. Open contextmenu, which is
+    usually done by pressing right mouse button, to also open commands tab
+    where you were pointing. There is list of commads, used to change
+    settings or enable different tools. They show their description when
+    they are opened. Click on Welcome message to close it, rightclicking
+    around to open commands tab also closes Welcome message.
     <div id="auth" itemprop="dateModified" content="2023-03-14" datetime="2023-03-14">Made by:
       <a href="https://github.com/KaaBEL">
         <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="16" height="16" viewBox="0,0,16,16">
@@ -234,7 +230,6 @@
             return;
           else if (el === bd)
             break;
-        console.log(e);
         var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop;
         contextmenu(x, y);
       };
