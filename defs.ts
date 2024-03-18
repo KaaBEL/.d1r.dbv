@@ -1,4 +1,4 @@
-// v.0.0.8 when updated, version inherited from editor.html is used
+// v.0.0.11 when updated, version inherited from editor.html is used
 var _ge: any;
 function GE(v: any) {return document.getElementById(typeof v=="number"&&v==v?
   (_ge=v+1)-1:v==void 0?v=_ge++:v)}
@@ -21,7 +21,7 @@ var press = function press(x: number, y: number) {
   return console.log(x, y);
 }
 
-var contextmenu = function contextmenu(x: number, y: number) {
+var contextmenu = function contextmenu(x: number, y: number, e: MouseEvent) {
   return console.log(x, y);
 }
 

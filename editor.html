@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.0.10 -->
+<!-- v.0.0.11 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -79,17 +79,7 @@
     editor with many building functions, more powerfull and customizable
     tools for advanced drone designs. It is currently in development.
     <h2>How to use it?</h2>
-    Disclaimer: Vehicles builded in way that it cannot be replicated by
-    using only vanilla in-game editor after clearing building grid, can
-    result in ban if used in (multiplayer) 'Conquest' mode. Because of
-    that Exporting feature is limited to existing blocks and usuall
-    positions/rotations. While holding mouse and moving view position is
-    grabbed and moves. Scroll to zoom in/out. Open contextmenu, which is
-    usually done by pressing right mouse button, to also open commands tab
-    where you were pointing. There is list of commads, used to change
-    settings or enable different tools. They show their description when
-    they are opened. Click on Welcome message to close it, rightclicking
-    around to open commands tab also closes Welcome message.
+    <img src="./assets/just_use_common_sense.png" alt="just_use_common_sense.png">
     <div id="auth" itemprop="dateModified" content="2023-03-14" datetime="2023-03-14">Made by:
       <a href="https://github.com/KaaBEL">
         <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="16" height="16" viewBox="0,0,16,16">
@@ -231,7 +221,7 @@
           else if (el === bd)
             break;
         var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop;
-        contextmenu(x, y);
+        contextmenu(x, y, e);
       };
 
       /** touch logs
