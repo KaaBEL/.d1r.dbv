@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.8
+// v.0.1.9
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -973,7 +973,7 @@ Command.push("Select block", function (items, collapsed) {
       "Station parts": collapsed("Station parts")
     }, btn = EL("button");
     // collapsed("Core and Basic")
-  btn.appendChild(document.createTextNode("remove"));
+  btn.appendChild(document.createTextNode("remove block"));
   btn.onclick = blockBind("remove", !1);
   items.push(btn);
   for (var i = 690, s = ""; i < Block.NAME.length; i++)
@@ -1012,83 +1012,69 @@ Command.add("Select Color", function () {
 lor it.");
 
 Command.push("Import/Export DBV", function (items, collapsed) {
-  var inp = EL("input"), elBtn = EL("button");
+  var inp = EL("input"), elBtn = EL("button"), error = EL();
   items.push({name: ".dbv file content", inp: inp});
   elBtn.onclick = function () {
+    error.innerText = "";
     try {
       inp.id = "saveFile";
       inp.value = JSON.stringify(Ship.toDBV(renderedShip));
       render();
     } catch (err) {
+      error.innerText = err;
       console.error(err);
     }
   };
   elBtn.appendChild(document.createTextNode("Export"));
   items.push(elBtn);
   (elBtn = EL("button")).onclick = function () {
+    error.innerText = "";
     try {
       renderedShip = Ship.fromObject(JSON.parse(inp.value));
       render();
     } catch (err) {
+      error.innerText = err;
       console.error(err);
     }
   };
   elBtn.appendChild(document.createTextNode("Import"));
   items.push(elBtn);
+  error.style.color = "red";
+  items.push(error);
 }, "Export and Import are functions using displayed vehicle as target.\nExpo\
 rting creates JSON key of ship and puts it in text input, the key doesn't in\
 clude non existent or blocks inavalable in game.\nImportingdisplays vehicle \
 of JSON key from text input.\nJSON key is the content of .dbv savefile. It c\
 ontains textual data and can be opened using text editor.");
-/** @TODO update rest of the commands for using Command.push */
-Command.add("Set camera view", [
-  {
-    name: "view x",
-    type: "input",
-    fn: function (e) {
-      e.target instanceof HTMLElement && (e.target.id = "viewX");
-    }
-  },
-  {
-    name: "view y",
-    type: "input",
-    fn: function (e) {
-      e.target instanceof HTMLElement && (e.target.id = "viewY");
-    }
-  },
-  {
-    name: "zoom",
-    type: "input",
-    fn: function (e) {
-      e.target instanceof HTMLElement && (e.target.id = "zoomXY");
-    }
-  },
-  {
-    name: "get",
-    type: "button",
-    fn: function (e) {
-      var x = GE("viewX"), y = GE("viewY"), z = GE("zoomXY");
-      x instanceof HTMLInputElement ? x.value = "" + vX : 0,
-      y instanceof HTMLInputElement ? y.value = "" + vY : 0,
-      z instanceof HTMLInputElement ? z.value = "" + sc : 0;
-    }
-  },
-  {
-    name: "set",
-    type: "button",
-    fn: function (e) {
-      var x = GE("viewX"), y = GE("viewY"), z = GE("zoomXY");
-      x instanceof HTMLInputElement ? vX = Number(x.value) || 99 : 0,
-      y instanceof HTMLInputElement ? vY = Number(y.value) || 99 : 0,
-      z instanceof HTMLInputElement ? sc = Number(z.value) || 16 : 0;
-      render();
-    }
-  }
-], "Let's you to set zoom and camera position also on other than PC devices \
-(until movement is fixed for mobile devices) or just with keyboeard. It requ\
-ires writing anything into the inputs first before get set works.");
-Command.add("Change editor background", [
-  {name: "Image pattern", type: "checkbox", fn: function (ev) {
+Command.push("Set camera view", function (items, collapsed) {
+  var viewX = EL("input"), viewY = EL("input"), zoom = EL("input");
+  var elBtn = EL("button");
+  items.push({name: "view x", inp: viewX},
+    {name: "view y", inp: viewY},
+    {name: "zoom", inp: zoom});
+  elBtn.onclick = function () {
+    viewX.value = "" + vX;
+    viewY.value = "" + vY;
+    zoom.value = "" + sc / 16;
+    render();
+  };
+  elBtn.appendChild(document.createTextNode("get"));
+  items.push(elBtn);
+  (elBtn = EL("button")).onclick = function () {
+    vX = Number(viewX.value) || 99;
+    vY = Number(viewY.value) || 99;
+    sc = (Number(zoom.value) || 1) * 16;
+    render();
+  };
+  elBtn.appendChild(document.createTextNode("set"));
+  items.push(elBtn);
+}, "Let's you to set zoom and camera position also on other than PC devices \
+(until movement is fixed for mobile devices) or just with keyboeard.");
+Command.push("Change editor background", function (items, collapsed) {
+  var backgImg = EL("input"), backgClr = EL("input");
+  backgImg.type = "checkbox";
+  backgImg.checked = settings.editorBackground;
+  backgImg.onchange = function () {
     if (!(this instanceof HTMLInputElement))
       return;
     render_background =
@@ -1097,8 +1083,9 @@ Command.add("Change editor background", [
         render_backgColor;
     saveSettings()
     render();
-  }},
-  {name: "Background color", type: "input", fn: function (ev) {
+  };
+  backgClr.value = settings.editorBackgroundColor;
+  backgClr.oninput = function () {
     var r = this instanceof HTMLInputElement ?
       new RegExp("#([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])|#(\
 [0-9a-f])([0-9a-f])([0-9a-f])").exec(this.value.slice(0, 7)) :
@@ -1109,8 +1096,10 @@ Command.add("Change editor background", [
         r[1] + r[2] + r[3]);
     saveSettings()
     render();
-  }}
-], "When \"Image pattern\" chexbox is checked, Droneboi: Conquest background\
+  };
+  items.push({name: "Image pattern", inp: backgImg},
+    {name: "Background color", inp: backgClr});
+}, "When \"Image pattern\" chexbox is checked, Droneboi: Conquest background\
  is used. Else color from \"Background color\" input is used. If it is in he\
 xadecimal format #111133 for example, the setting will update.");
 
@@ -1235,9 +1224,12 @@ press = function press(x, y) {
     } else if (blockBind.changingColor)
       //@ts-ignore
       arr[i].properties.color = placingBlock();
-    else
+    else {
+      if ([693, 694, 698, 699].indexOf(Block.ID[arr[i].internalName]))
+        ""; 
       //@ts-ignore
       e.rotation[2] = e.rotation[2] + 1 & 3;
+    }
     return e;
   })
   if (found.length || blockBind.changingColor) {
@@ -1250,17 +1242,21 @@ press = function press(x, y) {
       {color: Color.default(rand)}));
   render();
 };
-function commands(x, y) {
-  cmds.style.left = (x > 178 ? x - 175 : 5) + "px";
-  cmds.style.top = (y > 255 ? y - 250 : 5) + "px";
-  cmds.style.display = "";
+/** @type {(x:number,y:number,e:MouseEvent)=>void} */
+function commands(x, y, e) {
+  var w = innerWidth - 175, st = cmds.style;
+  // quircky workaround to copying image with
+  (st.display = e.target === GE("commandsTab") ? "none" : "") ||
+    e.cancelable && e.preventDefault();
+  st.left = (x > 178 ? x < w ? x - 175 : w - 180 : 5) + "px";
+  st.top = (y > 255 ? y - 250 : 5) + "px";
 }
-contextmenu = function (x, y) {
-  var e = GE("info");
-  if (e instanceof HTMLElement && e.onclick)
+contextmenu = function (x, y, e) {
+  var el = GE("info");
+  if (el instanceof HTMLElement && el.onclick)
     //@ts-ignore
-    e.onclick();
-  (contextmenu = commands)(x, y);
+    el.onclick();
+  (contextmenu = commands)(x, y, e);
 }
 
 var cmdsMove = !1, cmdsX = 0, cmdsY = 0;
@@ -1274,14 +1270,22 @@ over = function over(e) {
     cmdsX = x - e.pageX - canvas.offsetLeft;
     cmdsY = y - e.pageY - canvas.offsetTop;
     cmdsMove = !0;
+    cmds.style.webkitUserSelect = cmds.style.userSelect = "none";
   } else if (e.type === "mousemove" && cmdsMove) {
+    if (!e.buttons && !e.button) {
+      cmdsMove = !1;
+      return;
+    }
     var st = cmds.style,
       x = cmdsX + e.pageX - canvas.offsetLeft,
-      y = cmdsY + e.pageY - canvas.offsetTop;
-    st.left = (x > 3 ? x : 5) + "px";
+      y = cmdsY + e.pageY - canvas.offsetTop,
+      w = innerWidth - 86;
+    st.left = (x > -269 ? x < w ? x : w : -269) + "px";
     st.top = (y > 5 ? y : 5) + "px";
   } else if (e.type === "mouseup")
     cmdsMove = !1;
+  else
+    cmds.style.webkitUserSelect = cmds.style.userSelect = "";
   // TODO: some nice system to account for end/'hoverleave'
 }
 
