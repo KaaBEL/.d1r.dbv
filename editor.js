@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.9
+// v.0.1.10
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -42,7 +42,8 @@ if (typeof TouchEvent == "undefined")
   "#commandsTab button:hover, #commandsTab button:focus" +
   "{border: 2px solid #777;}" +
   "#commandsTab button:active{background-color: #333;color: #bbb;}" +
-  "#commandsTab header div{flex-grow: 1;}" +
+  "#commandsTab header div{flex-grow: 1;cursor: pointer;}" +
+  "#commandsTab header div:active{cursor: grab;}" +
   "#commandsTab .content button, #commandsTab .items button" +
   "{display: block;width: 333px;}" +
   "#commandsTab button div" +
@@ -50,6 +51,25 @@ if (typeof TouchEvent == "undefined")
   "#commandsTab .items, #commandsTab .content" +
   "{overflow-x: hidden;max-height: 470px;}"
 );
+
+(function (reg) {
+  var expr = (reg.exec("" + location) || [])[1] || "";
+  switch (expr.toLocaleLowerCase()) {
+    case "?funneh":
+    case "?help":
+    case "?instructions":
+    case "?idk":
+      console.log("detected");
+      /** @type {ChildNode|null} */
+      var el = GE("auth"), parent = (el && el.parentNode) || EL();
+      for (var text; el && (text = el).nodeName !== "H2";) {
+        el = el.previousSibling;
+        text && parent.removeChild(text);
+      }
+      parent.appendChild(EL("img")).src =
+        "./assets/just_use_common_sense.png";
+  }
+})(/\/\.d1r\.dbv\/editor\.html(?:#[^?]*)?($|\?[^=]*)/);
 
 var imgOverlay = document.body.appendChild(document.createElement("img"));
 imgOverlay.style.display = "none";
@@ -485,8 +505,7 @@ BIAAEAACQAAIAIHcCNQmvkKHoOfuN/TbIMCt5zkrudf7nP25Xwf+845gavxSe281/mr3IxUHtK+D\
 QO5PftbpFazOBQFHgKz4H+btlQffagEwVxhLEwLcgMsdj9L9nWtewG8gAASAABAAAkBguQiAAFlu\
 bEv0jFvPcz7kXu9z9ud+HfjPO4Kp8UvtvdX4q92PVBzQvg4CIEDq4A6rHQIgQJAJq0Xg/wEI4FPJ\
 IFRhWQAAAABJRU5ErkJggg==";
-var imgMask = document.body.appendChild(document.createElement("img"));
-imgMask.style.display = "none";
+var imgMask = document.createElement("img");
 imgMask.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABkAAAACACAYAAAB\
 TNKUpAAAAAXNSR0IArs4c6QAAIABJREFUeF7tnVliJTeOaLN39pbeO8t+LjnKqfANASBGBk/9uYL\
 EcACCAyTl//zifxCAAAQgAAEIQAACEIAABCAAAQhAAAIQgAAEsgn8v1+/s1Ug/wOB//31P//5f6v\
@@ -754,8 +773,7 @@ f+sn/36XhYP33NoBKg/1BGfH/in913aEB8kVg9/yLfjiozsNp/LvrYTd//O8mgH4I1BOorjv1HqJ\
 xMoHoc8xkX7ENAjcCPAKSEhCAAAQgAAEIQAACZxHofoDgAnpWvuEtBCAAAQhA4C8C3ecPonA2Ac6\
 fZ8f/cO9pgByeALgPAQhAAAIQgAAEjiPQ/QDBBfS4lMNhCEAAAhCAAA0QcqCVAOfPVvwo7yXwf/x\
 JZcuTrC47AAAAAElFTkSuQmCC";
-var imgColor = document.body.appendChild(document.createElement("img"));
-imgColor.style.display = "none";
+var imgColor = document.createElement("img");
 imgColor.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAKgCAYAAA\
 D6VX8FAAAAAXNSR0IArs4c6QAABxtJREFUeF7t3b1vHEUYx/HdJLxE9gFCionPMTHYASFRWCRYgI\
 KUhgbRYFE6tNACDYE6QIEjKnonhBL+ABDQ8C5MYxCKTShIDEoKikPiRcSLMjuzzs169tnL3c6zkK\
@@ -790,8 +808,7 @@ M8snohnxOE+2X25TFVD9D7vdf/dlzzqxj3+tv76glT487CB+a4+71DeVtYXLdWO08uhYB6APf7ga\
 +n95vjbHqz7QVSR7aX/2cCnLd7QrN2T+jH7G9Thb3P/mKO/lxQr/5JEpwL/BtEDxCazVbtjuhtCx\
 +ajGN2VeyviBqbDRsP4NaEaguS1gRwjfDGWxXX7b/nFvMVkXs3PHDKrgn31XwzCu0VjyzAtbPwTp\
 lKAeqWbD/XzMvpACFGFeBf6BBI21iAxUwAAAAASUVORK5CYII=";
-var imgBackg = document.body.appendChild(document.createElement("img"));
-imgBackg.style.display = "none";
+var imgBackg = document.createElement("img");
 imgBackg.src = "./assets/_dbc_background.png";
 var helpCanvas = document.createElement("canvas"),
   rc = function (rc) {
@@ -831,7 +848,7 @@ canvas.style.backgroundColor = document.body.style.backgroundColor =
   settings.editorBackground ? "#132122" : settings.editorBackgroundColor;
 
 function dbv_findPos() {
-  var posArr = renderedShip.blocks.map(function (e) {
+  var posArr = ship.blocks.map(function (e) {
     return e.position;
   });
 }
@@ -852,6 +869,22 @@ function blockBind(s, b) {
 }
 blockBind.changingColor = !1;
 
+/** @param {string} tag @returns {[HTMLButtonElement,HTMLDivElement]} */
+function utilities(tag) {
+  var el = EL(), btn = EL("button");
+  el.style.display = "none";
+  btn.appendChild(document.createTextNode(tag));
+  btn.style.color = "#569cd6";
+  var br = btn.appendChild(EL("br")),
+    text = btn.appendChild(document.createTextNode("v"));
+  btn.onclick = function () {
+    var isHide = !el.style.display;
+    el.style.display = isHide ? "none" : "" ;
+    br.style.display = isHide ? "" : "none";
+    text.data = isHide ? "v" : " <";
+  };
+  return [btn, el];
+}
 /**
  * @typedef {{name:string,type:string,fn:(ev:Event)=>any}} CommandItem
  * @param {string} name 
@@ -896,24 +929,10 @@ Command.add = function add(name, items, desc) {
  * @param {string} name @param {string} description
  * @param {CmdInit} initialize */
 Command.push = function (name, initialize, description) {
-  /** @type {(Node|{name:string,inp:HTMLInputElement})[]} */
-  var items = [];
-  initialize(items, function (tag) {
-    var el = EL(), btn = EL("button");
-    el.style.display = "none";
-    btn.appendChild(document.createTextNode(tag));
-    btn.style.color = "#569cd6";
-    var br = btn.appendChild(EL("br")),
-      text = btn.appendChild(document.createTextNode("v"));
-    btn.onclick = function () {
-      var isHide = !el.style.display;
-      el.style.display = isHide ? "none" : "" ;
-      br.style.display = isHide ? "" : "none";
-      text.data = isHide ? "v" : " <";
-    };
-    return [btn, el];
-  });
   return this.list.push(new Command(name, description, function (el) {
+    /** @type {(Node|{name:string,inp:HTMLInputElement})[]} */
+    var items = [];
+    initialize(items, utilities); 
     for (var i = 0, itm; i < items.length; i++)
       if ((itm = items[i]) instanceof Node)
         el.appendChild(itm);
@@ -972,7 +991,6 @@ Command.push("Select block", function (items, collapsed) {
       "Logic": collapsed("Logic"),
       "Station parts": collapsed("Station parts")
     }, btn = EL("button");
-    // collapsed("Core and Basic")
   btn.appendChild(document.createTextNode("remove block"));
   btn.onclick = blockBind("remove", !1);
   items.push(btn);
@@ -1018,7 +1036,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
     error.innerText = "";
     try {
       inp.id = "saveFile";
-      inp.value = JSON.stringify(Ship.toDBV(renderedShip));
+      inp.value = JSON.stringify(Ship.toDBV(ship));
       render();
     } catch (err) {
       error.innerText = err;
@@ -1030,7 +1048,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
   (elBtn = EL("button")).onclick = function () {
     error.innerText = "";
     try {
-      renderedShip = Ship.fromObject(JSON.parse(inp.value));
+      ship = Ship.fromObject(JSON.parse(inp.value));
       render();
     } catch (err) {
       error.innerText = err;
@@ -1043,9 +1061,9 @@ Command.push("Import/Export DBV", function (items, collapsed) {
   items.push(error);
 }, "Export and Import are functions using displayed vehicle as target.\nExpo\
 rting creates JSON key of ship and puts it in text input, the key doesn't in\
-clude non existent or blocks inavalable in game.\nImportingdisplays vehicle \
-of JSON key from text input.\nJSON key is the content of .dbv savefile. It c\
-ontains textual data and can be opened using text editor.");
+clude non existent or blocks inavalable in game.\nImporting displays vehicle\
+ of JSON key from text input.\nJSON key is the content of .dbv savefile. It \
+contains textual data and can be opened using text editor.");
 Command.push("Set camera view", function (items, collapsed) {
   var viewX = EL("input"), viewY = EL("input"), zoom = EL("input");
   var elBtn = EL("button");
@@ -1099,9 +1117,27 @@ Command.push("Change editor background", function (items, collapsed) {
   };
   items.push({name: "Image pattern", inp: backgImg},
     {name: "Background color", inp: backgClr});
-}, "When \"Image pattern\" chexbox is checked, Droneboi: Conquest background\
- is used. Else color from \"Background color\" input is used. If it is in he\
-xadecimal format #111133 for example, the setting will update.");
+}, "When \"Image pattern\" checkbox is checked, Droneboi: Conquest backgroun\
+d is used. Else color from \"Background color\" input is used. If it is in h\
+exadecimal format #111133 for example, the setting will update.");
+Command.push("About Commands tab", function (items) {}, "OPENING AND MOVIGN \
+AROUND\nCommands tab is opened or moved by activating contextmenu, the optio\
+ns usually from right click or long press on touch screen, not on already op\
+ened Commands tab. The Commands tab them opens and/or moves centered to wher\
+e contextmenu was activated, but it will align with top, right or left edge \
+of the page if it was going to 'display partialy behind them'. This is to cr\
+eate 'grabable' surface for touch screens at any time any time.\nTo move the\
+ Commands tab around you can grab it 'with' top part, where changes to point\
+er hand, you can move it slightly behind edges on right and left side.\nCONT\
+EXTMENU NOTES\nSome browsers have option to save or copy image in the canvas\
+, it can be used to make precise image of your vehicle in high quality. When\
+ the Commands tab is right clicked the tab dissapears and activated contextm\
+enu is able to capture to visual.\n\nMENU\nIn menu there is list of Commands\
+, click one of the buttons to open coresponding Command, optionaly sorted in\
+ collapsed groups. X sign in top right corner closes the Commands tab.\n\nCO\
+MMAND\nWhen Command is opened its name displays in 'top part', there's also \
+< sign to return back to menu, X sign won't do that. Each command has some i\
+nputs/buttons, their purpouse is explained in description.");
 
 var cmdsHeader = EL(), cmds = (function () {
   /** for #commandsTab styles @see {addingStyles} */
@@ -1119,7 +1155,7 @@ var cmdsHeader = EL(), cmds = (function () {
     content.style.display = cmdsHeader.innerText = "";
     items.style.display = "none";
     back.visibility = "hidden";
-  }
+  };
   e0.appendChild(cmdsHeader);
   e1 = e0.appendChild(EL("button"));
   e1.appendChild(document.createTextNode("X"));
@@ -1146,7 +1182,6 @@ var cmdsHeader = EL(), cmds = (function () {
       for (; items.firstChild;)
         items.removeChild(items.firstChild);
       var arr = item.items;
-
       if (typeof arr == "function")
         return arr(items), ending();
       for (var i = 0; i < arr.length; i++) {
@@ -1173,7 +1208,7 @@ var cmdsHeader = EL(), cmds = (function () {
   return (bd || EL()).appendChild(nav);
 })();
 
-/** renderedShip moved to @see {renderedShip} */
+/** renderedShip moved to @see {ship} */
 
 function render_backgPattern() {
   try {
@@ -1204,6 +1239,25 @@ function render_initColors() {
   }
   return patterns;
 }
+function render_checkColors() {
+  rc.fillStyle = render_colors[0];
+  rc.fillRect(0, 0, 32, 32);
+  var dat = rc.getImageData(0, 0, 32, 32).data;
+  rc.fillStyle = render_colors[1];
+  rc.fillRect(0, 0, 32, 32);
+  var cpr = rc.getImageData(0, 0, 32, 32).data;
+  for (var i = dat.length, b = !0, itv = 0; i-- > 0;)
+    b = b && dat[i] === cpr[i];
+  b && (itv = setInterval(function () {
+    helpCanvas.width = helpCanvas.height = 32;
+    rc.drawImage(imgColor, 0, i * -32);
+    render_colors[i] = rc.createPattern(helpCanvas, "repeat") || "";
+    if (++i >= render_colors.length) {
+      clearInterval(itv)
+      render();
+    }
+  }, i = 0));
+};
 var render_colors = render_initColors();
 
 /** @type {Block[]} */
@@ -1212,7 +1266,7 @@ press = function press(x, y) {
   x = Math.floor((x - vX - 1) / 2 / sc);
   y = Math.floor((y - vY - 1) / 2 / sc);
   var found = [];
-  for (var i = 0, arr = renderedShip.blocks; i < arr.length; i++)
+  for (var i = 0, arr = ship.blocks; i < arr.length; i++)
     if (Math.floor(arr[i].position[0] / 2) === y &&
       Math.floor(arr[i].position[2] / 2) === -x)
         found.push(i);
@@ -1225,31 +1279,46 @@ press = function press(x, y) {
       //@ts-ignore
       arr[i].properties.color = placingBlock();
     else {
-      if ([693, 694, 698, 699].indexOf(Block.ID[arr[i].internalName]))
-        ""; 
+      [
+        "Wedge",
+        "Wedge 1x2",
+        "Wedge 1x4",
+        "Smooth Corner",
+        "Smooth Corner 1x2",
+        "Smooth Corner 1x4"
+      ].indexOf(arr[i].internalName) < 0 ||
+        e.rotation[2] === 3 && (e.rotation[1] = !e.rotation[1]);
       //@ts-ignore
       e.rotation[2] = e.rotation[2] + 1 & 3;
     }
     return e;
   })
+  // placingBlock function executed sets blockBind.changingColor
+  var rand = placingBlock();
   if (found.length || blockBind.changingColor) {
     foundBlocks = found;
     return render();
   }
-  var rand = placingBlock();
   rand !== "remove" &&
-    arr.push(new Block(rand, [y * 2, 0, -x * 2], [0, !0, 0],
+    arr.push(new Block(rand, [y * 2, 0, -x * 2], [0, !1, 0],
       {color: Color.default(rand)}));
   render();
 };
 /** @type {(x:number,y:number,e:MouseEvent)=>void} */
 function commands(x, y, e) {
   var w = innerWidth - 175, st = cmds.style;
-  // quircky workaround to copying image with
-  (st.display = e.target === GE("commandsTab") ? "none" : "") ||
-    e.cancelable && e.preventDefault();
   st.left = (x > 178 ? x < w ? x - 175 : w - 180 : 5) + "px";
   st.top = (y > 255 ? y - 250 : 5) + "px";
+  st.display = "";
+  // quircky workaround to copying image with contextmenu
+  for (var el = e.target, dest = GE("commandsTab"); el instanceof Node;)
+    if (el === dest)
+      break;
+    else if (!(el = el.parentNode)) {
+      e.button !== -1 && e.cancelable && e.preventDefault();
+      return;
+    }
+  st.display = "none";
 }
 contextmenu = function (x, y, e) {
   var el = GE("info");
@@ -1296,30 +1365,37 @@ render = function requestRendering() {
   canvas.width = canvas.width;
   render_background();
   ctx.imageSmoothingEnabled = false;
-  var objs = renderedShip.blocks;
+  var objs = ship.blocks;
   for (var i = 0, id = 0, pos = [0, 0, 0]; i < objs.length; i++) {
     /** @see {Block} @see {Block.Size.VALUE} */
     var size = Block.Size.VALUE[Block.ID[objs[i].internalName]];
-    size || console.log(objs[i]);
+    if (!size)
+      return console.error(objs[i]);
     pos = objs[i].position;
     var rot = 10 - objs[i].rotation[2] & 3;
     var w = size.w, h = size.h, sw = 0, sh = 0;
     var dx = -pos[2] * sc + vX, dy = pos[0] * sc + vY;
-    dy -= rot === 3 ? (w - 32) * sc / 16 : rot === 0 ? (h - 32) * sc / 16 : 0;
-    dx -= rot === 2 ? (w - 32) * sc / 16 : rot === 3 ? (h - 32) * sc / 16 : 0;
+    dy -= rot === (objs[i].rotation[1] ? 1 : 3) ?
+      (w - 32) * sc / 16 :
+      rot === 0 ? (h - 32) * sc / 16 : 0;
+    dx -= rot === (objs[i].rotation[1] ? 0 : 2) ?
+      (w - 32) * sc / 16 :
+      rot === 3 ? (h - 32) * sc / 16 : 0;
     helpCanvas.width = sw = rot & 1 ? h : w;
     helpCanvas.height = sh = rot & 1 ? w : h;
     rc.fillStyle = render_colors[Color.ID[objs[i].properties.color]];
     rc.fillRect(0, 0, sw, sh);
+    if (objs[i].rotation[1]) {
+      rc.scale(1 - (~rot << 1 & 2), 1 - (rot << 1 & 2));
+      rc.translate(~rot & 1 ? -w : 0, rot & 1 ? -w : 0);
+    }
     rc.rotate(rot * Math.PI / 2);
     rc.translate(rot > 1 ? -w : 0, rot && rot < 3 ? -h : 0);
     rc.globalCompositeOperation = "destination-in";
     rc.drawImage(imgMask, size.x, size.y, w, h, 0, 0, w, h);
     rc.globalCompositeOperation = "source-over";
     rc.drawImage(imgOverlay, size.x, size.y, w, h, 0, 0, w, h);
-    sw *= sc / 16;
-    sh *= sc / 16;
-    ctx.drawImage(helpCanvas, dx, dy, sw, sh);
+    ctx.drawImage(helpCanvas, dx, dy, sw * sc / 16, sh * sc / 16);
     // await new Promise(function (res) {
     //   var tfn = expensiveRenderer;//@ts-ignore
     //   clearTimeout(tfn.tOut);tfn.tOut = setTimeout(res, 100);
@@ -1328,5 +1404,5 @@ render = function requestRendering() {
 }
 
 init = function () {
-   render_colors = render_initColors();
+  render_checkColors();
 };

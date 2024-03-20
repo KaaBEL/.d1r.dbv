@@ -154,9 +154,9 @@ Block.NAME = {
   794: "Ghost Block",
   795: "Dock",
   // Red Magnet
-  780: "__placeholder798__",
+  798: "__placeholder798__",
   // Inversed Dock
-  781: "__placeholder799__",
+  799: "__placeholder799__",
   802: "Constant On Signal",
   803: "Control Block",
   804: "AND Gate",
@@ -277,8 +277,6 @@ Block.ID = {
   "Pulse Laser": 774,
   "Beam Laser": 775,
   "__placeholder776__": 776,
-  "__placeholder798__": 780,
-  "__placeholder799__": 781,
   "Weight Block": 786,
   "Armor Block": 787,
   "Solar Block": 788,
@@ -289,6 +287,8 @@ Block.ID = {
   "Camera Block": 793,
   "Ghost Block": 794,
   "Dock": 795,
+  "__placeholder798__": 798,
+  "__placeholder799__": 799,
   "Constant On Signal": 802,
   "Control Block": 803,
   "AND Gate": 804,
@@ -386,7 +386,7 @@ Block.generateArray = function generateArray(n) {
       [SH + "Thruster", SH + "Tank", "Small Battery", "Wedge"] :
       ["", "Block", "Core", "Reaction Wheel"])[i / 3 | 0],
       [(i / 3 | 0) * 2 - 4, 0, i * 2 % 6 - 2],
-      [0, !0, i === 9 ? 1 : 0],
+      [0, !1, i === 9 ? 1 : 0],
       {color: i > 5 ?
         i & 1 ? "White" : "Light Gray" :
         i % 3 !== 1 ? i < 3 ? "Yellow" : "Fuel" : "White"}));
@@ -442,8 +442,20 @@ Block.Size.genterateSizes = function () {
     console.log(JSON.stringify(nw).replace(/,/g, ", "));
   return r;
 };
-// not all blocks were tested properly
-Block.Size.VALUE = Block.Size.genterateSizes([[0], [1], [2], [7, 1, 2], [8, 1, 4], [50], [51, 1, 1], [52], [107, 1, 2], [9, 1, 4], [53], [54], [55], [56, 1, 1], [3], [100, 2, 2], [10, 3, 4], [102, 1, 1], [152], [103, 1, 2], [13, 2, 3], [4], [5], [104, 2, 2], [15, 3, 3], [6], [18, 2, 2], [20, 2, 3], [163], [118, 2, 2], [31, 3, 3], [167], [106], [156], [164], [165], [166], [182], [170], [171], [22], [23, 1, 2], [72], [122], [181], [123], [172], [173], [130], [180], [24], [74], [124], [174], [25], [75], [125], [175], [26], [76], [126], [176], [27], [77], [127], [177], [28], [78], [128], [178], [29], [79], [129], [179], [30], [80], [40], [41], [42], [43], [44], [45], [144, 2, 2], [134, 1, 2], [135, 1, 2], [136, 1, 2], [189], [140, 2, 2], [142, 2, 2], [84], [85], [86], [34, 4, 1], [90, 2, 1], [38, 2, 3], [87]]);
+// blocks were still not tested properly all at once
+Block.Size.VALUE = Block.Size.genterateSizes([[0], [1], [2], [7, 1, 2]],
+  [[8, 1, 4], [50], [51, 1, 1], [52], [107, 1, 2], [9, 1, 4], [53], [54]],
+  [[55], [56, 1, 1], [3], [100, 2, 2], [10, 3, 4], [102, 1, 1], [152]],
+  [[103, 1, 2], [13, 2, 3], [4], [5], [104, 2, 2], [15, 3, 3], [6]],
+  [[18, 2, 2], [20, 2, 3], [163], [118, 2, 2], [31, 3, 3], [167], [106]],
+  [[156], [164], [165], [166], [182], [170], [171], [22], [23, 1, 2]],
+  [[72], [122], [181], [123], [172], [173], [130], [180], [24], [74]],
+  [[124], [174], [25], [75], [125], [175], [26], [76], [126], [176]],
+  [[27], [77], [127], [177], [28], [78], [128], [178], [29], [79], [129]],
+  [[179], [30], [80], [40], [41], [42], [43], [44], [45], [144, 2, 2]],
+  [[134, 1, 2], [135, 1, 2], [136, 1, 2], [189], [140, 2, 2]],
+  [[142, 2, 2], [84], [85], [86], [34, 4, 1], [90, 2, 1], [38, 2, 3]],
+  [[87]]);
 
 /**
  * @param {string} name
@@ -574,8 +586,10 @@ dictionaryDefs(Color.NAME, Color.ID, "Color definitions");
 Color.default = function getColor(name) {
   if (/Hydrogen Thruster/.test(name))
     return "Yellow";
-  if (/Wheel|Battery|Weight|Armor|__placeholder84[456]__/.test(name))
+  if (/Wheel|Battery|__placeholder84[456]__/.test(name))
     return "Light Gray";
+  if (/Weight|Armou?r/.test(name))
+    return "Dark Gray";
   if (/Hydrogen Tank/.test(name))
     return "Fuel";
   if (/Drill|Storage Rack/.test(name))
@@ -587,7 +601,7 @@ Color.default = function getColor(name) {
   return "White";
 };
 
-var renderedShip = Ship.fromObject({name: "Starter Droneboi"});
+var ship = Ship.fromObject({name: "Starter Droneboi"});
 // var block = new Block("Block", [0, 0, 0], [0, !0, 0]),
 //   ship = new Ship("None", [0, 9], "never", [block]);
 
