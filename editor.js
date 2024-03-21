@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.10
+// v.0.1.11
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -1064,6 +1064,44 @@ rting creates JSON key of ship and puts it in text input, the key doesn't in\
 clude non existent or blocks inavalable in game.\nImporting displays vehicle\
  of JSON key from text input.\nJSON key is the content of .dbv savefile. It \
 contains textual data and can be opened using text editor.");
+Command.push("base64 key !!Experimental!!", function (items, collapsed) {
+  var inp = EL("input"), elBtn = EL("button"), error = EL();
+  items.push({name: "base64 key", inp: inp});
+  elBtn.onclick = function () {
+    error.innerText = "";
+    try {
+      inp.value = uint8arrayToBase64(encodeCmprsShip(ship));
+      render();
+    } catch (err) {
+      error.innerText = err;
+      console.error(err);
+    }
+  };
+  elBtn.appendChild(document.createTextNode("Export"));
+  items.push(elBtn);
+  (elBtn = EL("button")).onclick = function () {
+    error.innerText = "";
+    try {
+      ship = Ship.fromObject(decodeCmprsShip(base64ToUint8array(inp.value)));
+      render();
+    } catch (err) {
+      error.innerText = err;
+      console.error(err);
+    }
+  };
+  elBtn.appendChild(document.createTextNode("Import"));
+  items.push(elBtn);
+  error.style.color = "red";
+  items.push(error);
+}, "Works the same way as Import/Export DBV, the key goes into/appears in te\
+xt input named base64 key. Export/Import is related to displayed ship: Expor\
+ing puts base64 key of displayed ship into input, Import uses base64 key fro\
+m input to replace displayed ship with one from key. It can also store unimp\
+lemented blocks like TNT, station blocks and more. Be aware that the key lim\
+its vehicle in and will refuse to compress too big vehicle. There are also b\
+ugs like the top rightmost block is colored black and for some reason when t\
+here is more smaller blocks in one full block place, other blocks get remove\
+d.");
 Command.push("Set camera view", function (items, collapsed) {
   var viewX = EL("input"), viewY = EL("input"), zoom = EL("input");
   var elBtn = EL("button");
