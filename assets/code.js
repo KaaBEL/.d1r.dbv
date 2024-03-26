@@ -71,25 +71,28 @@ function dictionaryDefs(dicNum, dicVal, AT) {
 /**
  * @typedef {[number,number,number]} XYZPosition
  * @typedef {[0|1|2,boolean,0|1|2|3]} Rotation
- * @typedef {keyof typeof Color.ID | ""} Colors
+ * @typedef {keyof typeof Color.ID|""|null} Colors
  * @param {string} name
- * @param {XYZPosition} pos [y: p[1] * 2, /: 0, x: p[0] * 2]
- * @param {Rotation} rot [/: 0, /: !0, r: Math.floor(r / 90)]
+ * @param {XYZPosition} pos [/: 0, x: p[0] * 2, y: p[1] * 2]
+ * @param {Rotation} rot [/: 0, f: f, r: Math.floor(r / 90)]
  * @param {{[key: string]: any}|0} [prop={color:""}]
- * @param {keyof typeof Color.ID} [color=""] */
+ * @param {keyof typeof Color.ID|null} [color=""] */
 function Block(name, pos, rot, prop, color) {
   this.internalName = name;
-  /**  [x, not-used, y]*/
+  /**  [not-used, x, y]*/
   this.position = pos;
-  /** [not-used, not-used, cunterclockwise] */
+  /** [not-used, flipped, cunterclockwise] */
   this.rotation = rot;
   prop = prop || {};
-  prop.color = prop.color || color || "";
+  prop.color = color !== UDF ?
+    prop.color = color :
+    prop.color === null || prop.color ? prop.color : "";
   /** @type {{[key: string]: any, color: Colors}} */
   //@ts-ignore
   this.properties = prop;
   Object.seal(this);
 }
+/** object is frost */
 Block.NAME = {
   0: "block",
   1: "wedge",
@@ -225,6 +228,7 @@ Block.NAME = {
   853: "__placeholder853__",
   length: 854
 };
+/** object is frost */
 Block.ID = {
   "block": 0,
   "wedge": 1,
@@ -347,7 +351,7 @@ Block.arrayFromObjects = function arrayFromObjects(blocks) {
       name: block.internalName || block.name || block.n,
       pos: block.position || block.pos || block.p,
       rot: block.rotation || block.rot || block.r,
-      prop: block.properties || block.prop || {color: "White"},
+      prop: block.properties || block.prop || {color: ""},
       flip: block.f || block.flipped
     };
     o.prop.color = block.color || block.s || o.prop.color || "";
@@ -357,8 +361,8 @@ Block.arrayFromObjects = function arrayFromObjects(blocks) {
     o.prop.control = block.c || o.prop.control;
     o.prop.nodeIndex = block.ni || o.prop.nodeIndex;
     var name = typeof o.name == "string" ? o.name : "__unknown__",
-      pos = (o.pos instanceof Array ?
-        o.pos.length === 2 ? [o.pos[1] * 2, 0, o.pos[0] *  2] : o.pos :
+      pos = (o.pos instanceof Array && o.pos.length !== 2 ?
+        o.pos :
         []).map(function (e) {
           return Number(e) || 0;
         }).concat([0, 0, 0]),
@@ -370,7 +374,23 @@ Block.arrayFromObjects = function arrayFromObjects(blocks) {
         typeof o.rot[1] == "boolean" ? o.rot[1] : !1,
         typeof o.rot[2] == "number" ? o.rot[2] & 3 : 0] :
         [0, flip, typeof o.rot == "number" && o.rot / 90 || 0 & 3];
-    Block.ID[name] || (o.prop.invalidName = name);
+    if (!Block.ID[name]) {
+      o.prop.invalidName = name;
+      name = "__unknown__";
+    }
+    if (o.pos.length === 2) {
+      if (typeof o.prop.color != "string")
+       o.prop.color = Color.default(name);
+      if (typeof o.rot != "number")
+        console.warn("incorrect array position length or wrong rota" +
+          "tion? at: Block.arrayFromObjects, blocks: ", bs, " i: ", i);
+      var adjX = 0, adjY = 0, size = Block.Size.VALUE[Block.ID[name]];
+      if (size && ((size.w | size.h) & 16)) {
+        rot[2] > 1 ? adjY = 1 : 0;
+        (rot[2] + 1 & 3) > 1 ? adjX = 1 : 0;
+      }
+      pos = [0, o.pos[0] * 2 + adjX, o.pos[1] * 2 + adjY];
+    }
     r[i] = new Block(name, [pos[0], pos[1], pos[2]], rot, o.prop);
   }
   return r;
@@ -385,7 +405,7 @@ Block.generateArray = function generateArray(n) {
     blocks.push(new Block((i % 3 !== 1 ?
       [SH + "Thruster", SH + "Tank", "Small Battery", "Wedge"] :
       ["", "Block", "Core", "Reaction Wheel"])[i / 3 | 0],
-      [(i / 3 | 0) * 2 - 4, 0, i * 2 % 6 - 2],
+      [i * 2 % 6 - 2, 0, (i / 3 | 0) * 2 - 4],
       [0, !1, i === 9 ? 1 : 0],
       {color: i > 5 ?
         i & 1 ? "White" : "Light Gray" :
@@ -396,7 +416,7 @@ Block.generateArray = function generateArray(n) {
   //   new Block(SH + "Thruster", [4, 0, -4], [0, !0, 1]));
   return blocks;
 };
-/**
+/** object is frost
  * @typedef {{x: number, y: number, w: number, h: number}}
  * @param {number} x @param {number} y
  * @param {number} w @param {number} h */
@@ -405,11 +425,13 @@ Block.Size = function Size(x, y, w, h) {
   this.y = y;
   this.w = w;
   this.h = h;
+  Object.freeze(this);
 };
 Block.Size.width = 50;
 Block.Size.height = 4;
 /**
- * @typedef {[number]|[number,number,number]} SizeDef
+ * @typedef {[number,number,number,number,number]} PreciseDef
+ * @typedef {[number]|[number,number,number]|PreciseDef} SizeDef
  * @typedef {SizeDef|SizeDef[]} SizesArg
  * @type {(...arg: SizesArg[]) => {[key: number]: Block.Size}} */
 Block.Size.genterateSizes = function () {
@@ -418,7 +440,8 @@ Block.Size.genterateSizes = function () {
     a = arguments;
   for (var i = 0, j = 0, l = 690, nw = 0; l < Block.NAME.length; l++)
     if (Block.NAME[l]) {
-      /** @type {[number]|[number,number,number]} *///@ts-ignore
+      /** @type {[number]|[number,number,number]|PreciseDef} */
+      //@ts-ignore
       var v = a[i];
       //@ts-ignore
       v instanceof Array && v[j] instanceof Array ? v = v[j++] : j = 3;
@@ -427,10 +450,15 @@ Block.Size.genterateSizes = function () {
         var vup = v[0] / this.width << 0;
         console.log(Block.NAME[l], v[0] % this.width, vup, v);
         // Block.Size must be change as well for resing to work
-        v[0] += vup * 19;
+        v[0] += vup * 0;
         //@ts-ignore
         nw.push(v);
       }
+      // if (v[2] && v[1] && v[2] < 1) {
+      //   this.TINY[l] = new this(v[3] || 0, v[4] || 1 - v[2], v[1], v[2]);
+      //   v[2] = 1;
+      //   v[1] < 1 ? v[1] = 1 : 0;
+      // }
       r[l] = new this(x, y, (v[1] || 1) * 32, (v[2] || 1) * 32);
       if (j >= a[i].length)
         if (++i < a.length)
@@ -442,20 +470,24 @@ Block.Size.genterateSizes = function () {
     console.log(JSON.stringify(nw).replace(/,/g, ", "));
   return r;
 };
+// /** @type {{[key: number]: Block.Size}} */
+// Block.Size.TINY = {};
 // blocks were still not tested properly all at once
 Block.Size.VALUE = Block.Size.genterateSizes([[0], [1], [2], [7, 1, 2]],
   [[8, 1, 4], [50], [51, 1, 1], [52], [107, 1, 2], [9, 1, 4], [53], [54]],
-  [[55], [56, 1, 1], [3], [100, 2, 2], [10, 3, 4], [102, 1, 1], [152]],
-  [[103, 1, 2], [13, 2, 3], [4], [5], [104, 2, 2], [15, 3, 3], [6]],
-  [[18, 2, 2], [20, 2, 3], [163], [118, 2, 2], [31, 3, 3], [167], [106]],
-  [[156], [164], [165], [166], [182], [170], [171], [22], [23, 1, 2]],
-  [[72], [122], [181], [123], [172], [173], [130], [180], [24], [74]],
-  [[124], [174], [25], [75], [125], [175], [26], [76], [126], [176]],
-  [[27], [77], [127], [177], [28], [78], [128], [178], [29], [79], [129]],
-  [[179], [30], [80], [40], [41], [42], [43], [44], [45], [144, 2, 2]],
-  [[134, 1, 2], [135, 1, 2], [136, 1, 2], [189], [140, 2, 2]],
-  [[142, 2, 2], [84], [85], [86], [34, 4, 1], [90, 2, 1], [38, 2, 3]],
-  [[87]]);
+  [[55], [56, .5, .5], [3], [100, 2, 2], [10, 3, 4], [102, .5, .5]],
+  [[152], [103, 1, 2], [13, 2, 3], [4], [5], [104, 2, 2], [15, 3, 3]],
+  [[6], [18, 2, 2], [20, 2, 3], [163], [118, 2, 2], [31, 3, 3], [167]],
+  [[106], [156], [164], [165], [166], [182], [170], [171], [22]],
+  [[23, 1, 2], [72], [122], [181], [123], [172], [173, 1, .5]],
+  [[130, 1, .5], [180, 1, .5], [24, .5, .5], [74], [124], [174], [25]],
+  [[75], [125], [175], [26, 1, .5], [76, .5, .5], [126, 1, .5]],
+  [[176, .5, .5], [27], [77], [127], [177], [28, 1, .5], [78, 1, .5]],
+  [[128, 1, .5], [178, 1, .5], [29], [79], [129], [179, .5, 1]],
+  [[30, .5, .5], [80, 1, .5], [40], [41], [42], [43], [44], [45]],
+  [[144, 2, 2], [134, 1, 2], [135, 1, 2], [136, 1, 2], [189]],
+  [[140, 2, 2], [142, 2, 2], [84], [85], [86], [34, 4, 1], [90, 2, 1]],
+  [[38, 2, 3], [87]]);
 
 /**
  * @param {string} name
@@ -506,12 +538,18 @@ Ship.fromObject = function fromObject(object) {
 /** @param {Ship} ship */
 Ship.toDBV = function toDBV(ship) {
   var blocks = [];
-  for (var i = 0, e = blocks[0]; i < ship.blocks.length; i++) {
+  for (var i = 0, e = ship.blocks[0]; i < ship.blocks.length; i++) {
     e = ship.blocks[i];
+    var rot = e.rotation[2], adjX = 0, adjY = 0;
+    var size = Block.Size.VALUE[Block.ID[e.internalName]];
+    if (size && ((size.w | size.h) & 16)) {
+      rot > 1 ? adjY = .5 : 0;
+      (rot + 1 & 3) > 1 ? adjX = .5 : 0;
+    }
     /__placeholder\d+__/.test(e.internalName) || blocks.push({
       n: e.internalName,
-      p: [Math.floor(e.position[2]) / 2,
-        Math.floor(e.position[0]) / 2],
+      p: [Math.floor(e.position[1]) / 2 - adjX,
+        Math.floor(e.position[2]) / 2 - adjY],
       r: Math.floor(e.rotation[2] * 90),
       f: e.rotation[1],
       s: e.properties.color,
@@ -598,6 +636,9 @@ Color.default = function getColor(name) {
     return "Lime"
   if (/__placeholder776__/.test(name))
     return "Red";
+  // TODO: list all other colorless blocks
+  if (/Hinge|Digital Display/.test(name))
+    return null;
   return "White";
 };
 
@@ -1188,7 +1229,7 @@ function decodeCmprsShip(cmprsShip) {
     min[n] -= (1 << l - 1) - 1;
     max[n] -= (1 << l - 1) - 1;
   }
-  /** @param {boolean} [b=!0] */
+  /** @param {boolean} [b=!0] first block */
   function fixedBlock(b) {
     if (typeof b === "undefined")
       b = !0;
@@ -1207,7 +1248,7 @@ function decodeCmprsShip(cmprsShip) {
     obj.properties = {};
     // has properties
     if (gBit() && b)
-      properties.push(obj.properties);
+      properties.push(0);
     if (b) {
       prev = arr;
       rot[id] = num;
@@ -1338,7 +1379,7 @@ function decodeCmprsShip(cmprsShip) {
     }
     s = arr[1];
     arr = arr[0];
-    for (i = l - 1 << 1; --l > 0; i -= 2) {
+    for (i = l - 1 << 1; l-- > 0; i -= 2) {
       obj = JSON.parse(s.slice(arr[i], arr[i] + arr[i | 1]));
       b[properties[l]].properties = obj;
     }

@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.11
+// v.0.1.12
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -1011,9 +1011,11 @@ Command.push("Select block", function (items, collapsed) {
  pushCollapsed(groups.Storage, groups["Drills and Weapons"]);
  pushCollapsed(groups.Misc, groups.Logic, groups["Station parts"]);
 }, "Select block from list of blocks, clicking into space will place that, c\
-licking on existing block rotates it. First item \"remove\" removes existing\
- block.\nCredits to KKJKJH specialy for station blocks sources and Beau for \
-source textures of most blocks.");
+licking on existing block rotates it. BE AWARE OF ALL BLOCKS BEING FILPPED E\
+VERY FOUR RATOTIONS, flipped blocks weren't officially confirmed as legal to\
+ play with in multiplayer! First item \"remove\" removes existing block.\nCr\
+edits to KKJKJH specialy for station blocks sources and Beau for source text\
+ures of most blocks.");
 
 Command.add("Select Color", function () {
   /** @type {CommandItem[]} */
@@ -1099,9 +1101,7 @@ ing puts base64 key of displayed ship into input, Import uses base64 key fro\
 m input to replace displayed ship with one from key. It can also store unimp\
 lemented blocks like TNT, station blocks and more. Be aware that the key lim\
 its vehicle in and will refuse to compress too big vehicle. There are also b\
-ugs like the top rightmost block is colored black and for some reason when t\
-here is more smaller blocks in one full block place, other blocks get remove\
-d.");
+ugs since I wasn't going down the rabbit hole of debugging every last one.");
 Command.push("Set camera view", function (items, collapsed) {
   var viewX = EL("input"), viewY = EL("input"), zoom = EL("input");
   var elBtn = EL("button");
@@ -1268,11 +1268,12 @@ function render_backgColor() {
 }
 var render_background = settings.editorBackground ?
   render_backgPattern : render_backgColor;
-// TODO: add preventing possible case of image source not being loaded
 function render_initColors() {
   helpCanvas.width = helpCanvas.height = 32;
   for (var i = Color.NAME.length, patterns = []; i-- > 0;) {
-    rc.drawImage(imgColor, 0, i * -32);
+    try {
+      rc.drawImage(imgColor, 0, i * -32);
+    } catch (e) {}
     patterns[i] = rc.createPattern(helpCanvas, "repeat") || "";
   }
   return patterns;
@@ -1288,7 +1289,12 @@ function render_checkColors() {
     b = b && dat[i] === cpr[i];
   b && (itv = setInterval(function () {
     helpCanvas.width = helpCanvas.height = 32;
-    rc.drawImage(imgColor, 0, i * -32);
+    try {
+      rc.drawImage(imgColor, 0, i * -32);
+    } catch (e) {
+      if (imgColor.complete === !1)
+        return i = 0;
+    }
     render_colors[i] = rc.createPattern(helpCanvas, "repeat") || "";
     if (++i >= render_colors.length) {
       clearInterval(itv)
@@ -1300,14 +1306,15 @@ var render_colors = render_initColors();
 
 /** @type {Block[]} */
 var foundBlocks = [];
+
 press = function press(x, y) {
-  x = Math.floor((x - vX - 1) / 2 / sc);
-  y = Math.floor((y - vY - 1) / 2 / sc);
+  x = Math.floor((vX - x) / 2 / sc + 1);
+  y = Math.floor((y - vY) / 2 / sc);
   var found = [];
   for (var i = 0, arr = ship.blocks; i < arr.length; i++)
-    if (Math.floor(arr[i].position[0] / 2) === y &&
-      Math.floor(arr[i].position[2] / 2) === -x)
-        found.push(i);
+    if (Math.floor((arr[i].position[1]) / 2) === x &&
+      Math.floor((arr[i].position[2]) / 2) === y)
+        found.unshift(i);
   found = found.map(function (i) {
     var e = arr[i];
     if (placingBlock() === "remove") {
@@ -1315,19 +1322,25 @@ press = function press(x, y) {
       arr.length--;
     } else if (blockBind.changingColor)
       //@ts-ignore
-      arr[i].properties.color = placingBlock();
+      e.properties.color = placingBlock();
     else {
-      [
-        "Wedge",
-        "Wedge 1x2",
-        "Wedge 1x4",
-        "Smooth Corner",
-        "Smooth Corner 1x2",
-        "Smooth Corner 1x4"
-      ].indexOf(arr[i].internalName) < 0 ||
-        e.rotation[2] === 3 && (e.rotation[1] = !e.rotation[1]);
+      var s = e.internalName, rot = e.rotation[2], pos = e.position;
+      // [
+      //   "Wedge",
+      //   "Wedge 1x2",
+      //   "Wedge 1x4",
+      //   "Smooth Corner",
+      //   "Smooth Corner 1x2",
+      //   "Smooth Corner 1x4"
+      // ].indexOf(s) < 0 ||
+        rot === 3 && (e.rotation[1] = !e.rotation[1]);
+      var size = Block.Size.VALUE[Block.ID[s]];
+      if ((size.w | size.h) & 16)
+        rot > 1 ?
+          rot === 3 ? --pos[2] : --pos[1] :
+          rot === 1 ? ++pos[2] : ++pos[1];
       //@ts-ignore
-      e.rotation[2] = e.rotation[2] + 1 & 3;
+      e.rotation[2] = rot + 1 & 3;
     }
     return e;
   })
@@ -1337,8 +1350,13 @@ press = function press(x, y) {
     foundBlocks = found;
     return render();
   }
+  // var tiny = Block.Size.TINY[Block.ID[rand]];
+  // if (tiny && tiny.h < 1) {
+  //   x -= tiny.x;
+  //   y -= tiny.y;
+  // }
   rand !== "remove" &&
-    arr.push(new Block(rand, [y * 2, 0, -x * 2], [0, !1, 0],
+    arr.push(new Block(rand, [x * 2, 0, y * 2], [0, !1, 0],
       {color: Color.default(rand)}));
   render();
 };
@@ -1399,6 +1417,50 @@ over = function over(e) {
 render = function requestRendering() {
   requestAnimationFrame(expensiveRenderer);
 };
+// function expensiveRenderer() {
+// canvas.width = canvas.width;
+// render_background();
+// ctx.imageSmoothingEnabled = false;
+// var objs = ship.blocks;
+// for (var i = 0, id = 0, pos = [0, 0, 0]; i < objs.length; i++) {
+//   /** @see {Block} @see {Block.Size.VALUE} */
+//   var size = Block.Size.VALUE[Block.ID[objs[i].internalName]];
+//   if (!size)
+//     return console.error(objs[i]);
+//   pos = objs[i].position;
+//   var rot = 10 - objs[i].rotation[2] & 3;
+//   var ow = size.w, oh = size.h, sw = 0, sh = 0;
+//   var w = ow + (ow & 16), h = oh + (oh & 16);
+//   var dx = -pos[0] * sc + vX, dy = pos[2] * sc + vY;
+//   dy -= rot === (objs[i].rotation[1] ? 1 : 3) ?
+//     (w - 32) * sc / 16 :
+//     rot === 0 ? (h - 32) * sc / 16 : 0;
+//   dx -= rot === (objs[i].rotation[1] ? 0 : 2) ?
+//     (w - 32) * sc / 16 :
+//     rot === 3 ? (h - 32) * sc / 16 : 0;
+//   dy += [oh - h, 0, 0, ow - w][rot] * 16 / sc;
+//   dx += [w - ow, h - oh, 0, 0][rot] * 16 / sc;
+//   helpCanvas.width = sw = rot & 1 ? h : w;
+//   helpCanvas.height = sh = rot & 1 ? w : h;
+//   rc.fillStyle = render_colors[Color.ID[objs[i].properties.color]];
+//   rc.fillRect(0, 0, sw, sh);
+//   if (objs[i].rotation[1]) {
+//     rc.scale(1 - (~rot << 1 & 2), 1 - (rot << 1 & 2));
+//     rc.translate(~rot & 1 ? -w : 0, rot & 1 ? -w : 0);
+//   }
+//   rc.rotate(rot * Math.PI / 2);
+//   rc.translate(rot > 1 ? -w : 0, rot && rot < 3 ? -h : 0);
+//   rc.globalCompositeOperation = "destination-in";
+//   rc.drawImage(imgMask, size.x, size.y, w, h, 0, 0, w, h);
+//   rc.globalCompositeOperation = "source-over";
+//   rc.drawImage(imgOverlay, size.x, size.y, w, h, 0, 0, w, h);
+//   ctx.drawImage(helpCanvas, dx, dy, sw * sc / 16, sh * sc / 16);
+//   // await new Promise(function (res) {
+//   //   var tfn = expensiveRenderer;//@ts-ignore
+//   //   clearTimeout(tfn.tOut);tfn.tOut = setTimeout(res, 100);
+//   // }); /// ASYNC!!!!!!!!
+// }
+// }
 /*async*/ function expensiveRenderer() {
   canvas.width = canvas.width;
   render_background();
@@ -1411,24 +1473,36 @@ render = function requestRendering() {
       return console.error(objs[i]);
     pos = objs[i].position;
     var rot = 10 - objs[i].rotation[2] & 3;
-    var w = size.w, h = size.h, sw = 0, sh = 0;
-    var dx = -pos[2] * sc + vX, dy = pos[0] * sc + vY;
-    dy -= rot === (objs[i].rotation[1] ? 1 : 3) ?
-      (w - 32) * sc / 16 :
-      rot === 0 ? (h - 32) * sc / 16 : 0;
-    dx -= rot === (objs[i].rotation[1] ? 0 : 2) ?
-      (w - 32) * sc / 16 :
-      rot === 3 ? (h - 32) * sc / 16 : 0;
+    var ow = size.w, oh = size.h, sw = 0, sh = 0;
+    var w = ow + (ow & 16), h = oh + (oh & 16), tiny = (oh | ow) & 16;
+    // position to draw block in canvas
+    var dx = -pos[1] * sc + vX, dy = pos[2] * sc + vY;
+    // position corrections for rotations and tiny blocks
+    dx += (objs[i].rotation[1] ?
+      rot === 0 ? 32 - w : rot === 3 ? 32 - h : tiny :// [32 - w, tiny, tiny, 32 - h][rot] :
+      rot === 2 ? 32 - w : rot === 3 ? 32 - h : tiny) * sc / 16;// [tiny, tiny, 32 - w, 32 - h][rot];
+    // dy += (objs[i].rotation[1] ? [32 - h - tiny, 32 - w - tiny, 0, 0][rot] : 
+    //   [32 - h - tiny, 0, 0, 32 - w - tiny][rot]) * sc / 16;
+    rot === 0 ?
+      dy += (32 - h - tiny) * sc / 16 :
+      rot === (objs[i].rotation[1] ? 1 : 3) ?
+        dy += (32 - w - tiny) * sc / 16 :
+        0;
+    // sets needed size of block and resets canvas
     helpCanvas.width = sw = rot & 1 ? h : w;
     helpCanvas.height = sh = rot & 1 ? w : h;
-    rc.fillStyle = render_colors[Color.ID[objs[i].properties.color]];
-    rc.fillRect(0, 0, sw, sh);
+    // apply color texture
     if (objs[i].rotation[1]) {
+      // handles block flipping
       rc.scale(1 - (~rot << 1 & 2), 1 - (rot << 1 & 2));
       rc.translate(~rot & 1 ? -w : 0, rot & 1 ? -w : 0);
     }
+    // apply rotation
     rc.rotate(rot * Math.PI / 2);
     rc.translate(rot > 1 ? -w : 0, rot && rot < 3 ? -h : 0);
+    // apply textures
+    rc.fillStyle = render_colors[Color.ID[objs[i].properties.color]];
+    rc.fillRect(0, 0, w, h);
     rc.globalCompositeOperation = "destination-in";
     rc.drawImage(imgMask, size.x, size.y, w, h, 0, 0, w, h);
     rc.globalCompositeOperation = "source-over";
@@ -1444,3 +1518,40 @@ render = function requestRendering() {
 init = function () {
   render_checkColors();
 };
+
+// /** simple MS paint DBV textures to source
+//  * @param {number} w width (set to @see {Block.Size.width} )
+//  * @param {number} h height (set to @see {Block.Size.height} )
+//  * @param {HTMLImageElement|HTMLVideoElement|HTMLCanvasElement} imMask
+//  * @param {HTMLImageElement|HTMLVideoElement|HTMLCanvasElement} imOverlay
+// */
+// function blockTexturesToSource(w, h, imOverlay, imMask) {
+//   WH(ctx, imMask); // sets width of ctx.canvas to imMask 'natural' size
+//   ctx.drawImage(imMask, 0, 0);
+//   var i = 0, maDat = ctx.getImageData(0, 0, w * 32, h * 32);
+//   WH(ctx, imOverlay);
+//   ctx.drawImage(imOverlay, 0, 0);
+//   var ovDat = ctx.getImageData(0, 0, w * 32, h * 32),
+//     ovDatView = new DataView(ovDat.data.buffer);
+//   maDat.forClamp(function (j, v) {
+//     var n = v.getUint32(j), ni = i++ >> 3;
+//     var b = n < 256 || (n & 255) === 0;
+//     v.setUint32(j, b ? 0 : 0x004000ff);
+//     n = ovDatView.getUint32(j);
+//     if (n !== 0xffffffff && !b) {
+//       n = (ovDatView.getUint8(j) + (n >> 16 & 255) + (n >> 8 & 255)) / 5 +
+//         96;
+//       ovDatView.setUint32(j, 255-n);
+//     } else
+//       ovDatView.setUint32(j, n === 0xffffffff ? 0 : n);
+//   });
+//   WH(ctx, w * 32, h * 32);
+//   ctx.putImageData(maDat, 0, 0);
+//   console.log("binary mask:\n");
+//   console.log(canvas.toDataURL("image/png"));
+//   WH(ctx, w * 32, h * 32);
+//   ctx.putImageData(ovDat, 0, 0);
+//   console.log("overlay image:\n");
+//   console.log(canvas.toDataURL("image/png"));
+// }
+// blockTexturesToSource(50, 4, IMG(2), IMG(1));
