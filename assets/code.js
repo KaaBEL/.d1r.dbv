@@ -405,7 +405,7 @@ Block.generateArray = function generateArray(n) {
     blocks.push(new Block((i % 3 !== 1 ?
       [SH + "Thruster", SH + "Tank", "Small Battery", "Wedge"] :
       ["", "Block", "Core", "Reaction Wheel"])[i / 3 | 0],
-      [i * 2 % 6 - 2, 0, (i / 3 | 0) * 2 - 4],
+      [0, i * 2 % 6 - 2, (i / 3 | 0) * 2 - 4],
       [0, !1, i === 9 ? 1 : 0],
       {color: i > 5 ?
         i & 1 ? "White" : "Light Gray" :
