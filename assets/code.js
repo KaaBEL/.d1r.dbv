@@ -473,6 +473,7 @@ Block.Size.genterateSizes = function () {
 // /** @type {{[key: number]: Block.Size}} */
 // Block.Size.TINY = {};
 // blocks were still not tested properly all at once
+// one more undeted bug with block or texture and adding unit test for  itr
 Block.Size.VALUE = Block.Size.genterateSizes([[0], [1], [2], [7, 1, 2]],
   [[8, 1, 4], [50], [51, 1, 1], [52], [107, 1, 2], [9, 1, 4], [53], [54]],
   [[55], [56, .5, .5], [3], [100, 2, 2], [10, 3, 4], [102, .5, .5]],
@@ -592,7 +593,8 @@ Color.NAME = {
   18: "White Hazard Stripes",
   19: "Festive Red",
   20: "Festive Green",
-  length: 21
+  21: "BREAD",
+  length: 22
 };
 Color.ID = {
   "White": 0,
@@ -615,7 +617,8 @@ Color.ID = {
   "Red Hazard Stripes": 17,
   "White Hazard Stripes": 18,
   "Festive Red": 19,
-  "Festive Green": 20
+  "Festive Green": 20,
+  "BREAD": 21
 };
 Object.freeze(Color.NAME);
 Object.freeze(Color.ID);
