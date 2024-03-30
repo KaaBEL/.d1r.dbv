@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.14
+// v.0.1.15
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -1192,10 +1192,10 @@ Command.push("Change editor background", function (items, collapsed) {
   option.label = option.value = "_editor_background";
   select.add(option);
   option = EL("option");
-  option.label = option.value = "_dbve_background";
+  option.label = option.value = "_dbve2_background";
   select.add(option);
   option = EL("option");
-  option.label = option.value = "_dbve2_background";
+  option.label = option.value = "_dbve_background";
   select.add(option);
   option = select.item(settings.editorBackgroundImage) || option;
   option.selected = !0;
@@ -1501,11 +1501,19 @@ render = function requestRendering() {
   ctx.imageSmoothingEnabled = false;
   var objs = ship.blocks;
   for (var i = 0, id = 0, pos = [0, 0, 0]; i < objs.length; i++) {
+    pos = objs[i].position;
+    if ((id = Block.ID[objs[i].internalName]) < 12) {
+      ctx.save();
+      ctx.fillStyle = "#888";
+      ctx.globalAlpha = .7;
+      ctx.fillRect(-pos[0] * sc + vX, pos[2] * sc + vY, sc + 1, sc + 1);
+      ctx.restore();
+      continue;
+    }
     /** @see {Block} @see {Block.Size.VALUE} */
-    var size = Block.Size.VALUE[Block.ID[objs[i].internalName]];
+    var size = Block.Size.VALUE[id];
     if (!size)
       return console.error(objs[i]);
-    pos = objs[i].position;
     var rot = 10 - objs[i].rotation[2] & 3;
     var ow = size.w, oh = size.h, sw = 0, sh = 0;
     var w = ow + (ow & 16), h = oh + (oh & 16), tiny = (oh | ow) & 16;

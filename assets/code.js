@@ -374,7 +374,7 @@ Block.arrayFromObjects = function arrayFromObjects(blocks) {
         typeof o.rot[1] == "boolean" ? o.rot[1] : !1,
         typeof o.rot[2] == "number" ? o.rot[2] & 3 : 0] :
         [0, flip, typeof o.rot == "number" && o.rot / 90 || 0 & 3];
-    if (!Block.ID[name]) {
+    if (Block.ID[name] === UDF) {
       o.prop.invalidName = name;
       name = "__unknown__";
     }
