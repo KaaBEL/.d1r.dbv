@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.0.13 -->
+<!-- v.0.0.15 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -114,9 +114,9 @@
     // fX/fY = from x, y (start view position)
     // gX/gY = grab x, y (start press posistion)
     // sc = scale
-    // cStart = press start
-    var vX = 0, vY = 0, fX, fY, gX, gY, sc = 16, cStart = 0, tStart = 0,
-      touch = null, touch_2 = null, bd = GE(8);
+    // mouseStamp = press start
+    var vX = 0, vY = 0, fX, fY, gX, gY, sc = 16, bd = GE(8);
+    // . mouseStamp = 0, tStart = 0, touch = null, touch_2 = null;
 
     var press = function press(x, y) {
       return console.log(x, y);
@@ -137,33 +137,494 @@
     var init = function init() {
       return;
     }
-
+    
+    var F = function () {};
+    try {
+      /** @type {Touch} */
+      var TCH = new Touch({identifier: 0, target: GE(0)});
+    } catch (e) {
+      TCH = {};
+    }
+    function test_touches(targ, calls, globalArr, customLog) {
+      var a = [], t = {ch: TCH}, custLog = typeof customLog == "function" ?
+        customLog : customLog === UDF ? function () { return [] } :
+        function () {
+            return customLog instanceof Array ? customLog : [customLog];
+          };
+      var map = Array.prototype.map;
+      function tchLog(s, e, ef, n, l, p) {
+        n = (t.ch = e).timeStamp % 1E7 | 0;
+        // countermeausre in offset left in console logs by array indexes
+        l = 7 - ((n) + "").length;
+        return Array.prototype.concat.apply([
+          n,
+          " ".repeat(l) + s + map.call(ef(e, p = []), function (i) {
+            var s = [
+              /* empty */,
+              i.identifier,
+              i.force,
+              i.pageX | 0,
+              i.pageY | 0
+            ].join(" ");
+            return s += " ".repeat(13 - s.length);
+          })
+        ], custLog()).concat(e.timeStamp - n, p);
+      }
+      function fn(s, f) {
+        // ef in tchLog
+        var prpt = s !== "cancel:" ?
+          function (e, arr) {
+              // p in touch log preservers the identifiesrs of changedTouches
+              arr.push(map.call(e.changedTouches, function (e) {
+                return e.identifier;
+              }));
+              return t.cs = e.touches
+            } :
+          function (e) {return t.cs = e.changedTouches};
+        function prcs(e) {
+          e.cancelable && e.preventDefault();
+          if (a.push(tchLog(s, e, prpt)) > 109) {
+            console.log([a]);
+            a = new Array(10);
+          }
+        }
+        if (globalArr)
+          return function prcsLog(e) {
+            if (a.push(tchLog(s, e, prpt)) > 99) {
+              console.log([a]);
+              (a = []).length = 10;
+            }
+            f(e);
+          }
+        function withLog(e) {
+          delete a[a.push(tchLog(s, e, function (e) {
+            return e.targetTouches;
+          })) - 64];
+          f(e);
+        }
+        return f ? withLog : prcs;
+      }
+      if (calls instanceof Array ? globalArr : calls = []) {
+        (globalArr = typeof arr === "undefined" && (a.length = 10) &&
+          Object.defineProperty(window, "tchs", {
+            get: function (p) {
+              p = a;
+              (a = []).length = 10;
+              return {a: p};
+            }
+          }));
+      }
+      targ.ontouchcancel = fn("cancel:", calls[3]);
+      targ.ontouchstart = fn(" start:", calls[0]);
+      targ.ontouchmove = fn("  move:", calls[1]);
+      targ.ontouchend = fn("   end:", calls[2]);
+    
+      return {a: a, tch: t};
+    }
+    
+    /** @typedef {Array<TchD|null>} tchsDat */
+    /** @typedef {(TchD|null)[] & {count: number}} touches */
+    /** fires when action of event doesn't correspond with touches array
+     * @callback errorH
+     * @param {touches} touches
+     * @param {TchD} faulty
+     * @returns {boolean} ? keep current touches : reset to the new action
+     */// ^ swaped result by boolean (should reset on default: void functions)
+    /** fires when event is fired, may give all or portion of changed touches
+     * @callback softH
+     * @param {touches} touches
+     * @param {tchsDat} changed
+     * @param {TouchEvent} ev
+     * @returns {void} */
+    /** fires when all events were collected, possibly one cycle
+     * @callback hardH
+     * @param {touches} touches
+     * @param {tchsDat} added
+     * @param {tchsDat} removed
+     * @returns {void} */
     /**
-     * @param {string} name
-     * @param {function} find
-     * @param {function} job
-     */
-    function Gesture(name, find, job) {
-    /** @type {string} as type */
-      this.name = name;
-    /** @type {Array<TouchDat>} */
-      this.touches = [];
-    /** @type {function} Gesture activates when it's added to TouchDat */
-      this.inactive = find;
-    /** @type {function} process the gesture */
-      this.active = job;
-    /** @type {Array<number>} scores */
-      this.score = [];
+     * @param {HTMLElement} src
+     * @param {hardH} [hardHandler]
+     * @param {[softH,softH,softH,softH]} [softHandlers]
+     * @param {[errorH,errorH,errorH]} [errorHandlers] */
+    function touchesInit(src, hardHandler, softHandlers, errorHandlers) {
+      src = src instanceof HTMLElement ? src : console.error("Not s EL" +
+        " at touchesInit  beggining.");
+      hardHandler = hardHandler || F;
+      softHandlers = softHandlers || [F, F, F, F];
+      errorHandlers = errorHandlers || [F, F, F];
+      /** @typedef {Array<[number,string,number]>} touchlog */
+      var //-evState = 0,
+        /** @type {{a:touchlog,tch:{ch:TouchEvent,cs:TouchList}}} */
+        o = {},
+        /** @type {Array<boolean>} */
+        events = [!1],
+        /** @type {tchsDat} */
+        temp = [new TchD()],
+        /** @type {tchsDat} */
+        added = [new TchD()],
+        /** @type {tchsDat} */
+        removed = [new TchD()],
+        /** @type {tchsDat & {count: number}} */
+        touches = function () {
+          var arr = [new TchD()];
+          arr.count = 0;
+          return arr;
+        }(),
+        /** @type {Array<number>} */
+        identifiers = [-1],
+        /** @typedef {(e:TouchEvent)=>void} handler */
+        /** @type {[handler,handler,handler,handler]} */
+        handlers = [onstart, onmove, onend, oncancel];
+      [events, temp, added, removed, touches, identifiers].map(function (e) {
+        e.length = 0;
+      });
+    
+      // console.log(o = test_touches(src, handlers, 1, function () {
+      //   return [events, temp.length, added.length, removed.length,
+      //     touches.length, identifiers].map(
+      //     function (e, i) {
+      //       if (typeof e == "number")
+      //         return e;
+      //       return e.join(",") + " ".slice(+!i);
+      //     }
+      //   );
+      // }));
+      src.ontouchstart = onstart;
+      src.ontouchmove = onmove;
+      src.ontouchend = onend;
+      src.ontouchcancel = oncancel;
+      // ontouches events handling
+    
+      function createTouch(tch, ev, i) {
+        if (i === UDF) {
+          // console.log(tch.identifier);
+          if ((i = identifiers.indexOf(tch.identifier)) >= 0)
+            return errorHandlers[0](touches, tch, ev) ?
+              console.error("Can't add existing Touch") :
+              console.error("Assigning Touch", updateTouch(tch, ev, i));
+        }
+        for (i = 0; touches[i] !== null && i < touches.length;)
+          i++;
+        events[i] = !0;
+        identifiers[i] = tch.identifier;
+        touches[i] = added[i] = temp[i] = new TchD(src, tch, ev);
+      }
+      function updateTouch(tch, ev, i) {
+        if (i === UDF) {
+          if ((i = identifiers.indexOf(tch.identifier)) < 0)
+            return errorHandlers[1](touches, tch, ev) ?
+              console.error("Can't update unexisting Touch") :
+              console.error("Adding Touch", createTouch(tch, ev, i));
+        }
+        events[i] = !0;
+        temp[i] = touches[i].update(tch, ev);
+      }
+      function removeTouch(tch, ev, i) {
+        var j = identifiers.indexOf(tch.identifier);
+        if (j < 0 && errorHandlers[2](touches, tch, ev))
+          return console.error("Can't remove unexisting Touch");
+        events[j] = !0;
+        identifiers[j] = -1;
+        removed[j] = temp[j] = touches[j].update(tch, ev);
+        touches[j] = null;
+        for (j = touches.length - 1; j > 0 && touches[j] === null;)
+          touches.length--;
+      }
+      /** @param {TouchEvent} ev */
+      function prcsTouches(evId, evStr, ev, method) {
+        for (var i = 0, tchs = ev.changedTouches; i < tchs.length; i++)
+          method(tchs[i], ev);
+        for (i = touches.count = 0; i < touches.length;)
+          touches.count += +!!touches[i++];
+        softHandlers[evId](touches, temp, ev);
+        temp = [];
+      }
+      function inputTouches(evId, evStr, ev, method) {
+        for (i = touches.count = 0; i < touches.length;)
+          touches.count += +!!touches[i++];
+        hardHandler(touches, added, removed);
+        events = [];
+        added = [];
+        removed = [];
+        prcsTouches(evId, evStr, ev, method);
+      }
+    
+      function checkEvent(tchs) {
+        for (var i = tchs.length; i-- > 0;)
+          if (events[i])
+            return !1;
+        return !0;
+      }
+      /** @param {TouchEvent} e */
+      function onstart(e) {
+        //-conditions: evState > 1 = starts new input of events ||
+        //-checkExisting = no touch start on existing one &&
+        //-evState > 1 = last event was start ?
+        // checkEvent = each complete input contains only one event for each
+        // touch ?
+        // has 2 outcomes: assigning new start tchs : fire UI complete input;
+        if (checkEvent(e.changedTouches))
+          // start of existing | end/cancel of unexisting further throws error
+          prcsTouches(0, "start", e, createTouch);
+        else
+          inputTouches(0, "start", e, createTouch);
+      }
+      function onmove(e) {
+        if (checkEvent(e.changedTouches))
+          prcsTouches(1, "move", e, updateTouch);
+        else
+          inputTouches(1, "move", e, updateTouch);
+      }
+      function onend(e) {
+        // remove existing one else throw error, conditioned in updateRemoved...
+        if (checkEvent(e.changedTouches))
+          prcsTouches(2, "end", e, removeTouch);
+        else
+          inputTouches(2, "end", e, removeTouch);
+      }
+      function oncancel(e) {
+        if (checkEvent(e.changedTouches))
+          prcsTouches(3, "cancel", e, removeTouch);
+        else
+          inputTouches(3, "cancel", e, removeTouch);
+      }
+      return o;
+    }
+    touchesInit.time = 350;
+    touchesInit.move = 13;
+    
+    /** tested object for touch data
+     * @param {HTMLElement} src
+     * @param {Touch} touch
+     * @param {TouchEvent} touchEvent */
+    function TchD(src, touch, touchEvent) {
+      if (!arguments.length)
+        try {
+          src = document.createElement("div");
+          touch = new Touch({identifier: 0, target: src});
+          touchEvent = new TouchEvent("cancel");
+        } catch (e) {
+          touch = touchEvent = {};
+        }
+      /** @type {TouchEvent} */
+      this.event = touchEvent;
+      /** @type {number} */
+      this.identifier = touch.identifier;
+      /** @type {EventTarget} */
+      this.target = touch.target;
+      /** @type {string} */
+      this.type = touchEvent.type;
+      /** @type {number} */this.pageX = touch.pageX;
+      /** @type {number} */this.pageY = touch.pageY;
+      /** @type {number} */this.clientX = touch.clientX;
+      /** @type {number} */this.clientY = touch.clientY;
+      /** @type {number} */this.screenX = touch.screenX;
+      /** @type {number} */this.screenY = touch.screenY;
+      /** @type {number} */this.force = touch.force;
+      /** @type {number} */this.radiusX = touch.radiusX;
+      /** @type {number} */this.radiusY = touch.radiusY;
+      /** @type {number} position within element */
+      this.posX = touch.pageX - src.offsetLeft;
+      /** @type {number} position within element */
+      this.posY = touch.pageY - src.offsetTop;
+      /** @type {number} starting position */
+      this.sX = this.posX;
+      /** @type {number} starting position */
+      this.sY = this.posY;
+      /** @type {number} movement */
+      this.movX = 0;
+      /** @type {number} movement */
+      this.movY = 0;
+      /** @type {number} timestamp */
+      this.time = Date.now();
+      /** @type {number} timestamp of previous */
+      this.pTime = 0;
+      /** @type {number} start timestamp */
+      this.sTime = this.time;
+      /** @type {EventTarget} source target */
+      this.srcTarget = this.target;
+      /** @method update @this {TchD} */
+      this.update = function update(touch, touchEvent) {
+        if (!(touch instanceof Touch))
+          throw new TypeError("1. arg: touch is not type of Touch");
+        if (touch.identifier !== this.identifier)
+          throw new Error("attempt to udpdate with different identifier");
+        if (!(touchEvent instanceof TouchEvent))
+          throw new TypeError("2. arg: touchEvent is not type of TouchEvent");
+        this.event = touchEvent;
+        this.target = touch.target;
+        this.pageX = touch.pageX;
+        this.pageY = touch.pageY;
+        this.clientX = touch.clientX;
+        this.clientY = touch.clientY;
+        this.screenX = touch.screenX;
+        this.screenY = touch.screenY;
+        this.force = touch.force;
+        this.radiusX = touch.radiusX;
+        this.radiusY = touch.radiusY;
+        this.type = touchEvent.type;
+        var tmp = touch.pageX - src.offsetLeft;
+        this.movX = tmp - this.posX;
+        this.posX = tmp;
+        tmp = touch.pageY - src.offsetTop;
+        this.movY = tmp - this.posY;
+        this.posY = tmp;
+        tmp = Date.now()
+        this.pTime = this.time;
+        this.time = tmp;
+        return this;
+      };
+      return Object.seal(this);
     }
 
-    /** @type {Array<Gesture>} */
-    var globalGestures = [];
+    var mouseStamp = 0;
+    function mouseInit() {
+      if (!bd)
+        return console.error("bd is null, UI wasn't initialized");
+      bd.onmousewheel = bd.onwheel = function (e) {
+        if (e.target !== canvas)
+          return;
+        var prev = sc, w = canvas.width / 2, h = canvas.height / 2;
+        sc -= sc / (e.deltaY || -e.wheelDelta || 0) * 10;
+        vX = (vX - w) * sc / prev + w;
+        vY = (vY - h) * sc / prev + h;
+        render();
+      };
+      var foreign = !1, pX = 0, pY = 0;
+      bd.onmousedown = function (e) {
+        if (foreign = e.target !== canvas)
+          over(e);
+        if (e.buttons & 1)
+          mouseStamp = Date.now();
+        pX = gX = e.pageX - canvas.offsetLeft;
+        pY = gY = e.pageY - canvas.offsetTop;
+      }
+      bd.onmousemove = function (e) {
+        if (foreign)
+          return over(e);
+        if (!(e.buttons & 1))
+          return;
+        var x = e.pageX - canvas.offsetLeft,
+          y = e.pageY - canvas.offsetTop;
+        // works on add difference basis to not fight with other movement
+        vX += x - pX || 0;
+        vY += y - pY || 0;
+        pX = x;
+        pY = y;
+        render();
+      };
+      bd.onmouseup = function (e) {
+        if (foreign)
+          return over(e);
+        if (Date.now() > mouseStamp + mouseInit.time)
+          return;
+        var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop;
+        if (Math.abs(gX - x) > mouseInit.move &&
+          Math.abs(gY - y) > mouseInit.move)
+          return;
+        press(x, y);
+      }
+      window.oncontextmenu = function (e) {
+        for (var el = e.target; el instanceof Node;)
+          if (!(el = el.parentNode))
+            return;
+          else if (el === bd)
+            break;
+        var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop;
+        contextmenu(x, y, e);
+      };
+    }
+    // settings: press time legth, precision, <-, allowed touch-start-times
+    mouseInit.time = 350;
+    mouseInit.move = 7;
+      
+    //** fires when event is fired, may give all or portion of changed touches
+    // * positioned in the TchD Array by their IDs indepedant of identifiers,
+    // * TchD object is used for one touch through its lifecycle
+    // * @callback softH
+    // * @param {tchsDat & {count: number}} touches
+    // * @param {tchsDat} changed
+    // * @param {TouchEvent} ev
+    // * @returns {void} */
+    var rndrd = !1, actionType = 0, moveScore = 0, moveCount = 0;
+    function touchGrab(all, ev) {
+      ev.cancelable && ev.preventDefault();
+      var x0 = all[0].movX,
+        y0 = all[0].movY,
+        x1 = all[1].movX,
+        y1 = all[1].movY;
+      if (actionType < 5) {
+        var n = actionType === 2 ? 4 : 2;
+        vX += (x0 + x1) / n;
+        vY += (y0 + y1) / n;
+      }
+      if (actionType > 3 || actionType === 2) {
+        var prev = sc, w = canvas.width / 2, h = canvas.height / 2;
+        sc += ((all[0].pageX > all[1].pageX ?
+            x0 - x1 :
+            x1 - x0) +
+          (all[0].pageY > all[1].pageY ?
+            y0 - y1 :
+            y1 - y0) || 0) *
+          sc / (237 << (actionType === 2));
+        vX = (vX - w) * sc / prev + w;
+        vY = (vY - h) * sc / prev + h;
+        // TODO: the default (actionType = 2) is supposed to detect either
+        // zooming in/out or movement, It did it very stubbornly though
+        actionType === 2 ?
+          ++moveCount > 4 ?
+            actionType = Math.abs(moveScore) > touchesInit.move / 2 ?
+              moveScore > 0 ? 3 : 5 :
+              4 :
+            moveScore += Math.abs(x0 + x1 + y0 + y1) -
+              Math.abs(x0 - x1 + y0 - y1) * 2 :
+          0;
+      }
+      render();
+    }
+    var foreign1 = !1, touchStamp = 0, prevCount = 0;
+    //-sXt, sYt = start vX & vY & sc, gX<n>, gY<n> = grab (touch start) x & y
+    //-var sXt = 0, sYt = 0, sSC = 0, gX0 = 0, gY0 = 0, gX1 = 0, gY1 = 0;
+    /** @type {(all:touches,changed:TchD[],ev:TouchEvent)=>void} */
+    function thetouchstart(all, changed, ev) {
+      if (prevCount === 0)
+        touchStamp = Date.now();
+      if (changed[0] && changed[0].srcTarget !== canvas)
+        over(changed[0]);
+      else if (all.length > 1 && !actionType && all[0] && all[1] &&
+        Date.now() < touchStamp + touchesInit.time) {
+        moveScore = moveCount = 0;
+        actionType = 4;
+      }
+      prevCount = all.count;
+    }
+    /** @type {(all:touches,changed:TchD[],ev:TouchEvent)=>void} */
+    function thetouchmove(all, changed, ev) {
+      if (changed[0] && changed[0].srcTarget !== canvas)
+        over(changed[0]);
+      else if (actionType > 1 && all[0] && all[1])
+        touchGrab(all, ev);
+    }
+    /** @type {(all:touches,changed:TchD[],ev:TouchEvent)=>void} */
+    function thetouchend(all, changed, ev) {
+      if (all.count === 0)
+        actionType = 0;
+      if (changed[0] && changed[0].srcTarget !== canvas)
+        over(changed[0]);
+      else if (actionType > 1 && changed[0] && changed[1])
+        touchGrab(changed, ev);
+      prevCount = all.count;
+      //ev.cancelable && ev.preventDefault();
+    }
+    /** @type {(all:touches,changed:TchD[],ev:TouchEvent)=>void} */
+    function thetouchcancel(all, changed, ev) {
+      console.error("Touches canceled");
+      prevCount = touchStamp = actionType = 0;
+      //ev.cancelable && ev.preventDefault();
+    }
 
     document.body.onload = function initDoc() {
-      // settings: press time legth, precision, <-, allowed touch-start-times
-      // spread of multiple-touch gesture (didn't get sitting short name)
-      var pressLength = 350, clickP = 7, touchP = 13, touchSync = 100;
-
       function resizeWindow() {
         var  w = window.innerWidth, h = window.innerHeight;
         if (w > 4096 || h > 4096)
@@ -183,56 +644,10 @@
 
       window.onresize = resizeWindow;
 
-      bd.onmousewheel = bd.onwheel = function (e) {
-        if (e.target !== canvas)
-          return;
-        var prev = sc, w = canvas.width / 2, h = canvas.height / 2;
-        sc -= sc / (e.deltaY || -e.wheelDelta || 0) * 10;
-        vX = (vX - w) * sc / prev + w;
-        vY = (vY - h) * sc / prev + h;
-        render();
-      };
-      var foreign = !1, pX = 0, pY = 0;
-      bd.onmousedown = function (e) {
-        if (foreign = e.target !== canvas)
-          over(e);
-        if (e.buttons & 1)
-          cStart = Date.now();
-        pX = gX = e.pageX - canvas.offsetLeft;
-        pY = gY = e.pageY - canvas.offsetTop;
-      }
-      bd.onmousemove = function (e) {
-        if (foreign)
-          return over(e);
-        if (!(e.buttons & 1))
-          return;
-        var x = e.pageX - canvas.offsetLeft,
-          y = e.pageY - canvas.offsetTop;
-        vX += x - pX;
-        vY += y - pY;
-        pX = x;
-        pY = y;
-        render();
-      };
-      bd.onmouseup = function (e) {
-        if (foreign)
-          return over(e);
-        if (Date.now() > cStart + pressLength)
-          return;
-        var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop;
-        if (Math.abs(gX - x) > clickP && Math.abs(gY - y) > clickP)
-          return;
-        press(x, y);
-      }
-      window.oncontextmenu = function (e) {
-        for (var el = e.target; el instanceof Node;)
-          if (!(el = el.parentNode))
-            return;
-          else if (el === bd)
-            break;
-        var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop;
-        contextmenu(x, y, e);
-      };
+      mouseInit();
+
+      touchesInit(bd, null, [thetouchstart, thetouchmove, thetouchend,
+        thetouchcancel]);
 
       /** touch logs
        * @namespace init
@@ -274,203 +689,6 @@
       function completeSpanLog() {
         while (logIdx < logSrc.childNodes.length)
           logSrc.removeChild(logSrc.childNodes[logIdx]);
-      }
-
-      function getTouch(e) {
-        for (var ts = e.touches, l = ts.length; l-- > 0;)
-          if (ts[l].identifier === touch.identifier)
-            return touch = ts[l];
-        return touch = null;
-      };
-      
-      function touchesStr(t) {
-        var s = "[", list = 2, touchList = [t.touches, t.changedTouches];
-        while (list--) {
-          s += "[";
-          for (var ts = touchList[list], i = ts.length; i-- > 0;)
-            s += ts[i].identifier + ",";
-              //+ ":" + (ts[i].pageX | 0) + "_" + (ts[i].pageY | 0) + ",";
-          s = s.slice(0, -1) + "],";
-        }
-        return s.slice(0, -1);
-      }
-
-      // draft idea of touches gestures
-      // By given TouchDat objects checkStart funcions of gestures book
-      // certian touches and hold them while pressed and movems as definded
-      // which the gesture process functions checks, and does stuff with it.
-      // No precedences are checked or 
-      /** @param {Array<Gesture>} gestures */
-      function processGestures(gestures, ended) {
-        for (var i = gestures.length; i-- > 0;)
-          if (gestures[i].touches)
-            gestures[i].checkStart(tchs, ended);
-          else
-            gestures[i].process(tchs, ended);
-      }
-
-      /** @typedef {number} integer */
-
-      function TouchDat(touch) {
-      /** @type {Touch} current touch source */
-        this.src = touch;
-      /** @type {integer} */
-        this.x = Math.floor(touch.pageX - canvas.offsetLeft);
-      /** @type {integer} */
-        this.y = Math.floor(touch.pageY - canvas.offsetTop);
-      /** @type {integer} movement */
-        this.movX = 0;
-      /** @type {integer} movement */
-        this.movY = 0;
-      /** @type {integer} movement */
-        this.strtX = this.x;
-      /** @type {integer} movement */
-        this.strtY = this.y;
-      /** @type {number} start time touched */
-        this.s = Date.now();
-      /** @type {number} (signed) score of allow (not prevent) default */
-        this.stats = 0;
-      /** @type {Gesture} */
-        this.gesture = null;
-      }
-
-      /** @type {Array<TouchDat>} global touches */
-      var tchs = [],
-      /** @type {Array<number>} Touch.identifier-s of global touches */
-        tIds = [],
-      /** @type {number} index of touch which allows default */
-        allowDefaultIdx = -1,
-      /** @type {Array<Gesture>} default gestures */
-        baseGestures = [
-          new Gesture("move", moveInit, movePrcs)
-        ];
-      /** functions type of ones in Gestrure
-       * @param {Array<TouchDat>} current touches
-       * @param {Array<TouchDat>} ended touches
-       */
-      var allowDefault = new Gesture("allowDefault", function () {
-        // void
-      }, function allowdefActive() {
-        if (this.touches.length)
-          ;
-      });
-      function moveInit(current, ended) {
-        ;
-      }
-      function movePrcs(current, ended) {
-        ;
-      }
-
-      /** updates global touches to current
-       * @param {0|1|2} typ type of touch event
-       * @param {TouchEvent} touches
-       */
-      function updateTouches(touches, prev1) {
-        var i = 0, j, l = touches.length, x, y, tStr = "global touches", t;
-        spanLog(0, i < l ? "[" : "");
-        while (i < l) {
-          if ((j = tIds.indexOf(touches[i].identifier)) < 0)
-            throw new Error("touch identifier not found within " + tStr);
-          spanLog((tchs[j] === touches[i]) << 1, j + "],"[+(i + 1 < l)]);
-          (t = tchs[j]).src = touches[i++];
-          x = Math.floor(t.src.pageX - canvas.offsetLeft);
-          y = Math.floor(t.src.pageY - canvas.offsetTop);
-          t.movX = x - t.x;
-          t.movY = y - t.y;
-          t.x = x;
-          t.y = y;
-        }
-        //if ((j = allowDefaultIdx) !== -1) {
-        //  tchs[j].aDefault += tchs[j].movY * 2 - Math.abs(tchs[j].movX);
-        //  tchs[j].aDefault < 0 ? allowDefaultIdx = -1 : 0;
-        //}
-      }
-      /** 
-       * @param {0|1|2} typ type of touch event
-       * 0: start, 1: move, 2: end|cancel
-       * @param {TouchEvent} e
-       */
-      function checkTouches(typ, e) {
-        var ended = typ > 1 ? [] : null;
-        logIdx = 0, logSrc = GE(87 + typ);
-        if (typ > 1)
-          updateTouches(e.touches);
-        if (typ !== 1)
-          spanLog(0, "changedTouches:[");
-        /** i = index for changedTouches, j = index for tchs and tIds */
-        var i = 0, j, l, tStr = "global touches", touches = e.changedTouches;
-        // repeat for length happens only for touchstart or touch-end|cancel
-        if(1>1)console.log("Breakpointlog");
-        for (l = touches.length * (typ !== 1); i < l; i++) {
-          if (typ === 0 ^ (j = tIds.indexOf(touches[i].identifier)) < 0) {
-            if (typ === 0 && touchErrors) {
-              tchs[j] = new TouchDat(touches[i]);
-              console.error("index: " + j + " should not be within " + tStr);
-            } else if (typ === 0)
-              tchs[j] = new TouchDat(touches[i]);
-            else if (touchErrors)
-              console.error("touch id: " + j + " is missing within " + tStr);
-          } else if (typ === 0) {
-          // for touchstart // tchs[j] same as tchs[j] !== null
-            for (j = 0; j < tchs.length && tchs[j];)
-              j++;
-            tIds.length = tchs.length += j >= tchs.length;
-            tchs[j] = new TouchDat(touches[i]);
-            tIds[j] = touches[i].identifier;
-            if (allowDefaultIdx == -1 && touches[i].clientY < touchP * 2)
-              tchs[allowDefaultIdx = j].aDefault = 21;
-          } else {
-          // for touchend // !tchs[j] same as tchs[j] === null
-            ended.push(tchs[j]);
-            tchs[j] = null;
-            tIds[j] = -1;
-            j === allowDefaultIdx ? allowDefaultIdx = -1 : 0;
-            while (j === tchs.length && !tchs[j])
-              tIds.length = --tchs.length;
-          }
-          spanLog(0, j + "],"[+(i + 1 < l)]);
-        }
-        if (typ <= 1)
-          updateTouches(e.touches);
-        completeSpanLog();
-        if (allowDefaultIdx === -1)
-          e.preventDefault();
-
-        // allow default
-        allowDefault(ended);
-
-        processGestures(baseGestures, ended);
-        processGestures(globalGestures, ended);
-      }
-
-      bd.ontouchstart = function (e) {
-        console.log();
-        // checkTouches(0, e);return;
-        tStart = Date.now();
-        touch = e.changedTouches[0];
-        fX = vX;
-        fY = vY;
-        gX = touch.pageX;
-        gY = touch.pageY;
-        render();
-      };
-      bd.ontouchmove = function (e) {
-        // checkTouches(1, e);return;
-        vX = fX + touch.pageX - gX;
-        vY = fY + touch.pageY - gY;
-        render();
-      };
-      bd.ontouchend = bd.ontouchcancel = function (e) {
-        // checkTouches(2, e);return;
-        if (Date.now() > tStart + pressLength)
-          return;
-        console.log("?");
-        var x = touch.pageX - canvas.offsetLeft,
-          y = touch.pageY - canvas.offsetTop;
-        touch = null;
-        if (Math.abs(gX - x) > touchP && Math.abs(gY - y) > touchP)
-          return;
-        press(x, y);
       }
 
       document.body.removeAttribute("onload");
