@@ -1,6 +1,7 @@
 //@ts-check
 "use strict";
-// v.0.1.15
+// v.0.1.16
+// rndrd boolean, not contextmenuable inputs, input coloring
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -49,7 +50,9 @@ if (typeof TouchEvent == "undefined")
   "#commandsTab button div" +
   "{display: inline-block;position: absolute;right: 21px;}" +
   "#commandsTab .items, #commandsTab .content" +
-  "{overflow-x: hidden;max-height: 470px;}"
+  "{overflow-x: hidden;max-height: 470px;}" +
+  "#commandsTab input, #commandsTab textarea, #commandsTab select" +
+  "{background-color: #000;color: #bbb;border: 1px solid #888;}"
 );
 
 (function (reg) {
@@ -1440,9 +1443,13 @@ press = function press(x, y) {
 };
 /** @type {(x:number,y:number,e:MouseEvent)=>void} */
 function commands(x, y, e) {
-  var w = innerWidth - 175, st = cmds.style;
+  // TODO: also problem initial low resolution on touchscreen devices
+  // should get solved apart from this 'quickfix'
+  if (e.target instanceof HTMLInputElement)
+    return;
+  var w = innerWidth - 175, ih = innerHeight - 255, st = cmds.style;
   st.left = (x > 178 ? x < w ? x - 175 : w - 180 : 5) + "px";
-  st.top = (y > 255 ? y - 250 : 5) + "px";
+  st.top = (y > 25 && y > (ih < 250 ? ih : 255) ? y - 250 : 5) + "px";
   st.display = "";
   // quircky workaround to copying image with contextmenu
   for (var el = e.target, dest = GE("commandsTab"); el instanceof Node;)
@@ -1466,7 +1473,8 @@ var cmdsMove = !1, cmdsX = 0, cmdsY = 0;
 over = function over(e) {
   if (e instanceof TouchEvent)
     return;
-  if (e.type === "mousedown" && e.target === cmdsHeader) {
+  if (e.type === "mousedown" || e.type === "touchstart" &&
+    e.target === cmdsHeader) {
     var st = cmds.style,
       x = Number(st.left.slice(0, -2)) || 0,
       y = Number(st.top.slice(0, -2)) || 0;
@@ -1474,8 +1482,9 @@ over = function over(e) {
     cmdsY = y - e.pageY - canvas.offsetTop;
     cmdsMove = !0;
     cmds.style.webkitUserSelect = cmds.style.userSelect = "none";
-  } else if (e.type === "mousemove" && cmdsMove) {
-    if (!e.buttons && !e.button) {
+  } else if (cmdsMove && (e.type === "mousemove" ||
+    e.type === "touchmove")) {
+    if (e instanceof MouseEvent && !e.buttons && !e.button) {
       cmdsMove = !1;
       return;
     }
@@ -1485,7 +1494,8 @@ over = function over(e) {
       w = innerWidth - 86;
     st.left = (x > -269 ? x < w ? x : w : -269) + "px";
     st.top = (y > 5 ? y : 5) + "px";
-  } else if (e.type === "mouseup")
+  } else if (e.type === "mouseup" ||
+    e.type === "touchend" || e.type === "touchcancel")
     cmdsMove = !1;
   else
     cmds.style.webkitUserSelect = cmds.style.userSelect = "";
@@ -1552,6 +1562,8 @@ render = function requestRendering() {
     //   var tfn = expensiveRenderer;//@ts-ignore
     //   clearTimeout(tfn.tOut);tfn.tOut = setTimeout(res, 100);
     // }); /// ASYNC!!!!!!!!
+    if (typeof rndrd != "undefined")
+      rndrd = !0;
   }
 }
 
