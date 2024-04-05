@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.0.15 -->
+<!-- v.0.0.17 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -138,7 +138,7 @@
       return;
     }
     
-    var F = function () {};
+    var UDF = void 0, F = function () {};
     try {
       /** @type {Touch} */
       var TCH = new Touch({identifier: 0, target: GE(0)});
@@ -547,7 +547,7 @@
     // * @param {tchsDat} changed
     // * @param {TouchEvent} ev
     // * @returns {void} */
-    var rndrd = !1, actionType = 0, moveScore = 0, moveCount = 0;
+    var actionType = 0, moveScore = 0, moveCount = 0;
     function touchGrab(all, ev) {
       ev.cancelable && ev.preventDefault();
       var x0 = all[0].movX,
@@ -626,7 +626,8 @@
 
     document.body.onload = function initDoc() {
       function resizeWindow() {
-        var  w = window.innerWidth, h = window.innerHeight;
+        var  w = window.innerWidth,// * devicePixelRatio,
+          h = window.innerHeight;// * devicePixelRatio;
         if (w > 4096 || h > 4096)
           if (w > h) {
             h = h * 4096 / w;
