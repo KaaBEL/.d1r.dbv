@@ -1,13 +1,16 @@
 //@ts-check
 "use strict";
-// v.0.1.16
-// rndrd boolean, not contextmenuable inputs, input coloring
+// v.0.1.17
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
 function EL(e) {
   return document.createElement(typeof e == "string" ? e : "div");
 }
+/** @param {string} data */
+var tN = function (data) {
+  return document.createTextNode(data);
+};
 
 var storage = typeof localStorage == "undefined" ? {
     /** @param {string} key */
@@ -27,7 +30,7 @@ if (typeof TouchEvent == "undefined")
   var s = "style", e = GE(s) || document.head.appendChild(EL(s)), t = null;
   for (e.id = s; t = e.childNodes[0];)
     e.removeChild(t);
-  e.appendChild(document.createTextNode(css));
+  e.appendChild(tN(css));
 })(
   "#commandsTab" +
   "{position:fixed;width: 350px;height: 500px;border-radius: 10px;" +
@@ -57,12 +60,27 @@ if (typeof TouchEvent == "undefined")
 
 (function (reg) {
   var expr = (reg.exec("" + location) || [])[1] || "";
+  // taken from: https://stackoverflow.com/a/8831937
+  for (var i = 0, l = (expr += "ABCD").length, hash = 0; i < l;) {
+    hash = (hash << 5) - hash + expr.charCodeAt(i++);
+    hash |= 0; // Convert to 32bit integer
+  }
+  // end of taken
+  expr = (hash < 0 ? hash + 0xffffffff : hash).toString(16);
+  function fun1() {
+    vX -= 16;
+    vY -= 16;
+    expensiveRenderer();
+    vX = (vX + 17) % innerWidth;
+    vY = (vY + 17) % innerHeight;
+    expr && requestAnimationFrame(fun1);
+  }
   switch (expr.toLocaleLowerCase()) {
-    case "?funneh":
-    case "?help":
-    case "?instructions":
-    case "?idk":
-      console.log("detected");
+    case "ccb21872":
+    case "4dbb2442":
+    case "f34b79a5":
+    case "f37f55d2":
+      console.log("Fun mode 1");
       /** @type {ChildNode|null} */
       var el = GE("auth"), parent = (el && el.parentNode) || EL();
       for (var text; el && (text = el).nodeName !== "H2";) {
@@ -71,8 +89,23 @@ if (typeof TouchEvent == "undefined")
       }
       parent.appendChild(EL("img")).src =
         "./assets/just_use_common_sense.png";
+      break;
+    case "3a613b4c":
+    case "2b675e07":
+    case "ab235503":
+      console.log("Fun mode 2");
+      /** @type {(x:number,y:number)=>void} */
+      var oldPress = F;
+      setTimeout(function () {
+        oldPress = press;
+        press = function () {
+          press = oldPress;
+          expr = "";
+        };
+      }, 1500);
+      requestAnimationFrame(fun1);
   }
-})(/\/\.d1r\.dbv\/editor\.html(?:#[^?]*)?($|\?[^=]*)/);
+})(/\/[0-9a-zA-Z._+\-]+\/editor\.html(?:#[^?]*)?($|\?[^=]*)/);
 
 var imgOverlay = document.body.appendChild(document.createElement("img"));
 imgOverlay.style.display = "none";
@@ -846,7 +879,10 @@ var settings = {
   /** mumst be in #xxxxxx hex color format */
   editorBackgroundColor: "#111111",
   /** (default) 0: dbc, 1: db */
-  editorBackgroundImage: 0
+  editorBackgroundImage: 0,
+  /** mumst be in #xxxxxx hex color format */
+  highlightColor: "#ff0000",
+  highlightWidth: 2
 };
 // naming may change? + meaningless comment
 function saveSettings() {
@@ -911,10 +947,10 @@ blockBind.changingPosition = !1;
 function utilities(tag) {
   var el = EL(), btn = EL("button");
   el.style.display = "none";
-  btn.appendChild(document.createTextNode(tag));
+  btn.appendChild(tN(tag));
   btn.style.color = "#569cd6";
   var br = btn.appendChild(EL("br")),
-    text = btn.appendChild(document.createTextNode("v"));
+    text = btn.appendChild(tN("v"));
   btn.onclick = function () {
     var isHide = !el.style.display;
     el.style.display = isHide ? "none" : "" ;
@@ -923,6 +959,7 @@ function utilities(tag) {
   };
   return [btn, el];
 }
+utilities.rend_UI = F;
 /**
  * @typedef {{name:string,type:string,fn:(ev:Event)=>any}} CommandItem
  * @param {string} name 
@@ -959,7 +996,7 @@ Command.add = function add(name, items, desc) {
 /**
  * @callback CmdInit
  * @param {(Node|{name:string,inp:HTMLInputElement})[]} items
- * @param {(tag:string)=>[HTMLButtonElement,HTMLDivElement]} collapsed
+ * @param {typeof utilities} collapsed
  * @returns {void} *///{({name:string,inp:HTMLInputElement}|Node)[]} */
 /** use items poperty intialize callback by pushing items
  * (items: Array<Node | {name: string, inp: HTMLInputElement}>) => void
@@ -975,14 +1012,14 @@ Command.push = function (name, initialize, description) {
       if ((itm = items[i]) instanceof Node)
         el.appendChild(itm);
       else {
-        el.appendChild(document.createTextNode(itm.name + ": "));
+        el.appendChild(tN(itm.name + ": "));
         el.appendChild(itm.inp);
         el.appendChild(EL("br"));
       }
   }));
 };
 
-Command.push("Select block", function (items, collapsed) {
+Command.push("Select Block", function (items, collapsed) {
   var bcks = {
       776: "TNT",
       834: "station wall 4 sides LBRU",
@@ -1029,14 +1066,14 @@ Command.push("Select block", function (items, collapsed) {
       "Logic": collapsed("Logic"),
       "Station parts": collapsed("Station parts")
     }, btn = EL("button");
-  btn.appendChild(document.createTextNode("remove block"));
+  btn.appendChild(tN("remove block"));
   btn.onclick = blockBind("remove", !1);
   items.push(btn);
   for (var i = 690, s = ""; i < Block.NAME.length; i++)
     if (s = bcks[i] || Block.NAME[i])
       if (!/__placeholder\d+__/.test(s)) {
         btn = EL("button");
-        btn.appendChild(document.createTextNode(s));
+        btn.appendChild(tN(s));
         btn.onclick = blockBind(Block.NAME[i], !1);
         groups[tags[i - 690 >> 4]][1].appendChild(btn);
       }
@@ -1076,9 +1113,149 @@ Command.add("Select Color", function () {
 }(), "Select color from list of colors, clicking on existing block will reco\
 lor it.");
 
+Command.push("Setup Properties", function (items, collapsed) {
+  var idx = 0, index = EL("input"), text = tN("0");
+  var posX = EL("input"), posY = EL("input"), setPos = EL("button");
+  var name = EL("input"), props = EL();
+  props.style.textAlign = "middle";
+  function displayProperties() {
+    var block = ship.blocks[idx], p;
+    name.value = block.internalName;
+    for (var itm; props.lastChild;)
+      props.removeChild(props.lastChild);
+    if (!(p = Block.PROP[Block.ID[block.internalName]]))
+      return render();
+    for (var i = p.length, Items = Block.Properties.Items; i-- > 0;) {
+      props.appendChild(tN(p[i].name + ": "));
+      switch ((itm = p[i].item) && p[i].type) {
+        case "Slider":
+          if (!(itm instanceof Items.Slider))
+            break;
+          // !!! only one Item of this property type allowed
+          var slider = props.appendChild(EL("input")),
+            input = props.appendChild(EL("input")), sldI = i;
+          slider.type = "range";
+          input.type = "number";
+          slider.min = input.min = "" + itm.min;
+          slider.max = input.max = "" + itm.max;
+          slider.value = input.value = block.properties.control[sldI];
+          slider.oninput = input.oninput = function () {
+            if (!(this instanceof HTMLInputElement))
+              return;
+            slider.value = this.value;
+            this.type == "range" ? input.value = slider.value : 0;
+            block.properties.control[sldI] = Number(slider.value) || 0;
+          };
+        case "Integer Slider":
+          if (!(itm instanceof Items["Integer Slider"]))
+            break;
+          itm;
+          ;
+        case "Dropdown":
+          if (!(itm instanceof Items.Dropdown))
+            break;
+          itm;
+          ;
+        case "Number Inputs":
+          if (!(itm instanceof Items["Number Inputs"]))
+            break;
+          itm;
+          ;
+        case "Text Inputs":
+          if (!(itm instanceof Items["Text Inputs"]))
+            break;
+          itm;
+          ;
+      }
+    }
+    render();
+  }
+  items.push(tN("Current order position: "), text);
+  items.push(EL("br"), {name: "Destination order", inp: index});
+  var select = EL("button"), next = EL("button");
+  select.appendChild(tN("Select destination block"));
+  select.onclick = function () {
+    var l = ship.blocks.length - 1;
+    idx = Number(index.value) || 0;
+    text.data = "" + (idx > l ? idx = l : idx);
+    displayProperties();
+  };
+  next.appendChild(tN("Move to next block"));
+  next.onclick = function () {
+    text.data = "" + (idx < ship.blocks.length - 1 ? idx += 1 : idx);
+    displayProperties();
+  };
+  var insert = EL("button"), exchange = EL("button");
+  insert.appendChild(tN("Insert"));
+  insert.onclick = function () {
+    var blocks = ship.blocks, temp = blocks[idx];
+    var dest = Number(index.value) || 0;
+    dest < blocks.length ? 0 : dest = blocks.length - 1;
+    if (idx > dest)
+      for (; idx-- > dest;)
+        blocks[idx + 1] = blocks[idx];
+    else
+      for (; idx < dest; idx++)
+        blocks[idx] = blocks[idx + 1];
+    blocks[text.data = "" + (idx = dest)] = temp;
+    displayProperties();
+  };
+  exchange.appendChild(tN("Exchange"));
+  exchange.onclick = function () {
+    var temp = ship.blocks[idx], dest = Number(index.value) || 0;
+    dest < ship.blocks.length ? 0 : dest = ship.blocks.length - 1;
+    ship.blocks[idx] = ship.blocks[dest];
+    ship.blocks[text.data = "" + (idx = dest)] = temp;
+    displayProperties();
+  };
+  items.push(select, next, insert, exchange);
+  setPos.appendChild(tN("Set position"));
+  setPos.onclick = function () {
+    var pos = ship.blocks[idx].position;
+    [posX, posY].map(function (e, i) {
+      pos[i + 1] = Math.round((Number(e.value) || 0) * 2);
+    });
+    render();
+  };
+  items.push({name: "Position X", inp: posX},
+    {name: "Position Y", inp: posY});
+  name.oninput = function () {
+    var n = Block.ID[name.value];
+    if (!(n > 689 && n < 946))
+      return;
+    ship.blocks[idx].internalName = name.value;
+    displayProperties();
+  };
+  items.push(setPos, {name: "Block name", inp: name}, props);
+  collapsed.rend_UI = function () {
+    var block = ship.blocks[idx] || {}, s = block.internalName, pos;
+    if (!(pos = block.position))
+      return;
+    // calculations from expensiveRenderer
+    var size = Block.Size.VALUE[Block.ID[s]] || {w: .5, h: .5};
+    var ow = size.w, oh = size.h, rot = 10 - block.rotation[2] & 3;
+    var w = ow + (ow & 16), h = oh + (oh & 16), tiny = (oh | ow) & 16;
+    var dx = -pos[1] * sc + vX, dy = pos[2] * sc + vY;
+    dx += (block.rotation[1] ?
+      rot === 0 ? 32 - w : rot === 3 ? 32 - h : tiny :
+      rot === 2 ? 32 - w : rot === 3 ? 32 - h : tiny) * sc / 16;
+    rot === 0 ?
+      dy += (32 - h - tiny) * sc / 16 :
+      rot === (block.rotation[1] ? 1 : 3) ?
+        dy += (32 - w - tiny) * sc / 16 :
+        0;
+    ctx.strokeStyle = settings.highlightColor;
+    ctx.lineWidth = settings.highlightWidth;
+    ctx.strokeRect(dx, dy, (rot & 1 ? h : w) * sc / 16,
+      (rot & 1 ? w : h) * sc / 16);
+  };
+  displayProperties();
+}, "Properties settings. (hIGHLY iNForNmATIve And ClEAr DesCRiPTioN!11!!!11!\
+1!!)");
+
 Command.push("Import/Export DBV", function (items, collapsed) {
   var inp = EL("input"), elBtn = EL("button"), error = EL();
-  items.push({name: ".dbv file content", inp: inp});
+  items.push({name: ".DBV file content", inp: inp});
   elBtn.onclick = function () {
     error.innerText = "";
     try {
@@ -1090,7 +1267,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
       console.error(err);
     }
   };
-  elBtn.appendChild(document.createTextNode("Export"));
+  elBtn.appendChild(tN("Export"));
   items.push(elBtn);
   (elBtn = EL("button")).onclick = function () {
     error.innerText = "";
@@ -1102,7 +1279,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
       console.error(err);
     }
   };
-  elBtn.appendChild(document.createTextNode("Import"));
+  elBtn.appendChild(tN("Import"));
   items.push(elBtn);
   error.style.color = "red";
   items.push(error);
@@ -1111,7 +1288,7 @@ rting creates JSON key of ship and puts it in text input, the key doesn't in\
 clude non existent or blocks inavalable in game.\nImporting displays vehicle\
  of JSON key from text input.\nJSON key is the content of .dbv savefile. It \
 contains textual data and can be opened using text editor.");
-Command.push("base64 key !!Experimental!!", function (items, collapsed) {
+Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
   var inp = EL("input"), elBtn = EL("button"), error = EL();
   items.push({name: "base64 key", inp: inp});
   elBtn.onclick = function () {
@@ -1124,7 +1301,7 @@ Command.push("base64 key !!Experimental!!", function (items, collapsed) {
       console.error(err);
     }
   };
-  elBtn.appendChild(document.createTextNode("Export"));
+  elBtn.appendChild(tN("Export"));
   items.push(elBtn);
   (elBtn = EL("button")).onclick = function () {
     error.innerText = "";
@@ -1136,7 +1313,7 @@ Command.push("base64 key !!Experimental!!", function (items, collapsed) {
       console.error(err);
     }
   };
-  elBtn.appendChild(document.createTextNode("Import"));
+  elBtn.appendChild(tN("Import"));
   items.push(elBtn);
   error.style.color = "red";
   items.push(error);
@@ -1159,7 +1336,7 @@ Command.push("Set camera view", function (items, collapsed) {
     zoom.value = "" + sc / 16;
     render();
   };
-  elBtn.appendChild(document.createTextNode("get"));
+  elBtn.appendChild(tN("get"));
   items.push(elBtn);
   (elBtn = EL("button")).onclick = function () {
     vX = Number(viewX.value) || 99;
@@ -1167,7 +1344,7 @@ Command.push("Set camera view", function (items, collapsed) {
     sc = (Number(zoom.value) || 1) * 16;
     render();
   };
-  elBtn.appendChild(document.createTextNode("set"));
+  elBtn.appendChild(tN("set"));
   items.push(elBtn);
 }, "Let's you to set zoom and camera position also on other than PC devices \
 (until movement is fixed for mobile devices) or just with keyboeard.");
@@ -1178,10 +1355,10 @@ Command.push("Change editor background", function (items, collapsed) {
   backgImg.onchange = function () {
     if (!(this instanceof HTMLInputElement))
       return;
-    render_background =
+    rend_background =
       (settings.editorBackground = this.checked) ?
-        render_backgPattern :
-        render_backgColor;
+        rend_backgPattern :
+        rend_backgColor;
     saveSettings()
     render();
   };
@@ -1228,7 +1405,7 @@ Command.push("Change editor background", function (items, collapsed) {
     render();
   };
   items.push({name: "Image pattern", inp: backgImg},
-    document.createTextNode("Background Image: "),
+    tN("Background Image: "),
     select,
     EL("br"),
     {name: "Background color", inp: backgClr});
@@ -1264,29 +1441,31 @@ var cmdsHeader = EL(), cmds = (function () {
     /** @type {HTMLElement} */
     e1 = e0.appendChild(EL("button")),
     back = e1.style;
-  e1.appendChild(document.createTextNode("<"));
+  e1.appendChild(tN("<"));
   back.visibility = "hidden";
   e1.onclick = function () {
     content.style.display = cmdsHeader.innerText = "";
     items.style.display = "none";
     back.visibility = "hidden";
+    utilities.rend_UI = F;
   };
   e0.appendChild(cmdsHeader);
   e1 = e0.appendChild(EL("button"));
-  e1.appendChild(document.createTextNode("X"));
+  e1.appendChild(tN("X"));
   e1.onclick = function () {
     nav.style.display = "none";
+    utilities.rend_UI = F;
   };
   var content = nav.appendChild(EL()), items = nav.appendChild(EL());
   content.className = "content";
   items.className = "items";
   (e1 = nav.appendChild(EL())).style.display = items.style.display = "none";
-  e1.appendChild(document.createTextNode("Search commads... coming spoon"));
+  e1.appendChild(tN("Search commads... coming spoon"));
   /** @param {Command} item */
   function initItems(item) {
     function ending() {
       var el = items.appendChild(EL());
-      el.innerText = "description:\n" + item.description;
+      el.innerText = "Description:\n" + item.description;
       el.style.color = "#879b90";
     }
     return function () {
@@ -1305,7 +1484,7 @@ var cmdsHeader = EL(), cmds = (function () {
         if (isChck && e instanceof HTMLInputElement)
           e.type = "checkbox";
         e[isBtn ? "onclick" : isChck ? "onchange" : "oninput"] = arr[i].fn;
-        (isBtn ? e : items).appendChild(document.createTextNode(
+        (isBtn ? e : items).appendChild(tN(
           arr[i].name + (isBtn ? "" : ": ")));
         items.appendChild(e);
         !isBtn && items.appendChild(EL("br"));
@@ -1316,16 +1495,16 @@ var cmdsHeader = EL(), cmds = (function () {
   for (var i = 0; i < Command.list.length; i++) {
     var item = Command.list[i];
     content.appendChild(e0 = EL("button"));
-    e0.appendChild(document.createTextNode(item.name));
+    e0.appendChild(tN(item.name));
     e0.onclick = initItems(item);
-    e0.appendChild(EL()).appendChild(document.createTextNode(">"));
+    e0.appendChild(EL()).appendChild(tN(">"));
   };
   return (bd || EL()).appendChild(nav);
 })();
 
 /** renderedShip moved to @see {ship} */
 
-function render_backgPattern() {
+function rend_backgPattern() {
   try {
     helpCanvas.width = imgBackg.naturalWidth || imgBackg.offsetWidth;
     helpCanvas.height = imgBackg.naturalHeight || imgBackg.offsetHeight;
@@ -1344,12 +1523,12 @@ function render_backgPattern() {
     console.debug(e, "at drawing background");
   }
 }
-function render_backgColor() {
+function rend_backgColor() {
   canvas.style.backgroundColor = settings.editorBackgroundColor;
 }
-var render_background = settings.editorBackground ?
-  render_backgPattern : render_backgColor;
-function render_initColors() {
+var rend_background = settings.editorBackground ?
+  rend_backgPattern : rend_backgColor;
+function rend_initColors() {
   helpCanvas.width = helpCanvas.height = 32;
   for (var i = Color.NAME.length, patterns = []; i-- > 0;) {
     try {
@@ -1359,11 +1538,11 @@ function render_initColors() {
   }
   return patterns;
 }
-function render_checkColors() {
-  rc.fillStyle = render_colors[0];
+function rend_checkColors() {
+  rc.fillStyle = rend_colors[0];
   rc.fillRect(0, 0, 32, 32);
   var dat = rc.getImageData(0, 0, 32, 32).data;
-  rc.fillStyle = render_colors[1];
+  rc.fillStyle = rend_colors[1];
   rc.fillRect(0, 0, 32, 32);
   var cpr = rc.getImageData(0, 0, 32, 32).data;
   for (var i = dat.length, b = !0, itv = 0; i-- > 0;)
@@ -1376,14 +1555,14 @@ function render_checkColors() {
       if (imgColor.complete === !1)
         return i = 0;
     }
-    render_colors[i] = rc.createPattern(helpCanvas, "repeat") || "";
-    if (++i >= render_colors.length) {
+    rend_colors[i] = rc.createPattern(helpCanvas, "repeat") || "";
+    if (++i >= rend_colors.length) {
       clearInterval(itv)
       render();
     }
   }, i = 0));
 };
-var render_colors = render_initColors();
+var rend_colors = rend_initColors();
 
 /** @type {Block[]} */
 var foundBlocks = [];
@@ -1443,8 +1622,9 @@ press = function press(x, y) {
 };
 /** @type {(x:number,y:number,e:MouseEvent)=>void} */
 function commands(x, y, e) {
-  // TODO: also problem initial low resolution on touchscreen devices
-  // should get solved apart from this 'quickfix'
+  /** also problem initial low resolution on touchscreen devices...
+   * @TODO since I've just found out it's not a bug, but a matter
+   * of different devicePixelRatio update for this is coming */
   if (e.target instanceof HTMLInputElement)
     return;
   var w = innerWidth - 175, ih = innerHeight - 255, st = cmds.style;
@@ -1467,7 +1647,7 @@ contextmenu = function (x, y, e) {
     //@ts-ignore
     el.onclick();
   (contextmenu = commands)(x, y, e);
-}
+};
 
 var cmdsMove = !1, cmdsX = 0, cmdsY = 0;
 over = function over(e) {
@@ -1500,14 +1680,23 @@ over = function over(e) {
   else
     cmds.style.webkitUserSelect = cmds.style.userSelect = "";
   // TODO: some nice system to account for end/'hoverleave'
-}
-
-render = function requestRendering() {
-  requestAnimationFrame(expensiveRenderer);
 };
+
+render = function () {
+  var rq = -1;
+  return function requestRendering() {
+    cancelAnimationFrame(rq);
+    rq = requestAnimationFrame(function () {
+      rq = -1;
+      expensiveRenderer();
+    });
+  };
+}();
+var rend_speeeeed = {};
 /*async*/ function expensiveRenderer() {
+  var t = Date.now();
   canvas.width = canvas.width;
-  render_background();
+  rend_background();
   ctx.imageSmoothingEnabled = false;
   var objs = ship.blocks;
   for (var i = 0, id = 0, pos = [0, 0, 0]; i < objs.length; i++) {
@@ -1551,7 +1740,7 @@ render = function requestRendering() {
     rc.rotate(rot * Math.PI / 2);
     rc.translate(rot > 1 ? -w : 0, rot && rot < 3 ? -h : 0);
     // apply textures
-    rc.fillStyle = render_colors[Color.ID[objs[i].properties.color]];
+    rc.fillStyle = rend_colors[Color.ID[objs[i].properties.color]];
     rc.fillRect(0, 0, w, h);
     rc.globalCompositeOperation = "destination-in";
     rc.drawImage(imgMask, size.x, size.y, w, h, 0, 0, w, h);
@@ -1562,11 +1751,12 @@ render = function requestRendering() {
     //   var tfn = expensiveRenderer;//@ts-ignore
     //   clearTimeout(tfn.tOut);tfn.tOut = setTimeout(res, 100);
     // }); /// ASYNC!!!!!!!!
-    if (typeof rndrd != "undefined")
-      rndrd = !0;
   }
+  utilities.rend_UI();
+  var t = Date.now() - t;
+  rend_speeeeed[t] = rend_speeeeed[t] + 1 || 0;
 }
 
 init = function () {
-  render_checkColors();
+  rend_checkColors();
 };

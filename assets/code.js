@@ -1,7 +1,7 @@
 //@ts-check
 "use strict";
 // see version of editor.js
-var UDF = void 0, OP = Object.prototype.hasOwnProperty, OBJ;
+var OP = Object.prototype.hasOwnProperty, OBJ;
 OBJ = {};
 
 /** check dictionary definitions
@@ -12,7 +12,7 @@ OBJ = {};
  * @overload
  * @param {{[x: number]: string, length: number}} dicNum
  * @param {string} dicVal
- * @returns {void} */
+\* @returns {void} */
 function dictionaryDefs(dicNum, dicVal, AT) {
   if (location.origin.slice(0, 4) === "http" && location.port !== "5500")
     return;
@@ -66,8 +66,92 @@ function dictionaryDefs(dicNum, dicVal, AT) {
   console.timeEnd();
 }
 
+function Logic() {
+  this.prop = "";
+  throw new TypeError("Illegal constructor");
+}
+Logic.something = "now it's a calss";
+function Color() {
+  this.prop = "";
+  throw new TypeError("Illegal constructor");
+}
+Color.NAME = {
+  0: "White",
+  1: "Light Gray",
+  2: "Dark Gray",
+  3: "Black",
+  4: "Yellow",
+  5: "Orange",
+  6: "Red",
+  7: "Wine",
+  8: "Pink",
+  9: "Purple",
+  10: "Light Blue",
+  11: "Dark Blue",
+  12: "Navy",
+  13: "Lime",
+  14: "Green",
+  15: "Fuel",
+  16: "Yellow Hazard Stripes",
+  17: "Red Hazard Stripes",
+  18: "White Hazard Stripes",
+  19: "Festive Red",
+  20: "Festive Green",
+  21: "BREAD",
+  length: 22
+};
+Color.ID = {
+  "White": 0,
+  "Light Gray": 1,
+  "Dark Gray": 2,
+  "Black": 3,
+  "Yellow": 4,
+  "Orange": 5,
+  "Red": 6,
+  "Wine": 7,
+  "Pink": 8,
+  "Purple": 9,
+  "Light Blue": 10,
+  "Dark Blue": 11,
+  "Navy": 12,
+  "Lime": 13,
+  "Green": 14,
+  "Fuel": 15,
+  "Yellow Hazard Stripes": 16,
+  "Red Hazard Stripes": 17,
+  "White Hazard Stripes": 18,
+  "Festive Red": 19,
+  "Festive Green": 20,
+  "BREAD": 21
+};
+Object.freeze(Color.NAME);
+Object.freeze(Color.ID);
+dictionaryDefs(Color.NAME, Color.ID, "Color definitions");
+/** @param {string} name @return {Colors} */
+Color.default = function getColor(name) {
+  if (/Hydrogen Thruster/.test(name))
+    return "Yellow";
+  if (/Wheel|Battery|__placeholder84[456]__/.test(name))
+    return "Light Gray";
+  if (/Weight|Armou?r|Camera Block/.test(name))
+    return "Dark Gray";
+  if (/Hydrogen Tank/.test(name))
+    return "Fuel";
+  if (/Drill|Storage Rack/.test(name))
+    return "Orange";
+  if (/Ion Thruster/.test(name))
+    return "Lime"
+  if (/__placeholder776__/.test(name))
+    return "Red";
+  if (Color.colorlessRegexp.test(name))
+    return null;
+  return "White";
+};
+Color.colorlessRegexp = new RegExp("Struct|Glass Block|Glass Wedge|Sol\
+ar Block|Solar Panel|Hinge|Piston|Ghost Block|Gauge|Dial|Digital Displ\
+ay|__placeholder(?:839|84[0-26-9]|85[0-3])__");
 /** block names in dbv are case insesitve loaded by game,
- * Block name definitions require strict letter cases here */
+\* Block name definitions require strict letter cases here */
 /**
  * @typedef {[number,number,number]} XYZPosition
  * @typedef {[0|1|2,boolean,0|1|2|3]} Rotation
@@ -156,6 +240,7 @@ Block.NAME = {
   793: "Camera Block",
   794: "Ghost Block",
   795: "Dock",
+  796: "Small Rift Drive",
   // Red Magnet
   798: "__placeholder798__",
   // Inversed Dock
@@ -291,6 +376,7 @@ Block.ID = {
   "Camera Block": 793,
   "Ghost Block": 794,
   "Dock": 795,
+  "Small Rift Drive": 796,
   "__placeholder798__": 798,
   "__placeholder799__": 799,
   "Constant On Signal": 802,
@@ -357,7 +443,7 @@ Block.arrayFromObjects = function arrayFromObjects(blocks) {
     o.prop.color = block.color || block.s || o.prop.color || "";
     /**
      * @TODO properties control and nodeIndex will work differently
-     * eventually (not in this update I guess) */
+    \* eventually (not in this update I guess) */
     o.prop.control = block.c || o.prop.control;
     o.prop.nodeIndex = block.ni || o.prop.nodeIndex;
     var name = typeof o.name == "string" ? o.name : "__unknown__",
@@ -407,19 +493,19 @@ Block.generateArray = function generateArray(n) {
       ["", "Block", "Core", "Reaction Wheel"])[i / 3 | 0],
       [0, i * 2 % 6 - 2, (i / 3 | 0) * 2 - 4],
       [0, !1, i === 9 ? 1 : 0],
-      {color: i > 5 ?
+      Block.Properties.addDefault((i % 3 !== 1 ?
+        [739, 754, 757, 692] :
+        [-1, 691, 690, 746])[i / 3 | 0], {color: i > 5 ?
         i & 1 ? "White" : "Light Gray" :
-        i % 3 !== 1 ? i < 3 ? "Yellow" : "Fuel" : "White"}));
+        i % 3 !== 1 ? i < 3 ? "Yellow" : "Fuel" : "White"})));
   blocks[10] = blocks[11];
   blocks.length--;
-  // blocks.push(new Block("Wedge", [4, 0, 2], [0, !0, 2]),
-  //   new Block(SH + "Thruster", [4, 0, -4], [0, !0, 1]));
   return blocks;
 };
 /** object is frost
  * @typedef {{x: number, y: number, w: number, h: number}}
  * @param {number} x @param {number} y
- * @param {number} w @param {number} h */
+\* @param {number} w @param {number} h */
 Block.Size = function Size(x, y, w, h) {
   this.x = x;
   this.y = y;
@@ -433,7 +519,7 @@ Block.Size.height = 4;
  * @typedef {[number,number,number,number,number]} PreciseDef
  * @typedef {[number]|[number,number,number]|PreciseDef} SizeDef
  * @typedef {SizeDef|SizeDef[]} SizesArg
- * @type {(...arg: SizesArg[]) => {[key: number]: Block.Size}} */
+\* @type {(...arg: SizesArg[]) => {[key: number]: Block.Size}} */
 Block.Size.genterateSizes = function () {
   var r = {690: new this(0, 0, 2, 2)},
     /** @type {{[key: number]: SizeDef|SizeDef[], length: number}} */
@@ -454,11 +540,6 @@ Block.Size.genterateSizes = function () {
         //@ts-ignore
         nw.push(v);
       }
-      // if (v[2] && v[1] && v[2] < 1) {
-      //   this.TINY[l] = new this(v[3] || 0, v[4] || 1 - v[2], v[1], v[2]);
-      //   v[2] = 1;
-      //   v[1] < 1 ? v[1] = 1 : 0;
-      // }
       r[l] = new this(x, y, (v[1] || 1) * 32, (v[2] || 1) * 32);
       if (j >= a[i].length)
         if (++i < a.length)
@@ -470,17 +551,15 @@ Block.Size.genterateSizes = function () {
     console.log(JSON.stringify(nw).replace(/,/g, ", "));
   return r;
 };
-// /** @type {{[key: number]: Block.Size}} */
-// Block.Size.TINY = {};
-// blocks were still not tested properly all at once
-// one more undeted bug with block or texture and adding unit test for  itr
+// (TODO:) blocks were still not tested properly all at once
+// one more undeted bug with block or texture and adding unit test for it
 Block.Size.VALUE = Block.Size.genterateSizes([[0], [1], [2], [7, 1, 2]],
   [[8, 1, 4], [50], [51, 1, 1], [52], [107, 1, 2], [9, 1, 4], [53], [54]],
   [[55], [56, .5, .5], [3], [100, 2, 2], [10, 3, 4], [102, .5, .5]],
   [[152], [103, 1, 2], [13, 2, 3], [4], [5], [104, 2, 2], [15, 3, 3]],
   [[6], [18, 2, 2], [20, 2, 3], [163], [118, 2, 2], [31, 3, 3], [167]],
   [[106], [156], [164], [165], [166], [182], [170], [171], [22]],
-  [[23, 1, 2], [72], [122], [181], [123], [172], [173, 1, .5]],
+  [[23, 1, 2], [72], [122], [181], [123], [172], [173, 1, .5], [46]],
   [[130, 1, .5], [180, 1, .5], [24, .5, .5], [74], [124], [174], [25]],
   [[75], [125], [175], [26, 1, .5], [76, .5, .5], [126, 1, .5]],
   [[176, .5, .5], [27], [77], [127], [177], [28, 1, .5], [78, 1, .5]],
@@ -490,12 +569,230 @@ Block.Size.VALUE = Block.Size.genterateSizes([[0], [1], [2], [7, 1, 2]],
   [[140, 2, 2], [142, 2, 2], [84], [85], [86], [34, 4, 1], [90, 2, 1]],
   [[38, 2, 3], [87]]);
 
+// // @ts-ignore
+// /** @typedef {typeof Block.Properties.Items} ItemTs */
+// TODO: To be considered for resystemizing
+/** @template {keyof ItemTs} T @param {T} type @param {string} name */
+Block.Properties = function (type, name) {
+  this.type = type;
+  this.name = name;
+  // /**
+  //  * @type {{
+  //  *  "Slider":Block.Properties.Items["Slider"],
+  //  *  "Integer Slider":new()=>ItemTs["Integer Slider"],
+  //  *  "Dropdown":new()=>ItemTs["Dropdown"],
+  //  *  "Number Inputs":new()=>ItemTs["Number Inputs"],
+  //  *  "Text Inputs":new()=>ItemTs["Text Inputs"]
+  //  * }[T]}
+  //  */
+  /** @type {ItemTs[T]} *///@ts-ignore
+  this.item = new Block.Properties.Items[type]();
+  // switch (type) {
+  //   case "Slider":
+  //     /** @type {ItemTs[T]} */
+  //     this.item = new Block.Properties.Items["Slider"]();
+  //     break;
+  //   case "Integer Slider":
+  //     this.item = new Block.Properties.Items["Integer Slider"]();
+  //     break;
+  //   case "Dropdown":
+  //     this.item = new Block.Properties.Items["Dropdown"]();
+  //     break;
+  //   case "Number Inputs":
+  //     this.item = new Block.Properties.Items["Number Inputs"]();
+  //     break;
+  //   case "Text Inputs":
+  //     this.item = new Block.Properties.Items["Text Inputs"]();
+  //     break;
+  // }
+}
+Block.Properties.Items = {
+  /** @type {new()=>Slider} */
+  "Slider": function Slider() {
+    this.min = 0;
+    this.max = 0;
+    this.default = 0;
+  },
+  /** @type {new()=>IntegerSlider} */
+  "Integer Slider": function IntegerSlider() {
+    this.min = 0;
+    this.max = 0;
+    this.default = 0;
+  },
+  /** @type {new()=>Dropdown} */
+  "Dropdown": function Dropdown() {
+    this.options = [""];
+    this.default = 0;
+  },
+  /** @type {new()=>NumberInputs} */
+  "Number Inputs": function NumberInputs() {
+    this.default = [0];
+  },
+  /** @type {new()=>TextInputs} */
+  "Text Inputs": function TextInputs() {
+    this.default = [""];
+  }
+};
+/**
+ * @typedef {["Slider", "Integer Slider", "Dropdown", "Number Inputs",
+ * "Text Inputs"]} itemTypes
+\*/
+/** @type {itemTypes} */
+Block.Properties.itemTypes = ["Slider", "Integer Slider", "Dropdown",
+  "Number Inputs", "Text Inputs"];
+/** Arguments typedefs for Properties Items generator
+ * @typedef {[0,string,number,number,number]} ItmArg0
+ * @typedef {[1,string,number,number,number]} ItmArg1
+ * @typedef {[2,string,string[],number]} ItmArg2
+ * @typedef {[3,string,number[]]} ItmArg3
+ * @typedef {[4,string,string[]]} ItmArg4
+\* @typedef {ItmArg0|ItmArg1|ItmArg2|ItmArg3|ItmArg4} PropsArg */
+/** @typedef {Block.Properties<keyof ItemTs>} Props */
+// /** @type {(props:{[key:number]:PropsArg[]})=>{[key:number]:Props[]}} */
+// Block.Properties.generateProperties = function (props) {
+//   /** @type {{[key:number]:Props[]}} */
+//   var r = {}, items = Block.Properties.itemTypes;
+//   /** @type {{[key: number]: PropsArg[], length: number}} */
+//   var a = arguments;
+//   for (var i = 0, j = 0, l = 690; l < Block.NAME.length; l++)
+//     if (Block.NAME[l]) 
+//       for (var j = 0, argarr = a[i]; j < argarr.length; j++) {
+//         var v = argarr[j], p = new Block.Properties(items[v[0]], "");
+//         r[l] = setups[v[0]](p.item);
+//       }
+//   // typeof nw == "object" &&
+//   //   console.log(JSON.stringify(nw).replace(/,/g, ", "));
+//   return r;
+// };
+//** @param {PropsArg[]} argArr */
+/**
+ * @type {<T extends PropsArg[]>(argArr: T)=>Props[]}
+\*/
+Block.Properties.justOne = function (argArr) {
+  for (var j = 0, r = []; j < argArr.length; j++) {
+    var p, v = argArr[j];
+    switch (v[0]) {
+      case 0:
+        p = r[j] = new Block.Properties("Slider", v[1]);
+        p.item.min = v[2];
+        p.item.max = v[3];
+        p.item.default = v[4];
+        break;
+      case 1:
+        p = r[j] = new Block.Properties("Integer Slider", v[1]);
+        p.item.min = v[2];
+        p.item.max = v[3];
+        p.item.default = v[4];
+        break;
+      case 2:
+        p = r[j] = new Block.Properties("Dropdown", v[1]);
+        p.item.options = v[2];
+        p.item.default = v[3];
+        break;
+      case 3:
+        p = r[j] = new Block.Properties("Number Inputs", v[1]);
+        p.item.default = v[2];
+        break;
+      case 4:
+        p = r[j] = new Block.Properties("Text Inputs", v[1]);
+        p.item.default = v[2];
+    }
+  }
+  //@ts-ignore
+  return r;
+};
+/** @param {string|number} name @param {object} property */
+Block.Properties.addDefault = function addPropertie(name, property) {
+  var propsDef = Block.Properties.VALUE[typeof name == "number" ?
+    name :
+    Block.ID[name]
+  ];
+  property.control = [];
+  if (!(propsDef instanceof Array))
+    return property;
+  for (var i = propsDef.length, p; i-- > 0;)
+    if ((p = propsDef[i]) instanceof Block.Properties)
+      property.control[i] = typeof p.item.default != "undefined" ?
+        p.item.default :
+        p.item.default;
+  return property;
+};
+/** experimental shortcut for easier acces of Block.Properties.VALUE
+/** @type {{[key: number]: Props[] | undefined}} */
+Block.Properties.VALUE = Block.PROP = {
+  738: Block.Properties.justOne([[0, "Force", 375, 1125, 1125]]),
+  739: Block.Properties.justOne([[0, "Force", 1500, 4500, 4500]]),
+  740: Block.Properties.justOne([[0, "Force", 6000, 18000, 18000]]),
+  741: Block.Properties.justOne([[0, "Force", 1800, 54000, 54000]]),
+  742: Block.Properties.justOne([[0, "Force", 375, 1125, 1125]]),
+  743: Block.Properties.justOne([[0, "Force", 1500, 4500, 4500]]),
+  744: Block.Properties.justOne([[0, "Force", 3000, 9000, 9000]]),
+  745: Block.Properties.justOne([[0, "Force", 9000, 27000, 27000]]),
+  746: Block.Properties.justOne([[0, "Torque", 2500, 7500, 7500]]),
+  790: Block.Properties.justOne([[0, "Gear Ratio", 0.2, 3, 1]]),
+  792: Block.Properties.justOne([[0, "Gear Ratio", 0.2, 3, 1]]),
+  803: Block.Properties.justOne([[2, "Controls", [
+    "Up",
+    "Down",
+    "Left",
+    "Right",
+    "Turn Left",
+    "Turn Right",
+    "Action 1",
+    "Action 2"
+  ], 0]]),
+  812: Block.Properties.justOne([[0, "Duraion in seconds", 0.1, 5, 1]]),
+  813: Block.Properties.justOne([[3, "Number", [0]]]),
+  814: Block.Properties.justOne([[2, "Mode", [
+    "Absolute",
+    "Directional",
+    "Angular",
+    "G-force"
+  ], 0]]),
+  821: Block.Properties.justOne([[3, "Range", [0, 1]]]),
+  823: Block.Properties.justOne([[4, "Function", [""]]]),
+  825: Block.Properties.justOne([[3, "Range", [-1, 1]]]),
+  826: Block.Properties.justOne([[3, "Range", [-1, 1]]]),
+  827: Block.Properties.justOne([[1, "Decimals amount", 1, 4, 2]])
+};
+
+/*
+Slider:
+  Tiny Hydrogen Thruster: 375; 1125;
+  Small Hydrogen Thruster: 1500; 4500;
+  Medium Hydrogen Thruster: 6000; 18000;
+  Large Hydrogen Thruster: 18000; 54000;
+  Tiny Ion Thruster: 375; 1125;
+  Small Ion Thruster: 1500; 4500;
+  Medium Ion Thruster: 3000; 9000;
+  Large Ion Thruster: 9000; 27000;
+  Reaction Wheel: 2500; 7500;
+  
+  Hinge: 0.2; 3;
+  Piston: 0.2; 3;
+  
+  Delay: 0.1; 5;
+Integer Slider:
+  Digital Dispay: 1; 4;
+Dropdown:
+  Control Block: "Up", "Down", "Left", "Right", "Turn Left", "Turn Right", "Action 1", "Action 2";
+  Speed Sensor: "Absolute", "Directional", "Angular", "G-force";
+Number inputs:
+  Constant Number: 1;
+  Clamp: 2;
+  Treshold Gate: 2;
+  Gauge: 2;
+  Dial: 2;
+Text Inputs:
+  Function Block: 1;
+*/
+
 /**
  * @param {string} name
  * @param {Array<number>} version
  * @param {string} time
  * @param {Array<Block>} blocks
- * @param {object|null} [properties=null] */
+\* @param {object|null} [properties=null] */
 function Ship(name, version, time, blocks, properties) {
   this.name = name;
   this.gameVersion = version;
@@ -566,83 +863,6 @@ Ship.toDBV = function toDBV(ship) {
     b: blocks,
     nc: (ship.prop || {}).nodeConnections
   };
-};
-function Color() {
-  this.prop = "";
-  throw new TypeError("Illegal constructor");
-}
-Color.NAME = {
-  0: "White",
-  1: "Light Gray",
-  2: "Dark Gray",
-  3: "Black",
-  4: "Yellow",
-  5: "Orange",
-  6: "Red",
-  7: "Wine",
-  8: "Pink",
-  9: "Purple",
-  10: "Light Blue",
-  11: "Dark Blue",
-  12: "Navy",
-  13: "Lime",
-  14: "Green",
-  15: "Fuel",
-  16: "Yellow Hazard Stripes",
-  17: "Red Hazard Stripes",
-  18: "White Hazard Stripes",
-  19: "Festive Red",
-  20: "Festive Green",
-  21: "BREAD",
-  length: 22
-};
-Color.ID = {
-  "White": 0,
-  "Light Gray": 1,
-  "Dark Gray": 2,
-  "Black": 3,
-  "Yellow": 4,
-  "Orange": 5,
-  "Red": 6,
-  "Wine": 7,
-  "Pink": 8,
-  "Purple": 9,
-  "Light Blue": 10,
-  "Dark Blue": 11,
-  "Navy": 12,
-  "Lime": 13,
-  "Green": 14,
-  "Fuel": 15,
-  "Yellow Hazard Stripes": 16,
-  "Red Hazard Stripes": 17,
-  "White Hazard Stripes": 18,
-  "Festive Red": 19,
-  "Festive Green": 20,
-  "BREAD": 21
-};
-Object.freeze(Color.NAME);
-Object.freeze(Color.ID);
-dictionaryDefs(Color.NAME, Color.ID, "Color definitions");
-/** @param {string} name @return {Colors} */
-Color.default = function getColor(name) {
-  if (/Hydrogen Thruster/.test(name))
-    return "Yellow";
-  if (/Wheel|Battery|__placeholder84[456]__/.test(name))
-    return "Light Gray";
-  if (/Weight|Armou?r/.test(name))
-    return "Dark Gray";
-  if (/Hydrogen Tank/.test(name))
-    return "Fuel";
-  if (/Drill|Storage Rack/.test(name))
-    return "Orange";
-  if (/Ion Thruster/.test(name))
-    return "Lime"
-  if (/__placeholder776__/.test(name))
-    return "Red";
-  // TODO: list all other colorless blocks
-  if (/Hinge|Digital Display/.test(name))
-    return null;
-  return "White";
 };
 
 var ship = Ship.fromObject({name: "Starter Droneboi"});
@@ -1394,7 +1614,7 @@ function decodeCmprsShip(cmprsShip) {
 function binaryData($help) {
   if (typeof $help === "boolean")
     return "args: ArrayBuffer | Array (data), ?[?from, to] (slice), ?b\
-      ytesize, ?isMSBF=false :displays data in bits(for viewing data)";
+ytesize, ?isMSBF=false :displays data in bits(for viewing data)";
   var i = 1, j = 0, l, bs = 0, bit = 1, s, slice = [0], a = arguments;
   if (a[1] instanceof Array && a[1].length) {
     i++;
@@ -1428,7 +1648,7 @@ function binaryData($help) {
   }
 }
 /** function for manual use to check rotations or/and rotation index
- * @param {[number, number, number]} arr */
+\* @param {[number, number, number]} arr */
 function rotationIndex(arr) {
   var rot = rotateBlock(arr);
   var num = rot[2] | +rot[1] << 2 | rot[0] << 3;
