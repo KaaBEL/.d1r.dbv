@@ -1,6 +1,7 @@
 //@ts-check
 "use strict";
-// v.0.1.17
+// v.0.1.18
+
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -33,7 +34,8 @@ if (typeof TouchEvent == "undefined")
   e.appendChild(tN(css));
 })(
   "#commandsTab" +
-  "{position:fixed;width: 350px;height: 500px;border-radius: 10px;" +
+  "{position:fixed;width: 350px;height: " +
+  (innerHeight > 500 ? 500 : innerHeight) + "px;border-radius: 10px;" +
   "background-color: #000000bb;}" +
   "#commandsTab, #commandsTab button{color: #999;" +
   "font-size: 16px;font-family:monospace,sans-serif,Courier,Consolas;}" +
@@ -53,7 +55,8 @@ if (typeof TouchEvent == "undefined")
   "#commandsTab button div" +
   "{display: inline-block;position: absolute;right: 21px;}" +
   "#commandsTab .items, #commandsTab .content" +
-  "{overflow-x: hidden;max-height: 470px;}" +
+  "{overflow-x: hidden;max-height: " +
+  (innerHeight > 500 ? 470 : innerHeight - 40) + "px;}" +
   "#commandsTab input, #commandsTab textarea, #commandsTab select" +
   "{background-color: #000;color: #bbb;border: 1px solid #888;}"
 );
@@ -882,7 +885,8 @@ var settings = {
   editorBackgroundImage: 0,
   /** mumst be in #xxxxxx hex color format */
   highlightColor: "#ff0000",
-  highlightWidth: 2
+  highlightWidth: 2,
+  logicPreviewAlpha: .7
 };
 // naming may change? + meaningless comment
 function saveSettings() {
@@ -1324,6 +1328,33 @@ m input to replace displayed ship with one from key. It can also store unimp\
 lemented blocks like TNT, station blocks and more. Be aware that the key lim\
 its vehicle in and will refuse to compress too big vehicle. There are also b\
 ugs since I wasn't going down the rabbit hole of debugging every last one.");
+Command.push("Vehicle weight", function (items, collapsed) {
+  var weight = 0, drives = 0, unknown = 0, all = ship.blocks;
+  for (var i = all.length; i-- > 0;) {
+    var id = Block.ID[all[i].internalName], v = Block.WEIGHT[id];
+    id === 796 && drives++;
+    v ? weight += v : unknown++;
+  }
+  var riftCrystals = EL("input"), dist = tN("");
+  riftCrystals.type = "number";
+  riftCrystals.value = "4";
+  //@ts-ignore
+  (riftCrystals.oninput = function () {
+    var n = Number(riftCrystals.value) || 0;
+    dist.data = "" + (10000 / weight * (n > drives * 4 ?
+      drives * 4 :
+      n)) + " Ly units.";
+  })();
+  items.push({name: "RC", inp: riftCrystals});
+  items.push(tN("The vehicle from " + new Date() + " contains " +
+    all.length + " blocks of which " + unknown + " have not defined weight. \
+The weight of that vehicle is " + weight + " mass units and with " + drives +
+    " Small Rift Drives it can rift drive distance of "), dist);
+}, "Shows weight and distance the vehicle can travel, it takes amount of Sma\
+ll Rift Drives into account, although in the game you are allowed to buy onl\
+y 1. It also shows ammount of blocks in it and time when the vehicle had the\
+se stats, because it doesn't update after this command have been opened, onl\
+y changing amount of RC recalculates distance.");
 Command.push("Set camera view", function (items, collapsed) {
   var viewX = EL("input"), viewY = EL("input"), zoom = EL("input");
   var elBtn = EL("button");
@@ -1448,6 +1479,7 @@ var cmdsHeader = EL(), cmds = (function () {
     items.style.display = "none";
     back.visibility = "hidden";
     utilities.rend_UI = F;
+    render();
   };
   e0.appendChild(cmdsHeader);
   e1 = e0.appendChild(EL("button"));
@@ -1455,6 +1487,7 @@ var cmdsHeader = EL(), cmds = (function () {
   e1.onclick = function () {
     nav.style.display = "none";
     utilities.rend_UI = F;
+    render();
   };
   var content = nav.appendChild(EL()), items = nav.appendChild(EL());
   content.className = "content";
@@ -1617,7 +1650,7 @@ press = function press(x, y) {
   }
   rand !== "remove" &&
     arr.push(new Block(rand, [0, x * 2, y * 2], [0, !1, 0],
-      {color: Color.default(rand)}));
+      Block.Properties.addDefault(rand, {color: Color.default(rand)})));
   render();
 };
 /** @type {(x:number,y:number,e:MouseEvent)=>void} */
@@ -1625,7 +1658,8 @@ function commands(x, y, e) {
   /** also problem initial low resolution on touchscreen devices...
    * @TODO since I've just found out it's not a bug, but a matter
    * of different devicePixelRatio update for this is coming */
-  if (e.target instanceof HTMLInputElement)
+  if (e.target instanceof HTMLInputElement ||
+    e.target instanceof HTMLTextAreaElement)
     return;
   var w = innerWidth - 175, ih = innerHeight - 255, st = cmds.style;
   st.left = (x > 178 ? x < w ? x - 175 : w - 180 : 5) + "px";
@@ -1641,6 +1675,12 @@ function commands(x, y, e) {
     }
   st.display = "none";
 }
+function devt_share(inp) {
+  var el = GE("commandsTab");
+  if (el)
+    (el.lastChild instanceof HTMLTextAreaElement ?
+      el.lastChild : el.appendChild(EL("textarea"))).value = inp;
+}
 contextmenu = function (x, y, e) {
   var el = GE("info");
   if (el instanceof HTMLElement && el.onclick)
@@ -1653,7 +1693,7 @@ var cmdsMove = !1, cmdsX = 0, cmdsY = 0;
 over = function over(e) {
   if (e instanceof TouchEvent)
     return;
-  if (e.type === "mousedown" || e.type === "touchstart" &&
+  if ((e.type === "mousedown" || e.type === "touchstart") &&
     e.target === cmdsHeader) {
     var st = cmds.style,
       x = Number(st.left.slice(0, -2)) || 0,
@@ -1682,6 +1722,13 @@ over = function over(e) {
   // TODO: some nice system to account for end/'hoverleave'
 };
 
+function rend_test(e, oh, ow, w, h, rot, dx, dy) {
+  var x = e.x - (ow & 16) / 32, y = e.y - (oh & 16) / 32,
+    x1 = e.x, y1 = e.y - ((ow | oh) & 16) / 32;
+  x = [x + w / 32, y1 + h / 32, -x + w / 32, -y1 + h / 32][rot];
+  y = [-y + h / 32, x1 + w / 32, y + h / 32, -x1 + w / 32][rot];
+  return new Logic.Nodes(e.type, x * sc + dx, y * sc + dy);
+};
 render = function () {
   var rq = -1;
   return function requestRendering() {
@@ -1698,7 +1745,10 @@ var rend_speeeeed = {};
   canvas.width = canvas.width;
   rend_background();
   ctx.imageSmoothingEnabled = false;
-  var objs = ship.blocks;
+  /** @type {Logic.Nodes[]} */
+  var rend_logic = [], objs = ship.blocks;
+  if (Logic.rend)
+    ctx.globalAlpha = settings.logicPreviewAlpha;
   for (var i = 0, id = 0, pos = [0, 0, 0]; i < objs.length; i++) {
     pos = objs[i].position;
     if ((id = Block.ID[objs[i].internalName]) < 12) {
@@ -1727,6 +1777,20 @@ var rend_speeeeed = {};
       rot === (objs[i].rotation[1] ? 1 : 3) ?
         dy += (32 - w - tiny) * sc / 16 :
         0;
+    // update logic nodes render posiotions
+    if (Logic.rend && Logic.Nodes.VALUE[id])
+      if (!objs[i].properties.nodeIndex[0])
+        console.error("Logic properties missing, at expensiveRenderer();");
+    // var logic = Logic.Nodes.VALUE[id];
+    // if (Logic.rend && logic)
+    //   Array.prototype.push.apply(rend_logic, logic.map(function(e) {
+    //     // facepalm No.1: works now actually
+    //     var x = e.x - (ow & 16) / 32, y = e.y - (oh & 16) / 32;
+    //     var xn = [x + w / 32, y + h / 32, -x + w / 32, -y + h / 32][rot],
+    //       yn = [-y + h / 32, x + w / 32, y + h / 32, -x + w / 32][rot];
+    //     return new Logic.Nodes(e.type, xn * sc + dx, yn * sc + dy);
+    //     return rend_test(e, oh, ow, w, h, rot, dx, dy);
+    //   }));
     // sets needed size of block and resets canvas
     helpCanvas.width = sw = rot & 1 ? h : w;
     helpCanvas.height = sh = rot & 1 ? w : h;
@@ -1752,8 +1816,25 @@ var rend_speeeeed = {};
     //   clearTimeout(tfn.tOut);tfn.tOut = setTimeout(res, 100);
     // }); /// ASYNC!!!!!!!!
   }
+  ctx.globalAlpha = 1;
+  ctx.lineCap = "round";
+  for (var j = Logic.rend ? Logic.nodes.length : 0; j-- > 0;) {
+    var node = Logic.nodes[j];
+    if (!node)
+      continue;
+    var n = node.type;
+    ctx.beginPath();
+    ctx.moveTo(node.x, node.y);
+    ctx.closePath();
+    ctx.lineWidth = 16;
+    ctx.strokeStyle = n > 1 ? "#fff" : n & 1 ? "#3e4" : "#e43";
+    ctx.stroke();
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = n > 1 ? n & 1 ? "#3e4" : "#e43" : "#fff";
+    ctx.stroke();
+  }
   utilities.rend_UI();
-  var t = Date.now() - t;
+  var t = Date.now() - t | 0;
   rend_speeeeed[t] = rend_speeeeed[t] + 1 || 0;
 }
 

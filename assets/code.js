@@ -66,11 +66,182 @@ function dictionaryDefs(dicNum, dicVal, AT) {
   console.timeEnd();
 }
 
-function Logic() {
-  this.prop = "";
-  throw new TypeError("Illegal constructor");
+// It would be possibly more logical for Logic.VALUE
+// to be replaced with Logic.Nodes.VALUE
+/** frost @param {[number,number,number,number]} boolNumInOut */
+function Logic(boolNumInOut) {
+  this.boolin = boolNumInOut[0];
+  this.boolout = boolNumInOut[1];
+  this.numin = boolNumInOut[2];
+  this.numout = boolNumInOut[3];
+  // this.all = this.boolin + this.boolout + this.numin + this.numout;
+  Object.freeze(this);
 }
-Logic.something = "now it's a calss";
+/** @param {...([number,number,number,number]|number)} args */
+Logic.generateLogic = function () {
+  var l = 690,
+    /** @type {{[key:number]:Logic|undefined}} */
+    o = {};
+  for (var i = 0, a = arguments; i < a.length; i++)
+    typeof a[i] == "number" ?
+      l = a[i] :
+      OP.call(o, l) ?
+        console.error("Property ", l++, "already exists, at generateLogic") :
+        o[l++] = new Logic(a[i]);
+  return o;
+};
+// ??? /** @type {{[key:number]:Logic|undefined}} */
+Logic.VALUE = Logic.generateLogic(738, [1, 0, 0, 0], [1, 1, 0, 0],
+  [1, 1, 0, 0], [1, 1, 0, 0], [1, 0, 0, 0], [1, 1, 0, 0], [1, 1, 0, 0],
+  [1, 1, 0, 0], 746, [0, 1, 0, 0], 770, [1, 0, 0, 0], [1, 0, 0, 0],
+  [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], 789,
+  [1, 0, 0, 0], [0, 1, 0, 0], [1, 0, 0, 0], [0, 1, 0, 0], 795,
+  [1, 0, 0, 0], 798, [1, 0, 0, 0], [1, 0, 0, 0], 802, [0, 0, 1, 0],
+  [0, 0, 1, 0], [2, 0, 1, 0], [2, 0, 1, 0], [2, 0, 1, 0], [2, 0, 1, 0],
+  [2, 0, 1, 0], [2, 0, 1, 0], [1, 0, 1, 0], [1, 0, 0, 0], [1, 0, 1, 0],
+  [0, 0, 0, 1], [0, 0, 0, 1], [0, 0, 0, 1], [0, 0, 0, 1], [0, 0, 0, 2],
+  [0, 1, 0, 1], [0, 1, 0, 1], [0, 1, 0, 1], [0, 1, 1, 0], [1, 1, 0, 2],
+  [0, 3, 0, 1], [2, 1, 0, 1], [0, 0, 0, 1], [0, 0, 0, 1],
+  [0, 0, 0, 1]);
+/** @param {string|number} name @param {object} property */
+Logic.addDefault = function addLogic(name, property) {
+  var logicDef = Logic.Nodes.VALUE[typeof name == "number" ?
+    name :
+    Block.ID[name]
+  ],
+    /** @type {number[]} */
+    ni = property.nodeIndex = [];
+  if (!(logicDef instanceof Logic))
+    return property;
+  for (var l = logicDef.length; l-- > 0; ni.push(Logic.counter++))
+    Logic.nodes.push(new Logic.Nodes(logicDef[l].type, 0, 0));
+    // why that actaully?: Logic[(tp = logicDef[l].type) > 1 ?
+    //   ""
+    // ].push(new Logic.Nodes(tp, 0, 0));
+  return property;
+};
+/** object is frost
+ * @template {number} T
+\* @param {T} type @param {number} x @param {number} y */
+Logic.Nodes = function Nodes(type, x, y) {
+  this.type = type;
+  this.x = x;
+  this.y = y;
+  /** @type {T extends 0|1?number[]:number} *///@ts-ignore
+  this.nodeIndex = type > 1 ? -1 : [];
+  Object.freeze(this);
+};
+/** @param {...{k:number,x:number,y:number}[]|string|number} args */
+Logic.Nodes.generateNodes = function () {
+  /** @type {{[key:number]:Logic.Nodes[]|undefined}} */
+  var o = {},
+    /** @type {{k:number,x:number,y:number}[][]} */
+    defs = [];
+  /** @param {{k:number,x:number,y:number}[]|string} arg  */
+  function setLogic(arg) {
+    //** @type {{k:number,x:number,y:number}[]} */
+    var nodesDef = typeof arg == "string" ?
+      defs[Number(arg)] :
+      defs[defs.length] = arg;
+    for (var i = 0, nodes = o[l++] = []; i < nodesDef.length;) {
+      var def = nodesDef[i++];
+      nodes.push(new Logic.Nodes(def.k, def.x / 2, def.y / 2));
+    }
+  }
+  for (var i = 0, l = 690, a = arguments; i < a.length; i++)
+    typeof a[i] == "number" ?
+      l = a[i] :
+      OP.call(o, l) ?
+        console.error("Property ", l++, "already exists, at generateLogic") :
+        setLogic(a[i]);
+  return o;
+  // function assignType(type, n) {
+  //   for (; n-- > 0;)
+  //     nodes.push(new Logic.Nodes(type, 0, 0));
+  // }
+  // for (var i = 960; i-- > 690;) {
+  //   /** @type {Logic.Nodes} */
+  //   var nodes = [], logic = Logic.VALUE[i], size = Block.Size.VALUE[i];
+  //   if (!logic)
+  //     continue;
+  //   if (!size)
+  //     throw new Error("Size for Logic block: " + Block.NAME[i] +
+  //       "is not defined.");
+  //   var notThruster = i < 739 || i > 745;
+  //   assignType(0, logic.boolin);
+  //   assignType(1, notThruster ? logic.boolout : logic.numout);
+  //   assignType(2, logic.numin);
+  //   assignType(3, notThruster ? logic.numout : logic.boolout);
+  //   // var col0 = ;
+  //   for (var j = nodes.length; j-- > 0;) {
+  //     ;
+  //   }
+  // }
+};
+Logic.rend = !1;
+Logic.counter = 1;
+/** @type {(Logic.Nodes|null)[]} */
+Logic.nodes = [];
+if (Logic.nodes[0] && Logic.nodes[0].type === 1)
+  Logic.nodes[0].type;
+// why that actaully?: /** @type {(Logic.Nodes<0|1>|null)[]} */
+// Logic.inputs = [];
+// /** @type {(Logic.Nodes<2|3>|null)[]} */
+// Logic.outputs = [];
+// ??? /** @type {} */
+Logic.Nodes.VALUE = Logic.Nodes.generateNodes(738,
+  [{k: 0, x: 0, y: 0}], // def0 == def2
+  [{k: 0, x: 0, y: -1}, {k: 1, x: 0, y: 1}], // def1
+  // [1, 1, 0, 0], [1, 1, 0, 0], [1, 1, 0, 0],
+  "1", "1", "0", "1", "1", "1",
+  // [1, 1, 0, 0], [1, 1, 0, 0], [1, 1, 0, 0], [1, 1, 0, 0], [1, 1, 0, 0],
+  746, [{k: 1, x: 0, y: 0}], // def1
+  // [0, 1, 0, 0],
+  770, [{k: 0, x: 0, y: 0}], // def2 == sef0
+  "3", "3", "3", "3", "3",
+  // [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0],
+  789, "3", "2", "3", "2",
+  // [1, 0, 0, 0], [0, 1, 0, 0], [1, 0, 0, 0], [0, 1, 0, 0],
+  795, "3", 798, "3", "3", 802, [{k: 2, x: 0, y: 0}], // def4
+  // 795, [1, 0, 0, 0], 798, [1, 0, 0, 0], [1, 0, 0, 0], 802, [0, 0, 1, 0],
+  "4", [{k: 0, x: -1, y: -1}, {k: 0, x: -1, y: 1}, {k: 2, x: 1, y: 0}], // def5
+  // [0, 0, 1, 0], [2, 0, 1, 0],
+  "5", "5", "5", "5", "5",
+  // [2, 0, 1, 0], [2, 0, 1, 0], [2, 0, 1, 0], [2, 0, 1, 0], [2, 0, 1, 0],
+  [{k: 0, x: -1, y: 0}, {k: 2, x: 1, y: 0}], // def6
+  "3", "6",
+  // [1, 0, 1, 0], [1, 0, 0, 0], [1, 0, 1, 0],
+  [{k: 3, x: 0, y: 0}], // def7
+  "7", "7", "7",
+  // [0, 0, 0, 1], [0, 0, 0, 1], [0, 0, 0, 1], [0, 0, 0, 1],
+  [{k: 3, x: -1, y: 0}, {k: 3, x: 1, y: 0}], // def8
+  // [0, 0, 0, 2],
+  [{k: 1, x: -1, y: 0}, {k: 3, x: 1, y: 0}], // def9
+  "9", "9", [{k: 1, x: -1, y: 0}, {k: 2, x: 1, y: 0}], // def10
+  // [0, 1, 0, 1], [0, 1, 0, 1], [0, 1, 0, 1], [0, 1, 1, 0],
+  [
+    {k: 0, x: -1, y: -1},
+    {k: 1, x: -1, y: 1},
+    {k: 1, x: 1, y: 1},
+    {k: 3, x: 1, y: -1}
+  ], // def11
+  // [1, 2, 0, 1],
+  [
+    {k: 1, x: -1, y: -1},
+    {k: 1, x: -1, y: 1},
+    {k: 1, x: 1, y: 1},
+    {k: 3, x: 1, y: -1}
+  ], // def12
+  // [0, 3, 0, 1],
+  [
+    {k: 0, x: -1, y: -1},
+    {k: 0, x: -1, y: 1},
+    {k: 1, x: 1, y: 1},
+    {k: 3, x: 1, y: -1}
+  ], // def13
+  // [2, 1, 0, 1],
+  "7", "7", "7");
+  // [0, 0, 0, 1], [0, 0, 0, 1], [0, 0, 0, 1]
 function Color() {
   this.prop = "";
   throw new TypeError("Illegal constructor");
@@ -429,6 +600,84 @@ Block.ID = {
 Object.freeze(Block.NAME);
 Object.freeze(Block.ID);
 dictionaryDefs(Block.NAME, Block.ID, "Block definitions");
+/** @type {{[key:number]:number|undefined}} */
+Block.WEIGHT = {
+  690: 2,
+  691: 1,
+  692: .5,
+  693: 1,
+  694: 2,
+  695: .5,
+  696: .5,
+  697: .5,
+  698: 1,
+  699: 2,
+  700: .5,
+  701: 1,
+  702: .5,
+  738: .5,
+  739: 2,
+  740: 8,
+  741: 24,
+  742: .75,
+  743: 3,
+  744: 6,
+  745: 18,
+  746: 2,
+  754: 2,
+  755: 8,
+  756: 18,
+  757: 3,
+  758: 12,
+  759: 18,
+  760: 3,
+  761: 12,
+  762: 27,
+  770: 3,
+  771: 2,
+  772: 2,
+  773: 2,
+  774: 2,
+  775: 2,
+  786: 10,
+  787: 5,
+  788: 1,
+  789: 1,
+  790: 5,
+  791: 1,
+  792: 5,
+  793: 1,
+  794: 1,
+  795: 1,
+  796: 5,
+  799: 1,
+  802: .25,
+  803: 1,
+  804: 1,
+  805: 1,
+  806: 1,
+  807: 1,
+  808: 1,
+  809: 1,
+  810: .5,
+  811: .25,
+  812: .5,
+  813: .25,
+  814: 1,
+  815: 1,
+  816: 1,
+  817: 1,
+  818: .5,
+  819: .5,
+  820: .5,
+  821: .5,
+  822: 1,
+  823: 1,
+  824: 1,
+  825: .5,
+  826: .25,
+  827: .5
+};
 /** @param {object[]|object} blocks */
 Block.arrayFromObjects = function arrayFromObjects(blocks) {
   var bs = blocks instanceof Array ? blocks : [blocks];
@@ -485,19 +734,26 @@ Block.arrayFromObjects = function arrayFromObjects(blocks) {
 Block.generateArray = function generateArray(n) {
   if (n !== -69)
     throw new Error("Not implemented. (only arg0: n = -69 works)");
+  var i = 12, idx = 0, SH = "Small Hydrogen ";
   /** @type {Block[]} */
   var blocks = [];
-  for (var i = 12, SH = "Small Hydrogen "; i-- > 0;)
+  function updt(j) {
+    return idx = (j % 3 !== 1 ?
+      [739, 754, 757, 692] :
+      [-1, 691, 690, 746]
+    )[j / 3 | 0];
+  }
+  for (updt(i - 1); i-- > 0; updt(i - 1))
     blocks.push(new Block((i % 3 !== 1 ?
       [SH + "Thruster", SH + "Tank", "Small Battery", "Wedge"] :
       ["", "Block", "Core", "Reaction Wheel"])[i / 3 | 0],
       [0, i * 2 % 6 - 2, (i / 3 | 0) * 2 - 4],
       [0, !1, i === 9 ? 1 : 0],
-      Block.Properties.addDefault((i % 3 !== 1 ?
-        [739, 754, 757, 692] :
-        [-1, 691, 690, 746])[i / 3 | 0], {color: i > 5 ?
-        i & 1 ? "White" : "Light Gray" :
-        i % 3 !== 1 ? i < 3 ? "Yellow" : "Fuel" : "White"})));
+      Block.Properties.addDefault(idx, Logic.addDefault(idx, {
+          color: i > 5 ?
+            i & 1 ? "White" : "Light Gray" :
+            i % 3 !== 1 ? i < 3 ? "Yellow" : "Fuel" : "White"
+        }))));
   blocks[10] = blocks[11];
   blocks.length--;
   return blocks;
@@ -505,7 +761,7 @@ Block.generateArray = function generateArray(n) {
 /** object is frost
  * @typedef {{x: number, y: number, w: number, h: number}}
  * @param {number} x @param {number} y
-\* @param {number} w @param {number} h */
+* @param {number} w @param {number} h */
 Block.Size = function Size(x, y, w, h) {
   this.x = x;
   this.y = y;
@@ -569,42 +825,13 @@ Block.Size.VALUE = Block.Size.genterateSizes([[0], [1], [2], [7, 1, 2]],
   [[140, 2, 2], [142, 2, 2], [84], [85], [86], [34, 4, 1], [90, 2, 1]],
   [[38, 2, 3], [87]]);
 
-// // @ts-ignore
-// /** @typedef {typeof Block.Properties.Items} ItemTs */
 // TODO: To be considered for resystemizing
 /** @template {keyof ItemTs} T @param {T} type @param {string} name */
 Block.Properties = function (type, name) {
   this.type = type;
   this.name = name;
-  // /**
-  //  * @type {{
-  //  *  "Slider":Block.Properties.Items["Slider"],
-  //  *  "Integer Slider":new()=>ItemTs["Integer Slider"],
-  //  *  "Dropdown":new()=>ItemTs["Dropdown"],
-  //  *  "Number Inputs":new()=>ItemTs["Number Inputs"],
-  //  *  "Text Inputs":new()=>ItemTs["Text Inputs"]
-  //  * }[T]}
-  //  */
   /** @type {ItemTs[T]} *///@ts-ignore
   this.item = new Block.Properties.Items[type]();
-  // switch (type) {
-  //   case "Slider":
-  //     /** @type {ItemTs[T]} */
-  //     this.item = new Block.Properties.Items["Slider"]();
-  //     break;
-  //   case "Integer Slider":
-  //     this.item = new Block.Properties.Items["Integer Slider"]();
-  //     break;
-  //   case "Dropdown":
-  //     this.item = new Block.Properties.Items["Dropdown"]();
-  //     break;
-  //   case "Number Inputs":
-  //     this.item = new Block.Properties.Items["Number Inputs"]();
-  //     break;
-  //   case "Text Inputs":
-  //     this.item = new Block.Properties.Items["Text Inputs"]();
-  //     break;
-  // }
 }
 Block.Properties.Items = {
   /** @type {new()=>Slider} */
@@ -648,23 +875,6 @@ Block.Properties.itemTypes = ["Slider", "Integer Slider", "Dropdown",
  * @typedef {[4,string,string[]]} ItmArg4
 \* @typedef {ItmArg0|ItmArg1|ItmArg2|ItmArg3|ItmArg4} PropsArg */
 /** @typedef {Block.Properties<keyof ItemTs>} Props */
-// /** @type {(props:{[key:number]:PropsArg[]})=>{[key:number]:Props[]}} */
-// Block.Properties.generateProperties = function (props) {
-//   /** @type {{[key:number]:Props[]}} */
-//   var r = {}, items = Block.Properties.itemTypes;
-//   /** @type {{[key: number]: PropsArg[], length: number}} */
-//   var a = arguments;
-//   for (var i = 0, j = 0, l = 690; l < Block.NAME.length; l++)
-//     if (Block.NAME[l]) 
-//       for (var j = 0, argarr = a[i]; j < argarr.length; j++) {
-//         var v = argarr[j], p = new Block.Properties(items[v[0]], "");
-//         r[l] = setups[v[0]](p.item);
-//       }
-//   // typeof nw == "object" &&
-//   //   console.log(JSON.stringify(nw).replace(/,/g, ", "));
-//   return r;
-// };
-//** @param {PropsArg[]} argArr */
 /**
  * @type {<T extends PropsArg[]>(argArr: T)=>Props[]}
 \*/
@@ -700,22 +910,6 @@ Block.Properties.justOne = function (argArr) {
   }
   //@ts-ignore
   return r;
-};
-/** @param {string|number} name @param {object} property */
-Block.Properties.addDefault = function addPropertie(name, property) {
-  var propsDef = Block.Properties.VALUE[typeof name == "number" ?
-    name :
-    Block.ID[name]
-  ];
-  property.control = [];
-  if (!(propsDef instanceof Array))
-    return property;
-  for (var i = propsDef.length, p; i-- > 0;)
-    if ((p = propsDef[i]) instanceof Block.Properties)
-      property.control[i] = typeof p.item.default != "undefined" ?
-        p.item.default :
-        p.item.default;
-  return property;
 };
 /** experimental shortcut for easier acces of Block.Properties.VALUE
 /** @type {{[key: number]: Props[] | undefined}} */
@@ -755,37 +949,22 @@ Block.Properties.VALUE = Block.PROP = {
   826: Block.Properties.justOne([[3, "Range", [-1, 1]]]),
   827: Block.Properties.justOne([[1, "Decimals amount", 1, 4, 2]])
 };
-
-/*
-Slider:
-  Tiny Hydrogen Thruster: 375; 1125;
-  Small Hydrogen Thruster: 1500; 4500;
-  Medium Hydrogen Thruster: 6000; 18000;
-  Large Hydrogen Thruster: 18000; 54000;
-  Tiny Ion Thruster: 375; 1125;
-  Small Ion Thruster: 1500; 4500;
-  Medium Ion Thruster: 3000; 9000;
-  Large Ion Thruster: 9000; 27000;
-  Reaction Wheel: 2500; 7500;
-  
-  Hinge: 0.2; 3;
-  Piston: 0.2; 3;
-  
-  Delay: 0.1; 5;
-Integer Slider:
-  Digital Dispay: 1; 4;
-Dropdown:
-  Control Block: "Up", "Down", "Left", "Right", "Turn Left", "Turn Right", "Action 1", "Action 2";
-  Speed Sensor: "Absolute", "Directional", "Angular", "G-force";
-Number inputs:
-  Constant Number: 1;
-  Clamp: 2;
-  Treshold Gate: 2;
-  Gauge: 2;
-  Dial: 2;
-Text Inputs:
-  Function Block: 1;
-*/
+/** @param {string|number} name @param {object} property */
+Block.Properties.addDefault = function addProperty(name, property) {
+  var propsDef = Block.Properties.VALUE[typeof name == "number" ?
+    name :
+    Block.ID[name]
+  ];
+  property.control = [];
+  if (!(propsDef instanceof Array))
+    return property;
+  for (var i = propsDef.length, p; i-- > 0;)
+    if ((p = propsDef[i]) instanceof Block.Properties)
+      property.control[i] = typeof p.item.default != "undefined" ?
+        p.item.default :
+        p.item.default;
+  return property;
+};
 
 /**
  * @param {string} name
@@ -1588,10 +1767,12 @@ function decodeCmprsShip(cmprsShip) {
   chunkEnding();
   // data block: properties
   if (l = properties.length) {
-    for (s = ""; i < buffer.length;)
-      s += String.fromCharCode(buffer[i++]);
-    if (buffer[--i] !== 93)
+    // for (s = ""; i < buffer.length;)
+    //   s += String.fromCharCode(buffer[i++]);
+    // if (buffer[--i] !== 93)
+    if (buffer[buffer.length - 1] !== 93)
       return er("unexpected end of data");
+      s = String.fromCharCode.apply(String, buffer.slice(i));
     try {
       arr = JSON.parse(s);
     } catch (err) {
@@ -1600,6 +1781,8 @@ function decodeCmprsShip(cmprsShip) {
         return ship;
       }
     }
+    if (typeof arr[2] == "string")
+      "Parse the compressed properties.";
     s = arr[1];
     arr = arr[0];
     for (i = l - 1 << 1; l-- > 0; i -= 2) {
@@ -1610,7 +1793,7 @@ function decodeCmprsShip(cmprsShip) {
   return ship;
 }
 /** function used for debugging encode/decode */
-// just converts Uint8Array to strig with binary numbers in DevTools
+// just converts Uint8Array to string with binary numbers in DevTools
 function binaryData($help) {
   if (typeof $help === "boolean")
     return "args: ArrayBuffer | Array (data), ?[?from, to] (slice), ?b\
