@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.18
+// v.0.1.19
 
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -25,6 +25,33 @@ var storage = typeof localStorage == "undefined" ? {
 if (typeof TouchEvent == "undefined")
   //@ts-ignore
   var TouchEvent = function TouchEvent() {};
+
+function throwErrors() {
+  if (/\[ ?native code ?\]/.test(
+    Function.prototype.toString.call(console.error)))
+    console.err = console.error;
+  console.error = function () {
+    console.err && console.err.apply(console, Array.prototype.map.call(
+      arguments, function (e) {
+        return e;
+      })
+    );
+    throw "See error over --^";
+  };
+}
+
+canvas.addEventListener("contextlost", function () {
+  console.warn("CONTEXT LOST!");
+  console.warn("CONTEXT LOST!");
+  console.warn("CONTEXT LOST!");
+  console.warn("CONTEXT LOST!");
+  console.warn("CONTEXT LOST!");
+  console.warn("CONTEXT LOST!");
+  console.warn("CONTEXT LOST!");
+});
+canvas.addEventListener("contextrestored", function () {
+  console.log("%cCONTEXT RESTOERED!", "color:#4f3");
+});
 
 /** @typedef addingStyles */
 (function addingStyles(css) {
@@ -924,6 +951,215 @@ imgBackg.src = "./assets/_" + [
   "dbve"
 ][settings.editorBackgroundImage] + "_background.png";
 
+/** @this {Array} */
+function del(i) {
+  while (++i < this.length)
+    this[i - 1] = this[i];
+  return --this.length;
+}
+/**
+ * @type {{input:HTMLInputElement,curr:File|null,files:(File|null)[],
+ * open:number[],upload:HTMLButtonElement}}
+ */
+var file = {
+  input: EL("input"),
+  curr: null,
+  files: [null],
+  open: [0],
+  upload: EL("button")
+};
+function fileNames() {}
+/**
+ * @callback fileExecute
+ * @param {Uint8Array} fileData
+ * @param {number} mode to determine way/place of parser used
+ * @param {File} file
+ * @returns {boolean} true if file is invalid (to process next)
+ */
+/**
+ * Executes when the files have been checked with at least one success
+ * @callback fileExecuteFinally
+ */
+/**
+ * Executes callback with readed file data for files supporting a loadbar
+ * @param {fileExecute} f_exec returns true if data are correct
+ * @param {string} error
+ * @param {fileExecuteFinally} [f_final]
+ * @param {HTMLElement|null} [loadBar]
+ * @param {number} [mode] 0 to check all, else stop after first valid
+ */
+function fileOpener(f_exec, error, f_final, loadBar, mode) {
+  var final = f_final || F;
+  var btn = loadBar || EL();
+  mode = mode || 0;
+  if (!file.open.length)
+    return console.error("No files chosen");
+  var fl_i = file.open[0], succ = 0, st, barE = function (n, b) {
+    bar.style.width = n * 100 + "%";
+  }, barF = function () {
+    st.width = "100%";
+    if (!succ)
+      st.backgroundColor = "#744";
+    setTimeout(function () {
+      st.transition = "0.3s";
+      st.backgroundColor = "#0000";
+    }, 130);
+    setTimeout(function () {
+      btn.style.display = "";
+      (fill.parentElement || EL()).removeChild(fill);
+    }, 400);
+  }, fl_o = 0;
+  function nextCLi() {
+    for (var i = 0, o = file.open; !o.length || fl_i >= o[i];)
+      if (++i >= o.length)
+        return !1;
+    fl_i = o[fl_o = i];
+    return !0;
+  }
+  function readFile() {
+    var reader = new FileReader();
+    if (file.files[fl_i] instanceof Blob)
+      reader.readAsArrayBuffer(file.files[fl_i] || new Blob());
+    else {
+      del.call(file.open, fl_o);
+      if (nextCLi())
+        return readFile();
+      else {
+        try {
+          console.log(succ ? final() : console.error(error), succ);
+        } catch (e) {}
+        barF();
+        return fileNames();
+      }
+    }
+    reader.addEventListener("loadend", function event() {
+      if (this.error !== null) {
+        if (this.error.name === "NotReadableError")
+          //@ts-ignore
+          console.warn("file " + file.files[fl_i].name + " changed");
+        else
+          console.error(this.error + "\nat fileOpener");
+        del.call(file.open, fl_o);
+        fileNames();
+      }
+      try {
+        //@ts-ignore
+        var ar = new Uint8Array(this.result),
+        //@ts-ignore
+          next = f_exec(ar, mode, file.files[fl_i]);
+      } catch (e) {
+        //@ts-ignore
+        next = !!console.error(e.message || e, " fileOpener:?", e.stack || "");
+      }
+      barE(fl_i / file.open.length, succ |= +!next);
+      if (next || mode)
+        if (nextCLi())
+          return readFile();
+        else
+          console.log(succ ? final() : console.error(error), succ);
+      else
+        final();
+      barF();
+    }, false);
+  }
+  function pdg(s, px) {
+    return fill.style["padding" + s] = px;
+  }
+  if (loadBar !== null) {
+    // <btn.parentNode>
+    //   <btn(button)>#btn.innerText</btn>
+    // </btn.parentNode>
+    var w = btn.offsetWidth, fill = EL();
+    fill.className = "loading";
+    var bar = fill.appendChild(EL());
+    (btn.parentNode || EL()).insertBefore(fill, btn);
+    fill.appendChild(tN(btn.innerText));
+    btn.style.display = "none";
+    (st = bar.style).width = "0";
+    st.backgroundColor = "#474";
+    // <btn.parentNode>
+    //   <fill(div) class="loading">
+    //     <bar(div) style="width:0;background-color:#474;"></bar>
+    //     #btn.innerText
+    //   </fill>
+    //   <btn(button) style="display:none;">#btn.innerText</btn>
+    // </btn.parentNode>
+    if (fill.offsetWidth !== w) {
+      pdg("", "0px");
+      pdg("Left", pdg("Right", (w - fill.offsetWidth >> 1) + "px"));
+      // (GE(45) || EL()).classList.remove("corr1");
+      pdg("Top", pdg("Bottom", ""));
+    }
+  } else
+    barE = barF = F;
+  readFile();
+}
+function dragOver(e) {
+  e.preventDefault();
+}
+function dragDrop(e) {
+  e.preventDefault();
+  var i = 0, l = file.files.length, t = e.dataTransfer, a = t.files, f;
+  if (a && a.length)
+    f = function () {
+      return a[i];
+    };
+  else if ((a = t.items) && a.length)
+    f = function () {
+      return a[i].getAsFile();
+    };
+  for (; i < a.length; i++, l++) {
+    //@ts-ignore
+    file.files.push(f() || null);
+    file.open.push(l);
+  }
+  setTimeout(fileNames);
+}
+(function (delay) {
+  var el = file.input, btn = file.upload = EL("button");
+  el.id = "2";
+  el.type = "file";
+  el.multiple = true;
+  el.style.display = "none";
+  bd && bd.appendChild(el);
+  file.open.length = 0;
+  btn.appendChild(tN("Upload from file/files"));
+  btn.onclick = function () {
+    if (delay < Date.now()) {
+      file.input.click();
+      delay = Date.now() + 900;
+    }
+  };
+  var pN = btn.parentNode instanceof HTMLElement ? btn.parentNode : EL();
+  pN.ondragover = dragOver;
+  pN.ondrop = dragDrop;
+})(0);
+function onFile(e) {
+  var i = 0, a = this.files, el;
+  if (a.length) {
+    file.curr = this;
+    file.files = [];
+    for (file.open = []; i < a.length; i++)
+      file.files[file.open[i] = i] = a[i];
+    fileNames();
+    el = file.input = EL("input");
+    el.id = "2";
+    el.type = "file";
+    el.multiple = true;
+    el.style.display = "none";
+    this.parentNode.replaceChild(el, this);
+    el.onchange = onFile;
+  }
+  // temporary solution: single purpuse file load
+  fileOpener(onFile.temporaray, "Invalid DBV file I guess.", F,
+    file.upload);
+}
+/** @param {Uint8Array} uar */
+onFile.temporaray = function (uar) {
+  return true;
+};
+file.input.onchange = onFile;
+
 function dbv_findPos() {
   var posArr = ship.blocks.map(function (e) {
     return e.position;
@@ -957,7 +1193,7 @@ function utilities(tag) {
     text = btn.appendChild(tN("v"));
   btn.onclick = function () {
     var isHide = !el.style.display;
-    el.style.display = isHide ? "none" : "" ;
+    el.style.display = isHide ? "none" : "";
     br.style.display = isHide ? "" : "none";
     text.data = isHide ? "v" : " <";
   };
@@ -1284,14 +1520,29 @@ Command.push("Import/Export DBV", function (items, collapsed) {
     }
   };
   elBtn.appendChild(tN("Import"));
-  items.push(elBtn);
   error.style.color = "red";
-  items.push(error);
+  onFile.temporaray = function (buffer) {
+    if (buffer[0] !== 123 || buffer.slice(-1)[0] !== 125)
+      return false;
+    try {
+      var s = String.fromCharCode.apply(String, buffer);
+      Ship.fromObject(JSON.parse(s));
+    } catch (err) {
+      error.innerText = err;
+      console.error(err);
+      console.log(s);
+      return !1;
+    }
+    inp.value = s;
+    return !0;
+  };
+  items.push(elBtn, error, file.upload);
 }, "Export and Import are functions using displayed vehicle as target.\nExpo\
 rting creates JSON key of ship and puts it in text input, the key doesn't in\
 clude non existent or blocks inavalable in game.\nImporting displays vehicle\
- of JSON key from text input.\nJSON key is the content of .dbv savefile. It \
-contains textual data and can be opened using text editor.");
+ of JSON key from text input.\nUpload from file/files button is used to load\
+ file content into text input.\nJSON key is the content of .dbv savefile. It\
+ contains textual data and can be opened using text editor.");
 Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
   var inp = EL("input"), elBtn = EL("button"), error = EL();
   items.push({name: "base64 key", inp: inp});
@@ -1328,7 +1579,7 @@ m input to replace displayed ship with one from key. It can also store unimp\
 lemented blocks like TNT, station blocks and more. Be aware that the key lim\
 its vehicle in and will refuse to compress too big vehicle. There are also b\
 ugs since I wasn't going down the rabbit hole of debugging every last one.");
-Command.push("Vehicle weight", function (items, collapsed) {
+Command.push("Rift Drive calculator", function (items, collapsed) {
   var weight = 0, drives = 0, unknown = 0, all = ship.blocks;
   for (var i = all.length; i-- > 0;) {
     var id = Block.ID[all[i].internalName], v = Block.WEIGHT[id];
@@ -1663,7 +1914,7 @@ function commands(x, y, e) {
     return;
   var w = innerWidth - 175, ih = innerHeight - 255, st = cmds.style;
   st.left = (x > 178 ? x < w ? x - 175 : w - 180 : 5) + "px";
-  st.top = (y > 25 && y > (ih < 250 ? ih : 255) ? y - 250 : 5) + "px";
+  st.top = (y > 45 && y > (ih < 250 ? ih : 255) ? y - 250 : 5) + "px";
   st.display = "";
   // quircky workaround to copying image with contextmenu
   for (var el = e.target, dest = GE("commandsTab"); el instanceof Node;)
@@ -1722,13 +1973,6 @@ over = function over(e) {
   // TODO: some nice system to account for end/'hoverleave'
 };
 
-function rend_test(e, oh, ow, w, h, rot, dx, dy) {
-  var x = e.x - (ow & 16) / 32, y = e.y - (oh & 16) / 32,
-    x1 = e.x, y1 = e.y - ((ow | oh) & 16) / 32;
-  x = [x + w / 32, y1 + h / 32, -x + w / 32, -y1 + h / 32][rot];
-  y = [-y + h / 32, x1 + w / 32, y + h / 32, -x1 + w / 32][rot];
-  return new Logic.Nodes(e.type, x * sc + dx, y * sc + dy);
-};
 render = function () {
   var rq = -1;
   return function requestRendering() {
@@ -1741,12 +1985,12 @@ render = function () {
 }();
 var rend_speeeeed = {};
 /*async*/ function expensiveRenderer() {
-  var t = Date.now();
+  var t = Date.now(), AT = ", at expensiveRenderer();";
   canvas.width = canvas.width;
   rend_background();
   ctx.imageSmoothingEnabled = false;
-  /** @type {Logic.Nodes[]} */
-  var rend_logic = [], objs = ship.blocks;
+  // rend_logic = [],** @type {Logic[]} */
+  var objs = ship.blocks, n = 0;
   if (Logic.rend)
     ctx.globalAlpha = settings.logicPreviewAlpha;
   for (var i = 0, id = 0, pos = [0, 0, 0]; i < objs.length; i++) {
@@ -1760,9 +2004,9 @@ var rend_speeeeed = {};
       continue;
     }
     /** @see {Block} @see {Block.Size.VALUE} */
-    var size = Block.Size.VALUE[id];
+    var size = Block.Size.VALUE[id], logic = Logic.VALUE[id];
     if (!size)
-      return console.error(objs[i]);
+      return console.error(objs[i], AT);
     var rot = 10 - objs[i].rotation[2] & 3;
     var ow = size.w, oh = size.h, sw = 0, sh = 0;
     var w = ow + (ow & 16), h = oh + (oh & 16), tiny = (oh | ow) & 16;
@@ -1778,20 +2022,32 @@ var rend_speeeeed = {};
         dy += (32 - w - tiny) * sc / 16 :
         0;
     // update logic nodes render posiotions
-    if (Logic.rend && Logic.Nodes.VALUE[id])
-      if (!objs[i].properties.nodeIndex[0])
-        console.error("Logic properties missing, at expensiveRenderer();");
-    // var logic = Logic.Nodes.VALUE[id];
-    // if (Logic.rend && logic)
-    //   Array.prototype.push.apply(rend_logic, logic.map(function(e) {
-    //     // facepalm No.1: works now actually
-    //     var x = e.x - (ow & 16) / 32, y = e.y - (oh & 16) / 32;
-    //     var xn = [x + w / 32, y + h / 32, -x + w / 32, -y + h / 32][rot],
-    //       yn = [-y + h / 32, x + w / 32, y + h / 32, -x + w / 32][rot];
-    //     return new Logic.Nodes(e.type, xn * sc + dx, yn * sc + dy);
-    //     return rend_test(e, oh, ow, w, h, rot, dx, dy);
-    //   }));
-    // sets needed size of block and resets canvas
+    /** @type {typeof Logic.nodes[number]} */
+    var node, indexes = objs[i].properties.nodeIndex;
+    if (Logic.rend && logic)
+      for (var j = logic.length; j-- > 0;) {
+        // I don't like these logic nodes checks
+        if (!indexes[j]) {
+          console.error("Logic node: " + j + " missing from ship.blocks[" +
+            i + "]: " + JSON.stringify(objs[i]) + AT);
+          break;
+        }
+        if (!(node = Logic.nodes[n = indexes[j] - 1])) {
+          console.error("Logic node: " + n + " missing of ship.blocks[" +
+            i + "]: " + JSON.stringify(objs[i]) + " is missing in Logic." +
+            "nodes" + AT);
+          break;
+        }
+        // facepalm No.1: works now actually
+        var x = logic[j].x - (ow & 16) / 32,
+          y = logic[j].y - (oh & 16) / 32,
+        /** @type {number[]} */
+          xys = [x, y, -x, -y];
+        x = (rot & 1 ? h / 32 : w / 32) + xys[rot];
+        y = (rot & 1 ? w / 32 : h / 32) + xys[rot + 3 & 3];
+        node.x = dx + x * sc;
+        node.y = dy + y * sc;
+      };
     helpCanvas.width = sw = rot & 1 ? h : w;
     helpCanvas.height = sh = rot & 1 ? w : h;
     // apply color texture
@@ -1819,10 +2075,9 @@ var rend_speeeeed = {};
   ctx.globalAlpha = 1;
   ctx.lineCap = "round";
   for (var j = Logic.rend ? Logic.nodes.length : 0; j-- > 0;) {
-    var node = Logic.nodes[j];
-    if (!node)
+    if (!(node = Logic.nodes[j]))
       continue;
-    var n = node.type;
+    n = node.type;
     ctx.beginPath();
     ctx.moveTo(node.x, node.y);
     ctx.closePath();

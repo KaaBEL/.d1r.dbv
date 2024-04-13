@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.0.17 -->
+<!-- v.0.1.19 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -62,9 +62,12 @@
       margin-top: 25px;
       text-align: center;
     }
+    body.scroll {
+      overflow-y: scroll;
+    }
   </style>
 </head>
-<body>
+<body class="scroll">
   <main id="8">
     <canvas id="0"></canvas>
   </main>
@@ -102,6 +105,7 @@
       <time itemprop="dateModified" content="2023-03-14" datetime="2023-03-14">Last updated, March 14, 2023</time>
     </div>
   </footer>
+  <!-- v.0.0.18 -->
   <script>
     "use strict";
     var _ge;
@@ -359,9 +363,6 @@
       }
       /** @param {TouchEvent} e */
       function onstart(e) {
-        //-conditions: evState > 1 = starts new input of events ||
-        //-checkExisting = no touch start on existing one &&
-        //-evState > 1 = last event was start ?
         // checkEvent = each complete input contains only one event for each
         // touch ?
         // has 2 outcomes: assigning new start tchs : fire UI complete input;
@@ -539,15 +540,7 @@
     // settings: press time legth, precision, <-, allowed touch-start-times
     mouseInit.time = 350;
     mouseInit.move = 7;
-      
-    //** fires when event is fired, may give all or portion of changed touches
-    // * positioned in the TchD Array by their IDs indepedant of identifiers,
-    // * TchD object is used for one touch through its lifecycle
-    // * @callback softH
-    // * @param {tchsDat & {count: number}} touches
-    // * @param {tchsDat} changed
-    // * @param {TouchEvent} ev
-    // * @returns {void} */
+
     var actionType = 0, moveScore = 0, moveCount = 0;
     function touchGrab(all, ev) {
       ev.cancelable && ev.preventDefault();
@@ -585,8 +578,6 @@
       render();
     }
     var foreign1 = !1, touchStamp = 0, prevCount = 0;
-    //-sXt, sYt = start vX & vY & sc, gX<n>, gY<n> = grab (touch start) x & y
-    //-var sXt = 0, sYt = 0, sSC = 0, gX0 = 0, gY0 = 0, gX1 = 0, gY1 = 0;
     /** @type {(all:touches,changed:TchD[],ev:TouchEvent)=>void} */
     function thetouchstart(all, changed, ev) {
       if (prevCount === 0)
@@ -693,11 +684,8 @@
           logSrc.removeChild(logSrc.childNodes[logIdx]);
       }
 
-      document.body.removeAttribute("onload");
-
-      document.body.style.overflowY = "scroll";
       GE("info").onclick = function (e) {
-        document.body.style.overflowY = "";
+        document.body.classList.remove("scroll");
         document.body.removeChild(this);
       };
       document.head.appendChild(document.createComment(navigator.userAgent +

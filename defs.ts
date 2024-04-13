@@ -1,4 +1,4 @@
-// v.0.0.17 when updated, version inherited from editor.html is used
+// v.0.1.19
 var _ge: any;
 function GE(v: any) {return document.getElementById(typeof v=="number"&&v==v?
   (_ge=v+1)-1:v==void 0?v=_ge++:v)}
@@ -490,22 +490,6 @@ function thetouchcancel(all: touches, changed: TchD[], ev: TouchEvent) {
   prevCount = touchStamp = actionType = 0;
 }
 
-// /** Defintion for Propperties class in code.js */
-// abstract class PropertiesDef<T extends keyof ItemTs> {
-//   type: T;
-//   name: string;
-//   items: { new (): ItemTs[T] }[];
-//   constructor(type: T, name: string) {
-//     this.type = type;
-//     this.name = name;
-//     this.items = [];
-//   }
-//   static Slider: Slider;
-//   static IntegerSlider: IntegerSlider;
-//   static Dropdown: Dropdown;
-//   static NumberInputs: NumberInputs;
-//   static TextInputs: TextInputs;
-// }
 /** Definitons of Property item structs */
 interface Slider {
   min: number;
@@ -534,53 +518,10 @@ interface ItemTs {
   "Number Inputs": NumberInputs;
   "Text Inputs": TextInputs;
 }
-// interface ConstrTs {
-//   Slider: new () => Slider;
-//   IntegerSlider: new () => IntegerSlider;
-//   Dropdown: new () => Dropdown;
-//   NumberInputs: new () => NumberInputs;
-//   TextInputs: new () => TextInputs;
-// }
-// /** Arguments typedefs for Properties Items generator */
-// type ts_ItmArg0 = [0, string, number, number, number];
-// type ts_ItmArg1 = [1, string, number, number, number];
-// type ts_ItmArg2 = [2, string, string[], number];
-// type ts_ItmArg3 = [3, string, number[]];
-// type ts_ItmArg4 = [4, string, string[]];
-// type ts_PropsArg = ItmArg0 | ItmArg1 | ItmArg2 | ItmArg3 | ItmArg4;
-// type itemTypes = ["Slider", "Integer Slider", "Dropdown",
-// "Number Inputs", "Text Inputs"];
-// interface justOneProperty {
-//   <T extends ts_PropsArg[]>(argArr: T): [ItemTs[itemTypes[T[0][0]]]]
-// }
-//interface ItemConstructor
-/*
-Slider:
-  Tiny Hydrogen Thruster: 375; 1125;
-  Small Hydrogen Thruster: 1500; 4500;
-  Medium Hydrogen Thruster: 6000; 18000;
-  Large Hydrogen Thruster: 18000; 54000;
-  Tiny Ion Thruster: 375; 1125;
-  Small Ion Thruster: 1500; 4500;
-  Medium Ion Thruster: 3000; 9000;
-  Large Ion Thruster: 9000; 27000;
-  Reaction Wheel: 2500; 7500;
-  
-  Hinge: 0.2; 3;
-  Piston: 0.2; 3;
-  
-  Delay: 0.1; 5;
-Integer Slider:
-  Digital Dispay: 1; 4;
-Dropdown:
-  Control Block: "Up", "Down", "Left", "Right", "Turn Left", "Turn Right", "Action 1", "Action 2";
-  Speed Sensor: "Absolute", "Directional", "Angular", "G-force";
-Number inputs:
-  Constant Number: 1;
-  Clamp: 2;
-  Treshold Gate: 2;
-  Gauge: 2;
-  Dial: 2;
-Text Inputs:
-  Function Block: 1;
-*/
+
+/** defining new property on Console for editor.js */
+declare interface Console {
+  err: Console["error"] | undefined;
+  /** can be set to throw error by enabling with throwErrors fnuction */
+  error: Console["error"];
+}

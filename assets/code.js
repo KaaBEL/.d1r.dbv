@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// see version of editor.js
+// v.0.1.19
 var OP = Object.prototype.hasOwnProperty, OBJ;
 OBJ = {};
 
@@ -66,86 +66,31 @@ function dictionaryDefs(dicNum, dicVal, AT) {
   console.timeEnd();
 }
 
-// It would be possibly more logical for Logic.VALUE
-// to be replaced with Logic.Nodes.VALUE
-/** frost @param {[number,number,number,number]} boolNumInOut */
-function Logic(boolNumInOut) {
-  this.boolin = boolNumInOut[0];
-  this.boolout = boolNumInOut[1];
-  this.numin = boolNumInOut[2];
-  this.numout = boolNumInOut[3];
-  // this.all = this.boolin + this.boolout + this.numin + this.numout;
-  Object.freeze(this);
-}
-/** @param {...([number,number,number,number]|number)} args */
-Logic.generateLogic = function () {
-  var l = 690,
-    /** @type {{[key:number]:Logic|undefined}} */
-    o = {};
-  for (var i = 0, a = arguments; i < a.length; i++)
-    typeof a[i] == "number" ?
-      l = a[i] :
-      OP.call(o, l) ?
-        console.error("Property ", l++, "already exists, at generateLogic") :
-        o[l++] = new Logic(a[i]);
-  return o;
-};
-// ??? /** @type {{[key:number]:Logic|undefined}} */
-Logic.VALUE = Logic.generateLogic(738, [1, 0, 0, 0], [1, 1, 0, 0],
-  [1, 1, 0, 0], [1, 1, 0, 0], [1, 0, 0, 0], [1, 1, 0, 0], [1, 1, 0, 0],
-  [1, 1, 0, 0], 746, [0, 1, 0, 0], 770, [1, 0, 0, 0], [1, 0, 0, 0],
-  [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], 789,
-  [1, 0, 0, 0], [0, 1, 0, 0], [1, 0, 0, 0], [0, 1, 0, 0], 795,
-  [1, 0, 0, 0], 798, [1, 0, 0, 0], [1, 0, 0, 0], 802, [0, 0, 1, 0],
-  [0, 0, 1, 0], [2, 0, 1, 0], [2, 0, 1, 0], [2, 0, 1, 0], [2, 0, 1, 0],
-  [2, 0, 1, 0], [2, 0, 1, 0], [1, 0, 1, 0], [1, 0, 0, 0], [1, 0, 1, 0],
-  [0, 0, 0, 1], [0, 0, 0, 1], [0, 0, 0, 1], [0, 0, 0, 1], [0, 0, 0, 2],
-  [0, 1, 0, 1], [0, 1, 0, 1], [0, 1, 0, 1], [0, 1, 1, 0], [1, 1, 0, 2],
-  [0, 3, 0, 1], [2, 1, 0, 1], [0, 0, 0, 1], [0, 0, 0, 1],
-  [0, 0, 0, 1]);
-/** @param {string|number} name @param {object} property */
-Logic.addDefault = function addLogic(name, property) {
-  var logicDef = Logic.Nodes.VALUE[typeof name == "number" ?
-    name :
-    Block.ID[name]
-  ],
-    /** @type {number[]} */
-    ni = property.nodeIndex = [];
-  if (!(logicDef instanceof Logic))
-    return property;
-  for (var l = logicDef.length; l-- > 0; ni.push(Logic.counter++))
-    Logic.nodes.push(new Logic.Nodes(logicDef[l].type, 0, 0));
-    // why that actaully?: Logic[(tp = logicDef[l].type) > 1 ?
-    //   ""
-    // ].push(new Logic.Nodes(tp, 0, 0));
-  return property;
-};
-/** object is frost
+/** object is sealed
  * @template {number} T
 \* @param {T} type @param {number} x @param {number} y */
-Logic.Nodes = function Nodes(type, x, y) {
+function Logic(type, x, y) {
   this.type = type;
   this.x = x;
   this.y = y;
   /** @type {T extends 0|1?number[]:number} *///@ts-ignore
   this.nodeIndex = type > 1 ? -1 : [];
-  Object.freeze(this);
-};
+  Object.seal(this);
+}
 /** @param {...{k:number,x:number,y:number}[]|string|number} args */
-Logic.Nodes.generateNodes = function () {
-  /** @type {{[key:number]:Logic.Nodes[]|undefined}} */
+Logic.generateLogic = function () {
+  /** @type {{[key:number]:Logic[]|undefined}} */
   var o = {},
     /** @type {{k:number,x:number,y:number}[][]} */
     defs = [];
   /** @param {{k:number,x:number,y:number}[]|string} arg  */
   function setLogic(arg) {
-    //** @type {{k:number,x:number,y:number}[]} */
     var nodesDef = typeof arg == "string" ?
       defs[Number(arg)] :
       defs[defs.length] = arg;
     for (var i = 0, nodes = o[l++] = []; i < nodesDef.length;) {
       var def = nodesDef[i++];
-      nodes.push(new Logic.Nodes(def.k, def.x / 2, def.y / 2));
+      nodes.push(Object.freeze(new Logic(def.k, def.x / 2, def.y / 2)));
     }
   }
   for (var i = 0, l = 690, a = arguments; i < a.length; i++)
@@ -155,95 +100,81 @@ Logic.Nodes.generateNodes = function () {
         console.error("Property ", l++, "already exists, at generateLogic") :
         setLogic(a[i]);
   return o;
-  // function assignType(type, n) {
-  //   for (; n-- > 0;)
-  //     nodes.push(new Logic.Nodes(type, 0, 0));
-  // }
-  // for (var i = 960; i-- > 690;) {
-  //   /** @type {Logic.Nodes} */
-  //   var nodes = [], logic = Logic.VALUE[i], size = Block.Size.VALUE[i];
-  //   if (!logic)
-  //     continue;
-  //   if (!size)
-  //     throw new Error("Size for Logic block: " + Block.NAME[i] +
-  //       "is not defined.");
-  //   var notThruster = i < 739 || i > 745;
-  //   assignType(0, logic.boolin);
-  //   assignType(1, notThruster ? logic.boolout : logic.numout);
-  //   assignType(2, logic.numin);
-  //   assignType(3, notThruster ? logic.numout : logic.boolout);
-  //   // var col0 = ;
-  //   for (var j = nodes.length; j-- > 0;) {
-  //     ;
-  //   }
-  // }
 };
-Logic.rend = !1;
-Logic.counter = 1;
-/** @type {(Logic.Nodes|null)[]} */
-Logic.nodes = [];
-if (Logic.nodes[0] && Logic.nodes[0].type === 1)
-  Logic.nodes[0].type;
-// why that actaully?: /** @type {(Logic.Nodes<0|1>|null)[]} */
-// Logic.inputs = [];
-// /** @type {(Logic.Nodes<2|3>|null)[]} */
-// Logic.outputs = [];
-// ??? /** @type {} */
-Logic.Nodes.VALUE = Logic.Nodes.generateNodes(738,
-  [{k: 0, x: 0, y: 0}], // def0 == def2
-  [{k: 0, x: 0, y: -1}, {k: 1, x: 0, y: 1}], // def1
-  // [1, 1, 0, 0], [1, 1, 0, 0], [1, 1, 0, 0],
-  "1", "1", "0", "1", "1", "1",
-  // [1, 1, 0, 0], [1, 1, 0, 0], [1, 1, 0, 0], [1, 1, 0, 0], [1, 1, 0, 0],
-  746, [{k: 1, x: 0, y: 0}], // def1
-  // [0, 1, 0, 0],
-  770, [{k: 0, x: 0, y: 0}], // def2 == sef0
-  "3", "3", "3", "3", "3",
-  // [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0], [1, 0, 0, 0],
-  789, "3", "2", "3", "2",
-  // [1, 0, 0, 0], [0, 1, 0, 0], [1, 0, 0, 0], [0, 1, 0, 0],
-  795, "3", 798, "3", "3", 802, [{k: 2, x: 0, y: 0}], // def4
-  // 795, [1, 0, 0, 0], 798, [1, 0, 0, 0], [1, 0, 0, 0], 802, [0, 0, 1, 0],
-  "4", [{k: 0, x: -1, y: -1}, {k: 0, x: -1, y: 1}, {k: 2, x: 1, y: 0}], // def5
-  // [0, 0, 1, 0], [2, 0, 1, 0],
-  "5", "5", "5", "5", "5",
-  // [2, 0, 1, 0], [2, 0, 1, 0], [2, 0, 1, 0], [2, 0, 1, 0], [2, 0, 1, 0],
-  [{k: 0, x: -1, y: 0}, {k: 2, x: 1, y: 0}], // def6
-  "3", "6",
-  // [1, 0, 1, 0], [1, 0, 0, 0], [1, 0, 1, 0],
-  [{k: 3, x: 0, y: 0}], // def7
-  "7", "7", "7",
-  // [0, 0, 0, 1], [0, 0, 0, 1], [0, 0, 0, 1], [0, 0, 0, 1],
-  [{k: 3, x: -1, y: 0}, {k: 3, x: 1, y: 0}], // def8
-  // [0, 0, 0, 2],
-  [{k: 1, x: -1, y: 0}, {k: 3, x: 1, y: 0}], // def9
-  "9", "9", [{k: 1, x: -1, y: 0}, {k: 2, x: 1, y: 0}], // def10
-  // [0, 1, 0, 1], [0, 1, 0, 1], [0, 1, 0, 1], [0, 1, 1, 0],
+/** entire oject is frost @type {{[key:number]:Logic[]|undefined}} */
+Logic.VALUE = Logic.generateLogic(
+  // def0 == def2
+  738, [{k: 0, x: 0, y: 0}],
+  // def1
+  [{k: 0, x: 0, y: -1}, {k: 1, x: 0, y: 1}],
+  // def1
+  "1", "1", "0", "1", "1", "1", 746, [{k: 1, x: 0, y: 0}],
+  // def2 == sef0
+  770, [{k: 0, x: 0, y: 0}],
+  "3", "3", "3", "3", "3", 789, "3", "2", "3", "2",
+  // def4
+  795, "3", 798, "3", "3", 802, [{k: 2, x: 0, y: 0}],
+  // def5
+  "4", [{k: 0, x: -1, y: -1}, {k: 0, x: -1, y: 1}, {k: 2, x: 1, y: 0}],
+  // def6
+  "5", "5", "5", "5", "5", [{k: 0, x: -1, y: 0}, {k: 2, x: 1, y: 0}],
+  // def7
+  "3", "6", [{k: 3, x: 0, y: 0}],
+  // def8
+  "7", "7", "7", [{k: 3, x: -1, y: 0}, {k: 3, x: 1, y: 0}],
+  // def9
+  [{k: 1, x: -1, y: 0}, {k: 3, x: 1, y: 0}],
+  // def10
+  "9", "9", [{k: 1, x: -1, y: 0}, {k: 2, x: 1, y: 0}],
+  // def11
   [
     {k: 0, x: -1, y: -1},
     {k: 1, x: -1, y: 1},
     {k: 1, x: 1, y: 1},
     {k: 3, x: 1, y: -1}
-  ], // def11
-  // [1, 2, 0, 1],
+  ],
+  // def12
   [
     {k: 1, x: -1, y: -1},
     {k: 1, x: -1, y: 1},
     {k: 1, x: 1, y: 1},
     {k: 3, x: 1, y: -1}
-  ], // def12
-  // [0, 3, 0, 1],
+  ],
+  // def13
   [
     {k: 0, x: -1, y: -1},
     {k: 0, x: -1, y: 1},
     {k: 1, x: 1, y: 1},
     {k: 3, x: 1, y: -1}
-  ], // def13
-  // [2, 1, 0, 1],
+  ],
   "7", "7", "7");
-  // [0, 0, 0, 1], [0, 0, 0, 1], [0, 0, 0, 1]
+Object.freeze(Logic.VALUE);
+/** @param {string|number} name @param {object} property */
+Logic.addDefault = function addLogic(name, property) {
+  var logicDef = Logic.VALUE[typeof name == "number" ?
+    name :
+    Block.ID[name]
+  ],
+    /** @type {number[]} */
+    ni = property.nodeIndex = [];
+  if (!(logicDef))
+    return property;
+  for (var l = logicDef.length; l-- > 0; ni.push(Logic.counter++))
+    Logic.nodes.push(new Logic(logicDef[l].type, 0, 0));
+  return property;
+};
+// Logic static properties
+/** specifies when logic nodes and connections should be rendered */
+Logic.rend = !1;
+// might get exchanged for Logic.nodes.length + 1
+Logic.counter = 1;
+/** @type {(Logic|null)[]} */
+Logic.nodes = [];
+if (Logic.nodes[0] && Logic.nodes[0].type === 1)
+  Logic.nodes[0].type;
+
 function Color() {
-  this.prop = "";
+  this.prop = !1;
   throw new TypeError("Illegal constructor");
 }
 Color.NAME = {
@@ -1767,9 +1698,6 @@ function decodeCmprsShip(cmprsShip) {
   chunkEnding();
   // data block: properties
   if (l = properties.length) {
-    // for (s = ""; i < buffer.length;)
-    //   s += String.fromCharCode(buffer[i++]);
-    // if (buffer[--i] !== 93)
     if (buffer[buffer.length - 1] !== 93)
       return er("unexpected end of data");
       s = String.fromCharCode.apply(String, buffer.slice(i));
