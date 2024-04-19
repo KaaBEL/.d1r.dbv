@@ -1,7 +1,7 @@
 //@ts-check
 "use strict";
-// v.0.1.19
-
+// v.0.1.20.3
+// some parts of version v.0.1.20.2 were lost and will be restored later
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -913,7 +913,7 @@ var settings = {
   /** mumst be in #xxxxxx hex color format */
   highlightColor: "#ff0000",
   highlightWidth: 2,
-  logicPreviewAlpha: .7
+  logicPreviewAlpha: .5
 };
 // naming may change? + meaningless comment
 function saveSettings() {
@@ -1373,18 +1373,19 @@ Command.push("Setup Properties", function (items, collapsed) {
             break;
           // !!! only one Item of this property type allowed
           var slider = props.appendChild(EL("input")),
-            input = props.appendChild(EL("input")), sldI = i;
+            input = props.appendChild(EL("input"));
+          var sldI = i, control = block.properties.control || [""];
           slider.type = "range";
           input.type = "number";
           slider.min = input.min = "" + itm.min;
           slider.max = input.max = "" + itm.max;
-          slider.value = input.value = block.properties.control[sldI];
+          slider.value = input.value = "" + control[sldI];
           slider.oninput = input.oninput = function () {
             if (!(this instanceof HTMLInputElement))
               return;
             slider.value = this.value;
             this.type == "range" ? input.value = slider.value : 0;
-            block.properties.control[sldI] = Number(slider.value) || 0;
+            control[sldI] = Number(slider.value) || 0;
           };
         case "Integer Slider":
           if (!(itm instanceof Items["Integer Slider"]))
@@ -1492,6 +1493,17 @@ Command.push("Setup Properties", function (items, collapsed) {
   displayProperties();
 }, "Properties settings. (hIGHLY iNForNmATIve And ClEAr DesCRiPTioN!11!!!11!\
 1!!)");
+Command.push("Display Logic", function (items, collapsed) {
+  var inp = EL("input");
+  inp.type = "checkbox";
+  inp.checked = Logic.rend;
+  inp.oninput = function () {
+    Logic.rend = inp.checked;
+    render();
+  };
+  items.push({name: "Display Logic", inp: inp});
+}, "Gives the option to toggle displaying logics, it may cause errors but it\
+ won't get rid of all bugs related to Logic blocks.");
 
 Command.push("Import/Export DBV", function (items, collapsed) {
   var inp = EL("input"), elBtn = EL("button"), error = EL();
@@ -1628,8 +1640,10 @@ Command.push("Set camera view", function (items, collapsed) {
   };
   elBtn.appendChild(tN("set"));
   items.push(elBtn);
-}, "Let's you to set zoom and camera position also on other than PC devices \
-(until movement is fixed for mobile devices) or just with keyboeard.");
+}, "Let's you to set zoom and camera position to desired values. It is usefu\
+ll for reseting to intial view by pressing set while inputs are empty. Usual\
+ly moving mouse with left mouse button pressed or zooming with scrolling is \
+used. For touchscreen devides use two fingers to move and zoom.");
 Command.push("Change editor background", function (items, collapsed) {
   var backgImg = EL("input"), backgClr = EL("input");
   backgImg.type = "checkbox";
@@ -1862,6 +1876,7 @@ press = function press(x, y) {
   found = found.map(function (i) {
     var e = arr[i];
     if (placingBlock() === "remove") {
+      Logic.removeLogic(arr[i], ship.prop.connections);
       arr[i] = arr.slice(-1)[0];
       arr.length--;
     } else if (blockBind.changingColor)
@@ -1899,9 +1914,17 @@ press = function press(x, y) {
     foundBlocks = found;
     return render();
   }
-  rand !== "remove" &&
-    arr.push(new Block(rand, [0, x * 2, y * 2], [0, !1, 0],
-      Block.Properties.addDefault(rand, {color: Color.default(rand)})));
+  if (rand !== "remove") {
+    var blok = new Block(rand, [0, x * 2, y * 2], [0, !1, 0],
+      Block.Properties.addProperty(rand, Logic.addLogic(rand,
+        {color: Color.default(rand)}, ship.prop.connections || [],
+        ship.blocks
+      )));
+    (blok.properties.nodeIndex || []).forEach(function (e) {
+      ship.prop.connections[e].owner = blok;
+    });
+    arr.push(blok);
+  }
   render();
 };
 /** @type {(x:number,y:number,e:MouseEvent)=>void} */
@@ -1926,6 +1949,7 @@ function commands(x, y, e) {
     }
   st.display = "none";
 }
+/** @TODO fix properties bug (function block expression...) */
 function devt_share(inp) {
   var el = GE("commandsTab");
   if (el)
@@ -1989,9 +2013,9 @@ var rend_speeeeed = {};
   canvas.width = canvas.width;
   rend_background();
   ctx.imageSmoothingEnabled = false;
-  // rend_logic = [],** @type {Logic[]} */
   var objs = ship.blocks, n = 0;
-  if (Logic.rend)
+  if (Logic.rend &&
+    (Logic.nodes = (ship.prop && ship.prop.connections) || []))
     ctx.globalAlpha = settings.logicPreviewAlpha;
   for (var i = 0, id = 0, pos = [0, 0, 0]; i < objs.length; i++) {
     pos = objs[i].position;
@@ -2004,7 +2028,7 @@ var rend_speeeeed = {};
       continue;
     }
     /** @see {Block} @see {Block.Size.VALUE} */
-    var size = Block.Size.VALUE[id], logic = Logic.VALUE[id];
+    var size = Block.Size.VALUE[id], logic = Logic.VALUE[id] || [];
     if (!size)
       return console.error(objs[i], AT);
     var rot = 10 - objs[i].rotation[2] & 3;
@@ -2024,24 +2048,26 @@ var rend_speeeeed = {};
     // update logic nodes render posiotions
     /** @type {typeof Logic.nodes[number]} */
     var node, indexes = objs[i].properties.nodeIndex;
-    if (Logic.rend && logic)
-      for (var j = logic.length; j-- > 0;) {
+    if (Logic.rend && indexes instanceof Array)
+      for (var j = indexes.length; j-- > 0;) {
         // I don't like these logic nodes checks
-        if (!indexes[j]) {
+        if (!indexes || !indexes[j]) {
           console.error("Logic node: " + j + " missing from ship.blocks[" +
             i + "]: " + JSON.stringify(objs[i]) + AT);
           break;
         }
-        if (!(node = Logic.nodes[n = indexes[j] - 1])) {
+        if (!(node = Logic.nodes[n = indexes[j]])) {
           console.error("Logic node: " + n + " missing of ship.blocks[" +
             i + "]: " + JSON.stringify(objs[i]) + " is missing in Logic." +
             "nodes" + AT);
           break;
         }
+        //@ts-ignore
+        logic[j] || (logic[j] = {x: j / 3, y: j / 3});
         // facepalm No.1: works now actually
         var x = logic[j].x - (ow & 16) / 32,
           y = logic[j].y - (oh & 16) / 32,
-        /** @type {number[]} */
+          /** @type {number[]} */
           xys = [x, y, -x, -y];
         x = (rot & 1 ? h / 32 : w / 32) + xys[rot];
         y = (rot & 1 ? w / 32 : h / 32) + xys[rot + 3 & 3];
@@ -2073,20 +2099,48 @@ var rend_speeeeed = {};
     // }); /// ASYNC!!!!!!!!
   }
   ctx.globalAlpha = 1;
-  ctx.lineCap = "round";
-  for (var j = Logic.rend ? Logic.nodes.length : 0; j-- > 0;) {
-    if (!(node = Logic.nodes[j]))
-      continue;
-    n = node.type;
-    ctx.beginPath();
-    ctx.moveTo(node.x, node.y);
-    ctx.closePath();
-    ctx.lineWidth = 16;
-    ctx.strokeStyle = n > 1 ? "#fff" : n & 1 ? "#3e4" : "#e43";
-    ctx.stroke();
-    ctx.lineWidth = 8;
-    ctx.strokeStyle = n > 1 ? n & 1 ? "#3e4" : "#e43" : "#fff";
-    ctx.stroke();
+  if (Logic.rend) {
+    ctx.lineCap = "round";
+    for (var j = Logic.nodes.length; j-- > 0;) {
+      if (!(node = Logic.nodes[j]) || (n = node.type) > 1)
+        continue;
+      n = node.type;
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = "#fff";
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = n & 1 ? "#3e4" : "#e43";
+      ctx.fill();
+    }
+    ctx.lineWidth = 4;
+    ctx.lineDashOffset = Logic.dashOff = Logic.dashOff + 1 || 1;
+    for (j = Logic.nodes.length; j-- > 0;) {
+      if (!(node = Logic.nodes[j]) || node.pairs instanceof Array)
+        continue;
+      ctx.strokeStyle = node.type & 1 ? "#3e4" : "#e43";
+      ctx.beginPath();
+      ctx.moveTo(node.x, node.y);
+      (node = Logic.nodes[node.pairs]) ?
+        ctx.lineTo(node.x, node.y) : 0;
+      ctx.setLineDash([sc, sc / 2]);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    for (j = Logic.nodes.length; j-- > 0;) {
+      if (!(node = Logic.nodes[j]) || (n = node.type) < 2)
+        continue;
+      n = node.type;
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = n & 1 ? "#3e4" : "#e43";
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = "#fff";
+      ctx.fill();
+    }
   }
   utilities.rend_UI();
   var t = Date.now() - t | 0;

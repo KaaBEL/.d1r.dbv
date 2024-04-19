@@ -1,8 +1,12 @@
 //@ts-check
 "use strict";
-// v.0.1.19
-var OP = Object.prototype.hasOwnProperty, OBJ;
-OBJ = {};
+// v.0.1.20.3
+// some parts of version v.0.1.20.2 were lost and will be restored later
+var OP = Object.prototype.hasOwnProperty,
+  /** @type {()=>any} */
+  OC = function () {
+    return {};
+  };
 
 /** check dictionary definitions
  * @overload
@@ -12,7 +16,7 @@ OBJ = {};
  * @overload
  * @param {{[x: number]: string, length: number}} dicNum
  * @param {string} dicVal
-\* @returns {void} */
+ * @returns {void} */
 function dictionaryDefs(dicNum, dicVal, AT) {
   if (location.origin.slice(0, 4) === "http" && location.port !== "5500")
     return;
@@ -68,13 +72,16 @@ function dictionaryDefs(dicNum, dicVal, AT) {
 
 /** object is sealed
  * @template {number} T
-\* @param {T} type @param {number} x @param {number} y */
+ * @param {T} type @param {number} x @param {number} y */
 function Logic(type, x, y) {
+  /** 0|1 = input, has only index reference to source, 2|3 = output */
   this.type = type;
   this.x = x;
   this.y = y;
-  /** @type {T extends 0|1?number[]:number} *///@ts-ignore
-  this.nodeIndex = type > 1 ? -1 : [];
+  /** @type {T extends 0|1?number:number[]} *///@ts-ignore
+  this.pairs = type > 1 ? [] : -1;
+  /** @type {Block|null} */
+  this.owner = null;
   Object.seal(this);
 }
 /** @param {...{k:number,x:number,y:number}[]|string|number} args */
@@ -90,7 +97,7 @@ Logic.generateLogic = function () {
       defs[defs.length] = arg;
     for (var i = 0, nodes = o[l++] = []; i < nodesDef.length;) {
       var def = nodesDef[i++];
-      nodes.push(Object.freeze(new Logic(def.k, def.x / 2, def.y / 2)));
+      nodes.push(Object.freeze(new Logic(def.k, def.x / 2, def.y / -2)));
     }
   }
   for (var i = 0, l = 690, a = arguments; i < a.length; i++)
@@ -101,25 +108,85 @@ Logic.generateLogic = function () {
         setLogic(a[i]);
   return o;
 };
+
+/** @typedef {any} LogicNodesData nodeIndex DBV property specification */
+/** @TODO1 check for all left to archival comments after Logic update */
+/** @TODO don't dele non-archival, but later improve briefness+clarity */
+// Logic block nodes positions and order data:
+// => captures primarily blocks with multiple nodes
+// => name of the block is specified first
+// => nodes are separated with "," commas in the order of which index
+//    they are in DBV nodeIndex property
+// => position of node is specified first <l = left|r = right|c = center>
+//    <t = top|b = bottom|c = center> first letter is x axis, second is y
+//    node is shifted in direction of specified side by 1 or else 0 (if
+//    center), additionally upper case B means 2 downwards (to bottom)
+// => next type is specified <bool = logic|num = numerical><in = input|
+//    out = output>
+// => nodeIndex DBV property has number at node's index to specify ncID
+// => their connections are specified in "nc" DBV savefile property
+//    nc:[{Item1:<number=ncID of input>,Item2:<number=ncID of output>}]
+// Tiny Hydrogen Thruster: cc boolin
+// be aware of the blocks being 180 rotated in editor
+// Small Hydrogen Thruster: cb boolin, ct numin
+// Medium Hydrogen Thruster: cb boolin, ct numin
+// Large Hydrogen Thruster: cb boolin, ct numin
+// Tiny Ion Thruster: cc boolin
+// Small Ion Thruster: cb boolin, ct numin
+// Medium Ion Thruster: cb boolin, ct numin
+// Large Ion Thruster: cb boolin, ct numin
+// Reaction Wheel: cc numin
+
+// Small Hydraulic Drill: cc boolin
+// Cannon: cc boolin
+// ...
+// Small Solar Panel: cB boolin
+// ...
+
+// Constant On Signal: cc boolout
+// Constant Number: cc boolout
+// AND Gate: lt boolin, lb boolin, rc boolout
+// NAND Gate: lt boolin, lb boolin, rc boolout
+// OR Gate: lt boolin, lb boolin, rc boolout
+// NOR Gate: lt boolin, lb boolin, rc boolout
+// XOR Gate: lt boolin, lb boolin, rc boolout
+// XNOR Gate: lt boolin, lb boolin, rc boolout
+// NOT Gate: lc boolin, rc boolout
+// LED: cc boolin
+// Delay: lc boolin, rc boolout
+
+// Constant Number: cc numout
+// Speed Sensor: cc numout
+// Tilt Sensor: cc numout
+// Distance Sensor: cc numout
+// GPS Sensor: lc numout, rc numout
+// Numerical Inverter: lc numin, rc numout
+// Clamp: lc numin, rc numout
+// Abs: lc numin, rc numout
+// Threshold Gate: lc numin, rc boolout
+// Numerical Switchbox: lt boolin, lb numin, rb numin, rt numout
+// Function Block: lt numin, lb numin, rb numin, rt numout
+// Memory Register: lt boolin, lb boolin, rb numin, rt numout
+// ...
 /** entire oject is frost @type {{[key:number]:Logic[]|undefined}} */
 Logic.VALUE = Logic.generateLogic(
-  // def0 == def2
+  // def0 == def3
   738, [{k: 0, x: 0, y: 0}],
   // def1
-  [{k: 0, x: 0, y: -1}, {k: 1, x: 0, y: 1}],
-  // def1
+  [{k: 0, x: 0, y: 1}, {k: 1, x: 0, y: -1}],
+  // def2
   "1", "1", "0", "1", "1", "1", 746, [{k: 1, x: 0, y: 0}],
-  // def2 == sef0
-  770, [{k: 0, x: 0, y: 0}],
-  "3", "3", "3", "3", "3", 789, "3", "2", "3", "2",
+  // def3 == sef0
+  770, "0",
+  "0", "0", "0", "0", "0", 789, [{k: 0, x: 0, y: 2}], "2", "0", "2",
   // def4
-  795, "3", 798, "3", "3", 802, [{k: 2, x: 0, y: 0}],
+  795, "0", 798, "0", "0", 802, [{k: 2, x: 0, y: 0}],
   // def5
   "4", [{k: 0, x: -1, y: -1}, {k: 0, x: -1, y: 1}, {k: 2, x: 1, y: 0}],
   // def6
   "5", "5", "5", "5", "5", [{k: 0, x: -1, y: 0}, {k: 2, x: 1, y: 0}],
   // def7
-  "3", "6", [{k: 3, x: 0, y: 0}],
+  "0", "6", [{k: 3, x: 0, y: 0}],
   // def8
   "7", "7", "7", [{k: 3, x: -1, y: 0}, {k: 3, x: 1, y: 0}],
   // def9
@@ -148,28 +215,136 @@ Logic.VALUE = Logic.generateLogic(
     {k: 3, x: 1, y: -1}
   ],
   "7", "7", "7");
+Logic.dashOff = 0;
 Object.freeze(Logic.VALUE);
-/** @param {string|number} name @param {object} property */
-Logic.addDefault = function addLogic(name, property) {
-  var logicDef = Logic.VALUE[typeof name == "number" ?
-    name :
-    Block.ID[name]
-  ],
-    /** @type {number[]} */
-    ni = property.nodeIndex = [];
-  if (!(logicDef))
+/** addDefault but for Logic - if property contains nodeIndex data it
+ * will use them to reassemble these connections, to reassamble them
+ * properly Logic.reassemble must be used on completed blocks
+ * @param {string|number} name @param {object} property
+ * @param {(Logic<any>|undefined)[]} logics
+ * it is the Logic.nodes or ship.prop.connections
+ * @param {Block[]} blocks */
+Logic.addLogic = function (name, property, logics, blocks) {
+  // nodeIndex (ni) is set to index where logic node ends up in logics
+  /** @type {number[]} (new) DBV property nodeIndex(es) */
+  var ni = [],
+    logicDef = Logic.VALUE[typeof name == "number" ?
+      name :
+      Block.ID[name]
+    ];
+  property.nodeIndex instanceof Array ||
+    (property.nodeIndex = []);
+  if (!logicDef)
     return property;
-  for (var l = logicDef.length; l-- > 0; ni.push(Logic.counter++))
-    Logic.nodes.push(new Logic(logicDef[l].type, 0, 0));
+  logicDef = logicDef.concat([]);
+  for (var i = logicDef.length, l = 1; i-- > 0; ni[i] = index) {
+    while (logics[l])
+      l++;
+    var n = 0, node = new Logic(logicDef[i].type, 0, 0);
+    // this works with the old savefiles logic, new is converted to it
+    // (I reliazed It processes old format but can't do new logics heheh)
+    /** @type {number} */
+    // BE AWARE nodeIndex is nor DBV property here, it's old format
+    // connections references like extracted from control property
+    var index = property.nodeIndex[i], item = logics[index];
+    // logicDef defines what node is going to be specified/listed
+    if (logicDef[i].type > 1) {
+      // if it is output it will later or might already be referenced
+      // by input, so it needs to be replaced to presented index
+      // index is not taken
+      if (!item) {
+        logics[index || (index = l)] = node;
+        continue;
+      }
+      // index being already taken by another output
+      if (item.pairs instanceof Array) {
+        console.warn("Two output nodes with identical index" +
+          ", at Logic.addLogic().");
+        continue;
+      }
+      // index (var item) can be taken only by input now
+      // move the input to not taken index
+      logics[l] = item;
+      // find 'owner' block to update nodeIndex reference to its node
+      blocks.some(function (e) {
+        var niCheck = e.properties && e.properties.nodeIndex;
+        if (niCheck instanceof Array) {
+          (n = niCheck.indexOf(index)) < 0 ? 0 : niCheck[n] = l;
+          return n >= 0;
+        }
+      });
+      // ...and update reference from output to that input
+      // (are pairing references set yet at all?)
+      // assigning references after Block[] completed
+      //-if (item = logics[item.pairs])
+      //-  item.pairs instanceof Array ?
+      //-    item.pairs[item.pairs.indexOf(index)] = l :
+      //-    console.error("Input referencing other input found.");
+      logics[index] = node;
+      continue;
+    }
+    node.pairs = index || -1;
+    // else just take first unassigned index for input
+    logics[index = l] = node;
+    // // also assign the references
+    // item && !(item.nodeIndex instanceof Array) /// end up here
+    // // TODO: also find out .. it seems nodeIndex is input first then output
+    // I'll try to do it after Block[] completed
+  }
+  property.nodeIndex = ni;
   return property;
+};
+/** @param {Block[]} blocks @param {(Logic<any>|undefined)[]} [logics] */
+Logic.reassemble = function (blocks, logics) {
+  if (logics && logics.length)
+    for (var i = blocks.length; i-- > 0;) {
+      var arr = blocks[i].properties.nodeIndex || [];
+      for (var j = arr.length; j-- > 0;) {
+        var n = arr[j], node = logics[n];
+        if (!node)
+          continue;
+        // assign reference to 'owner' Block
+        node.owner = blocks[i];
+        // if the node of a block is input and it is connected tp output
+        if (node.pairs instanceof Array || !(node = logics[node.pairs]))
+          continue;
+        // add reference to the paired output
+        node.pairs instanceof Array ? node.pairs.indexOf(n) === -1 &&
+          node.pairs.push(n) : console.error("Paired input with input," +
+            " at Logic.reassemble.");
+      }
+    }
+  return blocks;
+};
+/** @param {Block} block @param {(Logic<any>|undefined)[]} logics */
+Logic.removeLogic = function (block, logics) {
+  var ni = block.properties.nodeIndex || [];
+  for (var i = ni.length; i-- > 0;) {
+    var node = logics[ni[i]] || {pairs: -1};
+    delete logics[ni[i]];
+    if (typeof node.pairs == "number") {
+      var pairs = logics[node.pairs];
+      if (!pairs)
+        return console.error("Connection to missing node.");
+      pairs.pairs instanceof Array ?
+        delete pairs.pairs[pairs.pairs.indexOf(ni[i])] :
+        console.error("Input connected to input.");
+      continue;
+    }
+    for (var j = node.pairs.length; j-- > 0;)
+      if (!(pairs = logics[node.pairs[j]]))
+        console.error("Connection to missing node.");
+      else
+        pairs.pairs instanceof Array ?
+          console.error("Output connected to output.") :
+          pairs.pairs = -1;
+  }
 };
 // Logic static properties
 /** specifies when logic nodes and connections should be rendered */
 Logic.rend = !1;
-// might get exchanged for Logic.nodes.length + 1
-Logic.counter = 1;
-/** @type {(Logic|null)[]} */
-Logic.nodes = [];
+/** @type {(Logic|null)[]&{ownerShip:Ship}} */
+Logic.nodes = OC();
 if (Logic.nodes[0] && Logic.nodes[0].type === 1)
   Logic.nodes[0].type;
 
@@ -253,19 +428,21 @@ Color.colorlessRegexp = new RegExp("Struct|Glass Block|Glass Wedge|Sol\
 ar Block|Solar Panel|Hinge|Piston|Ghost Block|Gauge|Dial|Digital Displ\
 ay|__placeholder(?:839|84[0-26-9]|85[0-3])__");
 /** block names in dbv are case insesitve loaded by game,
-\* Block name definitions require strict letter cases here */
+ * Block name definitions require strict letter cases here */
 /**
  * @typedef {[number,number,number]} XYZPosition
  * @typedef {[0|1|2,boolean,0|1|2|3]} Rotation
  * @typedef {keyof typeof Color.ID|""|null} Colors
+ * @typedef {{control?:(number|string)[],nodeIndex?:number[],
+ * weldGroup?:number}} BlockProps
  * @param {string} name
  * @param {XYZPosition} pos [/: 0, x: p[0] * 2, y: p[1] * 2]
  * @param {Rotation} rot [/: 0, f: f, r: Math.floor(r / 90)]
- * @param {{[key: string]: any}|0} [prop={color:""}]
+ * @param {{[key:string]: any}|0} [prop={color:""}]
  * @param {keyof typeof Color.ID|null} [color=""] */
 function Block(name, pos, rot, prop, color) {
   this.internalName = name;
-  /**  [not-used, x, y]*/
+  /** [not-used, x, y] */
   this.position = pos;
   /** [not-used, flipped, cunterclockwise] */
   this.rotation = rot;
@@ -273,11 +450,13 @@ function Block(name, pos, rot, prop, color) {
   prop.color = color !== UDF ?
     prop.color = color :
     prop.color === null || prop.color ? prop.color : "";
-  /** @type {{[key: string]: any, color: Colors}} */
+  /** @type {{[key:string]:any,color:Colors}&BlockProps} */
   //@ts-ignore
   this.properties = prop;
   Object.seal(this);
 }
+// NOTE that blocks definitions will be version dependant over time
+// there is just no need to implement it yet (allows cross version editing)
 /** object is frost */
 Block.NAME = {
   0: "block",
@@ -285,8 +464,8 @@ Block.NAME = {
   2: "wedge_1x2",
   3: "pyramid",
   4: "pyramid_1x2",
-  5: "inversed_pyrymid",
-  6: "inversed_pyramid_1x2",
+  5: "inverse_pyramid",
+  6: "inverse_pyramid_1x2",
   7: "hydrogen_tank_small",
   8: "rcs_rocket_thruster_small",
   9: "rocket_thruster_small",
@@ -422,8 +601,8 @@ Block.ID = {
   "wedge_1x2": 2,
   "pyramid": 3,
   "pyramid_1x2": 4,
-  "inversed_pyrymid": 5,
-  "inversed_pyramid_1x2": 6,
+  "inverse_pyramid": 5,
+  "inverse_pyramid_1x2": 6,
   "hydrogen_tank_small": 7,
   "rcs_rocket_thruster_small": 8,
   "rocket_thruster_small": 9,
@@ -609,23 +788,78 @@ Block.WEIGHT = {
   826: .25,
   827: .5
 };
-/** @param {object[]|object} blocks */
-Block.arrayFromObjects = function arrayFromObjects(blocks) {
+/** @TODO handling ls */
+/**
+ * @param {object[]|object} blocks
+ * @param {Logic<any>[]&{nc?:any}} [logics$] */
+Block.arrayFromObjects = function arrayFromObjects(blocks, logics$) {
+  function extractLogic(control) {
+    var j = 0, props = Block.Properties.VALUE[Block.ID[name]] || [];
+    for (var i = props.length; i-- > 0; j += p instanceof Array ?
+        p.length :
+        1)
+      var p = props[i].item.default;
+    // +It seems the node connections from property.control are inversed
+    // +But in fact the nodeIndexes are processed reversed as well
+    //-node connections from property.control start first with what
+    //-index is output referenced with by inputs,
+    //-then inputs referencing to those specified/listed positions
+    //-vehicles using control logic definition are from version without
+    //-numerical logics, thrusters got added numerical input node,
+    //-but it's on position one in nodeIndex array
+    // (Actually returning to not reversing) Are they actually not inversed
+    // at all an I am seriously dump and can't decide which is right :F
+    // After all I don't have specification for old savefile
+    // and have to find out from old version savefiles
+    // if (control instanceof Array)
+    //   for (var src = control.slice(j), dest = []; ++i < src.length;)
+    //     dest[i] = src[src.length - i - 1];
+    return control instanceof Array && control.slice(j);
+  }
+  /** @param {number[]} indexes */
+  function extractConnections(indexes) {
+    var logic = Logic.VALUE[Block.ID[name]] || [];
+    for (var i = logic.length; i-- > 0;)
+      // if node at index is input replace it with reference to output
+      if (typeof logic[i].pairs == "number")
+        //@ts-ignore
+        indexes[i] = ncProperty[indexes[i]];
+    return indexes;
+  }
   var bs = blocks instanceof Array ? blocks : [blocks];
-  for (var i = bs.length, r = []; i-- > 0;) {
+  var logics = logics$ || [],
+    /** nodeIndex property of a block is number[] type:
+     * + it contains inputs and outputs indexes
+     * + their connections are specified in "nc" DBV savefile property
+     * + each index specifies whether it's input/output, bool/numerical,
+     *   display position depeding on block type @see {LogicNodesData}*/
+    /** maps connection of key:input to value:output */
+    ncProperty = function () {
+      /** @type {{[key:number]:number|undefined}} [key:input]:output */
+      var map = {}, connections = logics.nc;
+      if (!(connections && connections.length))
+        return UDF;
+      for (var i = connections.length; i-- > 0;) {
+        if (typeof connections[i] != "object")
+          continue;
+        var item = connections[i], nkey = item.Item1 || item[0];
+        var nval = item.Item2 || item[1];
+        if (typeof nkey == "number" && typeof nval == "number")
+          map[nkey] = nval;
+      }
+      return map;
+    }();
+  delete (logics$ || {}).nc;
+  for (var i = 0, r = []; i < bs.length; i++) {
     var block = bs[i], o = {
       name: block.internalName || block.name || block.n,
       pos: block.position || block.pos || block.p,
       rot: block.rotation || block.rot || block.r,
       prop: block.properties || block.prop || {color: ""},
-      flip: block.f || block.flipped
+      flip: block.f || block.flipped,
+      weld: block.wg || block.weld
     };
     o.prop.color = block.color || block.s || o.prop.color || "";
-    /**
-     * @TODO properties control and nodeIndex will work differently
-    \* eventually (not in this update I guess) */
-    o.prop.control = block.c || o.prop.control;
-    o.prop.nodeIndex = block.ni || o.prop.nodeIndex;
     var name = typeof o.name == "string" ? o.name : "__unknown__",
       pos = (o.pos instanceof Array && o.pos.length !== 2 ?
         o.pos :
@@ -657,12 +891,32 @@ Block.arrayFromObjects = function arrayFromObjects(blocks) {
       }
       pos = [0, o.pos[0] * 2 + adjX, o.pos[1] * 2 + adjY];
     }
+    //-DEL: when block is placed the ship.prop.connection is checked (and? added) DEL-END
+    //-why did I check for conquest blocks?
+    // is keeping control property not changed a good idea?
+    // editor uses block.ni or properties.nodeIndex prioritizedly
+    o.prop.control = block.c || o.prop.control;
+    if (Logic.VALUE[Block.ID[name]]) {
+      var indexes = block.ni || o.prop.nodeIndex;
+      o.prop.nodeIndex = indexes instanceof Array &&
+        indexes.every(function (e) {
+          return typeof e == "number" && !isNaN(e);
+        }) ?
+          // CONTINUE create extract connections
+          ncProperty && extractConnections(indexes) :
+          extractLogic(o.prop.control);
+      Logic.addLogic(name, o.prop, logics, r);
+    }
+    if (Block.ID[name] > 689 && Block.ID[name] < 947)
+      o.prop.weldGroup = o.weld || 0;
     r[i] = new Block(name, [pos[0], pos[1], pos[2]], rot, o.prop);
   }
-  return r;
+  // optionally correct loading if logic nodes will require
+  // to finish references after all blocks are loaded
+  return Logic.reassemble(r, logics);
 };
-/** @param {number} n */
-Block.generateArray = function generateArray(n) {
+/** @param {number} n @param {Logic<any>[]} [logics] */
+Block.generateArray = function generateArray(n, logics) {
   if (n !== -69)
     throw new Error("Not implemented. (only arg0: n = -69 works)");
   var i = 12, idx = 0, SH = "Small Hydrogen ";
@@ -674,17 +928,20 @@ Block.generateArray = function generateArray(n) {
       [-1, 691, 690, 746]
     )[j / 3 | 0];
   }
-  for (updt(i - 1); i-- > 0; updt(i - 1))
+  for (updt(i - 1); i-- > 0; updt(i - 1)) {
     blocks.push(new Block((i % 3 !== 1 ?
-      [SH + "Thruster", SH + "Tank", "Small Battery", "Wedge"] :
-      ["", "Block", "Core", "Reaction Wheel"])[i / 3 | 0],
+        [SH + "Thruster", SH + "Tank", "Small Battery", "Wedge"] :
+        ["", "Block", "Core", "Reaction Wheel"])[i / 3 | 0],
       [0, i * 2 % 6 - 2, (i / 3 | 0) * 2 - 4],
       [0, !1, i === 9 ? 1 : 0],
-      Block.Properties.addDefault(idx, Logic.addDefault(idx, {
-          color: i > 5 ?
-            i & 1 ? "White" : "Light Gray" :
-            i % 3 !== 1 ? i < 3 ? "Yellow" : "Fuel" : "White"
-        }))));
+      Block.Properties.addProperty(idx, Logic.addLogic(idx, {
+        color: i > 5 ?
+          i & 1 ? "White" : "Light Gray" :
+          i % 3 !== 1 ? i < 3 ? "Yellow" : "Fuel" : "White"
+      // to be able to display logic nodes or work with them properly
+      // they must be bound to the Ship, else they're not necessary
+      }, logics || [], blocks))));
+  }
   blocks[10] = blocks[11];
   blocks.length--;
   return blocks;
@@ -692,7 +949,7 @@ Block.generateArray = function generateArray(n) {
 /** object is frost
  * @typedef {{x: number, y: number, w: number, h: number}}
  * @param {number} x @param {number} y
-* @param {number} w @param {number} h */
+ * @param {number} w @param {number} h */
 Block.Size = function Size(x, y, w, h) {
   this.x = x;
   this.y = y;
@@ -706,7 +963,7 @@ Block.Size.height = 4;
  * @typedef {[number,number,number,number,number]} PreciseDef
  * @typedef {[number]|[number,number,number]|PreciseDef} SizeDef
  * @typedef {SizeDef|SizeDef[]} SizesArg
-\* @type {(...arg: SizesArg[]) => {[key: number]: Block.Size}} */
+ * @type {(...arg: SizesArg[]) => {[key: number]: Block.Size}} */
 Block.Size.genterateSizes = function () {
   var r = {690: new this(0, 0, 2, 2)},
     /** @type {{[key: number]: SizeDef|SizeDef[], length: number}} */
@@ -794,7 +1051,7 @@ Block.Properties.Items = {
 /**
  * @typedef {["Slider", "Integer Slider", "Dropdown", "Number Inputs",
  * "Text Inputs"]} itemTypes
-\*/
+ */
 /** @type {itemTypes} */
 Block.Properties.itemTypes = ["Slider", "Integer Slider", "Dropdown",
   "Number Inputs", "Text Inputs"];
@@ -804,11 +1061,11 @@ Block.Properties.itemTypes = ["Slider", "Integer Slider", "Dropdown",
  * @typedef {[2,string,string[],number]} ItmArg2
  * @typedef {[3,string,number[]]} ItmArg3
  * @typedef {[4,string,string[]]} ItmArg4
-\* @typedef {ItmArg0|ItmArg1|ItmArg2|ItmArg3|ItmArg4} PropsArg */
+ * @typedef {ItmArg0|ItmArg1|ItmArg2|ItmArg3|ItmArg4} PropsArg */
 /** @typedef {Block.Properties<keyof ItemTs>} Props */
 /**
  * @type {<T extends PropsArg[]>(argArr: T)=>Props[]}
-\*/
+ */
 Block.Properties.justOne = function (argArr) {
   for (var j = 0, r = []; j < argArr.length; j++) {
     var p, v = argArr[j];
@@ -881,7 +1138,7 @@ Block.Properties.VALUE = Block.PROP = {
   827: Block.Properties.justOne([[1, "Decimals amount", 1, 4, 2]])
 };
 /** @param {string|number} name @param {object} property */
-Block.Properties.addDefault = function addProperty(name, property) {
+Block.Properties.addProperty = function (name, property) {
   var propsDef = Block.Properties.VALUE[typeof name == "number" ?
     name :
     Block.ID[name]
@@ -902,12 +1159,13 @@ Block.Properties.addDefault = function addProperty(name, property) {
  * @param {Array<number>} version
  * @param {string} time
  * @param {Array<Block>} blocks
-\* @param {object|null} [properties=null] */
+ * @param {object|null} [properties=null] */
 function Ship(name, version, time, blocks, properties) {
   this.name = name;
   this.gameVersion = version;
   this.dateTime = time;
   this.blocks = blocks;
+  // optional logic blocks requiring bounding to ownerShip adds complications
   /** Ship properties (shortcut since it is db/dr non-standard) */
   this.prop = properties || null;
   Object.seal(this);
@@ -932,15 +1190,24 @@ Ship.fromObject = function fromObject(object) {
         o.ver:
         []).map(Number),
     time = typeof o.time === "string" ? o.time : dateTime(),
+    /** @type {Logic<any>[]&{nc:any}} */
+    logics = function () {
+      /** @type {any} */
+      var arr = [];
+      arr.nc = o.add && o.add.logic;
+      return arr;
+    }(),
     blocks = o.blocks instanceof Array ?
-      Block.arrayFromObjects(o.blocks) :
-      Block.generateArray(-69),
+      Block.arrayFromObjects(o.blocks, logics) :
+      Block.generateArray(-69, logics),
     // something more was supposed to be done like ...?
     props = o.props;
   if (o.add) {
-    (props = props || OBJ).launchpadSize = o.add.grid;
+    (props = props || OC()).launchpadSize = o.add.grid;
     props.nodeConnections = o.add.logic;
   }
+  if (logics.length)
+    (props = props || OC()).connections = logics;
   return new Ship(name, ver, time, blocks, props);
 };
 /** @param {Ship} ship */
@@ -962,16 +1229,30 @@ Ship.toDBV = function toDBV(ship) {
       f: e.rotation[1],
       s: e.properties.color,
       c: e.properties.control,
-      ni: e.properties.nodeIndex
+      ni: e.properties.nodeIndex || [],
+      wg: e.properties.weldGroup || 0
     });
+  }
+  var shipProp = ship.prop || {}, connections = [];
+  for (i = (shipProp.connections || []).length; i-- > 0;) {
+    /** @type {Logic<any>|{pairs:[]}} */
+    var node = shipProp.connections[i] || {pairs: []}, n = node.pairs;
+    typeof n == "number" && shipProp.connections[n] &&
+      connections.push({
+        // node index, input type
+        Item1: i,
+        // referenced node 
+        Item2: node.pairs
+      });
   }
   return {
     n: ship.name,
     gv: ship.gameVersion.join("."),
     dt: ship.dateTime,
-    ls: (ship.prop || {}).launchpadSize || 0,
+    ls: shipProp.launchpadSize || 0,
     b: blocks,
-    nc: (ship.prop || {}).nodeConnections
+    nc: connections || shipProp.nodeConnections,
+    significantVersion: -1
   };
 };
 
@@ -1759,7 +2040,7 @@ ytesize, ?isMSBF=false :displays data in bits(for viewing data)";
   }
 }
 /** function for manual use to check rotations or/and rotation index
-\* @param {[number, number, number]} arr */
+ * @param {[number, number, number]} arr */
 function rotationIndex(arr) {
   var rot = rotateBlock(arr);
   var num = rot[2] | +rot[1] << 2 | rot[0] << 3;

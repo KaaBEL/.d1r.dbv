@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.1.19.1 -->
+<!-- v.0.1.20.3 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -497,7 +497,7 @@
       bd.onmousedown = function (e) {
         if (foreign = e.target !== canvas)
           over(e);
-        if (e.buttons & 1)
+        if (e.buttons === 1)
           mouseStamp = Date.now();
         pX = gX = e.pageX - canvas.offsetLeft;
         pY = gY = e.pageY - canvas.offsetTop;
@@ -505,7 +505,7 @@
       bd.onmousemove = function (e) {
         if (foreign)
           return over(e);
-        if (!(e.buttons & 1))
+        if (!(e.buttons & 5))
           return;
         var x = e.pageX - canvas.offsetLeft,
           y = e.pageY - canvas.offsetTop;
