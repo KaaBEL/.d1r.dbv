@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.20.3
+// v.0.1.21
 // some parts of version v.0.1.20.2 were lost and will be restored later
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -42,12 +42,6 @@ function throwErrors() {
 
 canvas.addEventListener("contextlost", function () {
   console.warn("CONTEXT LOST!");
-  console.warn("CONTEXT LOST!");
-  console.warn("CONTEXT LOST!");
-  console.warn("CONTEXT LOST!");
-  console.warn("CONTEXT LOST!");
-  console.warn("CONTEXT LOST!");
-  console.warn("CONTEXT LOST!");
 });
 canvas.addEventListener("contextrestored", function () {
   console.log("%cCONTEXT RESTOERED!", "color:#4f3");
@@ -78,9 +72,9 @@ canvas.addEventListener("contextrestored", function () {
   "#commandsTab header div{flex-grow: 1;cursor: pointer;}" +
   "#commandsTab header div:active{cursor: grab;}" +
   "#commandsTab .content button, #commandsTab .items button" +
-  "{display: block;width: 333px;}" +
+  "{display: block;position: relative;width: 333px;}" +
   "#commandsTab button div" +
-  "{display: inline-block;position: absolute;right: 21px;}" +
+  "{display: inline-block;position: absolute;right: 5px;}" +
   "#commandsTab .items, #commandsTab .content" +
   "{overflow-x: hidden;max-height: " +
   (innerHeight > 500 ? 470 : innerHeight - 40) + "px;}" +
@@ -908,7 +902,7 @@ var settings = {
   editorBackground: typeof DOMMatrix != "undefined",
   /** mumst be in #xxxxxx hex color format */
   editorBackgroundColor: "#111111",
-  /** (default) 0: dbc, 1: db */
+  /** (default) 0: dbc, 1: db, ... */
   editorBackgroundImage: 0,
   /** mumst be in #xxxxxx hex color format */
   highlightColor: "#ff0000",
@@ -928,9 +922,10 @@ function saveSettings() {
 }
 function loadSettings() {
   var s = storage.getItem("D1R_DBV_editor") || "";
+  if (!s.length)
+    return;
   if (s.length > 3)
-    return !s.length ? void 0 :
-      console.error("Unsupported length of localStorage item");
+    return console.error("Unsupported length of localStorage item");
   var n = 0, arr = s.split("").map(function (e) {
     return e.charCodeAt(0);
   });
@@ -1204,7 +1199,8 @@ utilities.rend_UI = F;
  * @typedef {{name:string,type:string,fn:(ev:Event)=>any}} CommandItem
  * @param {string} name 
  * @param {string} description 
- * @param {CommandItem[]|((items:HTMLElement)=>void)} items indefinite
+ * @param {{name:string,type:string,fn:(ev:Event)=>any}[]|((items:{
+ * appendChild:typeof document.appendChild})=>void)} items indefinite
  * @param {boolean} [setting=false] */
 function Command(name, description, items, setting) {
   this.name = name;
@@ -1237,14 +1233,15 @@ Command.add = function add(name, items, desc) {
  * @callback CmdInit
  * @param {(Node|{name:string,inp:HTMLInputElement})[]} items
  * @param {typeof utilities} collapsed
- * @returns {void} *///{({name:string,inp:HTMLInputElement}|Node)[]} */
+ * @returns {void} */
 /** use items poperty intialize callback by pushing items
  * (items: Array<Node | {name: string, inp: HTMLInputElement}>) => void
  * you can use named inputs or Elemets to build up command menu
  * @param {string} name @param {string} description
  * @param {CmdInit} initialize */
 Command.push = function (name, initialize, description) {
-  return this.list.push(new Command(name, description, function (el) {
+  var str = Command.NAME[name] || name;
+  return this.list.push(new Command(str, description, function (el) {
     /** @type {(Node|{name:string,inp:HTMLInputElement})[]} */
     var items = [];
     initialize(items, utilities); 
@@ -1258,6 +1255,7 @@ Command.push = function (name, initialize, description) {
       }
   }));
 };
+Command.NAME = {"Setup Properties": "Setup Properties"};
 
 Command.push("Select Block", function (items, collapsed) {
   var bcks = {
@@ -1354,13 +1352,24 @@ Command.add("Select Color", function () {
 lor it.");
 
 Command.push("Setup Properties", function (items, collapsed) {
-  var idx = 0, index = EL("input"), text = tN("0");
+  var idx = 0, span = EL("span"), text = span.appendChild(tN(""));
+  span.id = "block-idx";
+  span.onchange = F;
+  var index = EL("input");
   var posX = EL("input"), posY = EL("input"), setPos = EL("button");
-  var name = EL("input"), props = EL();
+  var name = EL("input"), props = EL(), focus = EL("input");
   props.style.textAlign = "middle";
   function displayProperties() {
-    var block = ship.blocks[idx], p;
+    var block = ship.blocks[text.data = "" + idx], p;
     name.value = block.internalName;
+    weldGroup.selectedIndex = block.properties.weldGroup || 0;
+    try {
+      span.onchange &&
+        /** @type {Function} */
+        (span.onchange)();
+    } catch (e) {
+      console.error(e);
+    }
     for (var itm; props.lastChild;)
       props.removeChild(props.lastChild);
     if (!(p = Block.PROP[Block.ID[block.internalName]]))
@@ -1411,7 +1420,14 @@ Command.push("Setup Properties", function (items, collapsed) {
     }
     render();
   }
-  items.push(tN("Current order position: "), text);
+  function updateFocus() {
+    if (!focus.checked)
+      return;
+    var pos = ship.blocks[idx].position;
+    vX = (pos[1] / 2 + 1) * sc * 2 + canvas.width / 2;
+    vY = -pos[2] / 2 * sc * 2 + canvas.height / 2;
+  }
+  items.push(tN("Current order position: "), span);
   items.push(EL("br"), {name: "Destination order", inp: index});
   var select = EL("button"), next = EL("button");
   select.appendChild(tN("Select destination block"));
@@ -1419,13 +1435,17 @@ Command.push("Setup Properties", function (items, collapsed) {
     var l = ship.blocks.length - 1;
     idx = Number(index.value) || 0;
     text.data = "" + (idx > l ? idx = l : idx);
+    updateFocus();
     displayProperties();
   };
   next.appendChild(tN("Move to next block"));
   next.onclick = function () {
     text.data = "" + (idx < ship.blocks.length - 1 ? idx += 1 : idx);
+    updateFocus();
     displayProperties();
   };
+  focus.type = "checkbox";
+  focus.id = "focus";
   var insert = EL("button"), exchange = EL("button");
   insert.appendChild(tN("Insert"));
   insert.onclick = function () {
@@ -1449,7 +1469,7 @@ Command.push("Setup Properties", function (items, collapsed) {
     ship.blocks[text.data = "" + (idx = dest)] = temp;
     displayProperties();
   };
-  items.push(select, next, insert, exchange);
+  items.push(select, next, {name: "focus", inp: focus}, insert, exchange);
   setPos.appendChild(tN("Set position"));
   setPos.onclick = function () {
     var pos = ship.blocks[idx].position;
@@ -1468,6 +1488,22 @@ Command.push("Setup Properties", function (items, collapsed) {
     displayProperties();
   };
   items.push(setPos, {name: "Block name", inp: name}, props);
+  for (var i = 0, weldGroup = EL("select"); i < 5;) {
+    var option = EL("option");
+    option.style.backgroundColor = [
+      "white",
+      "blue",
+      "red",
+      "green",
+      "yellow"
+    ][i];
+    option.appendChild(tN("" + i++));
+    weldGroup.add(option);
+  }
+  weldGroup.onchange = function () {
+    ship.blocks[idx].properties.weldGroup = Number(weldGroup.value);
+  }
+  items.push(tN("Weld group: "), weldGroup);
   collapsed.rend_UI = function () {
     var block = ship.blocks[idx] || {}, s = block.internalName, pos;
     if (!(pos = block.position))
@@ -1491,19 +1527,139 @@ Command.push("Setup Properties", function (items, collapsed) {
       (rot & 1 ? w : h) * sc / 16);
   };
   displayProperties();
-}, "Properties settings. (hIGHLY iNForNmATIve And ClEAr DesCRiPTioN!11!!!11!\
-1!!)");
+}, "Properties Command simply explained: index of selected block in blocks \
+list, ind\
+ex in block list chosen by user (you), selects block at chosen index, select\
+s next block in list, centers selected block to middle of window, puts block\
+  at chosen index and other blocks will move by 1 towards new empty space, s\
+waps block at chosen index with selected block, axis position specified or 0\
+, axis position specified or 0, sets axis positions of selected block, block\
+ type is set to valid block name, optionally some block properties (not expl\
+ained), 0 is white 1 is blue 2 is red 3 is green 4 is yellow, this descri.");
+var test_el = EL("select")
 Command.push("Display Logic", function (items, collapsed) {
-  var inp = EL("input");
+  function updateNodeSelect() {
+    var idx = Number(text.data), block = ship.blocks[idx];
+    /** @type {(Logic<any>|undefined)[]} */
+    var logics = (ship.prop || OC()).connections || [], temp = EL();
+    temp.appendChild(tN("Logic block: " + idx + " " + block.internalName));
+    temp.appendChild(EL("br"));
+    /** @type {HTMLSelectElement|null} */
+    var numerical = test_el = EL("select"),
+      /** @type {(Logic<3>|undefined)[]} */
+      nums = [UDF],
+      /** @type {HTMLSelectElement|null} */
+      logical = EL("select"),
+      /** @type {(Logic<2>|undefined)[]} */
+      logs = [UDF];
+    numerical.appendChild(EL("option")).appendChild(tN("none"));
+    logical.appendChild(EL("option")).appendChild(tN("none"));
+    for (var i = logics.length; i-- > 0;) {
+      var option = EL("option"), node = logics[i];
+      if (!node || typeof node.pairs == "number")
+        continue;
+      if (!node.owner) {
+        console.warn("Missing node.owner - logics[" + i + "]:", node);
+        continue;
+      }
+      option.appendChild(tN(ship.blocks.indexOf(node.owner) + " " +
+        node.owner.internalName));
+      option.value = "" + i;
+      (node.type & 1 ?
+        (nums.push(node), numerical) :
+        (logs.push(node), logical)).add(option);
+    }
+    var ni = block.properties.nodeIndex || [];
+    for (i = 0; i < ni.length; i++) {
+      if (!(node = logics[ni[i]]) || node.pairs instanceof Array)
+        continue;
+      var b = node.type & 1,
+        /** @type {HTMLSelectElement} *///@ts-ignore
+        select = (b ? numerical : logical).cloneNode(!0),
+        pairsN = b ?
+          nums.indexOf(logics[node.pairs]) :
+          logs.indexOf(logics[node.pairs]);
+      temp.appendChild(tN(b ? "set numerical: " : "set logical: "));
+      select.name = "" + i;
+      (select.item(pairsN < 0 ? 0 : pairsN) || OC()).selected = !0;
+      select.onchange = function () {
+        if (!(this instanceof HTMLSelectElement))
+          return;
+        var n = ni[+this.name], ref = +this.value;
+        var input = logics[n], output = logics[ref];
+        // output won't be assigned, but old node still needs disconnect
+        if (this.value === "none")
+          (output = new Logic(3, 0, 0)).pairs = [ref = -1];
+        if (!input || !output)
+          throw new Error((input ? "" : "input" + (output ?
+            " and" :
+            "")) + (output ? "" : " output") + " node was removed.");
+        if (input.pairs instanceof Array)
+          throw new Error("Node is supposed to be input.");
+        if (typeof output.pairs == "number")
+          throw new Error("Node is supposed to be output.");
+        // if input wasn't connected before, *idk just leave it alone*
+        var old = logics[+input.pairs] || {pairs: 0};
+        if (old === output)
+          throw new Error("Selected output haven't changed.");
+        // asigns new connection/disconnection
+        input.pairs = ref;
+        // asigns new connection
+        ref !== -1 && output.pairs.push(n);
+        if (old.pairs instanceof Array) {
+          for (n = old.pairs.indexOf(n); ++n < old.pairs.length;)
+            old.pairs[n - 1] = old.pairs[n];
+          old.pairs.length--;
+        }
+        render();
+      };
+      temp.appendChild(select);
+      temp.appendChild(EL("br"));
+    }
+    connections.parentNode &&
+      connections.parentNode.replaceChild(temp, connections);
+    connections = temp;
+  }
+  var inp = EL("input"), connections = EL(), text = tN("#text error");
   inp.type = "checkbox";
-  inp.checked = Logic.rend;
+  inp.checked = Logic.rend = !0;
   inp.oninput = function () {
     Logic.rend = inp.checked;
     render();
   };
   items.push({name: "Display Logic", inp: inp});
+  // uses some elements from "Setup Properties" Command
+  Command.list.some(function (e) {
+    if (e.name !== Command.NAME["Setup Properties"] ||
+      typeof e.items != "function")
+      return;
+    e.items({
+      /** @type {typeof document.appendChild} */
+      appendChild: function (node) {
+        items.push(node);
+        if (!(node instanceof HTMLElement))
+          return node;
+        node.id === "focus" ?
+          this.appendChild = function (e) {
+            return e;
+          } : 0;
+        if (node.id === "block-idx") {
+          text = node.firstChild instanceof Text ?
+            node.firstChild :
+            text;
+          node.onchange = updateNodeSelect;
+        }
+        return node;
+      }
+    });
+    return true;
+  });
+  updateNodeSelect();
+  items.push(connections);
 }, "Gives the option to toggle displaying logics, it may cause errors but it\
- won't get rid of all bugs related to Logic blocks.");
+ won't get rid of all bugs related to Logic blocks. Uses block selection fro\
+m \"Setup Properties\" Command and the focus option. Inputs not yet with tag\
+s are listed with option field to select logic output of the same type.");
 
 Command.push("Import/Export DBV", function (items, collapsed) {
   var inp = EL("input"), elBtn = EL("button"), error = EL();
@@ -1797,6 +1953,14 @@ var cmdsHeader = EL(), cmds = (function () {
     e0.onclick = initItems(item);
     e0.appendChild(EL()).appendChild(tN(">"));
   };
+  window.onerror = function (m,s,l,c,e) {
+    var pre = content.appendChild(EL("div"));
+    //pre.style.whiteSpace = "pre";
+    //pre.style.width = "500px";
+    pre.style.overflowWrap = "break-word";
+    pre.style.wordBreak = "break-all";
+    pre.appendChild(tN(onlyConsole(m,s,l,c,e)));
+  }
   return (bd || EL()).appendChild(nav);
 })();
 
@@ -2149,4 +2313,10 @@ var rend_speeeeed = {};
 
 init = function () {
   rend_checkColors();
+};
+
+function onlyConsole(m,s,l,c,e) {
+  if (e && e.stack)
+    return ""+m+"\n"+e.stack;
+  return ""+m+"\n\t"+s+":"+l+":"+c;
 };

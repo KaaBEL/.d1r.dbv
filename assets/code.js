@@ -1,6 +1,7 @@
 //@ts-check
 "use strict";
 // v.0.1.20.3
+/** @TODO check significantVersion */
 // some parts of version v.0.1.20.2 were lost and will be restored later
 var OP = Object.prototype.hasOwnProperty,
   /** @type {()=>any} */
@@ -324,11 +325,12 @@ Logic.removeLogic = function (block, logics) {
     delete logics[ni[i]];
     if (typeof node.pairs == "number") {
       var pairs = logics[node.pairs];
-      if (!pairs)
-        return console.error("Connection to missing node.");
-      pairs.pairs instanceof Array ?
-        delete pairs.pairs[pairs.pairs.indexOf(ni[i])] :
-        console.error("Input connected to input.");
+      if (pairs) {
+        pairs.pairs instanceof Array ?
+          delete pairs.pairs[pairs.pairs.indexOf(ni[i])] :
+          console.error("Input connected to input.");
+      } else if (node.pairs !== -1)
+        console.error("Connection to missing node.");
       continue;
     }
     for (var j = node.pairs.length; j-- > 0;)
@@ -1202,6 +1204,7 @@ Ship.fromObject = function fromObject(object) {
       Block.generateArray(-69, logics),
     // something more was supposed to be done like ...?
     props = o.props;
+  Logic.reassemble(blocks, logics);
   if (o.add) {
     (props = props || OC()).launchpadSize = o.add.grid;
     props.nodeConnections = o.add.logic;
@@ -1252,7 +1255,7 @@ Ship.toDBV = function toDBV(ship) {
     ls: shipProp.launchpadSize || 0,
     b: blocks,
     nc: connections || shipProp.nodeConnections,
-    significantVersion: -1
+    significantVersion: 0
   };
 };
 
