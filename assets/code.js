@@ -1,8 +1,7 @@
 //@ts-check
 "use strict";
-// v.0.1.20.3
+// v.0.1.22
 /** @TODO check significantVersion */
-// some parts of version v.0.1.20.2 were lost and will be restored later
 var OP = Object.prototype.hasOwnProperty,
   /** @type {()=>any} */
   OC = function () {
@@ -111,8 +110,7 @@ Logic.generateLogic = function () {
 };
 
 /** @typedef {any} LogicNodesData nodeIndex DBV property specification */
-/** @TODO1 check for all left to archival comments after Logic update */
-/** @TODO don't dele non-archival, but later improve briefness+clarity */
+/** @TODO later improve logic comments briefness+clarity */
 // Logic block nodes positions and order data:
 // => captures primarily blocks with multiple nodes
 // => name of the block is specified first
@@ -140,9 +138,15 @@ Logic.generateLogic = function () {
 
 // Small Hydraulic Drill: cc boolin
 // Cannon: cc boolin
-// ...
+// Rotary Cannon: cc boolin
+// Plasma Cannon: cc boolin
+// Pulse Laser: cc boolin
+// Beam Laser: cc boolin
 // Small Solar Panel: cB boolin
-// ...
+// Hinge: cc numin
+// Separator: cc boolin
+// Piston: cc numin
+// Dock: cc boolin
 
 // Constant On Signal: cc boolout
 // Constant Number: cc boolout
@@ -168,18 +172,19 @@ Logic.generateLogic = function () {
 // Numerical Switchbox: lt boolin, lb numin, rb numin, rt numout
 // Function Block: lt numin, lb numin, rb numin, rt numout
 // Memory Register: lt boolin, lb boolin, rb numin, rt numout
-// ...
+// Gauge: cc 
 /** entire oject is frost @type {{[key:number]:Logic[]|undefined}} */
 Logic.VALUE = Logic.generateLogic(
-  // def0 == def3
+  // def0
   738, [{k: 0, x: 0, y: 0}],
   // def1
   [{k: 0, x: 0, y: 1}, {k: 1, x: 0, y: -1}],
   // def2
   "1", "1", "0", "1", "1", "1", 746, [{k: 1, x: 0, y: 0}],
-  // def3 == sef0
   770, "0",
-  "0", "0", "0", "0", "0", 789, [{k: 0, x: 0, y: 2}], "2", "0", "2",
+  // def3
+  "0", "0", "0", "0", "0", 789, [{k: 0, x: 0, y: 2}],
+  "2", "0", "2",
   // def4
   795, "0", 798, "0", "0", 802, [{k: 2, x: 0, y: 0}],
   // def5
@@ -215,7 +220,7 @@ Logic.VALUE = Logic.generateLogic(
     {k: 1, x: 1, y: 1},
     {k: 3, x: 1, y: -1}
   ],
-  "7", "7", "7");
+  "2", "2", "2");
 Logic.dashOff = 0;
 Object.freeze(Logic.VALUE);
 /** addDefault but for Logic - if property contains nodeIndex data it
@@ -225,6 +230,10 @@ Object.freeze(Logic.VALUE);
  * @param {(Logic<any>|undefined)[]} logics
  * it is the Logic.nodes or ship.prop.connections
  * @param {Block[]} blocks */
+// (v.0.1.20.2) I might've accidently screw this method up so much
+// this method is supposed to be the initialize default, not
+// Logic(property).fromObject at the same time... BRUH --v
+/** @TODO Logics rework update */
 Logic.addLogic = function (name, property, logics, blocks) {
   // nodeIndex (ni) is set to index where logic node ends up in logics
   /** @type {number[]} (new) DBV property nodeIndex(es) */
@@ -237,13 +246,13 @@ Logic.addLogic = function (name, property, logics, blocks) {
     (property.nodeIndex = []);
   if (!logicDef)
     return property;
-  logicDef = logicDef.concat([]);
+  // (0.1.20.2) why? logicDef = logicDef.concat([]);
   for (var i = logicDef.length, l = 1; i-- > 0; ni[i] = index) {
+    // prepare not taken index
     while (logics[l])
       l++;
     var n = 0, node = new Logic(logicDef[i].type, 0, 0);
     // this works with the old savefiles logic, new is converted to it
-    // (I reliazed It processes old format but can't do new logics heheh)
     /** @type {number} */
     // BE AWARE nodeIndex is nor DBV property here, it's old format
     // connections references like extracted from control property
@@ -257,6 +266,10 @@ Logic.addLogic = function (name, property, logics, blocks) {
         logics[index || (index = l)] = node;
         continue;
       }
+      // (0.1.20.2) huh case check (checking for unsupposed wierd case)
+      if (typeof index != "number")
+        console.error("logics contain property with non-number key" +
+          ", at Logic.addLogic().");
       // index being already taken by another output
       if (item.pairs instanceof Array) {
         console.warn("Two output nodes with identical index" +
@@ -274,23 +287,14 @@ Logic.addLogic = function (name, property, logics, blocks) {
           return n >= 0;
         }
       });
-      // ...and update reference from output to that input
-      // (are pairing references set yet at all?)
-      // assigning references after Block[] completed
-      //-if (item = logics[item.pairs])
-      //-  item.pairs instanceof Array ?
-      //-    item.pairs[item.pairs.indexOf(index)] = l :
-      //-    console.error("Input referencing other input found.");
       logics[index] = node;
       continue;
     }
     node.pairs = index || -1;
     // else just take first unassigned index for input
     logics[index = l] = node;
-    // // also assign the references
-    // item && !(item.nodeIndex instanceof Array) /// end up here
-    // // TODO: also find out .. it seems nodeIndex is input first then output
-    // I'll try to do it after Block[] completed
+    // there's the requirement of Logic.reassemble to be used
+    // due to the lack of blocks list while blocks are uner construcion
   }
   property.nodeIndex = ni;
   return property;
@@ -317,6 +321,7 @@ Logic.reassemble = function (blocks, logics) {
     }
   return blocks;
 };
+//-((0.1.21)not anymore)(0.1.20.2) feature
 /** @param {Block} block @param {(Logic<any>|undefined)[]} logics */
 Logic.removeLogic = function (block, logics) {
   var ni = block.properties.nodeIndex || [];
@@ -790,7 +795,7 @@ Block.WEIGHT = {
   826: .25,
   827: .5
 };
-/** @TODO handling ls */
+/** @TODO handling ls (DBV property?) */
 /**
  * @param {object[]|object} blocks
  * @param {Logic<any>[]&{nc?:any}} [logics$] */
@@ -801,21 +806,7 @@ Block.arrayFromObjects = function arrayFromObjects(blocks, logics$) {
         p.length :
         1)
       var p = props[i].item.default;
-    // +It seems the node connections from property.control are inversed
-    // +But in fact the nodeIndexes are processed reversed as well
-    //-node connections from property.control start first with what
-    //-index is output referenced with by inputs,
-    //-then inputs referencing to those specified/listed positions
-    //-vehicles using control logic definition are from version without
-    //-numerical logics, thrusters got added numerical input node,
-    //-but it's on position one in nodeIndex array
-    // (Actually returning to not reversing) Are they actually not inversed
-    // at all an I am seriously dump and can't decide which is right :F
-    // After all I don't have specification for old savefile
-    // and have to find out from old version savefiles
-    // if (control instanceof Array)
-    //   for (var src = control.slice(j), dest = []; ++i < src.length;)
-    //     dest[i] = src[src.length - i - 1];
+
     return control instanceof Array && control.slice(j);
   }
   /** @param {number[]} indexes */
@@ -893,8 +884,6 @@ Block.arrayFromObjects = function arrayFromObjects(blocks, logics$) {
       }
       pos = [0, o.pos[0] * 2 + adjX, o.pos[1] * 2 + adjY];
     }
-    //-DEL: when block is placed the ship.prop.connection is checked (and? added) DEL-END
-    //-why did I check for conquest blocks?
     // is keeping control property not changed a good idea?
     // editor uses block.ni or properties.nodeIndex prioritizedly
     o.prop.control = block.c || o.prop.control;
@@ -904,7 +893,6 @@ Block.arrayFromObjects = function arrayFromObjects(blocks, logics$) {
         indexes.every(function (e) {
           return typeof e == "number" && !isNaN(e);
         }) ?
-          // CONTINUE create extract connections
           ncProperty && extractConnections(indexes) :
           extractLogic(o.prop.control);
       Logic.addLogic(name, o.prop, logics, r);
@@ -1101,7 +1089,6 @@ Block.Properties.justOne = function (argArr) {
   //@ts-ignore
   return r;
 };
-/** experimental shortcut for easier acces of Block.Properties.VALUE
 /** @type {{[key: number]: Props[] | undefined}} */
 Block.Properties.VALUE = Block.PROP = {
   738: Block.Properties.justOne([[0, "Force", 375, 1125, 1125]]),
@@ -1151,7 +1138,9 @@ Block.Properties.addProperty = function (name, property) {
   for (var i = propsDef.length, p; i-- > 0;)
     if ((p = propsDef[i]) instanceof Block.Properties)
       property.control[i] = typeof p.item.default != "undefined" ?
-        p.item.default :
+        p.item.default instanceof Array && p.item.default.flat ?
+          p.item.default.flat() :
+          p.item.default :
         p.item.default;
   return property;
 };
@@ -1202,7 +1191,6 @@ Ship.fromObject = function fromObject(object) {
     blocks = o.blocks instanceof Array ?
       Block.arrayFromObjects(o.blocks, logics) :
       Block.generateArray(-69, logics),
-    // something more was supposed to be done like ...?
     props = o.props;
   Logic.reassemble(blocks, logics);
   if (o.add) {
