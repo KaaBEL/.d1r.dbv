@@ -1,4 +1,4 @@
-// v.0.1.19
+// v.0.1.23.1
 var _ge: any;
 function GE(v: any) {return document.getElementById(typeof v=="number"&&v==v?
   (_ge=v+1)-1:v==void 0?v=_ge++:v)}
@@ -316,7 +316,7 @@ function touchesInit(src: HTMLElement,
     temp = [];
   }
   function inputTouches(evId, evStr, ev, method) {
-    for (i = touches.count = 0; i < touches.length;)
+    for (var i = touches.count = 0; i < touches.length;)
       touches.count += +!!touches[i++];
     hardHandler(touches, added, removed);
     events = [];
@@ -494,16 +494,16 @@ function thetouchcancel(all: touches, changed: TchD[], ev: TouchEvent) {
 interface Slider {
   min: number;
   max: number;
-  default: number;
+  default: number[];
 }
 interface IntegerSlider {
   min: number;
   max: number;
-  default: number;
+  default: number[];
 }
 interface Dropdown {
   options: string[];
-  default: number;
+  default: number[];
 }
 interface NumberInputs {
   default: number[];
@@ -511,12 +511,17 @@ interface NumberInputs {
 interface TextInputs {
   default: string[];
 }
+interface WeldGroups {
+  idx: number;
+  default: number[] | number[][];
+}
 interface ItemTs {
   "Slider": Slider;
   "Integer Slider": IntegerSlider;
   "Dropdown": Dropdown;
   "Number Inputs": NumberInputs;
   "Text Inputs": TextInputs;
+  "WeldGroups": WeldGroups;
 }
 
 /** defining new property on Console for editor.js */

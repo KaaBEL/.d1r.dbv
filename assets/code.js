@@ -1,6 +1,7 @@
 //@ts-check
 "use strict";
-// v.0.1.22
+// v.0.1.23.1
+/** @TODO ask E.A about Beer Phonk */
 /** @TODO check significantVersion */
 var OP = Object.prototype.hasOwnProperty,
   /** @type {()=>any} */
@@ -109,70 +110,7 @@ Logic.generateLogic = function () {
   return o;
 };
 
-/** @typedef {any} LogicNodesData nodeIndex DBV property specification */
 /** @TODO later improve logic comments briefness+clarity */
-// Logic block nodes positions and order data:
-// => captures primarily blocks with multiple nodes
-// => name of the block is specified first
-// => nodes are separated with "," commas in the order of which index
-//    they are in DBV nodeIndex property
-// => position of node is specified first <l = left|r = right|c = center>
-//    <t = top|b = bottom|c = center> first letter is x axis, second is y
-//    node is shifted in direction of specified side by 1 or else 0 (if
-//    center), additionally upper case B means 2 downwards (to bottom)
-// => next type is specified <bool = logic|num = numerical><in = input|
-//    out = output>
-// => nodeIndex DBV property has number at node's index to specify ncID
-// => their connections are specified in "nc" DBV savefile property
-//    nc:[{Item1:<number=ncID of input>,Item2:<number=ncID of output>}]
-// Tiny Hydrogen Thruster: cc boolin
-// be aware of the blocks being 180 rotated in editor
-// Small Hydrogen Thruster: cb boolin, ct numin
-// Medium Hydrogen Thruster: cb boolin, ct numin
-// Large Hydrogen Thruster: cb boolin, ct numin
-// Tiny Ion Thruster: cc boolin
-// Small Ion Thruster: cb boolin, ct numin
-// Medium Ion Thruster: cb boolin, ct numin
-// Large Ion Thruster: cb boolin, ct numin
-// Reaction Wheel: cc numin
-
-// Small Hydraulic Drill: cc boolin
-// Cannon: cc boolin
-// Rotary Cannon: cc boolin
-// Plasma Cannon: cc boolin
-// Pulse Laser: cc boolin
-// Beam Laser: cc boolin
-// Small Solar Panel: cB boolin
-// Hinge: cc numin
-// Separator: cc boolin
-// Piston: cc numin
-// Dock: cc boolin
-
-// Constant On Signal: cc boolout
-// Constant Number: cc boolout
-// AND Gate: lt boolin, lb boolin, rc boolout
-// NAND Gate: lt boolin, lb boolin, rc boolout
-// OR Gate: lt boolin, lb boolin, rc boolout
-// NOR Gate: lt boolin, lb boolin, rc boolout
-// XOR Gate: lt boolin, lb boolin, rc boolout
-// XNOR Gate: lt boolin, lb boolin, rc boolout
-// NOT Gate: lc boolin, rc boolout
-// LED: cc boolin
-// Delay: lc boolin, rc boolout
-
-// Constant Number: cc numout
-// Speed Sensor: cc numout
-// Tilt Sensor: cc numout
-// Distance Sensor: cc numout
-// GPS Sensor: lc numout, rc numout
-// Numerical Inverter: lc numin, rc numout
-// Clamp: lc numin, rc numout
-// Abs: lc numin, rc numout
-// Threshold Gate: lc numin, rc boolout
-// Numerical Switchbox: lt boolin, lb numin, rb numin, rt numout
-// Function Block: lt numin, lb numin, rb numin, rt numout
-// Memory Register: lt boolin, lb boolin, rb numin, rt numout
-// Gauge: cc 
 /** entire oject is frost @type {{[key:number]:Logic[]|undefined}} */
 Logic.VALUE = Logic.generateLogic(
   // def0
@@ -806,7 +744,6 @@ Block.arrayFromObjects = function arrayFromObjects(blocks, logics$) {
         p.length :
         1)
       var p = props[i].item.default;
-
     return control instanceof Array && control.slice(j);
   }
   /** @param {number[]} indexes */
@@ -825,7 +762,8 @@ Block.arrayFromObjects = function arrayFromObjects(blocks, logics$) {
      * + it contains inputs and outputs indexes
      * + their connections are specified in "nc" DBV savefile property
      * + each index specifies whether it's input/output, bool/numerical,
-     *   display position depeding on block type @see {LogicNodesData}*/
+     *   display position depeding on block type
+     *   @see https://github.com/KaaBEL/.d1r.dbv/blob/1392589299b68fb61c1a87bc7e4616f6d20af75d/assets/code.js#L112 */
     /** maps connection of key:input to value:output */
     ncProperty = function () {
       /** @type {{[key:number]:number|undefined}} [key:input]:output */
@@ -1016,18 +954,18 @@ Block.Properties.Items = {
   "Slider": function Slider() {
     this.min = 0;
     this.max = 0;
-    this.default = 0;
+    this.default = [0];
   },
   /** @type {new()=>IntegerSlider} */
   "Integer Slider": function IntegerSlider() {
     this.min = 0;
     this.max = 0;
-    this.default = 0;
+    this.default = [0];
   },
   /** @type {new()=>Dropdown} */
   "Dropdown": function Dropdown() {
     this.options = [""];
-    this.default = 0;
+    this.default = [0];
   },
   /** @type {new()=>NumberInputs} */
   "Number Inputs": function NumberInputs() {
@@ -1036,22 +974,25 @@ Block.Properties.Items = {
   /** @type {new()=>TextInputs} */
   "Text Inputs": function TextInputs() {
     this.default = [""];
+  },
+  /** @type {new()=>WeldGroups} hidden property */
+  "WeldGroups": function WeldGroups() {
+    this.idx = 0;
+    this.default = [0];
   }
 };
 /**
  * @typedef {["Slider", "Integer Slider", "Dropdown", "Number Inputs",
- * "Text Inputs"]} itemTypes
+ * "Text Inputs", "WeldGroups"]} itemTypes
  */
 /** @type {itemTypes} */
 Block.Properties.itemTypes = ["Slider", "Integer Slider", "Dropdown",
-  "Number Inputs", "Text Inputs"];
+  "Number Inputs", "Text Inputs", "WeldGroups"];
 /** Arguments typedefs for Properties Items generator
- * @typedef {[0,string,number,number,number]} ItmArg0
- * @typedef {[1,string,number,number,number]} ItmArg1
- * @typedef {[2,string,string[],number]} ItmArg2
- * @typedef {[3,string,number[]]} ItmArg3
- * @typedef {[4,string,string[]]} ItmArg4
- * @typedef {ItmArg0|ItmArg1|ItmArg2|ItmArg3|ItmArg4} PropsArg */
+ * @typedef {[0,string,number,number,number]|
+ * [1,string,number,number,number]|[2,string,string[],number]|
+ * [3,string,number[]]|[4,string,string[]]|[5,number|number[]]} PropsArg
+ */
 /** @typedef {Block.Properties<keyof ItemTs>} Props */
 /**
  * @type {<T extends PropsArg[]>(argArr: T)=>Props[]}
@@ -1064,18 +1005,18 @@ Block.Properties.justOne = function (argArr) {
         p = r[j] = new Block.Properties("Slider", v[1]);
         p.item.min = v[2];
         p.item.max = v[3];
-        p.item.default = v[4];
+        p.item.default = [v[4]];
         break;
       case 1:
         p = r[j] = new Block.Properties("Integer Slider", v[1]);
         p.item.min = v[2];
         p.item.max = v[3];
-        p.item.default = v[4];
+        p.item.default = [v[4]];
         break;
       case 2:
         p = r[j] = new Block.Properties("Dropdown", v[1]);
         p.item.options = v[2];
-        p.item.default = v[3];
+        p.item.default =  [v[3]];
         break;
       case 3:
         p = r[j] = new Block.Properties("Number Inputs", v[1]);
@@ -1084,6 +1025,16 @@ Block.Properties.justOne = function (argArr) {
       case 4:
         p = r[j] = new Block.Properties("Text Inputs", v[1]);
         p.item.default = v[2];
+        break;
+      case 5:
+        p = new Block.Properties("WeldGroups", "");
+        p.item.idx = 0;
+        r.forEach(function (e) {
+          p.item.idx += e.item.default.length;
+        });
+        (r[j] = p).item.default =
+          /** @type {number[]|number[][]} */
+          ([v[1]]);
     }
   }
   //@ts-ignore
@@ -1092,16 +1043,26 @@ Block.Properties.justOne = function (argArr) {
 /** @type {{[key: number]: Props[] | undefined}} */
 Block.Properties.VALUE = Block.PROP = {
   738: Block.Properties.justOne([[0, "Force", 375, 1125, 1125]]),
+  // 738: + old logical input node
   739: Block.Properties.justOne([[0, "Force", 1500, 4500, 4500]]),
+  // 739: + old logical input node
   740: Block.Properties.justOne([[0, "Force", 6000, 18000, 18000]]),
+  // 740: + old logical input node
   741: Block.Properties.justOne([[0, "Force", 1800, 54000, 54000]]),
+  // 741: + old logical input node
   742: Block.Properties.justOne([[0, "Force", 375, 1125, 1125]]),
+  // 742: + old logical input node
   743: Block.Properties.justOne([[0, "Force", 1500, 4500, 4500]]),
+  // 743: + old logical input node
   744: Block.Properties.justOne([[0, "Force", 3000, 9000, 9000]]),
+  // 744: + old logical input node
   745: Block.Properties.justOne([[0, "Force", 9000, 27000, 27000]]),
+  // 745: + old logical input node
   746: Block.Properties.justOne([[0, "Torque", 2500, 7500, 7500]]),
-  790: Block.Properties.justOne([[0, "Gear Ratio", 0.2, 3, 1]]),
-  792: Block.Properties.justOne([[0, "Gear Ratio", 0.2, 3, 1]]),
+  // 770, 771, 772, 773, 774, 775: old logical input node
+  790: Block.Properties.justOne([[0, "Gear Ratio", 0.2, 3, 1], [5, 0]]),
+  791: Block.Properties.justOne([[5, [0, 0, 0, 0]]]),
+  792: Block.Properties.justOne([[0, "Gear Ratio", 0.2, 3, 1], [5, 0]]),
   803: Block.Properties.justOne([[2, "Controls", [
     "Up",
     "Down",
@@ -1112,6 +1073,8 @@ Block.Properties.VALUE = Block.PROP = {
     "Action 1",
     "Action 2"
   ], 0]]),
+  // 803: + old logical output node
+  // 804, 805, 806, 807, 808, 809, 810: old logical output node and input nodes
   812: Block.Properties.justOne([[0, "Duraion in seconds", 0.1, 5, 1]]),
   813: Block.Properties.justOne([[3, "Number", [0]]]),
   814: Block.Properties.justOne([[2, "Mode", [
@@ -1126,6 +1089,8 @@ Block.Properties.VALUE = Block.PROP = {
   826: Block.Properties.justOne([[3, "Range", [-1, 1]]]),
   827: Block.Properties.justOne([[1, "Decimals amount", 1, 4, 2]])
 };
+// /** @type {{[key:number]:number|undefined}} */
+// Block.Properties.WELDGROUPS = {790: 2, 791: 4, 792: 2};
 /** @param {string|number} name @param {object} property */
 Block.Properties.addProperty = function (name, property) {
   var propsDef = Block.Properties.VALUE[typeof name == "number" ?
@@ -1135,13 +1100,10 @@ Block.Properties.addProperty = function (name, property) {
   property.control = [];
   if (!(propsDef instanceof Array))
     return property;
-  for (var i = propsDef.length, p; i-- > 0;)
-    if ((p = propsDef[i]) instanceof Block.Properties)
-      property.control[i] = typeof p.item.default != "undefined" ?
-        p.item.default instanceof Array && p.item.default.flat ?
-          p.item.default.flat() :
-          p.item.default :
-        p.item.default;
+  for (var i = 0, n = 0, p; i < propsDef.length;)
+    if ((p = propsDef[i++]) instanceof Block.Properties)
+      for (var j = 0, l = p.item.default.length; j < l;)
+        property.control[n++] = p.item.default[j++];
   return property;
 };
 
@@ -1243,7 +1205,7 @@ Ship.toDBV = function toDBV(ship) {
     ls: shipProp.launchpadSize || 0,
     b: blocks,
     nc: connections || shipProp.nodeConnections,
-    significantVersion: 0
+    significantVersion: 1
   };
 };
 

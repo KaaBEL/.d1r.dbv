@@ -1,7 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.21
-// some parts of version v.0.1.20.2 were lost and will be restored later
+// v.0.1.23.1
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -1195,20 +1194,22 @@ function utilities(tag) {
   return [btn, el];
 }
 utilities.rend_UI = F;
+utilities.groupName = "";
 /**
  * @typedef {{name:string,type:string,fn:(ev:Event)=>any}} CommandItem
  * @param {string} name 
  * @param {string} description 
  * @param {{name:string,type:string,fn:(ev:Event)=>any}[]|((items:{
  * appendChild:typeof document.appendChild})=>void)} items indefinite
- * @param {boolean} [setting=false] */
+ * @param {boolean|string} [setting=false] */
 function Command(name, description, items, setting) {
   this.name = name;
+  this.group = typeof setting == "string" ? setting : "";
   this.description = !setting ? description : "";
   if (setting && items.length !== 1)
     throw new Error("Setting must contain only boolean handler.");
   this.items = items;
-  this.setting = !!setting;
+  this.setting = typeof setting != "string" ? !!setting : !1;
   Object.freeze(this);
 }
 /** @type {Command[]} */
@@ -1232,16 +1233,19 @@ Command.add = function add(name, items, desc) {
 /**
  * @callback CmdInit
  * @param {(Node|{name:string,inp:HTMLInputElement})[]} items
- * @param {typeof utilities} collapsed
+ * @param {typeof utilities} collapsed utilities interface:
+ * itself is a function for making item groups also having plenty
+ * of other properties for more funtionalities @see {utilities}
  * @returns {void} */
 /** use items poperty intialize callback by pushing items
  * (items: Array<Node | {name: string, inp: HTMLInputElement}>) => void
  * you can use named inputs or Elemets to build up command menu
+ * the fancy stuff is done by utilities inteface (collapsed)
  * @param {string} name @param {string} description
  * @param {CmdInit} initialize */
 Command.push = function (name, initialize, description) {
-  var str = Command.NAME[name] || name;
-  return this.list.push(new Command(str, description, function (el) {
+  name = Command.NAME[name] || name;
+  return this.list.push(new Command(name, description, function (el) {
     /** @type {(Node|{name:string,inp:HTMLInputElement})[]} */
     var items = [];
     initialize(items, utilities); 
@@ -1253,7 +1257,7 @@ Command.push = function (name, initialize, description) {
         el.appendChild(itm.inp);
         el.appendChild(EL("br"));
       }
-  }));
+  }, utilities.groupName));
 };
 Command.NAME = {"Setup Properties": "Setup Properties"};
 
@@ -1359,10 +1363,38 @@ Command.push("Setup Properties", function (items, collapsed) {
   var posX = EL("input"), posY = EL("input"), setPos = EL("button");
   var name = EL("input"), props = EL(), focus = EL("input");
   props.style.textAlign = "middle";
+  /** fost @param {any} reference @param {number|string} property */
+  function Ref(reference, property) {
+    this.ref = reference;
+    this.p = property;
+    Object.freeze(this);
+  }
   function displayProperties() {
+    /** @param {WeldGroups} item */
+    function addWeldGroups(item) {
+      var b0 = item.default[0] instanceof Array;
+      (b0 && weldSelects[0].p == "weldGroup" ? weldSelects = [] : b0) ?
+        block.properties.control[item.idx].forEach(function (e, i, a) {
+            weldSelects.push(new Ref(a, i));
+          }) :
+        weldSelects.push(new Ref(block.properties.control, item.idx));
+    }
+    /** @param {Ref} ref */
+    function initWeldGroup(ref) {
+      // onchange event handler has live reference to the value
+      // kept in its own scope and assigned from properties.control
+      var node = 
+      /** @type {HTMLSelectElement} */
+        (weldGroup.cloneNode(!0));
+      node.selectedIndex = +ref.ref[ref.p] || 0;
+      node.onchange = function () {
+        if (this instanceof HTMLSelectElement)
+          ref.ref[ref.p] = this.selectedIndex;
+      };
+      props.appendChild(node);
+    }
     var block = ship.blocks[text.data = "" + idx], p;
     name.value = block.internalName;
-    weldGroup.selectedIndex = block.properties.weldGroup || 0;
     try {
       span.onchange &&
         /** @type {Function} */
@@ -1372,10 +1404,14 @@ Command.push("Setup Properties", function (items, collapsed) {
     }
     for (var itm; props.lastChild;)
       props.removeChild(props.lastChild);
-    if (!(p = Block.PROP[Block.ID[block.internalName]]))
+    var weldSelects = [new Ref(block.properties, "weldGroup")];
+    if (!(p = Block.PROP[Block.ID[block.internalName]])) {
+      props.appendChild(tN("Weld group: "));
+      initWeldGroup(weldSelects[0]);
       return render();
-    for (var i = p.length, Items = Block.Properties.Items; i-- > 0;) {
-      props.appendChild(tN(p[i].name + ": "));
+    }
+    for (var i = 0, Items = Block.Properties.Items; i < p.length; i++) {
+      p[i].name && props.appendChild(tN(p[i].name + ": "));
       switch ((itm = p[i].item) && p[i].type) {
         case "Slider":
           if (!(itm instanceof Items.Slider))
@@ -1400,24 +1436,25 @@ Command.push("Setup Properties", function (items, collapsed) {
           if (!(itm instanceof Items["Integer Slider"]))
             break;
           itm;
-          ;
         case "Dropdown":
           if (!(itm instanceof Items.Dropdown))
             break;
           itm;
-          ;
         case "Number Inputs":
           if (!(itm instanceof Items["Number Inputs"]))
             break;
           itm;
-          ;
         case "Text Inputs":
           if (!(itm instanceof Items["Text Inputs"]))
             break;
           itm;
-          ;
+        case "WeldGroups":
+          itm instanceof Items.WeldGroups && addWeldGroups(itm);
       }
     }
+    props.appendChild(tN("Weld group: "));
+    for (var i = 0; i < weldSelects.length;)
+      initWeldGroup(weldSelects[i++]);
     render();
   }
   function updateFocus() {
@@ -1503,7 +1540,6 @@ Command.push("Setup Properties", function (items, collapsed) {
   weldGroup.onchange = function () {
     ship.blocks[idx].properties.weldGroup = Number(weldGroup.value);
   }
-  items.push(tN("Weld group: "), weldGroup);
   collapsed.rend_UI = function () {
     var block = ship.blocks[idx] || {}, s = block.internalName, pos;
     if (!(pos = block.position))
@@ -1656,10 +1692,11 @@ Command.push("Display Logic", function (items, collapsed) {
   });
   updateNodeSelect();
   items.push(connections);
-}, "Gives the option to toggle displaying logics, it may cause errors but it\
- won't get rid of all bugs related to Logic blocks. Uses block selection fro\
-m \"Setup Properties\" Command and the focus option. Inputs not yet with tag\
-s are listed with option field to select logic output of the same type.");
+}, "Gives the option to toggle displaying logics, it may cause errors but tu\
+rning it off might not get rid of all bugs related to Logic blocks either. U\
+ses block selection from \"Setup Properties\" Command and the focus option. \
+Inputs not yet with tags are listed with option field to select logic output\
+ of the same type.");
 
 Command.push("Import/Export DBV", function (items, collapsed) {
   var inp = EL("input"), elBtn = EL("button"), error = EL();
@@ -1711,6 +1748,22 @@ clude non existent or blocks inavalable in game.\nImporting displays vehicle\
  of JSON key from text input.\nUpload from file/files button is used to load\
  file content into text input.\nJSON key is the content of .dbv savefile. It\
  contains textual data and can be opened using text editor.");
+
+utilities.groupName = "Advanced editor";
+Command.push("Transfrom (-selection-)", function (items, collapsed) {
+  var inpX = EL("input"), inpY = EL("input");
+  items.push({name: "axis X", inp: inpX}, {name: "axis Y", inp: inpY});
+  var move = EL("button");
+  move.appendChild(tN("Move vehicle"));
+  move.onclick = function () {
+    ship.blocks.forEach(function (e) {
+      e.position[1] += Number(inpX.value) || 0;
+      e.position[2] += Number(inpY.value) || 0;
+    });
+    render();
+  };
+  items.push(move);
+}, "First made as Advanced editor function! You can move Droneboi around.");
 Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
   var inp = EL("input"), elBtn = EL("button"), error = EL();
   items.push({name: "base64 key", inp: inp});
@@ -1774,6 +1827,7 @@ ll Rift Drives into account, although in the game you are allowed to buy onl\
 y 1. It also shows ammount of blocks in it and time when the vehicle had the\
 se stats, because it doesn't update after this command have been opened, onl\
 y changing amount of RC recalculates distance.");
+utilities.groupName = "";
 Command.push("Set camera view", function (items, collapsed) {
   var viewX = EL("input"), viewY = EL("input"), zoom = EL("input");
   var elBtn = EL("button");
@@ -1946,17 +2000,21 @@ var cmdsHeader = EL(), cmds = (function () {
       ending();
     }
   }
-  for (var i = 0; i < Command.list.length; i++) {
+  var group = utilities("");
+  for (var i = 0, groupName = ""; i < Command.list.length; i++) {
     var item = Command.list[i];
-    content.appendChild(e0 = EL("button"));
+    if (item.group && item.group !== groupName) {
+      group = utilities(groupName = item.group);
+      content.appendChild(group[0]);
+      content.appendChild(group[1]);
+    }
+    (item.group ? group[1] : content).appendChild(e0 = EL("button"));
     e0.appendChild(tN(item.name));
     e0.onclick = initItems(item);
     e0.appendChild(EL()).appendChild(tN(">"));
   };
   window.onerror = function (m,s,l,c,e) {
     var pre = content.appendChild(EL("div"));
-    //pre.style.whiteSpace = "pre";
-    //pre.style.width = "500px";
     pre.style.overflowWrap = "break-word";
     pre.style.wordBreak = "break-all";
     pre.appendChild(tN(onlyConsole(m,s,l,c,e)));
@@ -2113,7 +2171,7 @@ function commands(x, y, e) {
     }
   st.display = "none";
 }
-/** @TODO fix properties bug (function block expression...) */
+/** @TODO fix weld group Block property bug (Sparator, Piston, Hinge) */
 function devt_share(inp) {
   var el = GE("commandsTab");
   if (el)
