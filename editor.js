@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.24
+// v.0.1.24.1
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -98,7 +98,6 @@ canvas.addEventListener("contextrestored", function () {
     vY = (vY + 17) % innerHeight;
     expr && requestAnimationFrame(fun1);
   }
-  console.log(expr);
   switch (expr.toLocaleLowerCase()) {
     case "ccb21872":
     case "4dbb2442":
@@ -131,7 +130,11 @@ canvas.addEventListener("contextrestored", function () {
       break;
     case "c96679af":
     case "ec4dca90":
-      ship = Ship.fromObject({n: "", dt: "", b: []});
+      console.log("Fun mode 3.1");
+      setTimeout(function () {
+        ship = Ship.fromObject({n: "", dt: "", b: []});
+        placingBlock = function () {return "__unknown__";};
+      });
   }
 })(/\/[0-9a-zA-Z._+\-]+\/editor\.html(?:#[^?]*)?($|\?[^=]*)/);
 
@@ -2160,7 +2163,8 @@ press = function press(x, y) {
         ship.blocks
       )));
     (blok.properties.nodeIndex || []).forEach(function (e) {
-      ship.prop.connections[e].owner = blok;
+      if (ship.prop)
+        ship.prop.connections[e].owner = blok;
     });
     arr.push(blok);
   }
@@ -2395,132 +2399,3 @@ function onlyConsole(m,s,l,c,e) {
     return ""+m+"\n"+e.stack;
   return ""+m+"\n\t"+s+":"+l+":"+c;
 };
-
-// NOTHING TO SEE HERE
-
-// https://discord.com/channels/749233290241769473/1092806984715210752/1092806984715210752
-// ?(https://discord.com/channels/749233290241769473/1100543153091645571)
-// ((editorunrelated:https://discord.com/channels/749233290241769473/1101217219481960490))
-// https://discord.com/channels/749233290241769473/1104424600466628608/1104424600466628608
-// https://discord.com/channels/749233290241769473/1107661308402352231
-// ?https://discord.com/channels/749233290241769473/1108026312649605140/1108026312649605140
-// (https://discord.com/channels/749233290241769473/1109633361904934955/1109633361904934955)
-// (https://discord.com/channels/749233290241769473/1109671991100837999/1109671991100837999)
-// https://discord.com/channels/749233290241769473/1114981297090220123/1114981297090220123
-// ?https://discord.com/channels/749233290241769473/1138220708762243072/1138220708762243072
-// https://discord.com/channels/749233290241769473/1142927384023154760/1142927384023154760
-// done:https://discord.com/channels/749233290241769473/1142956378865029311
-// newblocks:https://discord.com/channels/749233290241769473/1142964498110611456
-// (https://discord.com/channels/749233290241769473/1145008094041092118/1145008094041092118)
-// https://discord.com/channels/749233290241769473/1145048315654852658/1145048315654852658
-// https://discord.com/channels/749233290241769473/1145089389035257938/1145089389035257938
-// done:https://discord.com/channels/749233290241769473/1147539449463447614/1147539449463447614
-// (ttps://discord.com/channels/749233290241769473/1148328784852963408/1148328784852963408)
-// https://discord.com/channels/749233290241769473/1148385350503383140/1148385350503383140
-// https://discord.com/channels/749233290241769473/1149657447762497599
-
-// bug:https://discord.com/channels/749233290241769473/1149680393419763772
-// ((collisiondetection:https://discord.com/channels/749233290241769473/1166678289562226769))
-// huh?:https://discord.com/channels/749233290241769473/1168176539846852628/1168176539846852628
-// https://discord.com/channels/749233290241769473/1168177352338051184/1168177352338051184
-// https://discord.com/channels/749233290241769473/1170113139606552616/1170113139606552616
-// (done:https://discord.com/channels/749233290241769473/1172276244591685762/1172276244591685762)
-// (collisiondetection:https://discord.com/channels/749233290241769473/1173754965219627092/1173754965219627092)
-// (https://discord.com/channels/749233290241769473/1175411263707287612/1175411263707287612)
-// (rezizizable:https://discord.com/channels/749233290241769473/1184241452927160340)
-// (https://discord.com/channels/749233290241769473/1185246301781250058/1185246301781250058)
-// https://discord.com/channels/749233290241769473/1187231852008837150/1187231852008837150
-// done:https://discord.com/channels/749233290241769473/1190278196143325224/1190278196143325224
-// blueprint:https://discord.com/channels/749233290241769473/1192238574758805554/1192238574758805554
-// blueprint:https://discord.com/channels/749233290241769473/1192243250803785828/1192243250803785828
-// bug?infuture:(https://discord.com/channels/749233290241769473/1192556010716532869/1192556010716532869)
-// blueprint:https://discord.com/channels/749233290241769473/1192607125319462932/1192607125319462932
-// https://discord.com/channels/749233290241769473/1192697437190623353/1192697437190623353
-// https://discord.com/channels/749233290241769473/1192783658801696868/1192783658801696868
-// newblock:https://discord.com/channels/749233290241769473/1192982466823192656/1192982466823192656
-// ((basictutorials:https://discord.com/channels/749233290241769473/1193054394661486682))
-
-// (done:https://discord.com/channels/749233290241769473/1193213683996835870)
-// https://discord.com/channels/749233290241769473/1195343823438614548/1195343823438614548
-// (setting:https://discord.com/channels/749233290241769473/1199022854088441956/1199022854088441956)
-// (https://discord.com/channels/749233290241769473/1204508472067100763/1204508472067100763)
-// (?https://discord.com/channels/749233290241769473/1205543374938050600/1205543374938050600)
-// https://discord.com/channels/749233290241769473/1206276828319195267/1206276828319195267
-// https://discord.com/channels/749233290241769473/1207271935235588136/1207271935235588136
-// ?addpls:https://discord.com/channels/749233290241769473/1209836371124944916/1209836371124944916
-// https://discord.com/channels/749233290241769473/1211954168026366022/1211954168026366022
-// ((https://discord.com/channels/749233290241769473/1213416036863311943))
-// https://discord.com/channels/749233290241769473/1222745899755901019/1222745899755901019
-// ((https://discord.com/channels/749233290241769473/1208883912089280522))
-// https://discord.com/channels/749233290241769473/1222669755031486494
-// https://discord.com/channels/749233290241769473/1224953734556024882
-// https://discord.com/channels/749233290241769473/1225047342357549066
-// https://discord.com/channels/749233290241769473/1228397516332994602
-// https://discord.com/channels/749233290241769473/1230046786631237632
-// !https://discord.com/channels/749233290241769473/1230621908471644240
-// https://discord.com/channels/749233290241769473/1231450224099328082
-
-/** Transform tool:
-https://discord.com/channels/749233290241769473/1142927384023154760/1142927384023154760
-https://discord.com/channels/749233290241769473/1192697437190623353
-https://discord.com/channels/749233290241769473/1222745899755901019
-- lets you select area, (future: selection of any blocks)
-- actions are move, rotate, flip, mirror, copy, remove, paint,
-  connection operations
-https://discord.com/channels/749233290241769473/1207271935235588136
-+ fill selection
-https://discord.com/channels/749233290241769473/1145048315654852658/1145048315654852658
-? resize action
-https://discord.com/channels/749233290241769473/1231450224099328082
-- if nothing selected entire vehicle is affected
-+ paste/export copied selection
-+ import selection (blueprint)
-https://discord.com/channels/749233290241769473/1145089389035257938/1145089389035257938
-https://discord.com/channels/749233290241769473/1211954168026366022
-https://discord.com/channels/749233290241769473/1222669755031486494
-(future: symmetrical building mode)
-https://discord.com/channels/749233290241769473/1224953734556024882
-(future: somehow separated blueprints,
-  stored, default, import/export all)
- */
-/** Ships stats:
-https://discord.com/channels/749233290241769473/1092806984715210752/1092806984715210752
-https://discord.com/channels/749233290241769473/1104424600466628608/1104424600466628608
-- power&fuel usage, power&fuel generration
-- total mass
-https://discord.com/channels/749233290241769473/1107661308402352231
-https://discord.com/channels/749233290241769473/1230046786631237632
-- centers of mass, center of thrusts
-- thrust forces and speeds in directions
-+ turning moment and speed
-https://discord.com/channels/749233290241769473/1225047342357549066
-- available rift driving distance
-? acceleration time
- */
-/** Logic connections tool:
-https://discord.com/channels/749233290241769473/1148385350503383140
-https://discord.com/channels/749233290241769473/1149657447762497599
-https://discord.com/channels/749233290241769473/1168177352338051184
-(https://discord.com/channels/749233290241769473/1192783658801696868)
-+ displays all logic blocks of the ship left-to-right or top-to-bottom
-https://discord.com/channels/749233290241769473/1225047342357549066
-+ main direction for block order, other allows for readable connections
-https://discord.com/channels/749233290241769473/1230621908471644240
-- grouping the logics (layers) whitelist or blacklist logic blocks
-  for opacity look or completely disabled manipulation for 
-  better focus on certain part of huge logics circuit
- */
-/** Template image (onion skinning):
-https://discord.com/channels/749233290241769473/1114981297090220123/1114981297090220123
-- displays image with opacity as template proview for building
-https://discord.com/channels/749233290241769473/1195343823438614548
-- show custom building grid boundaries, select from known defaults
- */
-/** Map biulder:
-https://discord.com/channels/749233290241769473/1187231852008837150
-+ be able to place asteriods in the editor to a special blocks layer
- */
-/** Ship Classification:
-https://discord.com/channels/749233290241769473/1138220708762243072/1138220708762243072
-- no idea how it's supposed to work and what it could be useful for now
- */
