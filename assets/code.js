@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.23.1
+// v.0.1.24
 /** @TODO ask E.A about Beer Phonk */
 /** @TODO check significantVersion */
 var OP = Object.prototype.hasOwnProperty,
@@ -378,8 +378,8 @@ ay|__placeholder(?:839|84[0-26-9]|85[0-3])__");
  * @typedef {[number,number,number]} XYZPosition
  * @typedef {[0|1|2,boolean,0|1|2|3]} Rotation
  * @typedef {keyof typeof Color.ID|""|null} Colors
- * @typedef {{control?:(number|string)[],nodeIndex?:number[],
- * weldGroup?:number}} BlockProps
+ * @typedef {{control?:(number|string|[number,number,number,number])[],
+ * nodeIndex?:number[],weldGroup?:number}} BlockProps
  * @param {string} name
  * @param {XYZPosition} pos [/: 0, x: p[0] * 2, y: p[1] * 2]
  * @param {Rotation} rot [/: 0, f: f, r: Math.floor(r / 90)]
@@ -1142,7 +1142,7 @@ Ship.fromObject = function fromObject(object) {
       o.ver instanceof Array ?
         o.ver:
         []).map(Number),
-    time = typeof o.time === "string" ? o.time : dateTime(),
+    time = typeof o.time == "string" ? o.time : dateTime(),
     /** @type {Logic<any>[]&{nc:any}} */
     logics = function () {
       /** @type {any} */
