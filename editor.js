@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.24.1
+// v.0.1.25
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -135,6 +135,7 @@ canvas.addEventListener("contextrestored", function () {
         ship = Ship.fromObject({n: "", dt: "", b: []});
         placingBlock = function () {return "__unknown__";};
       });
+      break;
   }
 })(/\/[0-9a-zA-Z._+\-]+\/editor\.html(?:#[^?]*)?($|\?[^=]*)/);
 
@@ -1125,7 +1126,7 @@ function dragDrop(e) {
   el.style.display = "none";
   bd && bd.appendChild(el);
   file.open.length = 0;
-  btn.appendChild(tN("Upload from file/files"));
+  btn.appendChild(tN("Upload DBV+JSON from file/files"));
   btn.onclick = function () {
     if (delay < Date.now()) {
       file.input.click();
@@ -1404,6 +1405,8 @@ Command.push("Setup Properties", function (items, collapsed) {
     }
     /** @type {Block} */
     var block = ship.blocks[text.data = "" + idx], p;
+    if (!block)
+      return render();
     name.value = block.internalName;
     posX.value = block.position[1] / 2 + "";
     posY.value = block.position[2] / 2 + "";
@@ -1576,15 +1579,15 @@ Command.push("Setup Properties", function (items, collapsed) {
       (rot & 1 ? w : h) * sc / 16);
   };
   displayProperties();
-}, "Properties Command simply explained: index of selected block in blocks \
-list, ind\
-ex in block list chosen by user (you), selects block at chosen index, select\
-s next block in list, centers selected block to middle of window, puts block\
-  at chosen index and other blocks will move by 1 towards new empty space, s\
-waps block at chosen index with selected block, axis position specified or 0\
-, axis position specified or 0, sets axis positions of selected block, block\
- type is set to valid block name, optionally some block properties (not expl\
-ained), 0 is white 1 is blue 2 is red 3 is green 4 is yellow, this descri.");
+}, "Properties Command simply explained: index of selected block in blocks l\
+ist, index in block list chosen by user (you), selects block at chosen index\
+, selects next block in list, centers selected block to middle of window, pu\
+ts block  at chosen index and other blocks will move by 1 towards new empty \
+space, swaps block at chosen index with selected block, axis position specif\
+ied or 0, axis position specified or 0, sets axis positions of selected bloc\
+k, block type is set to valid block name, optionally some block properties (\
+not explained), 0 is white 1 is blue 2 is red 3 is green 4 is yellow, this d\
+escri.");
 var test_el = EL("select")
 Command.push("Display Logic", function (items, collapsed) {
   function updateNodeSelect() {
@@ -1712,13 +1715,13 @@ Inputs not yet with tags are listed with option field to select logic output\
  of the same type.");
 
 Command.push("Import/Export DBV", function (items, collapsed) {
-  var inp = EL("input"), elBtn = EL("button"), error = EL();
-  items.push({name: ".DBV file content", inp: inp});
+  var dbv = EL("input"), elBtn = EL("button"), error = EL();
+  items.push({name: ".DBV file content", inp: dbv});
   elBtn.onclick = function () {
     error.innerText = "";
     try {
-      inp.id = "saveFile";
-      inp.value = JSON.stringify(Ship.toDBV(ship));
+      dbv.id = "saveFile";
+      dbv.value = JSON.stringify(Ship.toDBV(ship));
       render();
     } catch (err) {
       error.innerText = err;
@@ -1730,7 +1733,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
   (elBtn = EL("button")).onclick = function () {
     error.innerText = "";
     try {
-      ship = Ship.fromObject(JSON.parse(inp.value));
+      ship = Ship.fromObject(JSON.parse(dbv.value));
       render();
     } catch (err) {
       error.innerText = err;
@@ -1751,32 +1754,50 @@ Command.push("Import/Export DBV", function (items, collapsed) {
       console.log(s);
       return !1;
     }
-    inp.value = s;
+    json.value = dbv.value = s;
     return !0;
   };
   items.push(elBtn, error, file.upload);
+  var json = EL("input"), download = EL("a"), div = EL();
+  items.push({name: ".JSON save fle", inp: json});
+  (elBtn = EL("button")).onclick = function () {
+    error.innerText = "";
+    try {
+      var s = JSON.stringify(ship);
+      download.href = URL.createObjectURL(
+        new Blob([s], {type: "application/json"})
+      );
+      download.download = ship.name + ".json";
+      json.value = s.slice(0, 69);
+    } catch (err) {
+      error.innerText = err;
+      console.error(err);
+    }
+  };
+  elBtn.appendChild(tN("Export"));
+  items.push(elBtn);
+  (elBtn = EL("button")).onclick = function () {
+    error.innerText = "";
+    try {
+      ship = JSON.parse(json.value);
+      render();
+    } catch (err) {
+      error.innerText = err;
+      console.error(err);
+    }
+  };
+  elBtn.appendChild(tN("Import"));
+  download.appendChild(tN("Download but only JSON"));
+  download.href = "javascript:void(0)";
+  div.appendChild(download);
+  div.style.textAlign = "center";
+  items.push(elBtn, div);
 }, "Export and Import are functions using displayed vehicle as target.\nExpo\
 rting creates JSON key of ship and puts it in text input, the key doesn't in\
 clude non existent or blocks inavalable in game.\nImporting displays vehicle\
  of JSON key from text input.\nUpload from file/files button is used to load\
  file content into text input.\nJSON key is the content of .dbv savefile. It\
  contains textual data and can be opened using text editor.");
-
-utilities.groupName = "Advanced editor";
-Command.push("Transfrom (-selection-)", function (items, collapsed) {
-  var inpX = EL("input"), inpY = EL("input");
-  items.push({name: "axis X", inp: inpX}, {name: "axis Y", inp: inpY});
-  var move = EL("button");
-  move.appendChild(tN("Move vehicle"));
-  move.onclick = function () {
-    ship.blocks.forEach(function (e) {
-      e.position[1] += Number(inpX.value) || 0;
-      e.position[2] += Number(inpY.value) || 0;
-    });
-    render();
-  };
-  items.push(move);
-}, "First made as Advanced editor function! You can move Droneboi around.");
 Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
   var inp = EL("input"), elBtn = EL("button"), error = EL();
   items.push({name: "base64 key", inp: inp});
@@ -1818,6 +1839,50 @@ m input to replace displayed ship with one from key. It can also store unimp\
 lemented blocks like TNT, station blocks and more. Be aware that the key lim\
 its vehicle in and will refuse to compress too big vehicle. There are also b\
 ugs since I wasn't going down the rabbit hole of debugging every last one.");
+
+Command.push("Transfrom tool", function (items, collapsed) {
+  var selectX0 = EL("input"), selectY0 = EL("input");
+  var selectX1 = EL("input"), selectY1 = EL("input");
+  var select = EL("button"), inpX = EL("input"), inpY = EL("input");
+  select.appendChild(tN("Select rectangle"));
+  items.push(
+    {name: "selection X0", inp: selectX0},
+    {name: "selection Y0", inp: selectY0},
+    {name: "selection X1", inp: selectX1},
+    {name: "selection Y1", inp: selectY1},
+    select
+  );
+  items.push({name: "axis X", inp: inpX}, {name: "axis Y", inp: inpY});
+  var move = EL("button"), rotate = EL("button"), flip = EL("button");
+  move.appendChild(tN("Move action"));
+  move.onclick = function () {
+    ship.blocks.forEach(function (e) {
+      e.position[1] += Number(inpX.value) || 0;
+      e.position[2] += Number(inpY.value) || 0;
+    });
+    render();
+  };
+  rotate.appendChild(tN("Rotate action"));
+  rotate.style.border = "2px solid #0000";
+  flip.appendChild(tN("Flip action"));
+  flip.style.border = "2px solid #0000";
+  var mirror = EL("button"), copy = EL("button"), paste = EL("button");
+  mirror.appendChild(tN("Mirror action"));
+  mirror.style.border = "2px solid #0000";
+  copy.appendChild(tN("Copy action"));
+  copy.style.border = "2px solid #0000";
+  paste.appendChild(tN("Paste action"));
+  paste.style.border = "2px solid #0000";
+  var remove = EL("button"), paint = EL("button"), fill = EL("button");
+  remove.appendChild(tN("Remove action"));
+  remove.style.border = "2px solid #0000";
+  paint.appendChild(tN("Paint action"));
+  paint.style.border = "2px solid #0000";
+  fill.appendChild(tN("Fill action"));
+  fill.style.border = "2px solid #0000";
+  items.push(move, rotate, flip, mirror, copy, paste, remove, paint, fill);
+}, "First Advanced editor function ever made! You can move Droneboi around. \
+");
 Command.push("Rift Drive calculator", function (items, collapsed) {
   var weight = 0, drives = 0, unknown = 0, all = ship.blocks;
   for (var i = all.length; i-- > 0;) {
@@ -2396,6 +2461,6 @@ init = function () {
 
 function onlyConsole(m,s,l,c,e) {
   if (e && e.stack)
-    return ""+m+"\n"+e.stack;
-  return ""+m+"\n\t"+s+":"+l+":"+c;
+    return "" + m + "\n" + e.stack;
+  return "" + m + "\n\t" + s + ":" + l + ":" + c;
 };
