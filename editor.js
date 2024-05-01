@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.25
+// v.0.1.26
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -1593,7 +1593,7 @@ Command.push("Display Logic", function (items, collapsed) {
   function updateNodeSelect() {
     var idx = Number(text.data), block = ship.blocks[idx];
     /** @type {(Logic<any>|undefined)[]} */
-    var logics = (ship.prop || OC()).connections || [], temp = EL();
+    var logics = (ship.prop || OC()).nodeList || [], temp = EL();
     temp.appendChild(tN("Logic block: " + idx + " " + block.internalName));
     temp.appendChild(EL("br"));
     /** @type {HTMLSelectElement|null} */
@@ -1817,9 +1817,11 @@ Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
   items.push(elBtn);
   (elBtn = EL("button")).onclick = function () {
     error.innerText = "";
-    var old = ship;
+    var old = ship, s = inp.value;
     try {
-      ship = Ship.fromObject(decodeCmprsShip(base64ToUint8array(inp.value)));
+      ship = s.slice(0, 18) === "UGxheWVyVmVoaWNsZT" ?
+        Ship.fromDBKey(atob(s)) :
+        Ship.fromObject(decodeCmprsShip(base64ToUint8array(s)));
       render();
     } catch (err) {
       error.innerText = err;
@@ -2181,7 +2183,7 @@ press = function press(x, y) {
   found = found.map(function (i) {
     var e = arr[i];
     if (placingBlock() === "remove") {
-      Logic.removeLogic(arr[i], ship.prop.connections);
+      Logic.removeLogic(arr[i], ship.prop.nodeList);
       arr[i] = arr.slice(-1)[0];
       arr.length--;
     } else if (blockBind.changingColor)
@@ -2224,12 +2226,12 @@ press = function press(x, y) {
       Block.Properties.addProperty(rand, Logic.addLogic(
         rand,
         {color: Color.default(rand)},
-        (ship.prop || {}).connections || [],
+        (ship.prop || {}).nodeList || [],
         ship.blocks
       )));
     (blok.properties.nodeIndex || []).forEach(function (e) {
       if (ship.prop)
-        ship.prop.connections[e].owner = blok;
+        ship.prop.nodeList[e].owner = blok;
     });
     arr.push(blok);
   }
@@ -2315,7 +2317,7 @@ render = function () {
     });
   };
 }();
-var rend_speeeeed = {};
+var rend_speeeeed = {}, rend_logs = 69;
 /*async*/ function expensiveRenderer() {
   var t = Date.now(), AT = ", at expensiveRenderer();";
   canvas.width = canvas.width;
@@ -2323,7 +2325,7 @@ var rend_speeeeed = {};
   ctx.imageSmoothingEnabled = false;
   var objs = ship.blocks, n = 0;
   if (Logic.rend &&
-    (Logic.nodes = (ship.prop && ship.prop.connections) || []))
+    (Logic.nodes = (ship.prop && ship.prop.nodeList) || []))
     ctx.globalAlpha = settings.logicPreviewAlpha;
   for (var i = 0, id = 0, pos = [0, 0, 0]; i < objs.length; i++) {
     pos = objs[i].position;
@@ -2337,8 +2339,10 @@ var rend_speeeeed = {};
     }
     /** @see {Block} @see {Block.Size.VALUE} */
     var size = Block.Size.VALUE[id], logic = Logic.VALUE[id] || [];
-    if (!size)
-      return console.error(objs[i], AT);
+    if (!size) {
+      rend_logs > 0 && rend_logs-- && console.error(objs[i], AT);
+      continue;
+    }
     var rot = 10 - objs[i].rotation[2] & 3;
     var ow = size.w, oh = size.h, sw = 0, sh = 0;
     var w = ow + (ow & 16), h = oh + (oh & 16), tiny = (oh | ow) & 16;

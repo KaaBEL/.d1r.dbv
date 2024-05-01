@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.24
+// v.0.1.26
 /** @TODO ask E.A about Beer Phonk */
 /** @TODO check significantVersion */
 var OP = Object.prototype.hasOwnProperty,
@@ -161,17 +161,17 @@ Logic.VALUE = Logic.generateLogic(
   "2", "2", "2");
 Logic.dashOff = 0;
 Object.freeze(Logic.VALUE);
+// (v.0.1.20.2) I might've accidently screw this method up so much
+// this method is supposed to be the initialize default, not
+// Logic(property).fromObject at the same time... BRUH --v
+/** @TODO Logics rework update */
 /** addDefault but for Logic - if property contains nodeIndex data it
  * will use them to reassemble these connections, to reassamble them
  * properly Logic.reassemble must be used on completed blocks
  * @param {string|number} name @param {object} property
  * @param {(Logic<any>|undefined)[]} logics
- * it is the Logic.nodes or ship.prop.connections
+ * it is the Logic.nodes or ship.prop.nodeList
  * @param {Block[]} blocks */
-// (v.0.1.20.2) I might've accidently screw this method up so much
-// this method is supposed to be the initialize default, not
-// Logic(property).fromObject at the same time... BRUH --v
-/** @TODO Logics rework update */
 Logic.addLogic = function (name, property, logics, blocks) {
   // nodeIndex (ni) is set to index where logic node ends up in logics
   /** @type {number[]} (new) DBV property nodeIndex(es) */
@@ -1160,7 +1160,7 @@ Ship.fromObject = function fromObject(object) {
     props.nodeConnections = o.add.logic;
   }
   if (logics.length)
-    (props = props || OC()).connections = logics;
+    (props = props || OC()).nodeList = logics;
   return new Ship(name, ver, time, blocks, props);
 };
 /** @param {Ship} ship */
@@ -1181,16 +1181,16 @@ Ship.toDBV = function toDBV(ship) {
       r: Math.floor(e.rotation[2] * 90),
       f: e.rotation[1],
       s: e.properties.color,
-      c: e.properties.control,
+      c: e.properties.control || [],
       ni: e.properties.nodeIndex || [],
       wg: e.properties.weldGroup || 0
     });
   }
   var shipProp = ship.prop || {}, connections = [];
-  for (i = (shipProp.connections || []).length; i-- > 0;) {
+  for (i = (shipProp.nodeList || []).length; i-- > 0;) {
     /** @type {Logic<any>|{pairs:[]}} */
-    var node = shipProp.connections[i] || {pairs: []}, n = node.pairs;
-    typeof n == "number" && shipProp.connections[n] &&
+    var node = shipProp.nodeList[i] || {pairs: []}, n = node.pairs;
+    typeof n == "number" && shipProp.nodeList[n] &&
       connections.push({
         // node index, input type
         Item1: i,
@@ -1201,12 +1201,90 @@ Ship.toDBV = function toDBV(ship) {
   return {
     n: ship.name,
     gv: ship.gameVersion.join("."),
-    dt: ship.dateTime,
+    dt: ship.dateTime ,
     ls: shipProp.launchpadSize || 0,
     b: blocks,
     nc: connections || shipProp.nodeConnections,
-    significantVersion: 1
+    significantVersion: 2
   };
+};
+/** @param {string} key */
+Ship.fromDBKey = function (key) {
+  var blocks = [], arr = key.split("|").slice(-1)[0].split(":");
+  var conN = {
+    "T1 Block": "Block",
+    "T1 Wedge": "Wedge",
+    "T2 Wedge": "Wedge",
+    "T1 Wedge 1x2": "Wedge 1x2",
+    "Structure Block": "Struct",
+    "Simple Thruster": "Small Hydrogen Thruster",
+    "Ion Thruster": "Small Ion Thruster",
+    "Momentum Wheel": "Reaction Wheel",
+    "Small Fuel Tank": "Small Hydrogen Tank",
+    "Medium Fuel Tank": "Medium Hydrogen Tank",
+    "Small Crate": "Small Storage Rack",
+    "Medium Crate": "Medium Storage Rack",
+    "T1 Drill": "Small Hydraulic Drill",
+    "T1 Gatling Gun": "Rotary Cannon",
+    "T1 Blaster": "Plasma Cannon",
+    "T1 Pulse Laser": "Pulse Laser",
+    "T2 Block": "Armor Block",
+    "T1 Solar Panel": "Small Solar Panel",
+    "T2 Solar Panel": "Small Solar Panel",
+    Seperator: "Separator",
+    Connector: "Dock",
+    Explosive: "__placeholder776__",
+    "Station Block": "__placeholder846__"
+  }, conC = [
+    "White",
+    "Dark Gray",
+    "Light Blue",
+    "Orange",
+    "Red",
+    "Lime",
+    "Yellow",
+    "Festive Red",//7
+    "Light Gray",
+    "Red Hazard Stripes",//9"Lololipop",
+    "Yellow Hazard Stripes",
+    "Fuel",//11
+    "Wine",//12
+    "BREAD",//13"Wood",
+    "White Hazard Stripes",//14"Steel"
+    "Purple",//15
+    "Pink",//16
+    "Festive Green",//17
+    "Festive Duck"
+  ];
+  for (var i = arr.length - 1; i-- > 0;) {
+    var o = arr[i].split(";"), name = conN[o[0]] || o[0], logics = [];
+    // o[1] position
+    var rot = +(o[2] + "").replace(",", ".") / 90 || 0 & 3;
+    // o[4] controll groups not used
+    var ctrl = [+o[3] || 0],
+      color = +o[5] === +o[5] ?
+        conC[+o[5]] :
+        Color.default(name) || "White",
+    // o[6] [Use rotation, Up, Down, Left, Right]
+      flip = !o[7];
+    o = (o[1] || "").split("~");
+    var x = +(o[0] ||"").replace(",", ".") * 2 || 0,
+      y = +(o[1] || "").replace(",", ".") * 2 || 0;
+    var size = Block.Size.VALUE[Block.ID[name]] || {};
+    if ((size.w | size.h) & 16)
+      rot === 2 ? ++y + ++x : x ;
+    blocks[i] = new Block(name, [0, x, y], [
+        0,
+        flip,
+        /** @type {0|1|2|3} */
+        (rot & 3)
+      ], Logic.addLogic(name, {
+          control: [ctrl],
+          color: color
+        }, logics, blocks));
+  }
+  var obj = {nodeList: logics};
+  return new Ship("[unnamed]", [], dateTime(1714557750), blocks, obj);
 };
 
 var ship = Ship.fromObject({name: "Starter Droneboi"});
