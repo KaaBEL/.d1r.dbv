@@ -1,13 +1,60 @@
 //@ts-check
 "use strict";
-// v.0.1.26
-/** @TODO ask E.A about Beer Phonk */
+// v.0.1.27.2
+/** LOL :tf: I forgot to remove that oh lol */
 /** @TODO check significantVersion */
 var OP = Object.prototype.hasOwnProperty,
   /** @type {()=>any} */
   OC = function () {
     return {};
   };
+/** @type {typeof defaults|null} */
+var settings = null;
+
+/** timeToString @param {number} [t=Date.now()] @param {number} [f=1] ?1 */
+function dateTime(t, f) {
+  // uses unix timestamp input
+  if (typeof t !== "number")
+    t = Math.floor(Date.now() / 1000);
+  var i = 0, n, s, months = [30, 27, 30, 29, 30, 29, 30, 30, 29, 30, 29, 30];
+  n = ((t % 60) * (f || 1) | 0) / (f || 1);
+  s = ":" + (n < 10 ? "0" + n : n);
+  n = (t = Math.floor(t / 60)) % 60;
+  s = ":" + (n > 9 ? n : "0" + n) + s;
+  s = " " + (t = Math.floor(t / 60)) % 24 + s;
+  n = Math.floor(t / 24);
+  t = Math.ceil(n % 365.25);
+  if (t === 365 && !(n / 365.25 & 2))
+    return "01.01." + Math.floor(n / 365.25 + 1971) + s;
+  s = "." + (n / 365.25 + 1970 | 0) + s;
+  if (n % 1461 > 788)
+    t--;
+  while (t > months[i])
+    t -= months[i++] + 1;
+  s = "." + (++i > 9 ? i : "0" + i) + s;
+  t += 1 + +(n % 1461 === 789);
+  return (t > 9 ? "" : "0") + t + s;
+}
+// for (var i = 1, seed = 35589; i < 0xfff; i++)
+//   (seed = seedRand(seed));
+// var matcher = seed, i = 0;
+// for (seed = seedRand(seed); seed !== matcher && i < 0xffffff; i++)
+//   seed = seedRand(seed);
+// taken from: https://stackoverflow.com/a/47593316
+function rand_sfc32(seed) {
+  var a = seed, b = seed, c = seed, d = seed;
+  return function() {
+    a |= 0; b |= 0; c |= 0; d |= 0;
+    var t = (a + b | 0) + d | 0;
+    d = d + 1 | 0;
+    a = b ^ b >>> 9;
+    b = c + (c << 3) | 0;
+    c = (c << 21 | c >>> 11);
+    c = c + t | 0;
+    return (t >>> 0) / 4294967296;
+  }
+}
+// end of taken
 
 /** check dictionary definitions
  * @overload
@@ -297,6 +344,7 @@ function Color() {
   this.prop = !1;
   throw new TypeError("Illegal constructor");
 }
+/** object is frost */
 Color.NAME = {
   0: "White",
   1: "Light Gray",
@@ -322,6 +370,7 @@ Color.NAME = {
   21: "BREAD",
   length: 22
 };
+/** object is frost */
 Color.ID = {
   "White": 0,
   "Light Gray": 1,
@@ -381,9 +430,9 @@ ay|__placeholder(?:839|84[0-26-9]|85[0-3])__");
  * @typedef {{control?:(number|string|[number,number,number,number])[],
  * nodeIndex?:number[],weldGroup?:number}} BlockProps
  * @param {string} name
- * @param {XYZPosition} pos [/: 0, x: p[0] * 2, y: p[1] * 2]
- * @param {Rotation} rot [/: 0, f: f, r: Math.floor(r / 90)]
- * @param {{[key:string]: any}|0} [prop={color:""}]
+ * @param {XYZPosition} pos [-: 0, x: p[0] * 2, y: p[1] * 2]
+ * @param {Rotation} rot [-: 0, f: f, r: Math.floor(r / 90)]
+ * @param {{[key:string]:unknown}|0} [prop={color:""}]
  * @param {keyof typeof Color.ID|null} [color=""] */
 function Block(name, pos, rot, prop, color) {
   this.internalName = name;
@@ -395,9 +444,9 @@ function Block(name, pos, rot, prop, color) {
   prop.color = color !== UDF ?
     prop.color = color :
     prop.color === null || prop.color ? prop.color : "";
-  /** @type {{[key:string]:any,color:Colors}&BlockProps} */
-  //@ts-ignore
-  this.properties = prop;
+  this.properties =
+    /** @type {{[key:string]:unknown,color:Colors}&BlockProps} */
+    (prop);
   Object.seal(this);
 }
 // NOTE that blocks definitions will be version dependant over time
@@ -1112,7 +1161,7 @@ Block.Properties.addProperty = function (name, property) {
  * @param {Array<number>} version
  * @param {string} time
  * @param {Array<Block>} blocks
- * @param {object|null} [properties=null] */
+ * @param {unknown|null} [properties=null] */
 function Ship(name, version, time, blocks, properties) {
   this.name = name;
   this.gameVersion = version;
@@ -1123,6 +1172,101 @@ function Ship(name, version, time, blocks, properties) {
   this.prop = properties || null;
   Object.seal(this);
 }
+/** @typedef {Block[]&{parentShip:Ship}} BlockSelection */
+/**
+ * @param {number} x0 @param {number} x1 @param {number} y0
+ * @param {number} y1 @param {number} z0 @param {number} z1
+ * @returns {Block[]&{parentShip:Ship}} */
+Ship.prototype.selectRect = function (x0, y0, z0, x1, y1, z1) {
+  // n first coordinate is stored as temporary
+  var x = x0, y = y0, z = z0, selected = [];
+  // if the second coordinate is greater as supposed
+  //   n0 will become the second coordinate
+  //   else n0 already is second one, temporary is set to first
+  x1 > x0 ? x0 = x1 : x = x1;
+  y1 > y0 ? y0 = y1 : y = y1;
+  z1 > z0 ? z0 = z1 : z = z1;
+  for (var i = 0, all = this.blocks; i < all.length; i++) {
+    var pos = all[i].position;
+    if (pos[0] < x || pos[0] > x0 || pos[1] < y || pos[1] > y0 ||
+      pos[2] < z || pos[2] > z0)
+      continue;
+    selected.push(all[i]);
+  }
+  (selected =
+    /** @type {Block[]&{parentShip:Ship}} */
+    (selected)
+  ).parentShip = ship;
+  return selected;
+};
+Ship.prototype.removeRect = function (xl, yt, zr, xr, yb, zf) {
+  var x = xl, y = yt, z = zr, selected = [];
+  xr > xl ? xl = xr : x = xr;
+  yb > yt ? yt = yb : y = yb;
+  zf > zr ? zr = zf : z = zf;
+  for (var all = this.blocks, i = all.length; i-- > 0;) {
+    var pos = all[i].position;
+    if (pos[0] < x || pos[0] > xl || pos[1] < y || pos[1] > yt ||
+      pos[2] < z || pos[2] > zr)
+      continue;
+    Logic.removeLogic(all[i], (ship.prop || OC()).nodeList);
+    all[i] = all.slice(-1)[0];
+    all.length--;
+  }
+  // var deletion = this.selectRect(xl, yt, zr, xr, yb, zf);
+  // /** @TODO optimize deleting with custom logics deletion */
+  // for (var i = deletion.length; i-- > 0;)
+};
+/** @param {BlockSelection} select */
+Ship.prototype.fillRect = function (x0, y0, z0, x1, y1, z1, select) {
+  // https://stackoverflow.com/a/424445 backup random number solution
+  if (!select.length)
+    return;
+  var x = x0, y = y0, z = z0, blocks = [], rand = rand_sfc32(0);
+  // x becomes x_min and x0 becomes x_max
+  x1 > x0 ? x0 = x1 : x = x1;
+  y1 > y0 ? y0 = y1 : y = y1;
+  z1 > z0 ? z0 = z1 : z = z1;
+  /** @param {Ship} ship */
+  function pushBlock(ship) {
+    // console.log(x, y, z, x0, y0, z0, x1, y1, z1);
+    var idx = Math.floor(rand() * select.length);
+      // looking for short and suitable name of random block from selection
+    var one = select[idx], name = one.internalName;
+    var pos = one.position, properties = one.properties;
+    return ship.blocks[ship.blocks.length] = new Block(
+      name,
+      // TODO: fill could defaultly adjust blocks to fit full grid
+      [x + (pos[0] & 0), y + (pos[1] & 0), z + (pos[2] & 0)],
+      /** @type {Rotation} */
+      (one.rotation.concat([])),
+      Logic.addLogic(
+        name,
+        {
+          color: properties.color,
+          control: properties.control,
+          weldGroup: properties.weldGroup
+        },
+        (ship.prop || OC()).nodeList || [],
+        ship.blocks
+      )
+    );
+  }
+  if ((settings || {}).buildReplace) {
+    ship.removeRect(x1 = x, y1 = y, z1 = z, x0, y0, z0);
+    /** axis += 2 spacing is used temporarily
+     * @TODO make block collisions blocks are being placed
+     * maybe some kind of table for axis x, y, z, block index */
+    for (x = x1; x <= x0; x += 2)
+      for (y = y0; y >= y1; y -= 2)
+        for (z = z1; z <= z0; z += 2)
+          blocks.push(pushBlock(this));
+    return blocks;
+  }
+  // width, height, length
+  var w = x - x0 + 1, h = y - y0 + 1, l = z - z0 + 1;
+  var b;
+};
 /** @param {object} object */
 Ship.fromObject = function fromObject(object) {
   var o = {
@@ -1186,7 +1330,7 @@ Ship.toDBV = function toDBV(ship) {
       wg: e.properties.weldGroup || 0
     });
   }
-  var shipProp = ship.prop || {}, connections = [];
+  var shipProp = ship.prop || OC(), connections = [];
   for (i = (shipProp.nodeList || []).length; i-- > 0;) {
     /** @type {Logic<any>|{pairs:[]}} */
     var node = shipProp.nodeList[i] || {pairs: []}, n = node.pairs;
@@ -1205,7 +1349,7 @@ Ship.toDBV = function toDBV(ship) {
     ls: shipProp.launchpadSize || 0,
     b: blocks,
     nc: connections || shipProp.nodeConnections,
-    significantVersion: 2
+    significantVersion: 3
   };
 };
 /** @param {string} key */
@@ -1291,29 +1435,10 @@ var ship = Ship.fromObject({name: "Starter Droneboi"});
 // var block = new Block("Block", [0, 0, 0], [0, !0, 0]),
 //   ship = new Ship("None", [0, 9], "never", [block]);
 
-/** timeToString @param {number} [t=Date.now()] @param {number} [f=1] ?1 */
-function dateTime(t, f) {
-  // uses unix timestamp input
-  if (typeof t !== "number")
-    t = Math.floor(Date.now() / 1000);
-  var i = 0, n, s, months = [30, 27, 30, 29, 30, 29, 30, 30, 29, 30, 29, 30];
-  n = ((t % 60) * (f || 1) | 0) / (f || 1);
-  s = ":" + (n < 10 ? "0" + n : n);
-  n = (t = Math.floor(t / 60)) % 60;
-  s = ":" + (n > 9 ? n : "0" + n) + s;
-  s = " " + (t = Math.floor(t / 60)) % 24 + s;
-  n = Math.floor(t / 24);
-  t = Math.ceil(n % 365.25);
-  if (t === 365 && !(n / 365.25 & 2))
-    return "01.01." + Math.floor(n / 365.25 + 1971) + s;
-  s = "." + (n / 365.25 + 1970 | 0) + s;
-  if (n % 1461 > 788)
-    t--;
-  while (t > months[i])
-    t -= months[i++] + 1;
-  s = "." + (++i > 9 ? i : "0" + i) + s;
-  t += 1 + +(n % 1461 === 789);
-  return (t > 9 ? "" : "0") + t + s;
+// huh? A concept for undo redo history implementation
+function Edit() {
+  this.history = [];
+  this.edited = new Ship("", [], "", []);
 }
 
 /** @function base64ToUint8array */
@@ -1795,28 +1920,6 @@ function gVersion() {
   } while (buffer[i] & 128);
   i++;
   return version;
-}
-function dateTime(t) {
-  if (typeof t !== "number")
-    t = Math.floor(Date.now() / 1e3);
-  var i = 0, n, s, months = [30, 27, 30, 29, 30, 29, 30, 30, 29, 30, 29, 30];
-  n = t % 60 | 0;
-  s = ":" + (n < 10 ? "0" + n : n);
-  n = (t = Math.floor(t / 60)) % 60;
-  s = ":" + (n > 9 ? n : "0" + n) + s;
-  s = " " + (t = Math.floor(t / 60)) % 24 + s;
-  n = Math.floor(t / 24);
-  t = Math.ceil(n % 365.25);
-  if (t === 365 && !(n / 365.25 & 2))
-    return "01.01." + Math.floor(n / 365.25 + 1971) + s;
-  s = "." + (n / 365.25 + 1970 | 0) + s;
-  if (n % 1461 > 788)
-    t--;
-  while (t > months[i])
-    t -= months[i++] + 1;
-  s = "." + (++i > 9 ? i : "0" + i) + s;
-  t += 1 + +(n % 1461 === 789);
-  return (t > 9 ? "" : "0") + t + s;
 }
 /** @param {number} n rotation by 5 bit index @returns dr rotation */
 function gBlockRotation(n) {

@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.26
+// v.0.1.27.2
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -903,9 +903,11 @@ var helpCanvas = document.createElement("canvas"),
   rc = function (rc) {
     return rc instanceof CanvasRenderingContext2D ?
        rc : new CanvasRenderingContext2D();
-  }(helpCanvas.getContext("2d"));
+  }(helpCanvas.getContext("2d", 
+    // shut up chromium browsers                      
+    {willReadFrequently: true}));
 
-var settings = {
+var defaults = {
   /** (default) true: image pattern, false: color */
   editorBackground: typeof DOMMatrix != "undefined",
   /** mumst be in #xxxxxx hex color format */
@@ -915,17 +917,20 @@ var settings = {
   /** mumst be in #xxxxxx hex color format */
   highlightColor: "#ff0000",
   highlightWidth: 2,
-  logicPreviewAlpha: .5
-};
+  logicPreviewAlpha: .5,
+  buildReplace: !1
+},
+  /** @type {typeof defaults|null} */
+  settings = defaults;
 // naming may change? + meaningless comment
 function saveSettings() {
-  var n = 0, arr = [+settings.editorBackground];
-  if (isNaN(n = Number("0x" + settings.editorBackgroundColor.slice(1))))
+  var n = 0, arr = [+defaults.editorBackground];
+  if (isNaN(n = Number("0x" + defaults.editorBackgroundColor.slice(1))))
     throw new Error("Wrong format of editorBackgroundColor setting");
   arr[0] += (n & 0x7fff) << 1;
   arr[1] = n >> 15 & 0xffff;
-  arr[1] += settings.editorBackgroundImage << 15 & 1 << 15;
-  arr[2] = settings.editorBackgroundImage >> 1 & 31;
+  arr[1] += defaults.editorBackgroundImage << 15 & 1 << 15;
+  arr[2] = defaults.editorBackgroundImage >> 1 & 31;
   storage.setItem("D1R_DBV_editor", String.fromCharCode.apply(String, arr));
 }
 function loadSettings() {
@@ -937,22 +942,22 @@ function loadSettings() {
   var n = 0, arr = s.split("").map(function (e) {
     return e.charCodeAt(0);
   });
-  settings.editorBackground = !!(arr[0] & 1);
+  defaults.editorBackground = !!(arr[0] & 1);
   s = ((arr[0] & 0x7fff) + ((arr[1] & 0x01ff) << 16) >> 1).toString(16);
-  settings.editorBackgroundColor = "#" + "000000".slice(s.length) + s;
+  defaults.editorBackgroundColor = "#" + "000000".slice(s.length) + s;
   n = arr[1] >> 15;
-  settings.editorBackgroundImage = ((arr[2] & 31) << 1) + n;
+  defaults.editorBackgroundImage = ((arr[2] & 31) << 1) + n;
 }
 loadSettings();
 canvas.style.backgroundColor = document.body.style.backgroundColor =
-  settings.editorBackground ? "#132122" : settings.editorBackgroundColor;
+  defaults.editorBackground ? "#132122" : defaults.editorBackgroundColor;
 imgBackg.src = "./assets/_" + [
   "dbc",
   "db",
   "editor",
   "dbve2",
   "dbve"
-][settings.editorBackgroundImage] + "_background.png";
+][defaults.editorBackgroundImage] + "_background.png";
 
 /** @this {Array} */
 function del(i) {
@@ -1573,8 +1578,8 @@ Command.push("Setup Properties", function (items, collapsed) {
       rot === (block.rotation[1] ? 1 : 3) ?
         dy += (32 - w - tiny) * sc / 16 :
         0;
-    ctx.strokeStyle = settings.highlightColor;
-    ctx.lineWidth = settings.highlightWidth;
+    ctx.strokeStyle = defaults.highlightColor;
+    ctx.lineWidth = defaults.highlightWidth;
     ctx.strokeRect(dx, dy, (rot & 1 ? h : w) * sc / 16,
       (rot & 1 ? w : h) * sc / 16);
   };
@@ -1588,7 +1593,6 @@ ied or 0, axis position specified or 0, sets axis positions of selected bloc\
 k, block type is set to valid block name, optionally some block properties (\
 not explained), 0 is white 1 is blue 2 is red 3 is green 4 is yellow, this d\
 escri.");
-var test_el = EL("select")
 Command.push("Display Logic", function (items, collapsed) {
   function updateNodeSelect() {
     var idx = Number(text.data), block = ship.blocks[idx];
@@ -1597,7 +1601,7 @@ Command.push("Display Logic", function (items, collapsed) {
     temp.appendChild(tN("Logic block: " + idx + " " + block.internalName));
     temp.appendChild(EL("br"));
     /** @type {HTMLSelectElement|null} */
-    var numerical = test_el = EL("select"),
+    var numerical = EL("select"),
       /** @type {(Logic<3>|undefined)[]} */
       nums = [UDF],
       /** @type {HTMLSelectElement|null} */
@@ -1779,7 +1783,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
   (elBtn = EL("button")).onclick = function () {
     error.innerText = "";
     try {
-      ship = JSON.parse(json.value);
+      ship = Ship.fromObject(JSON.parse(json.value));
       render();
     } catch (err) {
       error.innerText = err;
@@ -1800,7 +1804,7 @@ clude non existent or blocks inavalable in game.\nImporting displays vehicle\
  contains textual data and can be opened using text editor.");
 Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
   var inp = EL("input"), elBtn = EL("button"), error = EL();
-  items.push({name: "base64 key", inp: inp});
+  items.push({name: "Base64 key", inp: inp});
   elBtn.onclick = function () {
     error.innerText = "";
     var bs = ship.blocks;
@@ -1842,25 +1846,75 @@ lemented blocks like TNT, station blocks and more. Be aware that the key lim\
 its vehicle in and will refuse to compress too big vehicle. There are also b\
 ugs since I wasn't going down the rabbit hole of debugging every last one.");
 
+var test_selct = ship.selectRect(.1, 0, 0, .1, 0, 0);
 Command.push("Transfrom tool", function (items, collapsed) {
   var selectX0 = EL("input"), selectY0 = EL("input");
   var selectX1 = EL("input"), selectY1 = EL("input");
   var select = EL("button"), inpX = EL("input"), inpY = EL("input");
   select.appendChild(tN("Select rectangle"));
+  var xy = [0, 0, 0, 0];
+  function formatSelection() {
+    var i = 4, input = selectX0;
+    while (input = [selectX0, selectY0, selectX1, selectY1][--i])
+      this !== input ?
+        input.value = "" + (xy[i] = +input.value || 0) :
+        isNaN(+input.value) ?
+          0 :
+          xy[i] = +input.value || 0;
+    if (xy[0] !== xy[2] && xy[1] !== xy[3])
+      selecting = 0;
+    render();
+  }
+  function getSelected() {
+    return selecting ?
+      ship.blocks :
+      ship.selectRect(0, xy[0], xy[1], 0, xy[2], xy[3]);
+  }
+  selectX0.oninput = selectY0.oninput = formatSelection;
+  selectX1.oninput = selectY1.oninput = formatSelection;
+  var selecting = 2;
+  select.onclick = function () {
+    selectX0.value = selectY0.value = "";
+    selectX1.value = selectY1.value = "";
+    selecting = 2;
+    press = function (x, y) {
+      x = Math.floor((vX - x) / sc + 1);
+      y = Math.floor((y - vY) / sc);
+      if (selecting)
+        if (--selecting) {
+          selectX0.value = "" + (xy[0] = xy[2] = x);
+          selectY0.value = "" + (xy[1] = xy[3] = y);
+        } else {
+          selectX1.value = "" + (xy[2] = x);
+          selectY1.value = "" + (xy[3] = y);
+          press = old_UI;
+        }
+      render();
+    };
+    render();
+  };
   items.push(
-    {name: "selection X0", inp: selectX0},
-    {name: "selection Y0", inp: selectY0},
-    {name: "selection X1", inp: selectX1},
-    {name: "selection Y1", inp: selectY1},
+    {name: "Selection X0", inp: selectX0},
+    {name: "Selection Y0", inp: selectY0},
+    {name: "Selection X1", inp: selectX1},
+    {name: "Selection Y1", inp: selectY1},
     select
   );
-  items.push({name: "axis X", inp: inpX}, {name: "axis Y", inp: inpY});
   var move = EL("button"), rotate = EL("button"), flip = EL("button");
   move.appendChild(tN("Move action"));
   move.onclick = function () {
-    ship.blocks.forEach(function (e) {
-      e.position[1] += Number(inpX.value) || 0;
-      e.position[2] += Number(inpY.value) || 0;
+    // var x = +inpX.value || 0, y = +inpY.value || 0;
+    // [selectX0, selectY0, selectX1, selectY1]
+    // selectY0.value = "" + (xy[0] += x);
+    // selectX0.value = "" + (xy[1] += y);
+    // selectY1.value = "" + (xy[2] += x);
+    // selectX1.value = "" + (xy[3] += y);
+    getSelected().forEach(function (e) {
+      // cool bug
+      inpX.value = "" + (e.position[1] += +inpX.value || 0);
+      inpY.value = "" + (e.position[2] += +inpY.value || 0);
+      // e.position[1] += x;
+      // e.position[2] += y;
     });
     render();
   };
@@ -1871,20 +1925,79 @@ Command.push("Transfrom tool", function (items, collapsed) {
   var mirror = EL("button"), copy = EL("button"), paste = EL("button");
   mirror.appendChild(tN("Mirror action"));
   mirror.style.border = "2px solid #0000";
+  function updateCopied() {
+    return "Copied: " + test_selct.length + " blocks: " +
+      test_selct.slice(0, 21).map(function (e) {
+        return e.internalName;
+      }) + (test_selct.length > 21 ? ", ..." : "");
+  }
+  var copied = tN(updateCopied()), coloring = EL("select");
+  var arr = ["defaults"];
+  for (var i = 0, l = [].push.apply(arr, Color.NAME); i < l;) {
+    var option = EL("option");
+    option.appendChild(tN(arr[i++]));
+    coloring.add(option);
+    ship.blocks[0].properties;
+  }
   copy.appendChild(tN("Copy action"));
-  copy.style.border = "2px solid #0000";
+  copy.onclick = function () {
+    if (selecting)
+      return;
+    test_selct = ship.selectRect(0, xy[0], xy[1], 0, xy[2], xy[3]);
+    copied.data = updateCopied();
+    render();
+  };
   paste.appendChild(tN("Paste action"));
   paste.style.border = "2px solid #0000";
   var remove = EL("button"), paint = EL("button"), fill = EL("button");
   remove.appendChild(tN("Remove action"));
-  remove.style.border = "2px solid #0000";
+  remove.onclick = function () {
+    !selecting && ship.removeRect(0, xy[0], xy[1], 0, xy[2], xy[3]);
+    render();
+  };
   paint.appendChild(tN("Paint action"));
-  paint.style.border = "2px solid #0000";
+  paint.onclick = function () {
+    getSelected().forEach(coloring.value === "defaults" ?
+      function (e) {
+        e.properties.color = Color.default(e.internalName);
+      } :
+      function (e) {
+        e.properties.color =
+          /** @type {Colors} */
+          (coloring.value);
+      });
+    render();
+  };
   fill.appendChild(tN("Fill action"));
-  fill.style.border = "2px solid #0000";
-  items.push(move, rotate, flip, mirror, copy, paste, remove, paint, fill);
-}, "First Advanced editor function ever made! You can move Droneboi around. \
-");
+  fill.onclick = function () {
+    if (selecting)
+      return;
+    defaults.buildReplace = !0;
+    ship.fillRect(0, xy[0], xy[1], 0, xy[2], xy[3], test_selct);
+    defaults.buildReplace = !1;
+    render();
+  };
+  items.push(copy, paste, fill, remove, {name: "Axis X", inp: inpX});
+  items.push({name: "Axis Y", inp: inpY}, move, rotate, flip, mirror);
+  items.push(tN("Color: "), coloring, paint, copied);
+  collapsed.rend_UI = function () {
+    if (selecting > 1)
+      return;
+    // calculations from Setup Properties rend_UI
+    var x = xy[0], y = xy[1];
+    var dx = -x * sc + vX, dy = y * sc + vY;
+    ctx.strokeStyle = defaults.highlightColor;
+    ctx.lineWidth = defaults.highlightWidth;
+    if (selecting) {
+      ctx.beginPath();
+      ctx.moveTo(dx + sc * 2, dy);
+      ctx.lineTo(dx, dy);
+      ctx.lineTo(dx, dy + sc * 2);
+      return ctx.stroke();
+    }
+    ctx.strokeRect(dx, dy, (x - xy[2] + 1) * sc, (xy[3] - y + 1) * sc);
+  };
+}, "WIP (Work In Progress) Command, meanwhile figure out yourself.");
 Command.push("Rift Drive calculator", function (items, collapsed) {
   var weight = 0, drives = 0, unknown = 0, all = ship.blocks;
   for (var i = all.length; i-- > 0;) {
@@ -1916,16 +2029,16 @@ utilities.groupName = "";
 Command.push("Set camera view", function (items, collapsed) {
   var viewX = EL("input"), viewY = EL("input"), zoom = EL("input");
   var elBtn = EL("button");
-  items.push({name: "view x", inp: viewX},
-    {name: "view y", inp: viewY},
-    {name: "zoom", inp: zoom});
+  items.push({name: "View x", inp: viewX},
+    {name: "View y", inp: viewY},
+    {name: "Zoom", inp: zoom});
   elBtn.onclick = function () {
     viewX.value = "" + vX;
     viewY.value = "" + vY;
     zoom.value = "" + sc / 16;
     render();
   };
-  elBtn.appendChild(tN("get"));
+  elBtn.appendChild(tN("Get"));
   items.push(elBtn);
   (elBtn = EL("button")).onclick = function () {
     vX = Number(viewX.value) || 99;
@@ -1933,7 +2046,7 @@ Command.push("Set camera view", function (items, collapsed) {
     sc = (Number(zoom.value) || 1) * 16;
     render();
   };
-  elBtn.appendChild(tN("set"));
+  elBtn.appendChild(tN("Set"));
   items.push(elBtn);
 }, "Let's you to set zoom and camera position to desired values. It is usefu\
 ll for reseting to intial view by pressing set while inputs are empty. Usual\
@@ -1942,12 +2055,12 @@ used. For touchscreen devides use two fingers to move and zoom.");
 Command.push("Change editor background", function (items, collapsed) {
   var backgImg = EL("input"), backgClr = EL("input");
   backgImg.type = "checkbox";
-  backgImg.checked = settings.editorBackground;
+  backgImg.checked = defaults.editorBackground;
   backgImg.onchange = function () {
     if (!(this instanceof HTMLInputElement))
       return;
     rend_background =
-      (settings.editorBackground = this.checked) ?
+      (defaults.editorBackground = this.checked) ?
         rend_backgPattern :
         rend_backgColor;
     saveSettings()
@@ -1968,12 +2081,12 @@ Command.push("Change editor background", function (items, collapsed) {
   option = EL("option");
   option.label = option.value = "_dbve_background";
   select.add(option);
-  option = select.item(settings.editorBackgroundImage) || option;
+  option = select.item(defaults.editorBackgroundImage) || option;
   option.selected = !0;
   select.onchange = function () {
     if (!(this instanceof HTMLSelectElement))
       return;
-    settings.editorBackgroundImage = this.selectedIndex;
+    defaults.editorBackgroundImage = this.selectedIndex;
     saveSettings();
     var newImg = EL("img");
     newImg.onload === null ? newImg.onload = function () {
@@ -1982,14 +2095,14 @@ Command.push("Change editor background", function (items, collapsed) {
     } : (imgBackg = newImg);
     newImg.src = "./assets/" + this.value + ".png";
   };
-  backgClr.value = settings.editorBackgroundColor;
+  backgClr.value = defaults.editorBackgroundColor;
   backgClr.oninput = function () {
     var r = this instanceof HTMLInputElement ?
       new RegExp("#([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])|#(\
 [0-9a-f])([0-9a-f])([0-9a-f])").exec(this.value.slice(0, 7)) :
       null;
     if (r)
-      settings.editorBackgroundColor = "#" + (r[0].length < 5 ?
+      defaults.editorBackgroundColor = "#" + (r[0].length < 5 ?
         r[4] + r[4] + r[5] + r[5] + r[6] + r[6] :
         r[1] + r[2] + r[3]);
     saveSettings();
@@ -2039,6 +2152,7 @@ var cmdsHeader = EL(), cmds = (function () {
     items.style.display = "none";
     back.visibility = "hidden";
     utilities.rend_UI = F;
+    press = old_UI;
     render();
   };
   e0.appendChild(cmdsHeader);
@@ -2047,6 +2161,7 @@ var cmdsHeader = EL(), cmds = (function () {
   e1.onclick = function () {
     nav.style.display = "none";
     utilities.rend_UI = F;
+    press = old_UI;
     render();
   };
   var content = nav.appendChild(EL()), items = nav.appendChild(EL());
@@ -2116,7 +2231,7 @@ function rend_backgPattern() {
     ctx.fillStyle = ctx.createPattern(imgBackg, "repeat") || "";
     if (helpCanvas.width === 64) {
       var n = sc / 32, sx = vX - sc, sy = vY - sc, idk = 32;
-      canvas.style.backgroundColor = settings.editorBackgroundColor;
+      canvas.style.backgroundColor = defaults.editorBackgroundColor;
     } else
       var n = sc / 2, sx = vX - sc * 37, sy = vY - sc * 37, idk = 74;
     ctx.translate(sx, sy);
@@ -2129,9 +2244,9 @@ function rend_backgPattern() {
   }
 }
 function rend_backgColor() {
-  canvas.style.backgroundColor = settings.editorBackgroundColor;
+  canvas.style.backgroundColor = defaults.editorBackgroundColor;
 }
-var rend_background = settings.editorBackground ?
+var rend_background = defaults.editorBackground ?
   rend_backgPattern : rend_backgColor;
 function rend_initColors() {
   helpCanvas.width = helpCanvas.height = 32;
@@ -2172,7 +2287,7 @@ var rend_colors = rend_initColors();
 /** @type {Block[]} */
 var foundBlocks = [];
 
-press = function press(x, y) {
+var old_UI = press = function (x, y) {
   x = Math.floor((vX - x) / 2 / sc + 1);
   y = Math.floor((y - vY) / 2 / sc);
   var found = [];
@@ -2183,7 +2298,7 @@ press = function press(x, y) {
   found = found.map(function (i) {
     var e = arr[i];
     if (placingBlock() === "remove") {
-      Logic.removeLogic(arr[i], ship.prop.nodeList);
+      Logic.removeLogic(arr[i], (ship.prop || OC()).nodeList);
       arr[i] = arr.slice(-1)[0];
       arr.length--;
     } else if (blockBind.changingColor)
@@ -2226,12 +2341,11 @@ press = function press(x, y) {
       Block.Properties.addProperty(rand, Logic.addLogic(
         rand,
         {color: Color.default(rand)},
-        (ship.prop || {}).nodeList || [],
+        (ship.prop || OC()).nodeList || [],
         ship.blocks
       )));
     (blok.properties.nodeIndex || []).forEach(function (e) {
-      if (ship.prop)
-        ship.prop.nodeList[e].owner = blok;
+      (ship.prop || OC()).nodeList[e].owner = blok;
     });
     arr.push(blok);
   }
@@ -2259,7 +2373,6 @@ function commands(x, y, e) {
     }
   st.display = "none";
 }
-/** @TODO fix weld group Block property bug (Sparator, Piston, Hinge) */
 function devt_share(inp) {
   var el = GE("commandsTab");
   if (el)
@@ -2325,8 +2438,8 @@ var rend_speeeeed = {}, rend_logs = 69;
   ctx.imageSmoothingEnabled = false;
   var objs = ship.blocks, n = 0;
   if (Logic.rend &&
-    (Logic.nodes = (ship.prop && ship.prop.nodeList) || []))
-    ctx.globalAlpha = settings.logicPreviewAlpha;
+    (Logic.nodes = (ship.prop || OC()).nodeList || []))
+    ctx.globalAlpha = defaults.logicPreviewAlpha;
   for (var i = 0, id = 0, pos = [0, 0, 0]; i < objs.length; i++) {
     pos = objs[i].position;
     if ((id = Block.ID[objs[i].internalName]) < 12) {
