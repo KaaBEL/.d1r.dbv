@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.27.2
+// v.0.1.28
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -31,13 +31,44 @@ function throwErrors() {
     console.err = console.error;
   console.error = function () {
     console.err && console.err.apply(console, Array.prototype.map.call(
-      arguments, function (e) {
+      arguments,
+      function (e) {
         return e;
-      })
-    );
+      }
+    ));
     throw "See error over --^";
   };
 }
+
+if (/https?/.test(location.protocol) && navigator.serviceWorker)
+  try {
+    var swc = navigator.serviceWorker, sw = swc.controller;
+    sw || swc.register("/.d1r.dbv/offline_test.js",
+      {scope: "/.d1r.dbv/"}).then(function (swr) {
+        sw = (swr.installing || swr.waiting || swr.active);
+        (sw || OC()).onstatechange = function () {
+          console.log.apply(console, Array.prototype.map.call(
+            arguments,
+            function (e) {
+              return e;
+            }
+          ).concat("sw_change"));
+        };
+      }).catch(F);
+  } catch (e) {
+    console.log(e, "sw_js");
+  }
+if (/^http:\/\/(?:\d+\.\d+\.\d+\.\d+|localhost:\d+)/.exec(location.href))
+  window.WebSocket =
+    /** @type {any} disables VS code live server live reload */
+    (function () {
+      this.juhus = "yes";
+      var e = window.onerror;
+      window.onerror = function () {
+        window.onerror = e;
+      };
+      throw ":P";
+    });
 
 canvas.addEventListener("contextlost", function () {
   console.warn("CONTEXT LOST!");
@@ -56,7 +87,7 @@ canvas.addEventListener("contextrestored", function () {
   "#commandsTab" +
   "{position:fixed;width: 350px;height: " +
   (innerHeight > 500 ? 500 : innerHeight) + "px;border-radius: 10px;" +
-  "background-color: #000000bb;}" +
+  "background-color: #000000db;}" +
   "#commandsTab, #commandsTab button{color: #999;" +
   "font-size: 16px;font-family:monospace,sans-serif,Courier,Consolas;}" +
   "#commandsTab header:first-child" +
@@ -1903,18 +1934,17 @@ Command.push("Transfrom tool", function (items, collapsed) {
   var move = EL("button"), rotate = EL("button"), flip = EL("button");
   move.appendChild(tN("Move action"));
   move.onclick = function () {
-    // var x = +inpX.value || 0, y = +inpY.value || 0;
-    // [selectX0, selectY0, selectX1, selectY1]
-    // selectY0.value = "" + (xy[0] += x);
-    // selectX0.value = "" + (xy[1] += y);
-    // selectY1.value = "" + (xy[2] += x);
-    // selectX1.value = "" + (xy[3] += y);
+    var x = +inpX.value || 0, y = +inpY.value || 0;
+    [selectX0, selectY0, selectX1, selectY1].forEach(function (e, i) {
+      e.value = "" + xy[i]
+    });
+    selectY0.value = "" + (xy[0] += x);
+    selectX0.value = "" + (xy[1] += y);
+    selectY1.value = "" + (xy[2] += x);
+    selectX1.value = "" + (xy[3] += y);
     getSelected().forEach(function (e) {
-      // cool bug
-      inpX.value = "" + (e.position[1] += +inpX.value || 0);
-      inpY.value = "" + (e.position[2] += +inpY.value || 0);
-      // e.position[1] += x;
-      // e.position[2] += y;
+      e.position[1] += x;
+      e.position[2] += y;
     });
     render();
   };
