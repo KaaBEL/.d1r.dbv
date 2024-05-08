@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.27.2
+// v.0.1.29
 /** LOL :tf: I forgot to remove that oh lol */
 /** @TODO check significantVersion */
 var OP = Object.prototype.hasOwnProperty,
@@ -100,7 +100,7 @@ function dictionaryDefs(dicNum, dicVal, AT) {
           "d in numbered dictionary else than \"length\" or number" + AT);
       else if (!OP.call(dicVal, val = dicNum[p]))
         throw new Error("Dictonaries mismatch at numbered: \"" + p +
-          "\" and (number by value keys): " + dicVal[val]);
+          "\" and (number by value keys): " + dicVal[val] + AT);
       else if (dicVal[val] !== l)
         throw new Error(dicVal[val] === UDF ?
           "Dictionary (number by value keys) misses key: " + val + AT :
@@ -368,7 +368,13 @@ Color.NAME = {
   19: "Festive Red",
   20: "Festive Green",
   21: "BREAD",
-  length: 22
+  22: "[custom color]",
+  23: "Station Floor 0",
+  24: "Station Floor 1",
+  25: "Station Floor 2",
+  26: "Wood",
+  27: "Festive Duck",
+  length: 28
 };
 /** object is frost */
 Color.ID = {
@@ -393,7 +399,13 @@ Color.ID = {
   "White Hazard Stripes": 18,
   "Festive Red": 19,
   "Festive Green": 20,
-  "BREAD": 21
+  "BREAD": 21,
+  "[custom color]": 22,
+  "Station Floor 0": 23,
+  "Station Floor 1": 24,
+  "Station Floor 2": 25,
+  "Wood": 26,
+  "Festive Duck": 27
 };
 Object.freeze(Color.NAME);
 Object.freeze(Color.ID);
@@ -402,7 +414,7 @@ dictionaryDefs(Color.NAME, Color.ID, "Color definitions");
 Color.default = function getColor(name) {
   if (/Hydrogen Thruster/.test(name))
     return "Yellow";
-  if (/Wheel|Battery|__placeholder84[456]__/.test(name))
+  if (/Wheel|Battery|__placeholder84[456]__|Dynamo/.test(name))
     return "Light Gray";
   if (/Weight|Armou?r|Camera Block/.test(name))
     return "Dark Gray";
@@ -412,7 +424,7 @@ Color.default = function getColor(name) {
     return "Orange";
   if (/Ion Thruster/.test(name))
     return "Lime"
-  if (/__placeholder776__/.test(name))
+  if (/__placeholder776__|Afterburner/.test(name))
     return "Red";
   if (Color.colorlessRegexp.test(name))
     return null;
@@ -578,7 +590,7 @@ Block.NAME = {
   848: "__placeholder848__",
   // station door ending
   849: "__placeholder849__",
-  // station terminal
+  // station launch terminal
   850: "__placeholder850__",
   // station bench
   851: "__placeholder851__",
@@ -586,7 +598,33 @@ Block.NAME = {
   852: "__placeholder852__",
   // station telescope
   853: "__placeholder853__",
-  length: 854
+  // station market terminal
+  854: "__placeholder854__",
+  // station wedge
+  855: "__placeholder855__",
+  // station foor 2 1x1
+  856: "__placeholder856__",
+  // station floor 3 1x1
+  857: "__placeholder857__",
+  // 1024: Core, 1025: T1 Block, 1026: T2 Block, 1027: T1 Wedge,
+  //  1028: T1 Wedge 1x2, 1029: T2 Wedge, 1030: Structure Block,
+  //  1031: Glass Block,
+  // 1032: Glass Wedge, 1033: Station Block, 1034: Simple Thruster,
+  //  1035: Afterburner, 1036: Ion Thruster, 1037: Dynamo Thruster,
+  //  1038: Momentum Wheel, 1039: Small Fuel Tank,
+  // 1040: Medium Fuel Tank, 1041: Small Battery, 1042: Medium Battery,
+  //  1043: T1 Rammer, 1044: T1 Blaster, 1045: T1 Pulse Laser,
+  //  1046: T1 Gatling Gun, 1047: T1 Rocket Launcher,
+  // 1048: Explosive, 1049: T1 Drill, 1050: T1 Mining Laser,
+  //  1051: Small Crate, 1052: Medium Crate, 1053: Connector,
+  //  1054: T1 Solar Panel, 1055: T2 Solar Panel,
+  // 1056: Solar Block, 1057: Hinge, 1058: Seperator,
+  //  1059: Camera Block, 1060: T1 Nano Healer
+  1035: "Afterburner",
+  1037: "Dynamo Thruster",
+  1043: "T1 Rammer",
+  1060: "T1 Nano Healer",
+  length: 1061
 };
 /** object is frost */
 Block.ID = {
@@ -699,7 +737,15 @@ Block.ID = {
   "__placeholder850__": 850,
   "__placeholder851__": 851,
   "__placeholder852__": 852,
-  "__placeholder853__": 853
+  "__placeholder853__": 853,
+  "__placeholder854__": 854,
+  "__placeholder855__": 855,
+  "__placeholder856__": 856,
+  "__placeholder857__": 857,
+  "Afterburner": 1035,
+  "Dynamo Thruster": 1037,
+  "T1 Rammer": 1043,
+  "T1 Nano Healer": 1060
 };
 Object.freeze(Block.NAME);
 Object.freeze(Block.ID);
@@ -945,6 +991,7 @@ Block.Size.genterateSizes = function () {
   var r = {690: new this(0, 0, 2, 2)},
     /** @type {{[key: number]: SizeDef|SizeDef[], length: number}} */
     a = arguments;
+  // by replacing nw = 0 with nw = [] it will log sizes and do 'reflow'
   for (var i = 0, j = 0, l = 690, nw = 0; l < Block.NAME.length; l++)
     if (Block.NAME[l]) {
       /** @type {[number]|[number,number,number]|PreciseDef} */
@@ -987,8 +1034,9 @@ Block.Size.VALUE = Block.Size.genterateSizes([[0], [1], [2], [7, 1, 2]],
   [[128, 1, .5], [178, 1, .5], [29], [79], [129], [179, .5, 1]],
   [[30, .5, .5], [80, 1, .5], [40], [41], [42], [43], [44], [45]],
   [[144, 2, 2], [134, 1, 2], [135, 1, 2], [136, 1, 2], [189]],
-  [[140, 2, 2], [142, 2, 2], [84], [85], [86], [34, 4, 1], [90, 2, 1]],
-  [[38, 2, 3], [87]]);
+  [[140, 2, 2], [142, 2, 2], [84], [85], [86], [92, 4, 1], [90, 2, 1]],
+  [[38, 2, 3], [87], [34, 4, 1], [47], [188], [187], [96], [97], [147]],
+  [[146]]);
 
 // TODO: To be considered for resystemizing
 /** @template {keyof ItemTs} T @param {T} type @param {string} name */
@@ -1349,7 +1397,7 @@ Ship.toDBV = function toDBV(ship) {
     ls: shipProp.launchpadSize || 0,
     b: blocks,
     nc: connections || shipProp.nodeConnections,
-    significantVersion: 3
+    significantVersion: 4
   };
 };
 /** @param {string} key */
@@ -1387,17 +1435,19 @@ Ship.fromDBKey = function (key) {
     "Red",
     "Lime",
     "Yellow",
-    "Festive Red",//7
+    "Festive Red",
     "Light Gray",
-    "Red Hazard Stripes",//9"Lololipop",
+    // "Lololipop"
+    "Red Hazard Stripes",
     "Yellow Hazard Stripes",
-    "Fuel",//11
-    "Wine",//12
-    "BREAD",//13"Wood",
-    "White Hazard Stripes",//14"Steel"
-    "Purple",//15
-    "Pink",//16
-    "Festive Green",//17
+    "Fuel",
+    "Wine",
+    "Wood",
+    // "Steel"
+    "White Hazard Stripes",
+    "Purple",
+    "Pink",
+    "Festive Green",
     "Festive Duck"
   ];
   for (var i = arr.length - 1; i-- > 0;) {
@@ -1410,7 +1460,7 @@ Ship.fromDBKey = function (key) {
         conC[+o[5]] :
         Color.default(name) || "White",
     // o[6] [Use rotation, Up, Down, Left, Right]
-      flip = !o[7];
+      flip = !!+o[7];
     o = (o[1] || "").split("~");
     var x = +(o[0] ||"").replace(",", ".") * 2 || 0,
       y = +(o[1] || "").replace(",", ".") * 2 || 0;
