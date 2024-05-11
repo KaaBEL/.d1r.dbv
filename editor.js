@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.29.1
+// v.0.1.30
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -890,7 +890,8 @@ function fileOpener(f_exec, error, f_final, loadBar, mode) {
           next = f_exec(ar, mode, file.files[fl_i]);
       } catch (e) {
         //@ts-ignore
-        next = !!console.error(e.message || e, " fileOpener:?", e.stack || "");
+        next = !!console.error(e.message || e,
+          " fileOpener:?", e.stack || "");
       }
       barE(fl_i / file.open.length, succ |= +!next);
       if (next || mode)
@@ -2105,8 +2106,60 @@ function rend_backgPattern() {
 function rend_backgColor() {
   canvas.style.backgroundColor = defaults.editorBackgroundColor;
 }
+var rend_backgHangar = F;
++function () {
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", "http://localhost:5500/.d1r.dbv/assets/AlphaLunar.json");
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState !== 4)
+      return;
+    try {
+      backgHangarInit.ship = Ship.fromObject(
+        JSON.parse(xhr.responseText));
+      backgHangarInit.ready++ && backgHangarInit();
+    } catch (e) {
+      console.error(xhr.responseText ? e : "xhr empty response");
+    }
+  };
+  xhr.send();
+}();
+function backgHangarInit() {
+  var backgPrimary = rend_background,
+    hgw = 544, hgh = 654;
+  rend_background = F;
+  var ocw = canvas.width, och = canvas.height;
+  canvas.width = hgw;
+  canvas.height = hgh;
+  var osc = sc, oxV = vX, oyV = vY, oship = ship;
+  sc = 8;
+  vX = 264;
+  vY = 464;
+  ship = backgHangarInit.ship;
+  expensiveRenderer();
+  var hangarBackground = EL('img');
+  hangarBackground.src = canvas.toDataURL('image/png');
+  canvas.width = ocw;
+  canvas.height = och;
+  sc = osc;
+  vX = oxV;
+  vY = oyV;
+  ship = oship;
+  function backgSecondary() {
+    backgPrimary();
+    ctx.drawImage(hangarBackground, sc * -33 + vX, sc * -58 + vY,
+      sc * hgw / 8, sc * hgh / 8);
+  };
+  backgSecondary.primary = backgPrimary;
+  rend_background = backgSecondary;
+  render();
+};
+backgHangarInit.ship = Ship.fromObject({b:[]});
+backgHangarInit.ready = 0;
 var rend_background = defaults.editorBackground ?
-  rend_backgPattern : rend_backgColor;
+  rend_backgPattern : rend_backgColor, rend_initialized = [F];
+rend_initialized.push(function () {
+  backgHangarInit.ready++ && backgHangarInit();
+});
 function rend_initColors() {
   helpCanvas.width = helpCanvas.height = 32;
   for (var i = Color.NAME.length, patterns = []; i-- > 0;) {
@@ -2126,20 +2179,28 @@ function rend_checkColors() {
   var cpr = rc.getImageData(0, 0, 32, 32).data;
   for (var i = dat.length, b = !0, itv = 0; i-- > 0;)
     b = b && dat[i] === cpr[i];
-  b && (itv = setInterval(function () {
-    helpCanvas.width = helpCanvas.height = 32;
-    try {
-      rc.drawImage(imgColor, 0, i * -32);
-    } catch (e) {
-      if (imgColor.complete === !1)
-        return i = 0;
-    }
-    rend_colors[i] = rc.createPattern(helpCanvas, "repeat") || "";
-    if (++i >= rend_colors.length) {
-      clearInterval(itv)
-      render();
-    }
-  }, i = 0));
+  b ?
+    // necessary for some browsers to assign color textures properly
+    (itv = setInterval(function () {
+      helpCanvas.width = helpCanvas.height = 32;
+      try {
+        rc.drawImage(imgColor, 0, i * -32);
+      } catch (e) {
+        if (imgColor.complete === !1)
+          return i = 0;
+      }
+      rend_colors[i] = rc.createPattern(helpCanvas, "repeat") || "";
+      if (++i >= rend_colors.length) {
+        clearInterval(itv);
+        rend_initialized.forEach(function (e) {
+          e();
+        });
+        render();
+      }
+    }, i = 0)) :
+    rend_initialized.forEach(function (e) {
+      e();
+    });
 };
 var rend_colors = rend_initColors();
 

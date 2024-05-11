@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.29
+// v.0.1.30
 /** LOL :tf: I forgot to remove that oh lol */
 /** @TODO check significantVersion */
 var OP = Object.prototype.hasOwnProperty,
@@ -1450,8 +1450,8 @@ Ship.fromDBKey = function (key) {
     "Festive Green",
     "Festive Duck"
   ];
-  for (var i = arr.length - 1; i-- > 0;) {
-    var o = arr[i].split(";"), name = conN[o[0]] || o[0], logics = [];
+  for (var i = arr.length - 1, logics = []; i-- > 0;) {
+    var o = arr[i].split(";"), name = conN[o[0]] || o[0];
     // o[1] position
     var rot = +(o[2] + "").replace(",", ".") / 90 || 0 & 3;
     // o[4] controll groups not used
@@ -1466,7 +1466,7 @@ Ship.fromDBKey = function (key) {
       y = +(o[1] || "").replace(",", ".") * 2 || 0;
     var size = Block.Size.VALUE[Block.ID[name]] || {};
     if ((size.w | size.h) & 16)
-      rot === 2 ? ++y + ++x : x ;
+      rot === 2 ? ++y + ++x : rot === 1 ? ++x : rot === 3 ? ++y : 0;
     blocks[i] = new Block(name, [0, x, y], [
         0,
         flip,
