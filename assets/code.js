@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.30
+// v.0.1.31
 /** LOL :tf: I forgot to remove that oh lol */
 /** @TODO check significantVersion */
 var OP = Object.prototype.hasOwnProperty,
@@ -968,6 +968,49 @@ Block.generateArray = function generateArray(n, logics) {
   blocks[10] = blocks[11];
   blocks.length--;
   return blocks;
+};
+/** @typedef {0|1|2|3|number} RA Rotation Axis */
+// not tested or debugged at all
+/** manipulates inputed Rotation array, do not use returned if possible
+ * @param {Rotation} rot @param {RA} x @param {RA} y @param {RA} z */
+Block.rotate = function (rot, x, y, z) {
+  /** @type {0|1|2} face of axis x, y, z */
+  var face = rot[0],
+    /** other side/face on the opposite side */
+    side = rot[1],
+    /** rotation of specified face (counterclockwise) */
+    turn = rot[2];
+  /** axis rotations are later applied with the same methd */
+  var axis = [x, y, z].map(function (e) {
+    if (e >= 0 && e < 4)
+      return e | 0;
+    return Math.round(e / 90) % 4 + 4 & 3;
+  });
+  /** @type {0|1|2} */
+  for (var axisIndex = 0; axisIndex < 3; axisIndex++) {
+    var steps = axis[axisIndex];
+    if (axisIndex === 1) {
+      turn =
+        /** @type {0|1|2|3} */
+        (turn + steps & 3);
+      continue;
+    }
+    var n =
+      /** @type {0|2} */
+      (((turn << 1) ^ axisIndex ^ 2) & 2);
+    if (steps & 1)
+      face = n === face ? 1 : n;
+    side = (side ?
+      (turn >> 1) | 2 :
+      (3 - axisIndex + turn & 3) >> 1) + steps > 1;
+    if (axisIndex === ((face & 1) << 1)) {
+      turn =
+        /** @type {0|1|2|3} */
+        (turn + n & 3);
+    } else if ('I have no idea')
+      throw new Error("Not implemented.")
+  }
+  return [rot[0] = face, rot[1] = side, rot[2] = turn];
 };
 /** object is frost
  * @typedef {{x: number, y: number, w: number, h: number}}

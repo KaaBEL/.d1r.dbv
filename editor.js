@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.30
+// v.0.1.31
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -1707,13 +1707,14 @@ lemented blocks like TNT, station blocks and more. Be aware that the key lim\
 its vehicle in and will refuse to compress too big vehicle. There are also b\
 ugs since I wasn't going down the rabbit hole of debugging every last one.");
 
-var test_selct = ship.selectRect(.1, 0, 0, .1, 0, 0);
+var test_selct = ship.selectRect(.1, 0, 0, .1, 0, 0),
+  test_selctLocked = test_selct;
 Command.push("Transfrom tool", function (items, collapsed) {
   var selectX0 = EL("input"), selectY0 = EL("input");
   var selectX1 = EL("input"), selectY1 = EL("input");
   var select = EL("button"), inpX = EL("input"), inpY = EL("input");
   select.appendChild(tN("Select rectangle"));
-  var xy = [0, 0, 0, 0];
+  var xy = [0, 0, 0, 0], locked = EL("input");
   function formatSelection() {
     var i = 4, input = selectX0;
     while (input = [selectX0, selectY0, selectX1, selectY1][--i])
@@ -1726,9 +1727,18 @@ Command.push("Transfrom tool", function (items, collapsed) {
       selecting = 0;
     render();
   }
-  function getSelected() {
+  /** @param {boolean} [forLock] */
+  function getSelected(forLock) {
+    if (!forLock && locked.checked)
+      return test_selctLocked;
     return selecting ?
-      ship.blocks :
+      function () {
+        var arr = 
+          /** @type {Block[]&{parentShip:Ship}} */
+          (ship.blocks);
+        arr.parentShip = ship;
+        return arr
+      }() :
       ship.selectRect(0, xy[0], xy[1], 0, xy[2], xy[3]);
   }
   selectX0.oninput = selectY0.oninput = formatSelection;
@@ -1754,12 +1764,18 @@ Command.push("Transfrom tool", function (items, collapsed) {
     };
     render();
   };
+  locked.type = "checkbox";
+  locked.oninput = function () {
+    if (locked.checked)
+      test_selctLocked = getSelected(!0);
+  }
   items.push(
     {name: "Selection X0", inp: selectX0},
     {name: "Selection Y0", inp: selectY0},
     {name: "Selection X1", inp: selectX1},
     {name: "Selection Y1", inp: selectY1},
-    select
+    select,
+    {name: "Lock selection", inp: locked}
   );
   var move = EL("button"), rotate = EL("button"), flip = EL("button");
   move.appendChild(tN("Move action"));
@@ -2109,7 +2125,8 @@ function rend_backgColor() {
 var rend_backgHangar = F;
 +function () {
   var xhr = new XMLHttpRequest();
-  xhr.open("GET", "http://localhost:5500/.d1r.dbv/assets/AlphaLunar.json");
+  xhr.open("GET",
+    "https://kaabel.github.io/.d1r.dbv/assets/AlphaLunar.json");
   xhr.onreadystatechange = function () {
     if (xhr.readyState !== 4)
       return;
