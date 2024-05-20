@@ -1,7 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.31
-/** LOL :tf: I forgot to remove that oh lol */
+// v.0.1.32
 /** @TODO check significantVersion */
 var OP = Object.prototype.hasOwnProperty,
   /** @type {()=>any} */
@@ -1247,6 +1246,7 @@ Block.Properties.addProperty = function (name, property) {
   return property;
 };
 
+/** @typedef {Block[]&{parentShip:Ship}} BlockSelection */
 /**
  * @param {string} name
  * @param {Array<number>} version
@@ -1263,33 +1263,38 @@ function Ship(name, version, time, blocks, properties) {
   this.prop = properties || null;
   Object.seal(this);
 }
-/** @typedef {Block[]&{parentShip:Ship}} BlockSelection */
-/**
- * @param {number} x0 @param {number} x1 @param {number} y0
- * @param {number} y1 @param {number} z0 @param {number} z1
- * @returns {Block[]&{parentShip:Ship}} */
-Ship.prototype.selectRect = function (x0, y0, z0, x1, y1, z1) {
-  // n first coordinate is stored as temporary
-  var x = x0, y = y0, z = z0, selected = [];
-  // if the second coordinate is greater as supposed
-  //   n0 will become the second coordinate
-  //   else n0 already is second one, temporary is set to first
-  x1 > x0 ? x0 = x1 : x = x1;
-  y1 > y0 ? y0 = y1 : y = y1;
-  z1 > z0 ? z0 = z1 : z = z1;
-  for (var i = 0, all = this.blocks; i < all.length; i++) {
-    var pos = all[i].position;
-    if (pos[0] < x || pos[0] > x0 || pos[1] < y || pos[1] > y0 ||
-      pos[2] < z || pos[2] > z0)
-      continue;
-    selected.push(all[i]);
-  }
-  (selected =
-    /** @type {Block[]&{parentShip:Ship}} */
-    (selected)
-  ).parentShip = ship;
-  return selected;
-};
+Ship.prototype.selectRect =
+  /**
+   * @overload @returns {Block[]&{parentShip:Ship}}
+   * @overload @param {number} x0 @param {number} x1 @param {number} y0
+   * @param {number} y1 @param {number} z0 @param {number} z1
+   * @returns {Block[]&{parentShip:Ship}} */
+  function (x0, y0, z0, x1, y1, z1) {
+    // n first coordinate is stored as temporary
+    var x = x0, y = y0, z = z0, selected = [];
+    if (typeof x == "number") {
+      var all = this.blocks;
+      // if the second coordinate is greater as supposed
+      //   n0 will become the second coordinate
+      //   else n0 already is second one, temporary is set to first
+      x1 > x0 ? x0 = x1 : x = x1;
+      y1 > y0 ? y0 = y1 : y = y1;
+      z1 > z0 ? z0 = z1 : z = z1;
+    } else
+      selected = this.blocks.concat(all = []);
+    for (var i = 0; i < all.length; i++) {
+      var pos = all[i].position;
+      if (pos[0] < x || pos[0] > x0 ||
+        pos[1] < y || pos[1] > y0 || pos[2] < z || pos[2] > z0)
+        continue;
+      selected.push(all[i]);
+    }
+    (selected =
+      /** @type {Block[]&{parentShip:Ship}} */
+      (selected)
+    ).parentShip = ship;
+    return selected;
+  };
 Ship.prototype.removeRect = function (xl, yt, zr, xr, yb, zf) {
   var x = xl, y = yt, z = zr, selected = [];
   xr > xl ? xl = xr : x = xr;
@@ -1533,6 +1538,65 @@ function Edit() {
   this.history = [];
   this.edited = new Ship("", [], "", []);
 }
+Edit.rotate =
+  /** rotates Dr ships as well as db vehicles
+   * @overload @param {BlockSelection} selection
+   * @param {number} rx
+   * @overload @param {BlockSelection} selection
+   * @param {number} rx @param {number} ry @param {number} rz */
+  function (selection, rx, ry, rz) {
+    if (typeof ry != "number") {
+      var applyRotation = function (rot) {
+        rot[2] =
+          /** @type {0|1|2|3} */
+          (rot[2] + rx & 3);
+      };
+      ry = rz = 0;
+    } else
+      applyRotation = function (rot) {
+        Block.rotate(rot, rx, ry, rz);
+      };
+    rx >= 0 && rx < 4 ? rx |= 0 : rx = Math.round(rx / 90) % 4 + 4 & 3;
+    ry >= 0 && ry < 4 ? ry |= 0 : ry = Math.round(ry / 90) % 4 + 4 & 3;
+    rz >= 0 && rz < 4 ? rz |= 0 : rz = Math.round(rz / 90) % 4 + 4 & 3;
+    var i = 0, n = 0, edtA = [0, 1, 2], newA = [0];
+    function prcsAxis(ax) {
+      if (ax) {
+        var a = i > 1 ? 0 : i + 1, b = i < 1 ? 2 : i - 1;
+        if (ax === 2)
+          var m = edtA[a], n = edtA[b];
+        else
+          var m = edtA[b], n = edtA[a];
+        edtA[a] = ax < 3 ? m & 4 ? m & 3 : m | 4 : m;
+        edtA[b] = ax > 1 ? n & 4 ? n & 3 : n | 4 : n;
+      }
+      edtA[i++ | 4] = ax * 90;
+    }
+    prcsAxis(rx);
+    prcsAxis(ry);
+    prcsAxis(rz);
+    for (i = 0; i < selection.length;) {
+      var pos = selection[i].position;
+      for (n = 3, newA = [0, 0, 0]; n-- > 0;) {
+        newA[n] = edtA[n] & 4 ? -pos[edtA[n] & 3] : pos[edtA[n] & 3];
+      }
+      applyRotation(selection[i].rotation);
+      selection[i++].position =
+        /** @type {XYZPosition} */
+        (newA);
+    }
+  };
+/**
+ * @param {BlockSelection} selection
+ * @param {number} x @param {number} y @param {number} z */
+Edit.move = function (selection, x, y, z) {
+  for (var i = selection.length; i-- > 0;) {
+    var pos = selection[i].position;
+    pos[0] += x;
+    pos[1] += y;
+    pos[2] += z;
+  }
+};
 
 /** @function base64ToUint8array */
 function base64ToUint8array(base64) {

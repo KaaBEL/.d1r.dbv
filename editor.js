@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.31
+// v.0.1.32
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -1708,7 +1708,7 @@ its vehicle in and will refuse to compress too big vehicle. There are also b\
 ugs since I wasn't going down the rabbit hole of debugging every last one.");
 
 var test_selct = ship.selectRect(.1, 0, 0, .1, 0, 0),
-  test_selctLocked = test_selct;
+  test_selctLocked = ship.selectRect();
 Command.push("Transfrom tool", function (items, collapsed) {
   var selectX0 = EL("input"), selectY0 = EL("input");
   var selectX1 = EL("input"), selectY1 = EL("input");
@@ -1727,19 +1727,34 @@ Command.push("Transfrom tool", function (items, collapsed) {
       selecting = 0;
     render();
   }
-  /** @param {boolean} [forLock] */
-  function getSelected(forLock) {
-    if (!forLock && locked.checked)
+  /** @param {boolean} [getLock] */
+  function getSelected(getLock) {
+    if (!getLock && locked.checked)
       return test_selctLocked;
     return selecting ?
-      function () {
-        var arr = 
-          /** @type {Block[]&{parentShip:Ship}} */
-          (ship.blocks);
-        arr.parentShip = ship;
-        return arr
-      }() :
+      ship.selectRect() :
       ship.selectRect(0, xy[0], xy[1], 0, xy[2], xy[3]);
+  }
+  /** @type {BlockSelection|null} */
+  var trackPoints = null;
+  function pointsSelected() {
+    // [selectX0, selectY0, selectX1, selectY1].forEach(function (e, i) {
+    //   e.value = "" + xy[i]
+    // });
+    return trackPoints = Ship.fromObject({n: "", b: [
+      new Block("Block", [0, xy[0], xy[1]], [0, !1, 0]),
+      new Block("Block", [0, xy[2], xy[3]], [0, !1, 0])
+    ]}).selectRect();
+  }
+  function updateSelected() {
+    if (!trackPoints)
+      return console.error("trackPoints unset, AT Command.\"Transfrom\"");
+    var point0 = trackPoints[0], point1 = trackPoints[1];
+    selectY0.value = "" + (xy[0] = point0.position[1]);
+    selectX0.value = "" + (xy[1] = point0.position[2]);
+    selectY1.value = "" + (xy[2] = point1.position[1]);
+    selectX1.value = "" + (xy[3] = point1.position[2]);
+    trackPoints = null;
   }
   selectX0.oninput = selectY0.oninput = formatSelection;
   selectX1.oninput = selectY1.oninput = formatSelection;
@@ -1781,21 +1796,20 @@ Command.push("Transfrom tool", function (items, collapsed) {
   move.appendChild(tN("Move action"));
   move.onclick = function () {
     var x = +inpX.value || 0, y = +inpY.value || 0;
-    [selectX0, selectY0, selectX1, selectY1].forEach(function (e, i) {
-      e.value = "" + xy[i]
-    });
-    getSelected().forEach(function (e) {
-      e.position[1] += x;
-      e.position[2] += y;
-    });
-    selectY0.value = "" + (xy[0] += x);
-    selectX0.value = "" + (xy[1] += y);
-    selectY1.value = "" + (xy[2] += x);
-    selectX1.value = "" + (xy[3] += y);
+    Edit.move(getSelected(), 0, x, y);
+    Edit.move(pointsSelected(), 0, x, y);
+    updateSelected();
     render();
   };
   rotate.appendChild(tN("Rotate action"));
-  rotate.style.border = "2px solid #0000";
+  rotate.onclick = function rotateDBV() {
+    // rotation around axis
+    var rx = +inpX.value || +inpY.value || 0;
+    Edit.rotate(getSelected(), rx);
+    Edit.rotate(pointsSelected(), rx);
+    updateSelected();
+    render();
+  };
   flip.appendChild(tN("Size action"));
   flip.style.border = "2px solid #0000";
   var mirror = EL("button"), copy = EL("button"), paste = EL("button");
@@ -1860,7 +1874,8 @@ Command.push("Transfrom tool", function (items, collapsed) {
     if (selecting > 1)
       return;
     // calculations from Setup Properties rend_UI
-    var x = xy[0], y = xy[1];
+    var x = Math.max(xy[0], xy[2]), y = Math.min(xy[1], xy[3]);
+    var w = x - Math.min(xy[0], xy[2]), h = Math.max(xy[1], xy[3]) - y;
     var dx = -x * sc + vX, dy = y * sc + vY;
     ctx.strokeStyle = defaults.highlightColor;
     ctx.lineWidth = defaults.highlightWidth;
@@ -1871,7 +1886,7 @@ Command.push("Transfrom tool", function (items, collapsed) {
       ctx.lineTo(dx, dy + sc * 2);
       return ctx.stroke();
     }
-    ctx.strokeRect(dx, dy, (x - xy[2] + 1) * sc, (xy[3] - y + 1) * sc);
+    ctx.strokeRect(dx, dy, (w + 1) * sc, (h + 1) * sc);
   };
 }, "WIP (Work In Progress) Command, meanwhile figure out yourself.");
 Command.push("Rift Drive calculator", function (items, collapsed) {
