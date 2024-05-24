@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.32
+// v.0.1.33
 /** @TODO check significantVersion */
 var OP = Object.prototype.hasOwnProperty,
   /** @type {()=>any} */
@@ -1246,7 +1246,10 @@ Block.Properties.addProperty = function (name, property) {
   return property;
 };
 
-/** @typedef {Block[]&{parentShip:Ship}} BlockSelection */
+/**
+ * @typedef {Block[]&{parentShip:Ship}} BlockSelection
+ * @TODO BlockSelection can't be used for stored blueprints
+ * a Blueprint with deep copied logics should be used instead */
 /**
  * @param {string} name
  * @param {Array<number>} version
@@ -1363,6 +1366,85 @@ Ship.prototype.fillRect = function (x0, y0, z0, x1, y1, z1, select) {
   var w = x - x0 + 1, h = y - y0 + 1, l = z - z0 + 1;
   var b;
 };
+/**
+ * @param {number} x @param {number} y @param {number} z
+ * @param {BlockSelection} select */
+Ship.prototype.paste = function (x, y, z, select) {
+  /** @type {(Logic<any>|undefined)[]} */
+  var logics = (ship.prop || OC()).nodeList || [],
+    /** @type {(Logic<any>|undefined)[]} */
+    oldLogics = (select.parentShip.prop || OC()).nodeList || [],
+    /** @type {number[]} mapping new output nodes indexes by old ones */
+    outputs = [],
+    /** @type {number[]} later used to assign each to output */
+    inputs = [];
+  for (var i = select.length, l = 1; i-- > 0;) {
+    var pos = select[i].position, rot = select[i].rotation;
+    var block = new Block(
+      select[i].internalName,
+      [pos[0] + x, pos[1] + y, pos[2] + z],
+      [rot[0], rot[1], rot[2]],
+      JSON.parse(JSON.stringify(select[i].properties))
+    ), logicDef = Logic.VALUE[Block.ID[block.internalName]];
+    if (logicDef) {
+      /** @type {number[]} nodeIndex(es) */
+      var ni = [], property = block.properties;
+      property.nodeIndex instanceof Array || (property.nodeIndex = []);
+      // backwards iterating >:D (evil laugh)
+      for (var j = logicDef.length; j-- > 0;) {
+        while (logics[l])
+          l++;
+        var newNode = logics[l] = new Logic(logicDef[j].type, 0, 0),
+          idx = (select[i].properties.nodeIndex || [])[j];
+        newNode.owner = block;
+        /** @type {Logic<any>} node from nodeList of selection */
+        var oldNode = oldLogics[idx] || OC();
+        if (logicDef[j].type > 1) {
+          newNode.pairs = [];
+          // only add nodeIndex references for actual output
+          (oldNode.pairs instanceof Array ?
+            outputs :
+            //-console.error("Not old Logic output node:", oldNode);
+            [])[idx] = ni[j] = l;
+          continue;
+        }
+        if (typeof oldNode.pairs != "number")
+          return console.error("Not old Logic input node:", oldNode);
+        // old output node index is kept
+        newNode.pairs = oldNode.pairs;
+        inputs.push(ni[j] = l);
+      }
+      property.nodeIndex = ni;
+    }
+    this.blocks.push(block);
+  }
+  for (i = inputs.length; i-- > 0;) {
+    newNode = logics[inputs[i]] || OC();
+    if (typeof newNode.pairs != "number")
+      return console.error("Not Logic input node:", newNode);
+    // restoring reference to new logic output node
+    var outIdx = outputs[newNode.pairs];
+    if (outIdx > 0) {
+      // restoring the new logic output node
+      var outNode = logics[outIdx];
+      if (outNode && outNode.pairs instanceof Array) {
+        newNode.pairs = outIdx;
+        outNode.pairs.push(inputs[i]);
+      }
+      else
+        console.error("Missing new logic output node at: " + outIdx);
+    } else if (
+      ship === select.parentShip &&
+      (outNode = logics[newNode.pairs]) &&
+      outNode.pairs instanceof Array
+    ) {
+      newNode.pairs = newNode.pairs;
+      outNode.pairs.push(inputs[i]);
+    } else
+      newNode.pairs = -1;
+  };
+  // Ship.prototype.paste pls stay working now : )
+};
 /** @param {object} object */
 Ship.fromObject = function fromObject(object) {
   var o = {
@@ -1445,7 +1527,7 @@ Ship.toDBV = function toDBV(ship) {
     ls: shipProp.launchpadSize || 0,
     b: blocks,
     nc: connections || shipProp.nodeConnections,
-    significantVersion: 4
+    significantVersion: 5
   };
 };
 /** @param {string} key */

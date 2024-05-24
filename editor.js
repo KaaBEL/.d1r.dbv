@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.32
+// v.0.1.33
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -167,6 +167,11 @@ canvas.addEventListener("contextrestored", function () {
         placingBlock = function () {return "__unknown__";};
       });
       break;
+    case "8bb3bad8":
+      console.log("Fun mode 7");
+      setTimeout(function () {
+        backgHangarInit.ready = NaN;
+      });
   }
 })(/\/[0-9a-zA-Z._+\-]+\/editor\.html(?:#[^?]*)?($|\?[^=]*)/);
 
@@ -1045,8 +1050,8 @@ utilities.rend_UI = F;
 utilities.groupName = "";
 /**
  * @typedef {{name:string,type:string,fn:(ev:Event)=>any}} CommandItem
- * @param {string} name 
- * @param {string} description 
+ * @param {string} name
+ * @param {string} description
  * @param {{name:string,type:string,fn:(ev:Event)=>any}[]|((items:{
  * appendChild:typeof document.appendChild})=>void)} items indefinite
  * @param {boolean|string} [setting=false] */
@@ -1713,8 +1718,11 @@ Command.push("Transfrom tool", function (items, collapsed) {
   var selectX0 = EL("input"), selectY0 = EL("input");
   var selectX1 = EL("input"), selectY1 = EL("input");
   var select = EL("button"), inpX = EL("input"), inpY = EL("input");
+  /** for copied in test_select selection */
+  var offset = [0, 0];
   select.appendChild(tN("Select rectangle"));
   var xy = [0, 0, 0, 0], locked = EL("input");
+  /** FORMAT INPUTS */
   function formatSelection() {
     var i = 4, input = selectX0;
     while (input = [selectX0, selectY0, selectX1, selectY1][--i])
@@ -1727,7 +1735,7 @@ Command.push("Transfrom tool", function (items, collapsed) {
       selecting = 0;
     render();
   }
-  /** @param {boolean} [getLock] */
+  /** SELECT @param {boolean} [getLock] */
   function getSelected(getLock) {
     if (!getLock && locked.checked)
       return test_selctLocked;
@@ -1738,9 +1746,6 @@ Command.push("Transfrom tool", function (items, collapsed) {
   /** @type {BlockSelection|null} */
   var trackPoints = null;
   function pointsSelected() {
-    // [selectX0, selectY0, selectX1, selectY1].forEach(function (e, i) {
-    //   e.value = "" + xy[i]
-    // });
     return trackPoints = Ship.fromObject({n: "", b: [
       new Block("Block", [0, xy[0], xy[1]], [0, !1, 0]),
       new Block("Block", [0, xy[2], xy[3]], [0, !1, 0])
@@ -1815,7 +1820,9 @@ Command.push("Transfrom tool", function (items, collapsed) {
   var mirror = EL("button"), copy = EL("button"), paste = EL("button");
   mirror.appendChild(tN("Mirror action"));
   mirror.style.border = "2px solid #0000";
+  /** COPY SELECTION */
   function updateCopied() {
+    offset = [Math.max(xy[0], xy[2]), Math.min(xy[1], xy[3])];
     return "Copied: " + test_selct.length + " blocks: " +
       test_selct.slice(0, 21).map(function (e) {
         return e.internalName;
@@ -1835,10 +1842,20 @@ Command.push("Transfrom tool", function (items, collapsed) {
       return;
     test_selct = ship.selectRect(0, xy[0], xy[1], 0, xy[2], xy[3]);
     copied.data = updateCopied();
+    // also deselect the selection
+    selecting = 2;
+    selectX0.value = selectY0.value = "";
+    selectX1.value = selectY1.value = "";
     render();
   };
   paste.appendChild(tN("Paste action"));
-  paste.style.border = "2px solid #0000";
+  paste.onclick = function () {
+    if (selecting > 1)
+      return;
+    //var x = Math.min(x, xy[2]), y = Math.max(, xy[3]);
+    ship.paste(0, xy[0] - offset[0], xy[1] - offset[1], test_selct);
+    render();
+  };
   var remove = EL("button"), paint = EL("button"), fill = EL("button");
   remove.appendChild(tN("Remove action"));
   remove.onclick = function () {
@@ -2112,6 +2129,13 @@ var cmdsHeader = EL(), cmds = (function () {
   }
   return (bd || EL()).appendChild(nav);
 })();
+function check_contentScript() {
+  var contentScript = GE("contentScript"), data = "";
+  if (contentScript && (data = contentScript.innerText)) {
+    (contentScript.parentNode || OC()).removeChild(contentScript);
+    document.body.appendChild(EL("script")).appendChild(tN(data));
+  }
+}
 
 /** renderedShip moved to @see {ship} */
 
@@ -2209,9 +2233,10 @@ function rend_checkColors() {
   rc.fillStyle = rend_colors[1];
   rc.fillRect(0, 0, 32, 32);
   var cpr = rc.getImageData(0, 0, 32, 32).data;
-  for (var i = dat.length, b = !0, itv = 0; i-- > 0;)
-    b = b && dat[i] === cpr[i];
-  b ?
+  // Samsung Internet had some anomally 1s in ImageDatas
+  for (var i = dat.length, b = 0, itv = 0; i-- > 0 && b < 16;)
+    b += +(dat[i] !== cpr[i]);
+  b < 16 ?
     // necessary for some browsers to assign color textures properly
     (itv = setInterval(function () {
       helpCanvas.width = helpCanvas.height = 32;
@@ -2526,6 +2551,7 @@ var rend_speeeeed = {}, rend_logs = 69;
 
 init = function () {
   rend_checkColors();
+  check_contentScript();
 };
 
 function onlyConsole(m,s,l,c,e) {
