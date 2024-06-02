@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.33
+// v.0.1.34
 /** @TODO check significantVersion */
 var OP = Object.prototype.hasOwnProperty,
   /** @type {()=>any} */
@@ -119,13 +119,16 @@ function dictionaryDefs(dicNum, dicVal, AT) {
 
 /** object is sealed
  * @template {number} T
- * @param {T} type @param {number} x @param {number} y */
+ * @param {T} type @param {number} x @param {number} y as definition
+ * x, y is position relative to middle, else used by rendering method,
+ * pairs is initialized -1 or [] depending on type, owner is null */
 function Logic(type, x, y) {
   /** 0|1 = input, has only index reference to source, 2|3 = output */
   this.type = type;
   this.x = x;
   this.y = y;
-  /** @type {T extends 0|1?number:number[]} *///@ts-ignore
+  /** @type {T extends 0|1?number:number[]} reference(s) to connected */
+  //@ts-ignore
   this.pairs = type > 1 ? [] : -1;
   /** @type {Block|null} */
   this.owner = null;
@@ -156,7 +159,10 @@ Logic.generateLogic = function () {
   return o;
 };
 
-/** @TODO later improve logic comments briefness+clarity */
+/** @TODO later improve logic comments briefness+clarity (in progress) */
+/** Older instances of Logics comments/documenting for comparsion:
+ * v.0.1.20.3 @see https://github.com/KaaBEL/.d1r.dbv/blob/1ed349b2230ddd8f3b64a6cd082d10fe7eeaeedc/assets/code.js
+ * v.0.1.22 @see https://github.com/KaaBEL/.d1r.dbv/blob/1392589299b68fb61c1a87bc7e4616f6d20af75d/assets/code.js */
 /** entire oject is frost @type {{[key:number]:Logic[]|undefined}} */
 Logic.VALUE = Logic.generateLogic(
   // def0
@@ -209,18 +215,18 @@ Logic.dashOff = 0;
 Object.freeze(Logic.VALUE);
 // (v.0.1.20.2) I might've accidently screw this method up so much
 // this method is supposed to be the initialize default, not
-// Logic(property).fromObject at the same time... BRUH --v
-/** @TODO Logics rework update */
+// Logic(property).fromObject at the same time... BRUH
+/** @TODO Logics rework update ^ */
 /** addDefault but for Logic - if property contains nodeIndex data it
  * will use them to reassemble these connections, to reassamble them
  * properly Logic.reassemble must be used on completed blocks
  * @param {string|number} name @param {object} property
  * @param {(Logic<any>|undefined)[]} logics
- * it is the Logic.nodes or ship.prop.nodeList
+ * it is the global Logic.nodes or ship.prop.nodeList
  * @param {Block[]} blocks */
 Logic.addLogic = function (name, property, logics, blocks) {
-  // nodeIndex (ni) is set to index where logic node ends up in logics
-  /** @type {number[]} (new) DBV property nodeIndex(es) */
+  /** (new) DBV property nodeIndex(es) contains (not yet) references to
+   * logic node indexes of logics (fresh nodeList) @type {number[]} */
   var ni = [],
     logicDef = Logic.VALUE[typeof name == "number" ?
       name :
@@ -230,7 +236,6 @@ Logic.addLogic = function (name, property, logics, blocks) {
     (property.nodeIndex = []);
   if (!logicDef)
     return property;
-  // (0.1.20.2) why? logicDef = logicDef.concat([]);
   for (var i = logicDef.length, l = 1; i-- > 0; ni[i] = index) {
     // prepare not taken index
     while (logics[l])
@@ -250,7 +255,7 @@ Logic.addLogic = function (name, property, logics, blocks) {
         logics[index || (index = l)] = node;
         continue;
       }
-      // (0.1.20.2) huh case check (checking for unsupposed wierd case)
+      // 'huh!' case check (checking for unsupposed wierd case)
       if (typeof index != "number")
         console.error("logics contain property with non-number key" +
           ", at Logic.addLogic().");
@@ -298,16 +303,18 @@ Logic.reassemble = function (blocks, logics) {
         if (node.pairs instanceof Array || !(node = logics[node.pairs]))
           continue;
         // add reference to the paired output
-        node.pairs instanceof Array ? node.pairs.indexOf(n) === -1 &&
+        node.pairs instanceof Array ? !(n in node.pairs) &&
           node.pairs.push(n) : console.error("Paired input with input," +
             " at Logic.reassemble.");
       }
     }
   return blocks;
 };
-//-((0.1.21)not anymore)(0.1.20.2) feature
-/** @param {Block} block @param {(Logic<any>|undefined)[]} logics */
+/** removes all nodes of inputed block and removes their connections
+ * @param {Block} block @param {(Logic<any>|undefined)[]} logics */
 Logic.removeLogic = function (block, logics) {
+  /** NOTE that nodeIndex is not checked with Logic node definition
+   * and will blindly go through all nodeList indexes inside nodeIndex */
   var ni = block.properties.nodeIndex || [];
   for (var i = ni.length; i-- > 0;) {
     var node = logics[ni[i]] || {pairs: -1};
@@ -334,7 +341,7 @@ Logic.removeLogic = function (block, logics) {
 // Logic static properties
 /** specifies when logic nodes and connections should be rendered */
 Logic.rend = !1;
-/** @type {(Logic|null)[]&{ownerShip:Ship}} */
+/** @type {(Logic|null)[]&{ownerShip:Ship}} global (logics) nodeList */
 Logic.nodes = OC();
 if (Logic.nodes[0] && Logic.nodes[0].type === 1)
   Logic.nodes[0].type;
@@ -432,7 +439,8 @@ Color.default = function getColor(name) {
 Color.colorlessRegexp = new RegExp("Struct|Glass Block|Glass Wedge|Sol\
 ar Block|Solar Panel|Hinge|Piston|Ghost Block|Gauge|Dial|Digital Displ\
 ay|__placeholder(?:839|84[0-26-9]|85[0-3])__");
-/** block names in dbv are case insesitve loaded by game,
+
+/** letter case of block names doesn't matter when loaded by game,
  * Block name definitions require strict letter cases here */
 /**
  * @typedef {[number,number,number]} XYZPosition
@@ -832,6 +840,37 @@ Block.WEIGHT = {
  * @param {object[]|object} blocks
  * @param {Logic<any>[]&{nc?:any}} [logics$] */
 Block.arrayFromObjects = function arrayFromObjects(blocks, logics$) {
+  var bs = blocks instanceof Array ? blocks : [blocks];
+  /** nodeIndex (DBV "ni") property of a block is number[] type:
+   * + it contains inputs and outputs indexes
+   * + their connections are specified in "nc" DBV savefile property
+   * + each index specifies whether it's input/output, bool/numerical,
+   *   where is display position of node at that index, it is
+   *   different for each block type,
+   *   all are defined in @see {Logic.VALUE}
+   *   @see https://github.com/KaaBEL/.d1r.dbv/blob/1392589299b68fb61c1a87bc7e4616f6d20af75d/assets/code.js#L112 */
+  /** in DBV format inputs and output indexes reference indexes of
+   * connections (new DBV "nc") property*/
+  // TODO: change this variable logics to unpack the connections
+  var logics = logics$ || [],
+    /** maps connections to key:input, value:output map -
+     * to be used in @see {extractConnections} */
+    ncProperty = function () {
+      /** @type {{[key:number]:number|undefined}} [key:input]:output */
+      var map = {}, connections = logics.nc;
+      if (!(connections && connections.length))
+        return UDF;
+      for (var i = connections.length; i-- > 0;) {
+        if (typeof connections[i] != "object")
+          continue;
+        var item = connections[i], nkey = item.Item1 || item[0];
+        var nval = item.Item2 || item[1];
+        if (typeof nkey == "number" && typeof nval == "number")
+          map[nkey] = nval;
+      }
+      return map;
+    }();
+  /** @param {any} control custom parameter property actually */
   function extractLogic(control) {
     var j = 0, props = Block.Properties.VALUE[Block.ID[name]] || [];
     for (var i = props.length; i-- > 0; j += p instanceof Array ?
@@ -850,30 +889,6 @@ Block.arrayFromObjects = function arrayFromObjects(blocks, logics$) {
         indexes[i] = ncProperty[indexes[i]];
     return indexes;
   }
-  var bs = blocks instanceof Array ? blocks : [blocks];
-  var logics = logics$ || [],
-    /** nodeIndex property of a block is number[] type:
-     * + it contains inputs and outputs indexes
-     * + their connections are specified in "nc" DBV savefile property
-     * + each index specifies whether it's input/output, bool/numerical,
-     *   display position depeding on block type
-     *   @see https://github.com/KaaBEL/.d1r.dbv/blob/1392589299b68fb61c1a87bc7e4616f6d20af75d/assets/code.js#L112 */
-    /** maps connection of key:input to value:output */
-    ncProperty = function () {
-      /** @type {{[key:number]:number|undefined}} [key:input]:output */
-      var map = {}, connections = logics.nc;
-      if (!(connections && connections.length))
-        return UDF;
-      for (var i = connections.length; i-- > 0;) {
-        if (typeof connections[i] != "object")
-          continue;
-        var item = connections[i], nkey = item.Item1 || item[0];
-        var nval = item.Item2 || item[1];
-        if (typeof nkey == "number" && typeof nval == "number")
-          map[nkey] = nval;
-      }
-      return map;
-    }();
   delete (logics$ || {}).nc;
   for (var i = 0, r = []; i < bs.length; i++) {
     var block = bs[i], o = {
@@ -916,8 +931,8 @@ Block.arrayFromObjects = function arrayFromObjects(blocks, logics$) {
       }
       pos = [0, o.pos[0] * 2 + adjX, o.pos[1] * 2 + adjY];
     }
-    // is keeping control property not changed a good idea?
-    // editor uses block.ni or properties.nodeIndex prioritizedly
+    // is keeping custom parameter properties not changed a good idea?
+    // block.ni or properties.nodeIndex is used prior to them anyway
     o.prop.control = block.c || o.prop.control;
     if (Logic.VALUE[Block.ID[name]]) {
       var indexes = block.ni || o.prop.nodeIndex;
@@ -925,6 +940,11 @@ Block.arrayFromObjects = function arrayFromObjects(blocks, logics$) {
         indexes.every(function (e) {
           return typeof e == "number" && !isNaN(e);
         }) ?
+          /** thanks to extractLogic and extractConnections the
+          * nodeIndex property takes temporary form compatible with
+          * both old and new DBV format to recreate D1R Ship format
+          * = output index references nodeList index the node will
+          * end up at, input index references connection to output */
           ncProperty && extractConnections(indexes) :
           extractLogic(o.prop.control);
       Logic.addLogic(name, o.prop, logics, r);
@@ -967,6 +987,10 @@ Block.generateArray = function generateArray(n, logics) {
   blocks[10] = blocks[11];
   blocks.length--;
   return blocks;
+};
+/** @param {number} id */
+Block.isWedge = function (id) {
+  return id < 697 ? id > 691 && id < 695 : id < 700;
 };
 /** @typedef {0|1|2|3|number} RA Rotation Axis */
 // not tested or debugged at all
@@ -1061,8 +1085,8 @@ Block.Size.genterateSizes = function () {
     console.log(JSON.stringify(nw).replace(/,/g, ", "));
   return r;
 };
-// (TODO:) blocks were still not tested properly all at once
-// one more undeted bug with block or texture and adding unit test for it
+// (TODO:) blocks were still not tested properly all at once, one more
+// undetected bug with block or texture and adding unit test for it
 Block.Size.VALUE = Block.Size.genterateSizes([[0], [1], [2], [7, 1, 2]],
   [[8, 1, 4], [50], [51, 1, 1], [52], [107, 1, 2], [9, 1, 4], [53], [54]],
   [[55], [56, .5, .5], [3], [100, 2, 2], [10, 3, 4], [102, .5, .5]],
@@ -1079,6 +1103,51 @@ Block.Size.VALUE = Block.Size.genterateSizes([[0], [1], [2], [7, 1, 2]],
   [[140, 2, 2], [142, 2, 2], [84], [85], [86], [92, 4, 1], [90, 2, 1]],
   [[38, 2, 3], [87], [34, 4, 1], [47], [188], [187], [96], [97], [147]],
   [[146]]);
+/** object is frost
+ * @template {"BLOCK"|"PYRAMID"|"WEDGE"} T @param {T} type */
+Block.Mirror = function Mirror(type) {
+  this.type = type;
+  this.dictionary =
+    /** @type {T extends "BLOCK"?undefined:Rotation[]} */
+    (Block.Mirror[type] ||
+    console.warn("Dictionary for \"BLOCK\" type is undefined!"));
+  Object.freeze(this);
+};
+/** @param {string} data */
+Block.Mirror.generateRotations = function (data, AT) {
+  var array = JSON.parse("[" + data + "]"), mirrors = [];
+  AT = ". At " + AT + " Mirror definitions.";
+  if (array instanceof Array)
+    for (var i = 24; i-- > 0;)
+      if (i in array) {
+        var num = array[i];
+        mirrors[i] =
+          /** @type {Rotation} */
+          ([num >> 3, (num & 4) > 0, num & 3]);
+      } else
+        throw new Error("Mirrors data is missing index: " + i + AT);
+  else
+    throw new Error("Mirrors data is not instanceof Array" + AT);
+  return mirrors;
+};
+Block.Mirror.BLOCK = null;
+Block.Mirror.PYRAMID = Block.Mirror.generateRotations("8,11,10,9,12,15,14,13\
+,0,3,2,1,4,7,6,5,17,16,19,18,23,22,21,20", "PYRAMID");
+Block.Mirror.WEDGE = Block.Mirror.generateRotations("6,5,4,7,2,1,0,3,8,11,10\
+,9,12,15,14,13,16,19,18,17,20,23,22,21", "WEDGE");
+/** @type {{[key:number]:Block.Mirror<"PYRAMID"|"WEDGE">|undefined}} */
+Block.Mirror.VALUE = {
+  1: new Block.Mirror("WEDGE"),
+  2: new Block.Mirror("WEDGE"),
+  3: new Block.Mirror("PYRAMID"),
+  4: new Block.Mirror("PYRAMID"),
+  5: new Block.Mirror("PYRAMID"),
+  6: new Block.Mirror("PYRAMID"),
+  8: new Block.Mirror("PYRAMID"),
+  9: new Block.Mirror("PYRAMID"),
+  10: new Block.Mirror("WEDGE"),
+  11: new Block.Mirror("WEDGE"),
+};
 
 // TODO: To be considered for resystemizing
 /** @template {keyof ItemTs} T @param {T} type @param {string} name */
@@ -1266,7 +1335,7 @@ function Ship(name, version, time, blocks, properties) {
   this.prop = properties || null;
   Object.seal(this);
 }
-Ship.prototype.selectRect =
+Ship.prototype.selectRect = (
   /**
    * @overload @returns {Block[]&{parentShip:Ship}}
    * @overload @param {number} x0 @param {number} x1 @param {number} y0
@@ -1297,7 +1366,8 @@ Ship.prototype.selectRect =
       (selected)
     ).parentShip = ship;
     return selected;
-  };
+  }
+);
 Ship.prototype.removeRect = function (xl, yt, zr, xr, yb, zf) {
   var x = xl, y = yt, z = zr, selected = [];
   xr > xl ? xl = xr : x = xr;
@@ -1400,11 +1470,10 @@ Ship.prototype.paste = function (x, y, z, select) {
         /** @type {Logic<any>} node from nodeList of selection */
         var oldNode = oldLogics[idx] || OC();
         if (logicDef[j].type > 1) {
-          newNode.pairs = [];
+          //-newNode.pairs = [];
           // only add nodeIndex references for actual output
           (oldNode.pairs instanceof Array ?
             outputs :
-            //-console.error("Not old Logic output node:", oldNode);
             [])[idx] = ni[j] = l;
           continue;
         }
@@ -1443,8 +1512,81 @@ Ship.prototype.paste = function (x, y, z, select) {
     } else
       newNode.pairs = -1;
   };
-  // Ship.prototype.paste pls stay working now : )
 };
+Ship.prototype.mirror = (
+  /**
+   * @overload @returns {void}
+   * @overload @param {number} x0 @param {number} x1 @param {number} y0
+   * @param {number} y1 @param {number} z0 @param {number} z1
+   * @returns {void} */
+  function (x0, y0, z0, x1, y1, z1) {
+    // what was selected and all 
+    var x = x0, y = y0, z = z0, selected = [];
+    if (typeof x == "number") {
+      var all = this.blocks;
+      x1 > x0 ? x0 = x1 : x = x1;
+      y1 > y0 ? y0 = y1 : y = y1;
+      z1 > z0 ? z0 = z1 : z = z1;
+    } else
+      selected = this.blocks.concat(all = []);
+  }
+);
+Ship.prototype.mirror2d = (
+  /**
+   * @overload @returns {void} @this {Ship}
+   * @overload @param {number} x0 @param {number} x1 @param {number} y0
+   * @param {number} y1 @param {number} z0 @param {number} z1
+   * @returns {void} @this {Ship} */
+  function (x0, y0, z0, x1, y1, z1) {
+    /** @param {Block} block @param {XYZPosition} pos */
+    function pushBlock(block, pos) {
+      var r = block.rotation[2], id = Block.ID[block.internalName];
+      var size = Block.Size.VALUE[id];
+      if (r & 1) {
+        pos[1] = size ?
+          // (is tiny block ? 1 : 0) -...
+          ((size.w | size.h) >> 4 & 1) - pos[1] :
+          -pos[1];
+        // ...&& (is tiny block) ?
+        pos[2] += size && ((size.w | size.h) & 16) ?
+          // (has size of tiny thruster ? leave it alone : [0, 1, 2, -1][r];
+          (size.w & 16 ? 0 : (r + 1) % 4 - 1) :
+          // move bigger blocks to keep position of their center
+          r > 1 ? -(size.w -32 >> 4) : (size.w - 32 >> 4);
+        // 180deg turn
+        block.rotation[2] =
+          /** @type {0|1|2|3} */
+          (4 - r);
+      } else
+        pos[1] = size ?
+          (r ?
+            (size.w - 32 >> 4) + ((size.w | size.h) >> 3 & 2) :
+            -(size.w - 32 >> 4)) - pos[1] :
+          -pos[1];
+      // Wedges and Smoooofth Coorners
+      Block.isWedge(id) && (block.rotation[1] = !block.rotation[1]);
+    }
+    var x = x0, y = y0, z = z0;
+    /** @type {XYZPosition} */
+    var pos, all = this.blocks;
+    if (typeof x == "number") {
+      x1 > x0 ? x0 = x1 : x = x1;
+      y1 > y0 ? y0 = y1 : y = y1;
+      z1 > z0 ? z0 = z1 : z = z1;
+      for (var i = 0; i < all.length; i++) {
+        pos = all[i].position;
+        // selection is inverted TROLOLOOLOOLLOOLOLOLOOLOLOLO LOLOLOLOLOLOLOL
+        if (pos[0] < x || pos[0] > x0 || pos[1] < y || pos[1] > y0 ||
+          pos[2] < z || pos[2] > z0)
+          pushBlock(all[i], pos);
+      }
+    } else
+      for (var i = 0; i < all.length; i++) {
+        pos = all[i].position
+        pushBlock(all[i], pos);
+      }
+  }
+);
 /** @param {object} object */
 Ship.fromObject = function fromObject(object) {
   var o = {
@@ -1527,7 +1669,8 @@ Ship.toDBV = function toDBV(ship) {
     ls: shipProp.launchpadSize || 0,
     b: blocks,
     nc: connections || shipProp.nodeConnections,
-    significantVersion: 5
+    // jumping over 6 and 7 for special cases
+    significantVersion: 8
   };
 };
 /** @param {string} key */
@@ -1567,13 +1710,13 @@ Ship.fromDBKey = function (key) {
     "Yellow",
     "Festive Red",
     "Light Gray",
-    // "Lololipop"
+    // Lololipop replacement
     "Red Hazard Stripes",
     "Yellow Hazard Stripes",
     "Fuel",
     "Wine",
     "Wood",
-    // "Steel"
+    // Steel replacement
     "White Hazard Stripes",
     "Purple",
     "Pink",

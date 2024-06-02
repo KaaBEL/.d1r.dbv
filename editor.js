@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.33
+// v.0.1.34
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -1816,10 +1816,16 @@ Command.push("Transfrom tool", function (items, collapsed) {
     render();
   };
   flip.appendChild(tN("Size action"));
-  flip.style.border = "2px solid #0000";
+  flip.style.borderColor = flip.style.backgroundColor = "#0000";
+  flip.style.color = "#A88F";
   var mirror = EL("button"), copy = EL("button"), paste = EL("button");
   mirror.appendChild(tN("Mirror action"));
-  mirror.style.border = "2px solid #0000";
+  mirror.onclick = function () {
+    selecting ?
+      ship.mirror2d() :
+      ship.mirror2d(0, xy[0], xy[1], 0, xy[2], xy[3]);
+    render();
+  };
   /** COPY SELECTION */
   function updateCopied() {
     offset = [Math.max(xy[0], xy[2]), Math.min(xy[1], xy[3])];
@@ -1854,6 +1860,10 @@ Command.push("Transfrom tool", function (items, collapsed) {
       return;
     //var x = Math.min(x, xy[2]), y = Math.max(, xy[3]);
     ship.paste(0, xy[0] - offset[0], xy[1] - offset[1], test_selct);
+    // also deselect the selection
+    selecting = 2;
+    selectX0.value = selectY0.value = "";
+    selectX1.value = selectY1.value = "";
     render();
   };
   var remove = EL("button"), paint = EL("button"), fill = EL("button");
@@ -1905,7 +1915,7 @@ Command.push("Transfrom tool", function (items, collapsed) {
     }
     ctx.strokeRect(dx, dy, (w + 1) * sc, (h + 1) * sc);
   };
-}, "WIP (Work In Progress) Command, meanwhile figure out yourself.");
+}, "Not yet completed actually. Each action uses some specific inputs to provide its function. Values inside inputs are integers that means that full block is 2x2 ad 0.5 by 0.5 is 1x1.\nSelect rectangle:\nThe four inputs together with Select rectangle button are used to select area with blocks, starting with left top point [x0, y0] making rectangle with second right bottom point [x1, y1]. Blocks are selected not by collision with selected area or being fully covered by the area, it select blocks of which position is inside the area, which is quite confusing, because there's no collisions detection yet.\nLock selection:\nWhen checkboxes is enabled, actions will be applied to the same blocks selected at that moment of checkbox getting enabled. When it is disabled, the block positions inside selection at a time of doing one of the actions are used.\nCopy action:\nIt stores current selection of which amount of blocks and types of few first blocks can be seen at the bottom, at the \"Copied:\".\nPaste action:\nReplicates copied selection and also logic connections to output nodes. In other to prevent accidental blocks stacking the selection is deselected after both Copy and Paste action.\nFill action:\nFills the selection with pseudo randomly selected blocks from copied selection, by replicating them with all properties except logic connections to output nodes.\nRemove action:\nRemoves all blocks inside selection\nAxis X, Axis Y:\nAre two additional inputs for actions below.\nMove action:\nMove selected blocks by specified x and y distance.\nRotate action:\nRotates selected blocks by amount in either Axis x or Axis y input around center of editor space [0, 0].\nSize action:\nNot implemented yet.\nMirror action:\nMirrors blocks from left to right and from right to left around center of editor space.\nPaint action:\nUses the selected \"Color:\" above to paint selected blocks with it. Custom color option is texture that uses custom hex color. The custom hex color can be set in \"Select Color\" Command.");
 Command.push("Rift Drive calculator", function (items, collapsed) {
   var weight = 0, drives = 0, unknown = 0, all = ship.blocks;
   for (var i = all.length; i-- > 0;) {

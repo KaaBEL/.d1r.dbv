@@ -8,15 +8,15 @@ Let me know (on Discord or) by creating issue in case you are interested in cust
 https://discord.com/channels/749233290241769473/1142927384023154760/1142927384023154760  
 https://discord.com/channels/749233290241769473/1192697437190623353  
 https://discord.com/channels/749233290241769473/1222745899755901019  
-\- lets you select area[ X ], (future: selection of any blocks)  
-\- actions are move[ X ], rotate[ X ], flip, mirror, copy[ X ],  
-  remove[ X ], paint[ X ], connection operations  
+\- lets you select area, (future: selection of any blocks)  
+\- actions are move, rotate, flip, mirror, copy,  
+  remove, paint, connection operations  
 https://discord.com/channels/749233290241769473/1207271935235588136  
-\+ fill selection[ X ]  
+\+ fill selection  
 https://discord.com/channels/749233290241769473/1145048315654852658/1145048315654852658  
 ? resize action  
 https://discord.com/channels/749233290241769473/1231450224099328082  
-\- if nothing selected entire vehicle is affected[ X ]  
+\- if nothing selected entire vehicle is affected  
 \+ paste/export copied selection  
 \+ import selection (blueprint)  
 https://discord.com/channels/749233290241769473/1145089389035257938/1145089389035257938  
