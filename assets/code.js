@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.34
+// v.0.1.35
 /** @TODO check significantVersion */
 var OP = Object.prototype.hasOwnProperty,
   /** @type {()=>any} */
@@ -210,7 +210,7 @@ Logic.VALUE = Logic.generateLogic(
     {k: 1, x: 1, y: 1},
     {k: 3, x: 1, y: -1}
   ],
-  "2", "2", "2");
+  "2", "2", "2", "6");
 Logic.dashOff = 0;
 Object.freeze(Logic.VALUE);
 // (v.0.1.20.2) I might've accidently screw this method up so much
@@ -565,6 +565,7 @@ Block.NAME = {
   825: "Gauge",
   826: "Dial",
   827: "Digital Display",
+  828: "Push To Toggle",
   // station wall 4 sides LBRU
   834: "__placeholder834__",
   // station wall 2 sides corner LB
@@ -725,6 +726,7 @@ Block.ID = {
   "Gauge": 825,
   "Dial": 826,
   "Digital Display": 827,
+  "Push To Toggle": 828,
   "__placeholder834__": 834,
   "__placeholder835__": 835,
   "__placeholder836__": 836,
@@ -757,7 +759,7 @@ Block.ID = {
 Object.freeze(Block.NAME);
 Object.freeze(Block.ID);
 dictionaryDefs(Block.NAME, Block.ID, "Block definitions");
-/** @type {{[key:number]:number|undefined}} */
+/** @type {{[key:number]:number|undefined}} (Mass) */
 Block.WEIGHT = {
   690: 2,
   691: 1,
@@ -807,7 +809,7 @@ Block.WEIGHT = {
   794: 1,
   795: 1,
   796: 5,
-  799: 1,
+  // 799: 1, Inversed Dock?
   802: .25,
   803: 1,
   804: 1,
@@ -833,7 +835,127 @@ Block.WEIGHT = {
   824: 1,
   825: .5,
   826: .25,
-  827: .5
+  827: .5,
+  828: .5
+};
+/** @type {{[key:number]:number|undefined}} (Integrity) */
+Block.STRENGTH = {
+  690: 10,
+  691: 10,
+  692: 5,
+  693: 10,
+  694: 20,
+  695: 5,
+  696: 5,
+  697: 10,
+  698: 10,
+  699: 20,
+  700: 5,
+  701: 1,
+  702: .5,
+  738: 2.5,
+  739: 10,
+  740: 40,
+  741: 120,
+  742: 2.5,
+  743: 10,
+  744: 20,
+  745: 60,
+  746: 10,
+  754: 10,
+  755: 40,
+  756: 90,
+  757: 10,
+  758: 40,
+  759: 60,
+  760: 10,
+  761: 40,
+  762: 90,
+  770: 10,
+  771: 10,
+  772: 10,
+  773: 10,
+  774: 10,
+  775: 10,
+  786: 10,
+  787: 50,
+  788: 2,
+  789: .5,
+  790: 10,
+  791: 1,
+  792: 10,
+  793: 10,
+  794: 10,
+  795: 10,
+  796: 10,
+  802: 2.5,
+  803: 10,
+  804: 10,
+  805: 10,
+  806: 10,
+  807: 10,
+  808: 10,
+  809: 10,
+  810: 5,
+  811: 2.5,
+  812: 5,
+  813: 2.5,
+  814: 10,
+  815: 10,
+  816: 10,
+  817: 10,
+  818: 5,
+  819: 5,
+  820: 5,
+  821: 5,
+  822: 10,
+  823: 10,
+  824: 10,
+  825: 5,
+  826: 2.5,
+  827: 5,
+  828: 5
+};
+/** positive = thrust per 1 Electricity unit, negative = generation per 
+ * second @type {{[key:number]:number|undefined}} (Electricity) */
+Block.ENERGY_USE = {
+  738: 5720,
+  739: 6.e3, // WTW? 6**7
+  740: 8000,
+  741: 1e4,
+  770: 1000,
+  788: -.25,
+  789: -.75
+};
+/** number = contained units
+ * @type {{[key:number]:number|undefined}} (Electricity) */
+Block.ENERGY_STORE = {
+  757: 20,
+  758: 100,
+  760: 175
+};
+/** positive = thrust per 1 Liter of Fuel, negative = generation per 
+ * second @type {{[key:number]:number|undefined}} (Fuel) */
+Block.FUEL_USE = {
+  742: 3640,
+  743: 4000,
+  744: 4500,
+  745: 5000
+};
+/** number = contained units
+ * @type {{[key:number]:number|undefined}} (Fuel) */
+Block.FUEL_STORE = {
+  754: 30,
+  755: 150,
+  756: 375
+};
+/** number = items capacity
+ * @type {{[key:number]:number|undefined}} (Cargo) */
+Block.STORAGE = {
+  690: 5,
+  760: 20,
+  761: 100,
+  762: 250
 };
 /** @TODO handling ls (DBV property?) */
 /**
@@ -1098,8 +1220,8 @@ Block.Size.VALUE = Block.Size.genterateSizes([[0], [1], [2], [7, 1, 2]],
   [[75], [125], [175], [26, 1, .5], [76, .5, .5], [126, 1, .5]],
   [[176, .5, .5], [27], [77], [127], [177], [28, 1, .5], [78, 1, .5]],
   [[128, 1, .5], [178, 1, .5], [29], [79], [129], [179, .5, 1]],
-  [[30, .5, .5], [80, 1, .5], [40], [41], [42], [43], [44], [45]],
-  [[144, 2, 2], [134, 1, 2], [135, 1, 2], [136, 1, 2], [189]],
+  [[30, .5, .5], [80, 1, .5], [183, 1, .5], [40], [41], [42], [43], [44]],
+  [[45], [144, 2, 2], [134, 1, 2], [135, 1, 2], [136, 1, 2], [189]],
   [[140, 2, 2], [142, 2, 2], [84], [85], [86], [92, 4, 1], [90, 2, 1]],
   [[38, 2, 3], [87], [34, 4, 1], [47], [188], [187], [96], [97], [147]],
   [[146]]);
@@ -1669,8 +1791,7 @@ Ship.toDBV = function toDBV(ship) {
     ls: shipProp.launchpadSize || 0,
     b: blocks,
     nc: connections || shipProp.nodeConnections,
-    // jumping over 6 and 7 for special cases
-    significantVersion: 8
+    significantVersion: 9
   };
 };
 /** @param {string} key */
