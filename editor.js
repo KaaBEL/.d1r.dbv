@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.35
+// v.0.1.36
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -344,58 +344,67 @@ cMmfqyNNjFCdGKszPoWbI9kgcOD9LjjUAD1GBBQAAAEBpKrAAgKqiQzspSuU/PTctx4u/mp8jzs8\
 8ELc4fCYAi1GBBQAAAEBpKrDoKYQA81/7AJeuPFanFTKjUQZgRwUWAAAAAKX9IwQAwMeic/spxAA\
 l12eQ33mICiwAAAAASvs/WCHnyl95QH0AAAAASUVORK5CYII=";
 var imgColor = document.createElement("img");
-imgColor.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAOACAIAAA\
-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\
-15jfY/ScgLVmGaracAAAAASUVORK5CYII=";
+imgColor.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAOgCAIAAA\
+DTQOPmAAAACXBIWXMAAA7EAAAOxAGVKw4bAAALZUlEQVR42u2dWWxcVxnHf/fO9XjszCSxY4+dcZ\
+zNWZq0idI0StMFWpaCUAmCggSCthI8AC+8VAIBfQNVrVSWh/JQCYlKSUFFVCDIAxItBdqQpKFxqj\
+ZtQ5yl2ew4dhIlnoztWe7h4brjiT2bycy94+h/ZI2u7pzr37ec7/vOOR6fsYwx1LPZ1LkJIIAAAg\
+gggAACCCCAALVqzq5du2QiAQQQQAABBBBAAAEEEADA2rJli0wkgAACCCCAAAIIIIAAAgBYsVhMJh\
+JAAAEEEEAAAQQQQAABACxzRCYSQAABBBBAAAEEEEAAAQBweEEmEkAAAQQQQAABBBBAAAEAsM73rZ\
+SJBBBAAAEEEEAAAQQQQAAA5w+JZTKRAAIIIIAAAggggAACCABgme8MyEQCCCCAAAIIIIAAAgggAI\
+D1TPQXMpEAAggggAACCCCAAAIIAGCt/62+P1kAAQQQQAABBBBAAAEE8NYH8c8/LRMJIIAAAggggA\
+ACCCCAAABOaPiQTCSAAAIIIIAAAggggAACADh3HuyQiQQQQAABBBBAAAEEEEAAAKv30XaZSAABBB\
+BAAAEEEEAAAQQAsPr7ozKRAAIIIIAAAggggAACCABgmSMl3rij+P259q//J6TqJ7vX318Naiu7vz\
+6oh+x+xUGpN2oVH0FoUNvY9leDeuQlvzSoX05VPQiyHgShQW1l97ei1UP2+VYPGqmi1Ur2IDSore\
+z+VrR6yO5bPTDFzzcdXLOq6P3E8VNz6h9EPaiV7F5/fzWorez++qAesvsVB+f7VtZJ9uDioFaye/\
+391aC2svvrg3rIrnoQfD0IQoPayu5vRauH7POtHgRW0Zz6yR6EBrWV3d+KVg/Zg64HllV8CT3X/o\
+HsF9VIdq+/z/tFNZXdXx/UQ/bA94tqFB+B7BfVNLZ93i+qQ17ybb+objlV9SDIehCEBrWV3d+KVg\
+/Z51s9aKSKVivZg9CgtrL7W9HqIbtfPngtkaiy66NPhAA3DvC7H+aqfMqvXOTZsicWm15njY2Vs7\
+7llcOC9VqJZ31bZRbwC++U16OaZ/U5u2p94NmrpwpPWGWtH9womk0uNYqOm0ngTZz8u+XHWxAzu1\
+KRfKJjElhtNQOHdieAo4+drRgr9c+miZ/1AlOJ3apcOv6zNQFs7x8EjnVOAmtHmvPZbHb/+vvAy+\
++eAFZZ4QfMJLDm3CBwaGsif01n8Ydcy8+KVt4FG3b3AtsODwK5OMBJdxI48GOnYXLR7Oj1rlf86A\
+qw//GzwMBTWaCPZmD/k05e48aL5MIcefrpNmDDrsXAmsODgIkX79l4NblQlsHHxgCeCBV9VzW5lj\
+U5UXZmN5VxC169y/MlnrV81cCjDZWYPXw06y+Ylc56t9Sz9dfg68+Equw68Mj7QHRBFEhcXD4jqh\
+thmM7lm6AtLKt8Bfc9m3o1+WKBPvG5/aJSzwZRDzy+J1E1ehT2LNQjCA1KSTFDw4p6BF2TS9rdGG\
+BidwKwaKpyvNVfA8921YRl6I9rgchjg8Bb/7wf2NZ/DjAlnjX4sm9qjSXHpiPZsiqOn7GDDwGx7a\
+/kdco9MlC0gvilgbdr5Rq3jAbeXW/8eD648I97ga4H/z1d6oplXF806N7VS+kFgnfj0LIEsPTBfQ\
+CWDYzv6gb6rHDFOhLcOnlqbWwmgb5zg8CJ3Qmg5fEhYI23soxXroKB/A2nIJuujjcD/csSgLv91a\
+KOKl8Hff4bTonatPXcIDCwvWyUl6iDwfmg+llF+Troc03uLFd6vax1w467KfusVUWgVTmPLDMdcE\
+ouB4qsD6z8qym6PWMFsuNV6q8Y822VObtlJ66bTKaqNYAxdjgSam6pYpgaM3LwlavHDk+MDll26A\
+b/2laZKYExBteNxHsWr79ryZ0PFPfB8P6/jrz5N+yw5TjRrvZwLGKHQt6wz46nUyNXMxOZUDhk2X\
+ZRksdws2k3k1764JfbN91zA+DES78cvzgYji1MbO2LroxjwDXTA9uyCIUyl8cuvH3y2uAlJxIur0\
+02NRZbtXH5w9+cApz+86/HzgwsXtmz7IE7SGfJuSUGhEVzU/LDi6ffeM9pCZefRGXHk+2b7uv+2B\
+fs8eEzY6c+iHZ3LvvEZsbTJX874BrG09HlHb333pabzFSYZ0YWjPa/lptI2Zfe3osdXn7fRlKTVY\
+27yezCNYnmRQuM65YPe6cleunt1+3U0KlI+0I7GqH6iEtnF6+Iuzm3QgzbTmroQ9vNpJtawrhziW\
+djnEhT5XW1ZbmZSduJLhy/kiQ0l5C27cmrKWyrkhhuU3SRHVu5IZsaT50bxamaEbIunxiyK8lkMu\
+noig12fPtncNNn9r5P1q0qMYSdc6+/V3mub4xxc223321bIafnoa9lJ8aHj5whFKpo1szV1KWTF4\
+xl5XJumZ906vqKL313Khe19vTh5uzqTGQgmUo3VfJwOjnW2r1yCmDc7FwcbLUtbnUi4fLdsk7WGN\
+fCnrfbmiaIHS8BAgdUWubfDMAYLHKZbMUEiYWbzVGlKPkPkTktUXAvnxjCdWkKEbJL/rQ2D7/7Yc\
+WkYowxuaztNE2lCqc11twWz6aSR/90oOuO5U5zuMh80gLD5RND45eToXCFObmbnljYt+mGaYtxc8\
+de+Gk2dd2Y0kt3Cytk25Wyi5vNNLd3rfnG94tMflODp7LjY95mwf/ZXLdp0ZKWzp5baHY957F/Zu\
+sZ5SIBBBBAgFsPYM01vy/vXy4fCCCAAALcgvVg28PflokEEEAAAQQQQAABBBBAAACnxUrJRAIIII\
+AAAggggAACCCAAgNPRkZWJBBBAAAEEEEAAAQQQQAAA576mK8BXPzn9pWwfHDsNvHNurCb3gz7tYa\
+7t968d8d0Htf11m5fF5rkGG9at8HsU3TKnwVU/ruebBrPHtZdz5o8Gs8e1Klqj5KLq46NRNag+Ph\
+pVg+rjQ3FQrQ9uPu8HrcHN5/2gNbj5vB+YBtZfLk//h/W31s08uvo3x0by1+vuuY2Pzo/tOHh4nm\
+dTr23qKXfY17vnLzawBuVlL+zjrwZ7lyyZ8faxeRPJTz6wGSA86zSWBzYDT/3rnYbXwJPRi+SRkR\
+Ggs7NzRiQ3tgY72wDO/twGJnZ15a/Z0wW8snO4gbPp0fXr5/RANd9t4q8P5iqR10qdEx+ED6o/M+\
+S/t01XtOSR88BDe7qK9ow8PgzsudL4Fc2LjyLxv3O++GAqB5doXn5rbB94MnrzpRvq4P6j82Re5L\
+X7L12aOR/0NRd5869q5mjhhq5onozzco1W4fyi1R0Lge6YC7R1LgGS15LA4ZNXgWvpbMP4oFTrjn\
+mnDIaAkAkDpqkd2LK+Hdj37kC+Z7aBNPj4prVANjk64/7o6CjQ1t5SUeogNJitSEdHR17qwnb8+G\
+D++uG7EsDGjRuBZ3e/2gBx8Oi93flrt8S/55zNXstfb9myBXj+xX1ApoEi2dNjtga9vb3A5s9+bM\
+b9AwcOAM+9uK9h4mDHjh1Aon3ZjPsvv/wy8OlkEkgmk0A0GgV2xOPAcw3kg1898cWiGngt5qTzGq\
+RS0456IxUBnn/+pQbwwURLAshcu5C/c3vL9HdqpiNNQKx1AXA0NJbXJt50sWF88Kmtq4CB/lPAsz\
+/4CrDKLAZaW1uBdGz6uz6P50bznjh5eXp29JPn9gXqg7/3nwIKT4pKp9OA4zhAqvBI5ubGqQez2+\
+e2tc+449k6Hcrl/eFFsvcaX7c2n5d27rwf2LNnb6AaXA93ASPZGNAemc4845EkEIqGgIUdC/L9h9\
+NXgaWrlwCxeBLobLu7YdYHnuyF1/F4HBiPmBkZyfPNVPyvtQPV4MV9H+RrQ6F0TmuuaHwsyF0HTC\
+gDrOrrAS5cGaFRTgd966XvAUxkABMpIdPi6Rnf1fQQsCi81A8N/gdE9KncelVoFwAAAABJRU5Erk\
+Jggg==";
 var imgBackg = document.createElement("img");
 var helpCanvas = document.createElement("canvas"),
   rc = function (rc) {
     return rc instanceof CanvasRenderingContext2D ?
        rc : new CanvasRenderingContext2D();
   }(helpCanvas.getContext("2d", 
-    // shut up chromium browsers                      
+    // shut up chromium browsers
     {willReadFrequently: true}));
 
 var defaults = {
@@ -453,6 +462,8 @@ imgBackg.src = "./assets/_" + [
 
 /** @this {Array} */
 function del(i) {
+  if (i < 0)
+    return this.length;
   while (++i < this.length)
     this[i - 1] = this[i];
   return --this.length;
@@ -721,6 +732,11 @@ function Command(name, description, items, setting) {
 }
 /** @type {Command[]} */
 Command.list = [];
+Command.groupName = "";
+Command.press = press;
+Command.rend_UI = F;
+// I probably just made something I will never use #RIPCMDSRLD
+Command.currentInit = F;
 /**
  * @type {{
  *   (name: string, items: [{name:string,type:string,
@@ -749,10 +765,21 @@ Command.add = function add(name, items, desc) {
  * you can use named inputs or Elemets to build up command menu
  * the fancy stuff is done by utilities inteface (collapsed)
  * @param {string} name @param {string} description
- * @param {CmdInit} initialize */
-Command.push = function (name, initialize, description) {
+ * @param {CmdInit} initialize @param {{group?:string,
+ * reloads?:boolean}} [settings]
+ */
+Command.push = function (name, initialize, description, settings) {
   name = Command.NAME[name] || name;
-  return this.list.push(new Command(name, description, function (el) {
+  settings = settings || {};
+  //-try {
+  //-  utilities.refreshes = !
+  //-  initialize(
+  //-    //@ts-expect-error
+  //-    UDF,
+  //-    utilities
+  //-  );
+  //-} catch (e) {}
+  function itemsInit(el) {
     /** @type {(Node|{name:string,inp:HTMLInputElement})[]} */
     var items = [];
     initialize(items, utilities); 
@@ -764,7 +791,20 @@ Command.push = function (name, initialize, description) {
         el.appendChild(itm.inp);
         el.appendChild(EL("br"));
       }
-  }, utilities.groupName));
+  }
+  // #RIPCMDSRLD
+  settings.reloads && Edit.listeners.push(function () {
+    Command.currentInit();
+  });
+  return this.list.push(new Command(name, description, itemsInit,
+    settings.group));
+};
+/** used to pause ongoing functionalities when Command hides */
+Command.stop = function () {
+  Command.rend_UI = utilities.rend_UI;
+  utilities.rend_UI = F;
+  press = old_UI;
+  render();
 };
 Command.NAME = {"Setup Properties": "Setup Properties"};
 
@@ -950,20 +990,23 @@ Command.push("Setup Properties", function (items, collapsed) {
       initWeldGroup(weldSelects[0]);
       return render();
     }
+    var control = block.properties.control || [""];
     for (var i = 0, Items = Block.Properties.Items; i < p.length; i++) {
       p[i].name && props.appendChild(tN(p[i].name + ": "));
       switch ((itm = p[i].item) && p[i].type) {
         case "Slider":
           if (!(itm instanceof Items.Slider))
             break;
-          // !!! only one Item of this property type allowed
+          // !!! only one Item of this property type possible
+          // (because the slider element referenced by local variable)
           var slider = props.appendChild(EL("input")),
             input = props.appendChild(EL("input"));
-          var sldI = i, control = block.properties.control || [""];
+          var sldI = i;
           slider.type = "range";
           input.type = "number";
           slider.min = input.min = "" + itm.min;
           slider.max = input.max = "" + itm.max;
+          slider.step = "0.1";
           slider.value = input.value = "" + control[sldI];
           slider.oninput = input.oninput = function () {
             if (!(this instanceof HTMLInputElement))
@@ -975,11 +1018,50 @@ Command.push("Setup Properties", function (items, collapsed) {
         case "Integer Slider":
           if (!(itm instanceof Items["Integer Slider"]))
             break;
-          itm;
+          // !!! only one Item of this property type possible
+          var intSlider = props.appendChild(EL("input")),
+            intInp = props.appendChild(EL("input"));
+          var intI = i;
+          intSlider.type = "range";
+          intInp.type = "number";
+          intSlider.min = intInp.min = "" + itm.min;
+          intSlider.max = intInp.max = "" + itm.max;
+          intSlider.step = "1";
+          intSlider.value = intInp.value = "" + control[intI];
+          intSlider.oninput = intInp.oninput = function () {
+            if (!(this instanceof HTMLInputElement))
+              return;
+            intSlider.value = this.value;
+            this.type == "range" ? intInp.value = intSlider.value : 0;
+            control[intI] = Number(intSlider.value) || 0;
+          };
         case "Dropdown":
+          // !!! only one Item of this property type possible
           if (!(itm instanceof Items.Dropdown))
             break;
-          itm;
+          var dropdown = props.appendChild(EL("select")), dpdwnI = i;
+          var list = itm.options, j = 0;
+          if (block.internalName === "Control Block") {
+            var inputs = ship.prop && ship.prop.customInputs || [];
+            list = list.concat(inputs.map(String));
+          }
+          for (; j < list.length; j++) {
+            var opt = EL("option");
+            opt.appendChild(tN(list[j]));
+            opt.value = block.internalName === "Control Block" ?
+              list[j] :
+              "" + j;
+            dropdown.add(opt);
+          }
+          j = p[i].name === "Controls" ?
+            list.indexOf("" + control[dpdwnI]) :
+            +control[dpdwnI];
+          j < 0 ?
+            (dropdown.item(j) || OC()).selected = !0 :
+            console.error("Not existing custom input selected!");
+          dropdown.onchange = function () {
+            control[dpdwnI] = dropdown.value;
+          };
         case "Number Inputs":
           if (!(itm instanceof Items["Number Inputs"]))
             break;
@@ -989,9 +1071,9 @@ Command.push("Setup Properties", function (items, collapsed) {
             break;
           itm;
         case "WeldGroups":
-          var control = block.properties.control || [""];
           itm instanceof Items.WeldGroups && addWeldGroups(itm);
       }
+      p[i].type !== "WeldGroups" && props.appendChild(EL("br"));
     }
     props.appendChild(tN("Weld group: "));
     for (var i = 0; i < weldSelects.length;)
@@ -1117,7 +1199,7 @@ Command.push("Display Logic", function (items, collapsed) {
   function updateNodeSelect() {
     var idx = Number(text.data), block = ship.blocks[idx];
     /** @type {(Logic<any>|undefined)[]} */
-    var logics = (ship.prop || OC()).nodeList || [], temp = EL();
+    var logics = ship.prop && ship.prop.nodeList || [], temp = EL();
     temp.appendChild(tN("Logic block: " + idx + " " + block.internalName));
     temp.appendChild(EL("br"));
     /** @type {HTMLSelectElement|null} */
@@ -1231,7 +1313,77 @@ Command.push("Display Logic", function (items, collapsed) {
     return true;
   });
   updateNodeSelect();
-  items.push(connections);
+  /** @param {string} old @param {string} replace */
+  function updateControlParams(old, replace) {
+    /** @param {unknown} param */
+    function checkControlBlock(param) {
+      if (typeof param != "string")
+        return console.error("Index 0 of Control Block parameter property is\
+n't string.");
+      if (param === old)
+        return void (block.properties[0] = replace);
+      if (options.indexOf(param) === -1 || custom.indexOf(param) === -1)
+        block.properties[0] = "Up";
+    }
+    /** @type {Block} */
+    var block, options = Block.Properties.VALUE[803][0].item.options;
+    var custom = (ship.prop && ship.prop.customInputs || []).map(String);
+    for (i = ship.blocks.length; i-- > 0;)
+      if ((block = ship.blocks[i]).internalName === "Control Block")
+        checkControlBlock(block.properties[0]);
+  }
+  var customInputs = EL(), add = EL("button"), remove = EL("button");
+  add.style.width = remove.style.width = "unset";
+  add.style.display = remove.style.display = "initial";
+  customInputs.appendChild(add).appendChild(tN("Add"));
+  add.onclick = function () {
+    if (!(this instanceof HTMLButtonElement))
+      return;
+    var custom = new Ship.CustomInput("Button", 0);
+    (ship.prop && ship.prop.customInputs || []).push(custom);
+    var toggle = EL("input"), name = EL("input");
+    toggle.type = "checkbox";
+    toggle.oninput = function () {
+      custom.name = (custom.type = +toggle.checked) ?
+        "Switch" :
+        "Button";
+      updateControlParams("", "Up");
+    };
+    customInputs.insertBefore(toggle, this);
+    name.type = "text";
+    name.oninput = function () {
+      custom.name = name.value;
+      updateControlParams("", "Up");
+    };
+    customInputs.insertBefore(name, this);
+    /** @type {Node&{onclick?:typeof add.onclick}} */
+    (customInputs.insertBefore(add.cloneNode(!0), this)
+      ).onclick = add.onclick;
+    /** @type {Node&{onclick?:typeof add.onclick}} */
+    (customInputs.insertBefore(remove.cloneNode(!0), this)
+      ).onclick = remove.onclick;
+    customInputs.insertBefore(EL("br"), this);
+  };
+  remove.onclick = function () {
+    if (!(this instanceof HTMLButtonElement))
+      return;
+    // i = elements: remove, add, name(input), type(checkbox), (br)
+    for (var i = 5, input = this.previousSibling; i-- > 0;)
+      input = i === 1 ? input : this.previousSibling &&
+        customInputs.removeChild(this.previousSibling);
+    customInputs.removeChild(this);
+
+    var custom = (ship.prop && ship.prop.customInputs || []).map(String);
+    if (input instanceof HTMLInputElement)
+      // removes cutom property from Ship.props.customInputs of ship
+      del.call(custom, custom.indexOf(input.value));
+    else
+      console.error("Supposed to be name input:", input);
+    // non-existing controlInput values (removed one now too) set to default
+    updateControlParams("", "Up");
+  };
+  remove.appendChild(tN("Remove"));
+  items.push(connections, customInputs);
 }, "Gives the option to toggle displaying logics, it may cause errors but tu\
 rning it off might not get rid of all bugs related to Logic blocks either. U\
 ses block selection from \"Setup Properties\" Command and the focus option. \
@@ -1422,7 +1574,7 @@ Command.push("Transfrom tool", function (items, collapsed) {
     selectX0.value = selectY0.value = "";
     selectX1.value = selectY1.value = "";
     selecting = 2;
-    press = function (x, y) {
+    press = Command.press = function (x, y) {
       x = Math.floor((vX - x) / sc + 1);
       y = Math.floor((y - vY) / sc);
       if (selecting)
@@ -1570,6 +1722,48 @@ Command.push("Transfrom tool", function (items, collapsed) {
     ctx.strokeRect(dx, dy, (w + 1) * sc, (h + 1) * sc);
   };
 }, "Not yet completed actually. Each action uses some specific inputs to provide its function. Values inside inputs are integers that means that full block is 2x2 ad 0.5 by 0.5 is 1x1.\nSelect rectangle:\nThe four inputs together with Select rectangle button are used to select area with blocks, starting with left top point [x0, y0] making rectangle with second right bottom point [x1, y1]. Blocks are selected not by collision with selected area or being fully covered by the area, it select blocks of which position is inside the area, which is quite confusing, because there's no collisions detection yet.\nLock selection:\nWhen checkboxes is enabled, actions will be applied to the same blocks selected at that moment of checkbox getting enabled. When it is disabled, the block positions inside selection at a time of doing one of the actions are used.\nCopy action:\nIt stores current selection of which amount of blocks and types of few first blocks can be seen at the bottom, at the \"Copied:\".\nPaste action:\nReplicates copied selection and also logic connections to output nodes. In other to prevent accidental blocks stacking the selection is deselected after both Copy and Paste action.\nFill action:\nFills the selection with pseudo randomly selected blocks from copied selection, by replicating them with all properties except logic connections to output nodes.\nRemove action:\nRemoves all blocks inside selection\nAxis X, Axis Y:\nAre two additional inputs for actions below.\nMove action:\nMove selected blocks by specified x and y distance.\nRotate action:\nRotates selected blocks by amount in either Axis x or Axis y input around center of editor space [0, 0].\nSize action:\nNot implemented yet.\nMirror action:\nMirrors blocks from left to right and from right to left around center of editor space.\nPaint action:\nUses the selected \"Color:\" above to paint selected blocks with it. Custom color option is texture that uses custom hex color. The custom hex color can be set in \"Select Color\" Command.");
+
+Command.push("Vehicle stats", function (items, collapsed) {
+  function addLine(text) {
+    items.push(tN(text), EL("br"));
+  }
+  // var blocks = ship.blocks, cost = 0, weight = 0, integrity = 0;
+  // var fuelCap = 0, energyCap = 0, cargoCap = 0;
+  // var fuelUse = 0, energyUse = 0, cargoUse = 0;
+  // stats counter dictionaries
+  var sums = {
+    cost: 0,
+    weight: 0,
+    strenght: 0,
+    store: {fuel: 0, energy: 0, cargo: 0},
+    use: {fuel: 0, energy: 0, cargo: 0}
+  },
+    skipped = JSON.parse(JSON.stringify(sums));
+  /** @param {string} stat @param {any} value @param {Function} [parse] */
+  function checkStat(stat, value, parse) {
+    // properties stack for stats counter dictionary
+    var stack = stat.split("."), tmpSums = sums, tmpSkip = skipped;
+    for (var i = 0; ++i < stack.length; tmpSkip = tmpSkip[stack[i - 1]])
+      tmpSums = tmpSums[stack[i - 1]];
+    stat = stack.slice(-1)[0];
+    typeof value != "undefined" ?
+      tmpSums += parse ? parse(value) : value :
+      tmpSkip++;
+  }
+  for (var blocks = ship.blocks, i = blocks.length; i-- > 0;) {
+    var id = Block.ID[blocks[i].internalName];
+    checkStat("cost", Block.COST[id], function (val) {
+      return val < 0 ? 0 : val;
+    });
+    checkStat("weight", Block.WEIGHT[id]);
+    checkStat("strenght", Block.STRENGTH[id]);
+  }
+  addLine("Blocks amount: " + blocks.length);
+  addLine("")
+  Edit.listeners.push();
+}, "TODO: create Vehicle stats descriptions when command gets released.", {
+  // ???
+});
 Command.push("Rift Drive calculator", function (items, collapsed) {
   var weight = 0, drives = 0, unknown = 0, all = ship.blocks;
   for (var i = all.length; i-- > 0;) {
@@ -1597,7 +1791,7 @@ ll Rift Drives into account, although in the game you are allowed to buy onl\
 y 1. It also shows ammount of blocks in it and time when the vehicle had the\
 se stats, because it doesn't update after this command have been opened, onl\
 y changing amount of RC recalculates distance.");
-utilities.groupName = "";
+Command.groupName = "";
 Command.push("Set camera view", function (items, collapsed) {
   var viewX = EL("input"), viewY = EL("input"), zoom = EL("input");
   var elBtn = EL("button");
@@ -1709,6 +1903,7 @@ nputs/buttons, their purpouse is explained in description.");
 
 var cmdsHeader = EL(), cmds = (function () {
   /** for #commandsTab styles @see {addingStyles} */
+  /** navigation element returned to set cmds variable */
   var nav = EL("nav");
   nav.id = "commandsTab";
   nav.style.display = "none";
@@ -1723,18 +1918,14 @@ var cmdsHeader = EL(), cmds = (function () {
     content.style.display = cmdsHeader.innerText = "";
     items.style.display = "none";
     back.visibility = "hidden";
-    utilities.rend_UI = F;
-    press = old_UI;
-    render();
+    Command.stop();
   };
   e0.appendChild(cmdsHeader);
   e1 = e0.appendChild(EL("button"));
   e1.appendChild(tN("X"));
   e1.onclick = function () {
     nav.style.display = "none";
-    utilities.rend_UI = F;
-    press = old_UI;
-    render();
+    Command.stop();
   };
   var content = nav.appendChild(EL()), items = nav.appendChild(EL());
   content.className = "content";
@@ -1748,7 +1939,8 @@ var cmdsHeader = EL(), cmds = (function () {
       el.innerText = "Description:\n" + item.description;
       el.style.color = "#879b90";
     }
-    return function () {
+    // Command.currentInit #RIPCMDSRLD
+    return Command.currentInit = function () {
       cmdsHeader.innerText = item.name;
       content.style.display = "none";
       items.style.display = "";
@@ -1796,7 +1988,8 @@ var cmdsHeader = EL(), cmds = (function () {
 function check_contentScript() {
   var contentScript = GE("contentScript"), data = "";
   if (contentScript && (data = contentScript.innerText)) {
-    (contentScript.parentNode || OC()).removeChild(contentScript);
+    //@ts-ignore no problem if it throws error
+    contentScript.parentNode.removeChild(contentScript);
     document.body.appendChild(EL("script")).appendChild(tN(data));
   }
 }
@@ -1928,7 +2121,7 @@ var rend_colors = rend_initColors();
 /** @type {Block[]} */
 var foundBlocks = [];
 
-var old_UI = press = function (x, y) {
+var old_UI = Command.press = press = function (x, y) {
   x = Math.floor((vX - x) / 2 / sc + 1);
   y = Math.floor((y - vY) / 2 / sc);
   var found = [];
@@ -1939,7 +2132,7 @@ var old_UI = press = function (x, y) {
   found = found.map(function (i) {
     var e = arr[i];
     if (placingBlock() === "remove") {
-      Logic.removeLogic(arr[i], (ship.prop || OC()).nodeList);
+      Logic.removeLogic(arr[i], ship.prop && ship.prop.nodeList || []);
       arr[i] = arr.slice(-1)[0];
       arr.length--;
     } else if (blockBind.changingColor)
@@ -1972,21 +2165,27 @@ var old_UI = press = function (x, y) {
     return e;
   })
   // placingBlock function executed sets blockBind.changingColor
-  var rand = placingBlock();
+  var rand = placingBlock(), logics = [];
   if (found.length || blockBind.changingColor) {
     foundBlocks = found;
     return render();
   }
   if (rand !== "remove") {
+    // BLOK for real!!!
     var blok = new Block(rand, [0, x * 2, y * 2], [0, !1, 0],
       Block.Properties.addProperty(rand, Logic.addLogic(
         rand,
         {color: Color.default(rand)},
-        (ship.prop || OC()).nodeList || [],
+        ship.prop && ship.prop.nodeList || logics,
         ship.blocks
       )));
+    if (logics.length && ship.prop)
+      (Logic.nodes =
+        /** @type {(Logic<any>|undefined)[]&{ownerShip:Ship;}} */
+        ((ship.prop.nodeList = logics).concat([]))).ownerShip = ship;
     (blok.properties.nodeIndex || []).forEach(function (e) {
-      (ship.prop || OC()).nodeList[e].owner = blok;
+      var node = logics[e];
+      node ? node.owner = blok : console.error("no node in temp code");
     });
     arr.push(blok);
   }
@@ -2010,9 +2209,12 @@ function commands(x, y, e) {
       break;
     else if (!(el = el.parentNode)) {
       e.button !== -1 && e.cancelable && e.preventDefault();
-      return;
+      utilities.rend_UI = Command.rend_UI;
+      press = Command.press;
+      return render();
     }
   st.display = "none";
+  Command.stop();
 }
 function devt_share(inp) {
   var el = GE("commandsTab");
@@ -2078,8 +2280,16 @@ var rend_speeeeed = {}, rend_logs = 69;
   rend_background();
   ctx.imageSmoothingEnabled = false;
   var objs = ship.blocks, n = 0;
-  if (Logic.rend &&
-    (Logic.nodes = (ship.prop || OC()).nodeList || []))
+  if (
+    Logic.rend &&
+      (Logic.nodes = function (current) {
+        var logics = 
+          /** @type {(Logic|undefined)[]&{ownerShip:Ship}} */
+          (current || [UDF]);
+        logics.ownerShip = ship;
+        return logics;
+      }(ship.prop && ship.prop.nodeList))
+  )
     ctx.globalAlpha = defaults.logicPreviewAlpha;
   for (var i = 0, id = 0, pos = [0, 0, 0]; i < objs.length; i++) {
     pos = objs[i].position;

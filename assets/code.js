@@ -1,9 +1,10 @@
 //@ts-check
 "use strict";
-// v.0.1.35
+// v.0.1.36
 /** @TODO check significantVersion */
 var OP = Object.prototype.hasOwnProperty,
-  /** @type {()=>any} */
+  /** @typedef {{[key:string|number|symbol]:unknown}} safe */
+  /** @type {()=>safe} should be safe with safe type */
   OC = function () {
     return {};
   };
@@ -64,11 +65,11 @@ function rand_sfc32(seed) {
  * @param {{[x: number]: string, length: number}} dicNum
  * @param {string} dicVal
  * @returns {void} */
-function dictionaryDefs(dicNum, dicVal, AT) {
+function dictionaryDefs(dicNum, dicVal, closure) {
   if (location.origin.slice(0, 4) === "http" && location.port !== "5500")
     return;
-  console.time();
-  AT = ". At " + (AT || dicVal) + ".";
+  console.time(closure);
+  var AT = ". At " + (closure || dicVal) + ".";
   if (typeof dicNum != "object")
     throw new Error("Numbered dictionary isn't object" + AT);
   if (typeof dicNum.length != "number")
@@ -114,7 +115,7 @@ function dictionaryDefs(dicNum, dicVal, AT) {
   if (++max !== dicNum.length)
     throw new Error("Length property of numbered dictionary should be: " +
       max + AT);
-  console.timeEnd();
+  console.timeEnd(closure);
 }
 
 /** object is sealed
@@ -303,7 +304,7 @@ Logic.reassemble = function (blocks, logics) {
         if (node.pairs instanceof Array || !(node = logics[node.pairs]))
           continue;
         // add reference to the paired output
-        node.pairs instanceof Array ? !(n in node.pairs) &&
+        node.pairs instanceof Array ? node.pairs.indexOf(n) === -1 &&
           node.pairs.push(n) : console.error("Paired input with input," +
             " at Logic.reassemble.");
       }
@@ -341,8 +342,10 @@ Logic.removeLogic = function (block, logics) {
 // Logic static properties
 /** specifies when logic nodes and connections should be rendered */
 Logic.rend = !1;
-/** @type {(Logic|null)[]&{ownerShip:Ship}} global (logics) nodeList */
-Logic.nodes = OC();
+/** global (logics) nodeList */
+Logic.nodes =
+  /** @type {(Logic|undefined)[]&{ownerShip:Ship}} */
+  ([UDF]);
 if (Logic.nodes[0] && Logic.nodes[0].type === 1)
   Logic.nodes[0].type;
 
@@ -380,7 +383,8 @@ Color.NAME = {
   25: "Station Floor 2",
   26: "Wood",
   27: "Festive Duck",
-  length: 28
+  28: "Gonb",
+  length: 29
 };
 /** object is frost */
 Color.ID = {
@@ -411,7 +415,8 @@ Color.ID = {
   "Station Floor 1": 24,
   "Station Floor 2": 25,
   "Wood": 26,
-  "Festive Duck": 27
+  "Festive Duck": 27,
+  "Gonb": 28
 };
 Object.freeze(Color.NAME);
 Object.freeze(Color.ID);
@@ -920,7 +925,7 @@ Block.STRENGTH = {
  * second @type {{[key:number]:number|undefined}} (Electricity) */
 Block.ENERGY_USE = {
   738: 5720,
-  739: 6.e3, // WTW? 6**7
+  739: 6.e3, // WTW? ***7
   740: 8000,
   741: 1e4,
   770: 1000,
@@ -956,6 +961,85 @@ Block.STORAGE = {
   760: 20,
   761: 100,
   762: 250
+};
+/** positive = buy price of block, -1 = block isn't purchasable
+ * @type {{[key:number]:number|undefined}} (Price?) */
+Block.COST = {
+  690: -1,
+  691: 100,
+  692: 100,
+  693: 100,
+  694: 100,
+  695: 100,
+  696: 100,
+  697: 100,
+  698: 100,
+  699: 100,
+  700: 100,
+  701: 100,
+  702: 100,
+  738: 100,
+  739: 100,
+  740: 400,
+  741: 800,
+  742: 100, 
+  743: 100,
+  744: 400,
+  745: 800,
+  746: 100, 
+  754: 100,
+  755: 400,
+  756: 900,
+  757: 100,
+  758: 400,
+  759: 600,
+  760: 100,
+  761: 400,
+  762: 900,
+  770: 100,
+  771: 100,
+  772: 200,
+  773: 200,
+  774: 200,
+  775: 200,
+  786: 100,
+  787: 100,
+  788: 100,
+  789: 100,
+  790: 100,
+  791: 100,
+  792: 100,
+  793: 100,
+  794: 100,
+  795: 100,
+  796: 500,
+  802: 100,
+  803: 100,
+  804: 100,
+  805: 100,
+  806: 100,
+  807: 100,
+  808: 100,
+  809: 100,
+  810: 100,
+  811: 100,
+  812: 100,
+  813: 100,
+  814: 100,
+  815: 100,
+  816: 100,
+  817: 100,
+  818: 100,
+  819: 100,
+  820: 100,
+  821: 100,
+  822: 100,
+  823: 100,
+  824: 100,
+  825: 100,
+  826: 100,
+  827: 100,
+  828: 100
 };
 /** @TODO handling ls (DBV property?) */
 /**
@@ -1011,7 +1095,6 @@ Block.arrayFromObjects = function arrayFromObjects(blocks, logics$) {
         indexes[i] = ncProperty[indexes[i]];
     return indexes;
   }
-  delete (logics$ || {}).nc;
   for (var i = 0, r = []; i < bs.length; i++) {
     var block = bs[i], o = {
       name: block.internalName || block.name || block.n,
@@ -1280,6 +1363,8 @@ Block.Properties = function (type, name) {
   this.item = new Block.Properties.Items[type]();
 }
 Block.Properties.Items = {
+  // changed the integer slider from not having enterable input
+  // to allow only for integer number unlike slider's multiplies of 0.1
   /** @type {new()=>Slider} */
   "Slider": function Slider() {
     this.min = 0;
@@ -1346,7 +1431,7 @@ Block.Properties.justOne = function (argArr) {
       case 2:
         p = r[j] = new Block.Properties("Dropdown", v[1]);
         p.item.options = v[2];
-        p.item.default =  [v[3]];
+        p.item.default = [v[3]];
         break;
       case 3:
         p = r[j] = new Block.Properties("Number Inputs", v[1]);
@@ -1370,39 +1455,47 @@ Block.Properties.justOne = function (argArr) {
   //@ts-ignore
   return r;
 };
-/** @type {{[key: number]: Props[] | undefined}} */
+/**
+ * @type {{[key:number]:Props[]|undefined,
+ * 803:[Block.Properties<"Dropdown">]}}
+ */
 Block.Properties.VALUE = Block.PROP = {
-  738: Block.Properties.justOne([[0, "Force", 375, 1125, 1125]]),
+  738: Block.Properties.justOne([[1, "Force", 375, 1125, 1125]]),
   // 738: + old logical input node
-  739: Block.Properties.justOne([[0, "Force", 1500, 4500, 4500]]),
+  739: Block.Properties.justOne([[1, "Force", 1500, 4500, 4500]]),
   // 739: + old logical input node
-  740: Block.Properties.justOne([[0, "Force", 6000, 18000, 18000]]),
+  740: Block.Properties.justOne([[1, "Force", 6000, 18000, 18000]]),
   // 740: + old logical input node
-  741: Block.Properties.justOne([[0, "Force", 1800, 54000, 54000]]),
+  741: Block.Properties.justOne([[1, "Force", 1800, 54000, 54000]]),
   // 741: + old logical input node
-  742: Block.Properties.justOne([[0, "Force", 375, 1125, 1125]]),
+  742: Block.Properties.justOne([[1, "Force", 375, 1125, 1125]]),
   // 742: + old logical input node
-  743: Block.Properties.justOne([[0, "Force", 1500, 4500, 4500]]),
+  743: Block.Properties.justOne([[1, "Force", 1500, 4500, 4500]]),
   // 743: + old logical input node
-  744: Block.Properties.justOne([[0, "Force", 3000, 9000, 9000]]),
+  744: Block.Properties.justOne([[1, "Force", 3000, 9000, 9000]]),
   // 744: + old logical input node
-  745: Block.Properties.justOne([[0, "Force", 9000, 27000, 27000]]),
+  745: Block.Properties.justOne([[1, "Force", 9000, 27000, 27000]]),
   // 745: + old logical input node
-  746: Block.Properties.justOne([[0, "Torque", 2500, 7500, 7500]]),
+  746: Block.Properties.justOne([[1, "Torque", 2500, 7500, 7500]]),
   // 770, 771, 772, 773, 774, 775: old logical input node
-  790: Block.Properties.justOne([[0, "Gear Ratio", 0.2, 3, 1], [5, 0]]),
+  790: Block.Properties.justOne([[1, "Gear Ratio", 0.2, 3, 1], [5, 0]]),
   791: Block.Properties.justOne([[5, [0, 0, 0, 0]]]),
   792: Block.Properties.justOne([[0, "Gear Ratio", 0.2, 3, 1], [5, 0]]),
-  803: Block.Properties.justOne([[2, "Controls", [
-    "Up",
-    "Down",
-    "Left",
-    "Right",
-    "Turn Left",
-    "Turn Right",
-    "Action 1",
-    "Action 2"
-  ], 0]]),
+  803:
+    // custom parameter (DBV block's "c") property contains option string
+    // instead of number reference to option index
+    // (which's in Block.Properties<"Dropdown"> item.default)
+    /** @type {[Block.Properties<"Dropdown">]} */
+    (Block.Properties.justOne([[2, "Controls", [
+      "Up",
+      "Down",
+      "Left",
+      "Right",
+      "Turn Left",
+      "Turn Right",
+      "Action 1",
+      "Action 2"
+    ], 0]])),
   // 803: + old logical output node
   // 804, 805, 806, 807, 808, 809, 810: old logical output node and input nodes
   812: Block.Properties.justOne([[0, "Duraion in seconds", 0.1, 5, 1]]),
@@ -1433,7 +1526,10 @@ Block.Properties.addProperty = function (name, property) {
   for (var i = 0, n = 0, p; i < propsDef.length;)
     if ((p = propsDef[i++]) instanceof Block.Properties)
       for (var j = 0, l = p.item.default.length; j < l;)
-        property.control[n++] = p.item.default[j++];
+        property.control[n++] = p.name === "Controls" &&
+          p.item instanceof Block.Properties.Items.Dropdown ?
+            p.item.options[p.item.default[j++]] :
+            p.item.default[j++];
   return property;
 };
 
@@ -1442,11 +1538,16 @@ Block.Properties.addProperty = function (name, property) {
  * @TODO BlockSelection can't be used for stored blueprints
  * a Blueprint with deep copied logics should be used instead */
 /**
+ * @typedef {{nodeList?:(Logic|undefined)[],
+ * customInputs?:Ship.CustomInput[],[key:string]:unknown}} ShipProperties
+ * @see {Logic} @see {Ship.CustomInput} */
+/**
  * @param {string} name
  * @param {Array<number>} version
  * @param {string} time
  * @param {Array<Block>} blocks
- * @param {unknown|null} [properties=null] */
+ * @param {ShipProperties|null} [properties=null]
+ * for usuall ship creation ues @see {Ship.fromObject} */
 function Ship(name, version, time, blocks, properties) {
   this.name = name;
   this.gameVersion = version;
@@ -1500,7 +1601,7 @@ Ship.prototype.removeRect = function (xl, yt, zr, xr, yb, zf) {
     if (pos[0] < x || pos[0] > xl || pos[1] < y || pos[1] > yt ||
       pos[2] < z || pos[2] > zr)
       continue;
-    Logic.removeLogic(all[i], (ship.prop || OC()).nodeList);
+    Logic.removeLogic(all[i], (ship.prop ? ship.prop.nodeList : 0) || []);
     all[i] = all.slice(-1)[0];
     all.length--;
   }
@@ -1538,7 +1639,7 @@ Ship.prototype.fillRect = function (x0, y0, z0, x1, y1, z1, select) {
           control: properties.control,
           weldGroup: properties.weldGroup
         },
-        (ship.prop || OC()).nodeList || [],
+        ship.prop && ship.prop.nodeList || [],
         ship.blocks
       )
     );
@@ -1563,9 +1664,10 @@ Ship.prototype.fillRect = function (x0, y0, z0, x1, y1, z1, select) {
  * @param {BlockSelection} select */
 Ship.prototype.paste = function (x, y, z, select) {
   /** @type {(Logic<any>|undefined)[]} */
-  var logics = (ship.prop || OC()).nodeList || [],
+  var logics = ship.prop && ship.prop.nodeList || [],
     /** @type {(Logic<any>|undefined)[]} */
-    oldLogics = (select.parentShip.prop || OC()).nodeList || [],
+    oldLogics = select.parentShip.prop &&
+      select.parentShip.prop.nodeList || [],
     /** @type {number[]} mapping new output nodes indexes by old ones */
     outputs = [],
     /** @type {number[]} later used to assign each to output */
@@ -1586,10 +1688,11 @@ Ship.prototype.paste = function (x, y, z, select) {
       for (var j = logicDef.length; j-- > 0;) {
         while (logics[l])
           l++;
+        /** @type {Logic<any>|safe} */
         var newNode = logics[l] = new Logic(logicDef[j].type, 0, 0),
           idx = (select[i].properties.nodeIndex || [])[j];
         newNode.owner = block;
-        /** @type {Logic<any>} node from nodeList of selection */
+        /** @type {Logic<any>|safe} node from nodeList of selection */
         var oldNode = oldLogics[idx] || OC();
         if (logicDef[j].type > 1) {
           //-newNode.pairs = [];
@@ -1717,9 +1820,10 @@ Ship.fromObject = function fromObject(object) {
     time: object.dateTime || object.time || object.dt,
     blocks: object.blocks || object.b,
     props: object.properties,
-    add: object.ls || object.nc ? {
+    add: object.ls || object.nc || object.ci ? {
       grid: object.ls,
-      logic: object.nc
+      logic: object.nc,
+      inputs: object.ci
     } : null
   };
   var name = typeof o.name === "string" ? o.name : "[unnamed]",
@@ -1739,11 +1843,14 @@ Ship.fromObject = function fromObject(object) {
     blocks = o.blocks instanceof Array ?
       Block.arrayFromObjects(o.blocks, logics) :
       Block.generateArray(-69, logics),
+    /** */ //+???
     props = o.props;
+  delete logics.nc;
   Logic.reassemble(blocks, logics);
   if (o.add) {
     (props = props || OC()).launchpadSize = o.add.grid;
     props.nodeConnections = o.add.logic;
+    props.customInputs = o.add.inputs;
   }
   if (logics.length)
     (props = props || OC()).nodeList = logics;
@@ -1773,10 +1880,13 @@ Ship.toDBV = function toDBV(ship) {
     });
   }
   var shipProp = ship.prop || OC(), connections = [];
-  for (i = (shipProp.nodeList || []).length; i-- > 0;) {
+  var logics = shipProp.nodeList instanceof Array ?
+    shipProp.nodeList :
+    [];
+  for (i = logics.length; i-- > 0;) {
     /** @type {Logic<any>|{pairs:[]}} */
-    var node = shipProp.nodeList[i] || {pairs: []}, n = node.pairs;
-    typeof n == "number" && shipProp.nodeList[n] &&
+    var node = logics[i] || {pairs: []}, n = node.pairs;
+    typeof n == "number" && logics[n] &&
       connections.push({
         // node index, input type
         Item1: i,
@@ -1791,7 +1901,8 @@ Ship.toDBV = function toDBV(ship) {
     ls: shipProp.launchpadSize || 0,
     b: blocks,
     nc: connections || shipProp.nodeConnections,
-    significantVersion: 9
+    ci: shipProp.customInputs || [],
+    significantVersion: 10
   };
 };
 /** @param {string} key */
@@ -1874,6 +1985,15 @@ Ship.fromDBKey = function (key) {
   var obj = {nodeList: logics};
   return new Ship("[unnamed]", [], dateTime(1714557750), blocks, obj);
 };
+/** object is sealed @param {string} name @param {number} type */
+Ship.CustomInput = function CustomInput(name, type) {
+  this.name = name;
+  this.type = type;
+  Object.seal(this);
+};
+Ship.CustomInput.prototype.toString = function () {
+  return this.name;
+};
 
 var ship = Ship.fromObject({name: "Starter Droneboi"});
 // var block = new Block("Block", [0, 0, 0], [0, !0, 0]),
@@ -1884,7 +2004,10 @@ function Edit() {
   this.history = [];
   this.edited = new Ship("", [], "", []);
 }
+/** @type {(Function&{id?:string})[]} */
+Edit.listeners = [];
 Edit.rotate =
+/** @TODO Fix rotating tiny blocks */
   /** rotates Dr ships as well as db vehicles
    * @overload @param {BlockSelection} selection
    * @param {number} rx
@@ -1942,6 +2065,10 @@ Edit.move = function (selection, x, y, z) {
     pos[1] += y;
     pos[2] += z;
   }
+};
+Edit.eventFire = function () {
+  for (var i = this.listeners.length; i-- > 0;)
+    this.listeners[i]();
 };
 
 /** @function base64ToUint8array */
