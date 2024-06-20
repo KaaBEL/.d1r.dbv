@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.36
+// v.0.1.37
 /** @TODO check significantVersion */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -8,6 +8,15 @@ var OP = Object.prototype.hasOwnProperty,
   OC = function () {
     return {};
   };
+// inheritance's gonna go brrrrrrrrrrrrrrrr
+/** @param {Function} _new_class @param {Function} _super */
+function __extends(_new_class, _super) {
+  function __() {
+    this.constructor = _super; // this can be omitted
+  }
+  __.prototype = _super.prototype;
+  _new_class.prototype = new __();
+}
 /** @type {typeof defaults|null} */
 var settings = null;
 
@@ -1819,7 +1828,7 @@ Ship.fromObject = function fromObject(object) {
     ver: object.gameVersion || object.version || object.gv,
     time: object.dateTime || object.time || object.dt,
     blocks: object.blocks || object.b,
-    props: object.properties,
+    props: object.properties || object.prop,
     add: object.ls || object.nc || object.ci ? {
       grid: object.ls,
       logic: object.nc,
@@ -1854,6 +1863,8 @@ Ship.fromObject = function fromObject(object) {
   }
   if (logics.length)
     (props = props || OC()).nodeList = logics;
+  // reassamble different from Logic.reassemble
+  Ship.CustomInput.reassemble(blocks, (props = props || OC()));
   return new Ship(name, ver, time, blocks, props);
 };
 /** @param {Ship} ship */
@@ -1902,7 +1913,7 @@ Ship.toDBV = function toDBV(ship) {
     b: blocks,
     nc: connections || shipProp.nodeConnections,
     ci: shipProp.customInputs || [],
-    significantVersion: 10
+    significantVersion: 11
   };
 };
 /** @param {string} key */
@@ -1994,8 +2005,28 @@ Ship.CustomInput = function CustomInput(name, type) {
 Ship.CustomInput.prototype.toString = function () {
   return this.name;
 };
+/** @param {Block[]} blocks @param {ShipProperties} prop */
+Ship.CustomInput.reassemble = function (blocks, prop) {
+  /** @type {Ship.CustomInput[]} */
+  var inputs = [], defs = Block.Properties.VALUE[803][0].item.options;
+  for (var i = defs.length, j = i; i-- > 0;) {
+    inputs[i + j] = new Ship.CustomInput(defs[i + j] = defs[i] + 1, 1);
+    inputs[i] = new Ship.CustomInput(defs[i] += 0, 0);
+  }
+  /** @param {unknown} control */
+  function checkControlBlock(control) {
+    if (!(control instanceof Array))
+      return console.error("ControlBlock check not passed.");
+    if (typeof control[0] != "string")
+      return /** @TODO continue here */;
+  }
+  for (var i = blocks.length, j = j << 1; i-- > 0;)
+    if (blocks[i].internalName === "Control Block")
+      checkControlBlock(blocks[i].properties.control);
+};
 
-var ship = Ship.fromObject({name: "Starter Droneboi"});
+// generating Droneboi
+var ship = Ship.fromObject({name: "Starter Droneboi", ci: []});
 // var block = new Block("Block", [0, 0, 0], [0, !0, 0]),
 //   ship = new Ship("None", [0, 9], "never", [block]);
 
@@ -2004,7 +2035,7 @@ function Edit() {
   this.history = [];
   this.edited = new Ship("", [], "", []);
 }
-/** @type {(Function&{id?:string})[]} */
+/** @type {((()=>void)&{id?:string}|undefined)[]} */
 Edit.listeners = [];
 Edit.rotate =
 /** @TODO Fix rotating tiny blocks */
@@ -2068,7 +2099,7 @@ Edit.move = function (selection, x, y, z) {
 };
 Edit.eventFire = function () {
   for (var i = this.listeners.length; i-- > 0;)
-    this.listeners[i]();
+    (this.listeners[i] || F)();
 };
 
 /** @function base64ToUint8array */

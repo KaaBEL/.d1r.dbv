@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.36
+// v.0.1.37
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -712,7 +712,6 @@ function utilities(tag) {
   return [btn, el];
 }
 utilities.rend_UI = F;
-utilities.groupName = "";
 /**
  * @typedef {{name:string,type:string,fn:(ev:Event)=>any}} CommandItem
  * @param {string} name
@@ -771,14 +770,6 @@ Command.add = function add(name, items, desc) {
 Command.push = function (name, initialize, description, settings) {
   name = Command.NAME[name] || name;
   settings = settings || {};
-  //-try {
-  //-  utilities.refreshes = !
-  //-  initialize(
-  //-    //@ts-expect-error
-  //-    UDF,
-  //-    utilities
-  //-  );
-  //-} catch (e) {}
   function itemsInit(el) {
     /** @type {(Node|{name:string,inp:HTMLInputElement})[]} */
     var items = [];
@@ -1197,7 +1188,11 @@ not explained), 0 is white 1 is blue 2 is red 3 is green 4 is yellow, this d\
 escri.");
 Command.push("Display Logic", function (items, collapsed) {
   function updateNodeSelect() {
+    /** uses #text node to recover index selected from blocks selector of
+     * "Setup Properties" command */
     var idx = Number(text.data), block = ship.blocks[idx];
+    if (!block)
+      return;
     /** @type {(Logic<any>|undefined)[]} */
     var logics = ship.prop && ship.prop.nodeList || [], temp = EL();
     temp.appendChild(tN("Logic block: " + idx + " " + block.internalName));
@@ -1315,6 +1310,9 @@ Command.push("Display Logic", function (items, collapsed) {
   updateNodeSelect();
   /** @param {string} old @param {string} replace */
   function updateControlParams(old, replace) {
+    /** @type {Block} */
+    var block, options = Block.Properties.VALUE[803][0].item.options;
+    var strMap = (ship.prop && ship.prop.customInputs || []).map(String);
     /** @param {unknown} param */
     function checkControlBlock(param) {
       if (typeof param != "string")
@@ -1322,68 +1320,84 @@ Command.push("Display Logic", function (items, collapsed) {
 n't string.");
       if (param === old)
         return void (block.properties[0] = replace);
-      if (options.indexOf(param) === -1 || custom.indexOf(param) === -1)
+      if (options.indexOf(param) === -1 || strMap.indexOf(param) === -1)
         block.properties[0] = "Up";
     }
-    /** @type {Block} */
-    var block, options = Block.Properties.VALUE[803][0].item.options;
-    var custom = (ship.prop && ship.prop.customInputs || []).map(String);
     for (i = ship.blocks.length; i-- > 0;)
       if ((block = ship.blocks[i]).internalName === "Control Block")
         checkControlBlock(block.properties[0]);
   }
   var customInputs = EL(), add = EL("button"), remove = EL("button");
-  add.style.width = remove.style.width = "unset";
-  add.style.display = remove.style.display = "initial";
-  customInputs.appendChild(add).appendChild(tN("Add"));
-  add.onclick = function () {
-    if (!(this instanceof HTMLButtonElement))
+  /** @param {MouseEvent|Ship.CustomInput} e */
+  function addCustomInput(e) {
+    var isInit = e instanceof Ship.CustomInput;
+    if (!(this instanceof HTMLButtonElement || isInit))
       return;
-    var custom = new Ship.CustomInput("Button", 0);
-    (ship.prop && ship.prop.customInputs || []).push(custom);
-    var toggle = EL("input"), name = EL("input");
+    var custom = new Ship.CustomInput("Button", 0),
+      prop = isInit ? OC() : ship.prop || (ship.prop = OC());
+    prop.customInputs instanceof Array ?
+      prop.customInputs.push(custom) :
+      prop.customInputs = [];
+    /** @type {Node} */
+    var from = this || add, prev, toggle = EL("input"), name = EL("input");
+    while ((prev = from.previousSibling) && prev.nodeName !== "BR")
+      from = prev;
     toggle.type = "checkbox";
+    toggle.checked = isInit && !!e.type;
     toggle.oninput = function () {
-      custom.name = (custom.type = +toggle.checked) ?
+      custom.name = name.value = (custom.type = +toggle.checked) ?
         "Switch" :
         "Button";
       updateControlParams("", "Up");
     };
-    customInputs.insertBefore(toggle, this);
+    customInputs.insertBefore(toggle, from);
     name.type = "text";
+    name.value = e instanceof Ship.CustomInput ? e.name : "Button";
     name.oninput = function () {
       custom.name = name.value;
       updateControlParams("", "Up");
     };
-    customInputs.insertBefore(name, this);
+    customInputs.insertBefore(name, from);
     /** @type {Node&{onclick?:typeof add.onclick}} */
-    (customInputs.insertBefore(add.cloneNode(!0), this)
-      ).onclick = add.onclick;
+    (
+      customInputs.insertBefore(add.cloneNode(!0), from)
+    ).onclick = add.onclick;
     /** @type {Node&{onclick?:typeof add.onclick}} */
-    (customInputs.insertBefore(remove.cloneNode(!0), this)
-      ).onclick = remove.onclick;
-    customInputs.insertBefore(EL("br"), this);
+    (
+      customInputs.insertBefore(remove.cloneNode(!0), from)
+    ).onclick = remove.onclick;
+    customInputs.insertBefore(EL("br"), from);
   };
+  add.style.width = remove.style.width = "unset";
+  add.style.display = remove.style.display = "initial";
+  customInputs.appendChild(add).appendChild(tN("Add"));
+  add.onclick = addCustomInput;
   remove.onclick = function () {
     if (!(this instanceof HTMLButtonElement))
       return;
-    // i = elements: remove, add, name(input), type(checkbox), (br)
-    for (var i = 5, input = this.previousSibling; i-- > 0;)
-      input = i === 1 ? input : this.previousSibling &&
+    // i = elements: type (checkbox), name (input), add
+    for (var i = 3, selecting = [this.previousSibling, null]; i-- > 0;)
+      selecting[i] = this.previousSibling &&
         customInputs.removeChild(this.previousSibling);
+    // also: newline (br)
+    this.nextSibling && customInputs.removeChild(this.nextSibling);
+    // also self: remove (button)
     customInputs.removeChild(this);
-
-    var custom = (ship.prop && ship.prop.customInputs || []).map(String);
-    if (input instanceof HTMLInputElement)
+    var name = selecting[1],
+      inputs = ship.prop && ship.prop.customInputs || [];
+    if (name instanceof HTMLInputElement && name.type === "text")
       // removes cutom property from Ship.props.customInputs of ship
-      del.call(custom, custom.indexOf(input.value));
+      del.call(inputs, inputs.map(String).indexOf(name.value));
     else
-      console.error("Supposed to be name input:", input);
+      console.error("Supposed to be name input:", name);
     // non-existing controlInput values (removed one now too) set to default
     updateControlParams("", "Up");
   };
   remove.appendChild(tN("Remove"));
-  items.push(connections, customInputs);
+  var inputs = ship.prop && ship.prop.customInputs || [];
+  for (var j = 0; j < inputs.length;)
+    addCustomInput(inputs[j++]);
+  items.push(connections, tN("Custom inputs:"), EL("br"), customInputs);
 }, "Gives the option to toggle displaying logics, it may cause errors but tu\
 rning it off might not get rid of all bugs related to Logic blocks either. U\
 ses block selection from \"Setup Properties\" Command and the focus option. \
@@ -1463,7 +1477,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
     }
   };
   elBtn.appendChild(tN("Import"));
-  download.appendChild(tN("Download but only JSON"));
+  download.appendChild(tN("Download but only .JSON"));
   download.href = "javascript:void(0)";
   div.appendChild(download);
   div.style.textAlign = "center";
@@ -1721,7 +1735,33 @@ Command.push("Transfrom tool", function (items, collapsed) {
     }
     ctx.strokeRect(dx, dy, (w + 1) * sc, (h + 1) * sc);
   };
-}, "Not yet completed actually. Each action uses some specific inputs to provide its function. Values inside inputs are integers that means that full block is 2x2 ad 0.5 by 0.5 is 1x1.\nSelect rectangle:\nThe four inputs together with Select rectangle button are used to select area with blocks, starting with left top point [x0, y0] making rectangle with second right bottom point [x1, y1]. Blocks are selected not by collision with selected area or being fully covered by the area, it select blocks of which position is inside the area, which is quite confusing, because there's no collisions detection yet.\nLock selection:\nWhen checkboxes is enabled, actions will be applied to the same blocks selected at that moment of checkbox getting enabled. When it is disabled, the block positions inside selection at a time of doing one of the actions are used.\nCopy action:\nIt stores current selection of which amount of blocks and types of few first blocks can be seen at the bottom, at the \"Copied:\".\nPaste action:\nReplicates copied selection and also logic connections to output nodes. In other to prevent accidental blocks stacking the selection is deselected after both Copy and Paste action.\nFill action:\nFills the selection with pseudo randomly selected blocks from copied selection, by replicating them with all properties except logic connections to output nodes.\nRemove action:\nRemoves all blocks inside selection\nAxis X, Axis Y:\nAre two additional inputs for actions below.\nMove action:\nMove selected blocks by specified x and y distance.\nRotate action:\nRotates selected blocks by amount in either Axis x or Axis y input around center of editor space [0, 0].\nSize action:\nNot implemented yet.\nMirror action:\nMirrors blocks from left to right and from right to left around center of editor space.\nPaint action:\nUses the selected \"Color:\" above to paint selected blocks with it. Custom color option is texture that uses custom hex color. The custom hex color can be set in \"Select Color\" Command.");
+}, "Not yet completed actually. Each action uses some specific inputs to pro\
+vide its function. Values inside inputs are integers that means that full bl\
+ock is 2x2 ad 0.5 by 0.5 is 1x1.\nSelect rectangle:\nThe four inputs togethe\
+r with Select rectangle button are used to select area with blocks, starting\
+ with left top point [x0, y0] making rectangle with second right bottom poin\
+t [x1, y1]. Blocks are selected not by collision with selected area or being\
+ fully covered by the area, it select blocks of which position is inside the\
+ area, which is quite confusing, because there's no collisions detection yet\
+.\nLock selection:\nWhen checkboxes is enabled, actions will be applied to t\
+he same blocks selected at that moment of checkbox getting enabled. When it \
+is disabled, the block positions inside selection at a time of doing one of \
+the actions are used.\nCopy action:\nIt stores current selection of which am\
+ount of blocks and types of few first blocks can be seen at the bottom, at t\
+he \"Copied:\".\nPaste action:\nReplicates copied selection and also logic c\
+onnections to output nodes. In other to prevent accidental blocks stacking t\
+he selection is deselected after both Copy and Paste action.\nFill action:\n\
+Fills the selection with pseudo randomly selected blocks from copied selecti\
+on, by replicating them with all properties except logic connections to outp\
+ut nodes.\nRemove action:\nRemoves all blocks inside selection\nAxis X, Axis\
+ Y:\nAre two additional inputs for actions below.\nMove action:\nMove select\
+ed blocks by specified x and y distance.\nRotate action:\nRotates selected b\
+locks by amount in either Axis x or Axis y input around center of editor spa\
+ce [0, 0].\nSize action:\nNot implemented yet.\nMirror action:\nMirrors bloc\
+ks from left to right and from right to left around center of editor space.\
+\nPaint action:\nUses the selected \"Color:\" above to paint selected blocks\
+ with it. Custom color option is texture that uses custom hex color. The cus\
+tom hex color can be set in \"Select Color\" Command.");
 
 Command.push("Vehicle stats", function (items, collapsed) {
   function addLine(text) {
@@ -1738,7 +1778,9 @@ Command.push("Vehicle stats", function (items, collapsed) {
     store: {fuel: 0, energy: 0, cargo: 0},
     use: {fuel: 0, energy: 0, cargo: 0}
   },
-    skipped = JSON.parse(JSON.stringify(sums));
+    stringify = JSON.stringify(sums),
+    /** @type {typeof sums} */
+    skipped = JSON.parse(stringify);
   /** @param {string} stat @param {any} value @param {Function} [parse] */
   function checkStat(stat, value, parse) {
     // properties stack for stats counter dictionary
@@ -1747,23 +1789,37 @@ Command.push("Vehicle stats", function (items, collapsed) {
       tmpSums = tmpSums[stack[i - 1]];
     stat = stack.slice(-1)[0];
     typeof value != "undefined" ?
-      tmpSums += parse ? parse(value) : value :
-      tmpSkip++;
+      tmpSums[stat] += parse ? parse(value) : value :
+      tmpSkip[stat]++;
   }
-  for (var blocks = ship.blocks, i = blocks.length; i-- > 0;) {
-    var id = Block.ID[blocks[i].internalName];
-    checkStat("cost", Block.COST[id], function (val) {
-      return val < 0 ? 0 : val;
-    });
-    checkStat("weight", Block.WEIGHT[id]);
-    checkStat("strenght", Block.STRENGTH[id]);
+  for (var j = 0, texts = []; j < 3;)
+    items.push(texts[j++] = tN(""), EL("br"));
+    var ids = '';
+  function updateStats() {
+    sums = JSON.parse(stringify);
+    skipped = JSON.parse(stringify);
+    for (var blocks = ship.blocks, i = blocks.length; i-- > 0;) {
+      var id = Block.ID[blocks[i].internalName];
+      ids += id + '; ';
+      checkStat("cost", Block.COST[id], function (val) {
+        return val < 0 ? 0 : val;
+      });
+      checkStat("weight", Block.WEIGHT[id]);
+      checkStat("strenght", Block.STRENGTH[id]);
+    }
+    texts[0].data = "Blocks amount: " + blocks.length;
+    texts[1].data = "Weight: " + sums.weight + '/' +
+      (blocks.length - skipped.weigh);
+    texts[2].data = "Cost: " + sums.cost + "/" +
+      (blocks.length - skipped.cost);
   }
-  addLine("Blocks amount: " + blocks.length);
-  addLine("")
-  Edit.listeners.push();
-}, "TODO: create Vehicle stats descriptions when command gets released.", {
-  // ???
-});
+  // addLine();
+  // addLine("")
+  updateStats();
+  // Edit.listeners.push();
+}, "TODO: create Vehicle stats descriptions when command gets released."
+// , {} ???
+);
 Command.push("Rift Drive calculator", function (items, collapsed) {
   var weight = 0, drives = 0, unknown = 0, all = ship.blocks;
   for (var i = all.length; i-- > 0;) {
@@ -2165,24 +2221,29 @@ var old_UI = Command.press = press = function (x, y) {
     return e;
   })
   // placingBlock function executed sets blockBind.changingColor
-  var rand = placingBlock(), logics = [];
+  var rand = placingBlock(),
+    logics = ship.prop && ship.prop.nodeList || [];
   if (found.length || blockBind.changingColor) {
     foundBlocks = found;
     return render();
   }
   if (rand !== "remove") {
     // BLOK for real!!!
+    // TODO: now I could use some unit test for logic,
+    // how the hack am I supposed to do that
+    /** @TODO unit test for any new feature required */
     var blok = new Block(rand, [0, x * 2, y * 2], [0, !1, 0],
       Block.Properties.addProperty(rand, Logic.addLogic(
         rand,
         {color: Color.default(rand)},
-        ship.prop && ship.prop.nodeList || logics,
+        logics,
         ship.blocks
       )));
-    if (logics.length && ship.prop)
+    if (logics.length)
       (Logic.nodes =
         /** @type {(Logic<any>|undefined)[]&{ownerShip:Ship;}} */
-        ((ship.prop.nodeList = logics).concat([]))).ownerShip = ship;
+        (((ship.prop || (ship.prop = OC())).nodeList = logics)
+        .concat([]))).ownerShip = ship;
     (blok.properties.nodeIndex || []).forEach(function (e) {
       var node = logics[e];
       node ? node.owner = blok : console.error("no node in temp code");
