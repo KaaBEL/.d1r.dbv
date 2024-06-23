@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.37
+// v.0.1.38
 /** @TODO check significantVersion */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -850,7 +850,11 @@ Block.WEIGHT = {
   825: .5,
   826: .25,
   827: .5,
-  828: .5
+  828: .5,
+  1035: 2,
+  1037: 3,
+  1043: 1,
+  1060: 1
 };
 /** @type {{[key:number]:number|undefined}} (Integrity) */
 Block.STRENGTH = {
@@ -928,7 +932,11 @@ Block.STRENGTH = {
   825: 5,
   826: 2.5,
   827: 5,
-  828: 5
+  828: 5,
+  1035: 10,
+  1037: 15,
+  1043: 20,
+  1060: 10
 };
 /** positive = thrust per 1 Electricity unit, negative = generation per 
  * second @type {{[key:number]:number|undefined}} (Electricity) */
@@ -1048,7 +1056,11 @@ Block.COST = {
   825: 100,
   826: 100,
   827: 100,
-  828: 100
+  828: 100,
+  1035: 70,
+  1037: 90,
+  1043: 70,
+  1060: 130
 };
 /** @TODO handling ls (DBV property?) */
 /**
@@ -1890,7 +1902,7 @@ Ship.toDBV = function toDBV(ship) {
       wg: e.properties.weldGroup || 0
     });
   }
-  var shipProp = ship.prop || OC(), connections = [];
+  var shipProp = ship.prop || OC(), connections = [], custominps = [];
   var logics = shipProp.nodeList instanceof Array ?
     shipProp.nodeList :
     [];
@@ -1905,6 +1917,16 @@ Ship.toDBV = function toDBV(ship) {
         Item2: node.pairs
       });
   }
+  var inputs = shipProp.customInputs instanceof Array ?
+    shipProp.customInputs :
+    [];
+  for (i = 0; i < inputs.length; i++) {
+    /** @type {Ship.CustomInput|{type:number,name:string}} */
+    var custom = inputs[i] || OC(), s = custom.name;
+    n = custom.type;
+    n === 0 || n === 1 || n === -1 && typeof s == "string" &&
+      custominps.push({n: s, t: n === -1 ? 0 : n});
+  }
   return {
     n: ship.name,
     gv: ship.gameVersion.join("."),
@@ -1912,8 +1934,8 @@ Ship.toDBV = function toDBV(ship) {
     ls: shipProp.launchpadSize || 0,
     b: blocks,
     nc: connections || shipProp.nodeConnections,
-    ci: shipProp.customInputs || [],
-    significantVersion: 11
+    ci: custominps || [],
+    significantVersion: 12
   };
 };
 /** @param {string} key */
@@ -1999,30 +2021,49 @@ Ship.fromDBKey = function (key) {
 /** object is sealed @param {string} name @param {number} type */
 Ship.CustomInput = function CustomInput(name, type) {
   this.name = name;
+  /** type: -1 = unknown, 0 = Button, 1 = Switch. */
   this.type = type;
   Object.seal(this);
 };
 Ship.CustomInput.prototype.toString = function () {
   return this.name;
 };
-/** @param {Block[]} blocks @param {ShipProperties} prop */
+/** @param {Block[]} blocks @param {safe} prop ShipProperties */
 Ship.CustomInput.reassemble = function (blocks, prop) {
   /** @type {Ship.CustomInput[]} */
   var inputs = [], defs = Block.Properties.VALUE[803][0].item.options;
-  for (var i = defs.length, j = i; i-- > 0;) {
-    inputs[i + j] = new Ship.CustomInput(defs[i + j] = defs[i] + 1, 1);
-    inputs[i] = new Ship.CustomInput(defs[i] += 0, 0);
-  }
+  // for (var i = (defs = defs.concat([])).length, j = i; i-- > 0;) {
+  //   inputs[i + j] = new Ship.CustomInput(defs[i + j] = defs[i] + 1, 1);
+  //   inputs[i] = new Ship.CustomInput(defs[i] += 0, 0);
+  // }
+  for (var i = defs.length, j = i; i-- > 0;)
+    inputs[i] = new Ship.CustomInput(defs[i], 0);
+  /** @type {safe} custom input from savefile */
+  var old, inputsOld = prop.customInputs instanceof Array ?
+    prop.customInputs :
+    [];
+  for (j += i = inputsOld.length; i-- > 0;)
+    if ((old = inputsOld[i]) instanceof Object) {
+      inputs[--j] = new Ship.CustomInput("" + (old.n || old.name),
+        typeof old.t == "number" ? old.t : +(old.type || 0));
+      defs[j] = inputs[j].name;
+    } else
+      console.warn("CustomInput check- not passed.");
   /** @param {unknown} control */
   function checkControlBlock(control) {
     if (!(control instanceof Array))
-      return console.error("ControlBlock check not passed.");
-    if (typeof control[0] != "string")
-      return /** @TODO continue here */;
+      return console.warn("ControlBlock check0 not passed.");
+    var name = control[0];
+    if (typeof name != "string")
+      return console.warn("ControlBlock check1 not passed.");
+    defs.indexOf(name) === -1 &&
+      inputs.push(new Ship.CustomInput(name, -1)) &&
+      defs.push(name);
   }
-  for (var i = blocks.length, j = j << 1; i-- > 0;)
+  for (var i = blocks.length; i-- > 0;)
     if (blocks[i].internalName === "Control Block")
       checkControlBlock(blocks[i].properties.control);
+  prop.customInputs = inputs.slice(j);
 };
 
 // generating Droneboi
@@ -2035,7 +2076,7 @@ function Edit() {
   this.history = [];
   this.edited = new Ship("", [], "", []);
 }
-/** @type {((()=>void)&{id?:string}|undefined)[]} */
+/** @type {(((ship?:Ship)=>void)&{id?:string}|undefined)[]} */
 Edit.listeners = [];
 Edit.rotate =
 /** @TODO Fix rotating tiny blocks */
@@ -2085,6 +2126,7 @@ Edit.rotate =
         /** @type {XYZPosition} */
         (newA);
     }
+    Edit.eventFire();
   };
 /**
  * @param {BlockSelection} selection
@@ -2096,10 +2138,12 @@ Edit.move = function (selection, x, y, z) {
     pos[1] += y;
     pos[2] += z;
   }
+  Edit.eventFire(selection.parentShip);
 };
-Edit.eventFire = function () {
+/** @type {(ship?:Ship)=>void} */
+Edit.eventFire = function (ship) {
   for (var i = this.listeners.length; i-- > 0;)
-    (this.listeners[i] || F)();
+    (this.listeners[i] || F)(ship);
 };
 
 /** @function base64ToUint8array */

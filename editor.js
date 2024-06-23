@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.37
+// v.0.1.38
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -796,7 +796,9 @@ Command.stop = function () {
   utilities.rend_UI = F;
   press = old_UI;
   render();
+  Edit.listeners[Command.listening] = F;
 };
+Command.listening = -1;
 Command.NAME = {"Setup Properties": "Setup Properties"};
 
 Command.push("Select Block", function (items, collapsed) {
@@ -1327,73 +1329,69 @@ n't string.");
       if ((block = ship.blocks[i]).internalName === "Control Block")
         checkControlBlock(block.properties[0]);
   }
-  var customInputs = EL(), add = EL("button"), remove = EL("button");
+  var customInputs = EL(), add = EL("button");
   /** @param {MouseEvent|Ship.CustomInput} e */
   function addCustomInput(e) {
-    var isInit = e instanceof Ship.CustomInput;
+    var isInit = e instanceof Ship.CustomInput, remove = EL("button");
     if (!(this instanceof HTMLButtonElement || isInit))
       return;
     var custom = new Ship.CustomInput("Button", 0),
-      prop = isInit ? OC() : ship.prop || (ship.prop = OC());
-    prop.customInputs instanceof Array ?
-      prop.customInputs.push(custom) :
-      prop.customInputs = [];
+      prop = isInit ? OC() : ship.prop || (ship.prop = OC())
+    isInit || (prop.customInputs instanceof Array ?
+      (inputs = prop.customInputs).push(custom) :
+      prop.customInputs = inputs = []);
     /** @type {Node} */
     var from = this || add, prev, toggle = EL("input"), name = EL("input");
     while ((prev = from.previousSibling) && prev.nodeName !== "BR")
       from = prev;
     toggle.type = "checkbox";
-    toggle.checked = isInit && !!e.type;
+    toggle.checked = isInit && e.type === 1;
+    toggle.indeterminate = isInit && e.type === -1;
     toggle.oninput = function () {
       custom.name = name.value = (custom.type = +toggle.checked) ?
+        /** @TODO unique names 'switching' */
         "Switch" :
         "Button";
+      toggle.indeterminate = !1;
       updateControlParams("", "Up");
     };
     customInputs.insertBefore(toggle, from);
     name.type = "text";
     name.value = e instanceof Ship.CustomInput ? e.name : "Button";
     name.oninput = function () {
+      updateControlParams(custom.name, name.value);
       custom.name = name.value;
-      updateControlParams("", "Up");
     };
     customInputs.insertBefore(name, from);
     /** @type {Node&{onclick?:typeof add.onclick}} */
     (
       customInputs.insertBefore(add.cloneNode(!0), from)
     ).onclick = add.onclick;
+    remove.style.width = "unset";
+    remove.style.display = "initial";
+    remove.appendChild(tN("Remove"));
     /** @type {Node&{onclick?:typeof add.onclick}} */
     (
-      customInputs.insertBefore(remove.cloneNode(!0), from)
-    ).onclick = remove.onclick;
-    customInputs.insertBefore(EL("br"), from);
+      customInputs.insertBefore(remove, from)
+    ).onclick = function () {
+      if (!(this instanceof HTMLButtonElement))
+        return;
+      customInputs.removeChild(toggle);
+      customInputs.removeChild(name);
+      customInputs.removeChild(add);
+      customInputs.removeChild(remove);
+      customInputs.removeChild(br);
+      // removes cutom property from Ship.props.customInputs of ship
+      del.call(inputs, inputs.indexOf(custom));
+      // non-existing controlInput values (removed one now too) set to default
+      updateControlParams("", "Up");
+    };
+    var br = customInputs.insertBefore(EL("br"), from);
   };
-  add.style.width = remove.style.width = "unset";
-  add.style.display = remove.style.display = "initial";
+  add.style.width = "unset";
+  add.style.display = "initial";
   customInputs.appendChild(add).appendChild(tN("Add"));
   add.onclick = addCustomInput;
-  remove.onclick = function () {
-    if (!(this instanceof HTMLButtonElement))
-      return;
-    // i = elements: type (checkbox), name (input), add
-    for (var i = 3, selecting = [this.previousSibling, null]; i-- > 0;)
-      selecting[i] = this.previousSibling &&
-        customInputs.removeChild(this.previousSibling);
-    // also: newline (br)
-    this.nextSibling && customInputs.removeChild(this.nextSibling);
-    // also self: remove (button)
-    customInputs.removeChild(this);
-    var name = selecting[1],
-      inputs = ship.prop && ship.prop.customInputs || [];
-    if (name instanceof HTMLInputElement && name.type === "text")
-      // removes cutom property from Ship.props.customInputs of ship
-      del.call(inputs, inputs.map(String).indexOf(name.value));
-    else
-      console.error("Supposed to be name input:", name);
-    // non-existing controlInput values (removed one now too) set to default
-    updateControlParams("", "Up");
-  };
-  remove.appendChild(tN("Remove"));
   var inputs = ship.prop && ship.prop.customInputs || [];
   for (var j = 0; j < inputs.length;)
     addCustomInput(inputs[j++]);
@@ -1809,14 +1807,17 @@ Command.push("Vehicle stats", function (items, collapsed) {
     }
     texts[0].data = "Blocks amount: " + blocks.length;
     texts[1].data = "Weight: " + sums.weight + '/' +
-      (blocks.length - skipped.weigh);
+    // why no error from skipped.weigh
+      (blocks.length - skipped.weight);
     texts[2].data = "Cost: " + sums.cost + "/" +
       (blocks.length - skipped.cost);
   }
   // addLine();
   // addLine("")
   updateStats();
-  // Edit.listeners.push();
+  Command.listening === -1 ?
+    Command.listening = Edit.listeners.push(updateStats) - 1 :
+    Edit.listeners[Command.listening] = updateStats;
 }, "TODO: create Vehicle stats descriptions when command gets released."
 // , {} ???
 );
@@ -2218,6 +2219,7 @@ var old_UI = Command.press = press = function (x, y) {
       //@ts-ignore
       e.rotation[2] = rot + 1 & 3;
     }
+    Edit.eventFire();
     return e;
   })
   // placingBlock function executed sets blockBind.changingColor
@@ -2250,6 +2252,7 @@ var old_UI = Command.press = press = function (x, y) {
     });
     arr.push(blok);
   }
+  Edit.eventFire();
   render();
 };
 /** @type {(x:number,y:number,e:MouseEvent)=>void} */
