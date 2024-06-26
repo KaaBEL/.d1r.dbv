@@ -1,6 +1,5 @@
-//@ts-check
 "use strict";
-// v.0.1.38
+// v.0.1.39
 /** @TODO check significantVersion */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -938,14 +937,21 @@ Block.STRENGTH = {
   1043: 20,
   1060: 10
 };
-/** positive = thrust per 1 Electricity unit, negative = generation per 
- * second @type {{[key:number]:number|undefined}} (Electricity) */
+/** number = Electricity Units per second
+ * and in case of thruster when they are set to 1 000 000 (1M) force,
+ * [number,number] = [Electricity Units, amout of seconds per use]
+ * second @type {{[key:number]:number|[number,number]|undefined}}
+ * (Electricity) */
 Block.ENERGY_USE = {
-  738: 5720,
-  739: 6.e3, // WTW? ***7
-  740: 8000,
-  741: 1e4,
-  770: 1000,
+  742: 275,
+  743: 250,
+  744: 225,
+  745: 200,
+  746: 100,
+  770: 1,
+  773: [10, 1.02],
+  774: [2, .52],
+  775: 4,
   788: -.25,
   789: -.75
 };
@@ -956,25 +962,36 @@ Block.ENERGY_STORE = {
   758: 100,
   760: 175
 };
-/** positive = thrust per 1 Liter of Fuel, negative = generation per 
- * second @type {{[key:number]:number|undefined}} (Fuel) */
+/** number = Liters of Fuel per second
+ * and in case of thruster when they are set to 1 000 000 (1M) force,
+ * [number,number] = [Liters of fuel, amout of seconds per use]
+ * @type {{[key:number]:number|[number,number]|undefined}} (Fuel) */
 Block.FUEL_USE = {
-  742: 3640,
-  743: 4000,
-  744: 4500,
-  745: 5000
+  738: 175,
+  739: 150,
+  740: 125,
+  741: 100
 };
-/** number = contained units
+/** number = contained liters
  * @type {{[key:number]:number|undefined}} (Fuel) */
 Block.FUEL_STORE = {
+  // was 20 before fuel buff
   754: 30,
+  // was 100 before fuel buff
   755: 150,
+  // was 250 before fuel buff
   756: 375
+};
+/** number = items per second,
+ * [number,number] = [Items, amout of seconds per use]
+ * @type {{[key:number]:number|[number,number]|undefined}} (Cargo) */
+Block.CARGO_USE = {
+  770: [-1, 1.02]
 };
 /** number = items capacity
  * @type {{[key:number]:number|undefined}} (Cargo) */
-Block.STORAGE = {
-  690: 5,
+Block.CARGO_STORE = {
+  690: 5, 
   760: 20,
   761: 100,
   762: 250
@@ -1505,7 +1522,7 @@ Block.Properties.VALUE = Block.PROP = {
   803:
     // custom parameter (DBV block's "c") property contains option string
     // instead of number reference to option index
-    // (which's in Block.Properties<"Dropdown"> item.default)
+    // (which's in Block.Properties<"Dropdown"> item.default[0])
     /** @type {[Block.Properties<"Dropdown">]} */
     (Block.Properties.justOne([[2, "Controls", [
       "Up",
@@ -1629,6 +1646,7 @@ Ship.prototype.removeRect = function (xl, yt, zr, xr, yb, zf) {
   // var deletion = this.selectRect(xl, yt, zr, xr, yb, zf);
   // /** @TODO optimize deleting with custom logics deletion */
   // for (var i = deletion.length; i-- > 0;)
+  Edit.eventFire(this);
 };
 /** @param {BlockSelection} select */
 Ship.prototype.fillRect = function (x0, y0, z0, x1, y1, z1, select) {
@@ -1674,6 +1692,7 @@ Ship.prototype.fillRect = function (x0, y0, z0, x1, y1, z1, select) {
       for (y = y0; y >= y1; y -= 2)
         for (z = z1; z <= z0; z += 2)
           blocks.push(pushBlock(this));
+    Edit.eventFire(this);
     return blocks;
   }
   // width, height, length
@@ -1758,6 +1777,7 @@ Ship.prototype.paste = function (x, y, z, select) {
     } else
       newNode.pairs = -1;
   };
+  Edit.eventFire(this);
 };
 Ship.prototype.mirror = (
   /**
@@ -1775,6 +1795,7 @@ Ship.prototype.mirror = (
       z1 > z0 ? z0 = z1 : z = z1;
     } else
       selected = this.blocks.concat(all = []);
+    Edit.eventFire(this);
   }
 );
 Ship.prototype.mirror2d = (
@@ -1831,6 +1852,7 @@ Ship.prototype.mirror2d = (
         pos = all[i].position
         pushBlock(all[i], pos);
       }
+    Edit.eventFire(this);
   }
 );
 /** @param {object} object */
@@ -1935,7 +1957,7 @@ Ship.toDBV = function toDBV(ship) {
     b: blocks,
     nc: connections || shipProp.nodeConnections,
     ci: custominps || [],
-    significantVersion: 12
+    significantVersion: 13
   };
 };
 /** @param {string} key */
@@ -2126,7 +2148,7 @@ Edit.rotate =
         /** @type {XYZPosition} */
         (newA);
     }
-    Edit.eventFire();
+    Edit.eventFire(selection.parentShip);
   };
 /**
  * @param {BlockSelection} selection
