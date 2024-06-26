@@ -1,6 +1,5 @@
-//@ts-check
 "use strict";
-// v.0.1.38
+// v.0.1.39
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -1606,7 +1605,7 @@ Command.push("Transfrom tool", function (items, collapsed) {
   locked.oninput = function () {
     if (locked.checked)
       test_selctLocked = getSelected(!0);
-  }
+  };
   items.push(
     {name: "Selection X0", inp: selectX0},
     {name: "Selection Y0", inp: selectY0},
@@ -1774,7 +1773,8 @@ Command.push("Vehicle stats", function (items, collapsed) {
     weight: 0,
     strenght: 0,
     store: {fuel: 0, energy: 0, cargo: 0},
-    use: {fuel: 0, energy: 0, cargo: 0}
+    use: {fuel: 0, energy: 0, cargo: 0},
+    blocks: [0]
   },
     stringify = JSON.stringify(sums),
     /** @type {typeof sums} */
@@ -1790,20 +1790,72 @@ Command.push("Vehicle stats", function (items, collapsed) {
       tmpSums[stat] += parse ? parse(value) : value :
       tmpSkip[stat]++;
   }
-  for (var j = 0, texts = []; j < 3;)
+  for (var j = 0, texts = [], l = 13; j < l;)
     items.push(texts[j++] = tN(""), EL("br"));
-    var ids = '';
+  var riftLY = items[items.length - l * 2 + 19] = EL("input"),
+    red = items[items.length - l * 2 + 21] = EL("span");
+  red.style.color = "red";
+  red = red.appendChild(tN(""));
+  riftLY.oninput = function () {
+    function rcAmount() {
+      return crystals + (crystals > 1 ? " RCs" : " RC") +
+        " (" + (10000 / sums.weight * crystals) + " LY)";
+    }
+    texts[9].data = "Rift drive distance: ";
+    var dist = +riftLY.value,
+      crystals = Math.ceil(Math.abs(sums.weight * dist / 10000));
+    texts[10].data = "LY ";
+    red.data = texts[11].data = "";
+    dist ?
+      (sums.blocks[796] || 0) * 4 > crystals ?
+        texts[11].data = "requires " + rcAmount() +
+          ", remember to take mo\
+re crystals for further travelling and enough for return." :
+        red.data = "you don't have enough Rift Drives to use " +
+          rcAmount() + " for the jump, lighter vehicle needs less RCs." :
+      texts[11].data = riftLY.value ?
+        dist === 0 ?
+          "doesn't require any Rift Crystals since you don't seem going any\
+where." :
+          "Distance format is not a number." :
+          "Type desired Rift Driving Light Years (LY) distance into the inp\
+ut.";
+    if (sums.blocks[796] > 1)
+      red.data += "You can't buy more then one Small Rift Drive in Conquest\
+! ";
+  };
   function updateStats() {
+  //+  var xForce = 0, yForce = 0, forces = 0;
+    function anyUse(val) {
+      if (id > 737 && id < 747)
+  //+{
+  //+       forces++;
+  //+       blocks[i].rotation[2] & 1 ?
+  //+         // something with yForce
+  //+         0 :
+  //+         ;
+        return blocks[i].properties.control[0] / 1E6 * val;
+  //+     }
+  //+     if (id === 70)
+  //+       //
+      return val instanceof Array ? val[0] / val[1] : val;
+    }
     sums = JSON.parse(stringify);
     skipped = JSON.parse(stringify);
     for (var blocks = ship.blocks, i = blocks.length; i-- > 0;) {
       var id = Block.ID[blocks[i].internalName];
-      ids += id + '; ';
       checkStat("cost", Block.COST[id], function (val) {
         return val < 0 ? 0 : val;
       });
       checkStat("weight", Block.WEIGHT[id]);
       checkStat("strenght", Block.STRENGTH[id]);
+      checkStat("store.fuel", Block.FUEL_STORE[id]);
+      checkStat("use.fuel", Block.FUEL_USE[id], anyUse);
+      checkStat("store.energy", Block.ENERGY_STORE[id]);
+      checkStat("use.energy", Block.ENERGY_USE[id], anyUse);
+      checkStat("store.cargo", Block.CARGO_STORE[id]);
+      checkStat("use.cargo", Block.CARGO_USE[id], anyUse);
+      sums.blocks[id] ? sums.blocks[id]++ : sums.blocks[id] = 1;
     }
     texts[0].data = "Blocks amount: " + blocks.length;
     texts[1].data = "Weight: " + sums.weight + '/' +
@@ -1811,16 +1863,27 @@ Command.push("Vehicle stats", function (items, collapsed) {
       (blocks.length - skipped.weight);
     texts[2].data = "Cost: " + sums.cost + "/" +
       (blocks.length - skipped.cost);
+    texts[3].data = "Fuel capacity: " + sums.store.fuel + "/" +
+      (blocks.length - skipped.store.fuel);
+    texts[4].data = "Fuel use: " + sums.use.fuel + "/" +
+      (blocks.length - skipped.use.fuel);
+    texts[5].data = "Electricity capacity: " + sums.store.energy + "/" +
+      (blocks.length - skipped.store.energy);
+    texts[6].data = "Electricity use: " + sums.use.energy + "/" +
+      (blocks.length - skipped.use.energy);
+    texts[7].data = "Cargo capacity: " + sums.store.cargo + "/" +
+      (blocks.length - skipped.store.cargo);
+    texts[8].data = "Ore mined: " + -sums.use.cargo + "/" +
+      (blocks.length - skipped.use.cargo);
+    // correct for typescript
+    riftLY.oninput([][0]);
+    // after adding more text lines don't forget changing j < <texts.length>
   }
-  // addLine();
-  // addLine("")
   updateStats();
   Command.listening === -1 ?
     Command.listening = Edit.listeners.push(updateStats) - 1 :
     Edit.listeners[Command.listening] = updateStats;
-}, "TODO: create Vehicle stats descriptions when command gets released."
-// , {} ???
-);
+}, "TODO: create Vehicle stats descriptions when command gets released.");
 Command.push("Rift Drive calculator", function (items, collapsed) {
   var weight = 0, drives = 0, unknown = 0, all = ship.blocks;
   for (var i = all.length; i-- > 0;) {
@@ -1834,6 +1897,8 @@ Command.push("Rift Drive calculator", function (items, collapsed) {
   //@ts-ignore
   (riftCrystals.oninput = function () {
     var n = Number(riftCrystals.value) || 0;
+    // RCs * 1e4 / mass = travel_distance
+    // ceil(mass * travel_distance / 10000) then 250 * 400 / 10 000 = 10 RC.
     dist.data = "" + (10000 / weight * (n > drives * 4 ?
       drives * 4 :
       n)) + " Ly units.";
