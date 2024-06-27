@@ -1,5 +1,6 @@
 "use strict";
-// v.0.1.39
+// v.0.1.40
+// TODO: energy storage stat is broken?
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -1807,7 +1808,7 @@ Command.push("Vehicle stats", function (items, collapsed) {
     texts[10].data = "LY ";
     red.data = texts[11].data = "";
     dist ?
-      (sums.blocks[796] || 0) * 4 > crystals ?
+      (crystals > sums.blocks[796] || 0) * 4 ?
         texts[11].data = "requires " + rcAmount() +
           ", remember to take mo\
 re crystals for further travelling and enough for return." :
@@ -1827,6 +1828,7 @@ ut.";
   function updateStats() {
   //+  var xForce = 0, yForce = 0, forces = 0;
     function anyUse(val) {
+      var block = blocks[i], prop = block.properties || OC();
       if (id > 737 && id < 747)
   //+{
   //+       forces++;
@@ -1834,7 +1836,7 @@ ut.";
   //+         // something with yForce
   //+         0 :
   //+         ;
-        return blocks[i].properties.control[0] / 1E6 * val;
+        return (prop.control || [0])[0] / 1E6 * val;
   //+     }
   //+     if (id === 70)
   //+       //
@@ -1897,8 +1899,6 @@ Command.push("Rift Drive calculator", function (items, collapsed) {
   //@ts-ignore
   (riftCrystals.oninput = function () {
     var n = Number(riftCrystals.value) || 0;
-    // RCs * 1e4 / mass = travel_distance
-    // ceil(mass * travel_distance / 10000) then 250 * 400 / 10 000 = 10 RC.
     dist.data = "" + (10000 / weight * (n > drives * 4 ?
       drives * 4 :
       n)) + " Ly units.";
