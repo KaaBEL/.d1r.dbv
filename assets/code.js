@@ -1,5 +1,5 @@
 "use strict";
-// v.0.1.39
+// v.0.1.40
 /** @TODO check significantVersion */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -960,7 +960,7 @@ Block.ENERGY_USE = {
 Block.ENERGY_STORE = {
   757: 20,
   758: 100,
-  760: 175
+  759: 175
 };
 /** number = Liters of Fuel per second
  * and in case of thruster when they are set to 1 000 000 (1M) force,
