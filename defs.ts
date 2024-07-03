@@ -1,4 +1,4 @@
-// v.0.1.23.1
+// v.0.1.41
 var _ge: any;
 function GE(v: any) {return document.getElementById(typeof v=="number"&&v==v?
   (_ge=v+1)-1:v==void 0?v=_ge++:v)}
@@ -13,27 +13,36 @@ var sc = 16;
 var canvas: HTMLCanvasElement;
 var ctx: CanvasRenderingContext2D;
 
-var render = function render() {
-  return;
-}
-
+/** signals UI API click on canvas */
 var press = function press(x: number, y: number) {
   return console.log(x, y);
-}
+};
+
+/** return true if move is used outside UI API */
+var move = function move(x, y) {
+  return Boolean(console.log(x, y));
+};
 
 var contextmenu = function contextmenu(x: number, y: number, e: MouseEvent) {
   return console.log(x, y);
-}
+};
 
 var over = function over(e: MouseEvent | TouchEvent | TchD) {
   return console.log(e);
-}
+};
+
+var render = function render() {
+  return;
+};
 
 var init = function init() {
   return;
-}
+};
 
-var bd: HTMLElement | null;
+var bd: HTMLElement & {onmousewheel?: (
+  this: GlobalEventHandlers,
+  ev: WheelEvent & {wheelDelta?: number}
+) => any} | null;
 
 var UDF: undefined, F: () => void, TCH: Touch;
 
@@ -360,25 +369,33 @@ function touchesInit(src: HTMLElement,
 touchesInit.time = 350;
 touchesInit.move = 13;
 
-var mouseStamp = 0;
+var mouseStamp = 0, test_debug = !1;
+if (typeof WheelEvent == "undefined")
+  //@ts-ignore
+  var WheelEvent = Object;
 function mouseInit() {
   if (!bd)
-    return console.error("bd is null, UI wasn't initialized");//@ts-ignore
-  bd.onmousewheel = bd.onwheel = function (e) {
-    if (e.target !== canvas)
+    return console.error("bd is null, UI wasn't initialized");
+  bd.onwheel = bd.onmousewheel = function (e) {
+    if (e.target !== canvas || !(e instanceof WheelEvent))
       return;
+    test_debug && console.log("onwheel", +new Date / 100 | 0, e.deltaY ||
+      -(e.wheelDelta || 0), +new Date, sc);
     var prev = sc, w = canvas.width / 2, h = canvas.height / 2;
-    //@ts-ignore
-    sc -= sc / (e.deltaY || -e.wheelDelta || 0) * 10;
+    sc -= sc / (e.deltaY || -(e.wheelDelta || 0)) * 10;
     vX = (vX - w) * sc / prev + w;
     vY = (vY - h) * sc / prev + h;
     render();
   };
-  var foreign = !1, pX = 0, pY = 0;
+  var foreign = !1, pX = 0, pY = 0, moving = !1, taken = !1;
   bd.onmousedown = function (e) {
+    moving = taken = !1;
+    var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop;
     if (foreign = e.target !== canvas)
       over(e);
-    if (e.buttons & 1)
+    else
+      taken = move(x, y);
+    if (e.buttons === 1)
       mouseStamp = Date.now();
     pX = gX = e.pageX - canvas.offsetLeft;
     pY = gY = e.pageY - canvas.offsetTop;
@@ -388,8 +405,12 @@ function mouseInit() {
       return over(e);
     if (!(e.buttons & 1))
       return;
-    var x = e.pageX - canvas.offsetLeft,
-      y = e.pageY - canvas.offsetTop;
+    var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop;
+    if (!moving && (Date.now() < mouseStamp + mouseInit.time &&
+      Math.abs(gX - x) < mouseInit.move &&
+      Math.abs(gY - y) < mouseInit.move || taken))
+      return;
+    moving = !0;
     // works on add difference basis to not fight with other movement
     vX += x - pX || 0;
     vY += y - pY || 0;
@@ -400,14 +421,20 @@ function mouseInit() {
   bd.onmouseup = function (e) {
     if (foreign)
       return over(e);
-    if (Date.now() > mouseStamp + mouseInit.time)
-      return;
     var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop;
-    if (Math.abs(gX - x) > mouseInit.move &&
-      Math.abs(gY - y) > mouseInit.move)
+    if (Date.now() < mouseStamp + mouseInit.time &&
+      Math.abs(gX - x) < mouseInit.move &&
+      Math.abs(gY - y) < mouseInit.move && !taken && !moving)
+      return press(x, y);
+      // || console.log("press: x, y", gX - x, gY - y, "(moving)", moving, "!taken", !taken);
+    else if (taken || !moving)
       return;
-    press(x, y);
-  }
+    // console.log("moving: x, y", gX - x, gY - y, "moving", moving, "(taken)", taken);
+    vX += x - pX || 0;
+    vY += y - pY || 0;
+    pX = x;
+    pY = y;
+  };
   window.oncontextmenu = function (e) {
     for (var el = e.target; el instanceof Node;)
       if (!(el = el.parentNode))
@@ -418,10 +445,10 @@ function mouseInit() {
     contextmenu(x, y, e);
   };
 }
-/** settings: press time legth allowed touch-start-times */
+/** settings: allowed press time legth, @see {touchesInit.time} */
 mouseInit.time = 350;
-/** settings: press precision */
-mouseInit.move = 7;
+/** allowed press precision, @see {touchesInit.move} */
+mouseInit.move = 4;
 
 var actionType: number, moveScore: number, moveCount: number;
 function touchGrab(all, ev) {

@@ -1,5 +1,6 @@
+//@ts-check
 "use strict";
-// v.0.1.40
+// v.0.1.41
 /** @TODO check significantVersion */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -11,7 +12,8 @@ var OP = Object.prototype.hasOwnProperty,
 /** @param {Function} _new_class @param {Function} _super */
 function __extends(_new_class, _super) {
   function __() {
-    this.constructor = _super; // this can be omitted
+    // this can be omitted
+    this.constructor = _super;
   }
   __.prototype = _super.prototype;
   _new_class.prototype = new __();
@@ -347,6 +349,12 @@ Logic.removeLogic = function (block, logics) {
           pairs.pairs = -1;
   }
 };
+//-Logic.enableLogicEditing = function () {
+//-  ;
+//-};
+//-Logic.enableShipEditing = function () {
+//-  ;
+//-};
 // Logic static properties
 /** specifies when logic nodes and connections should be rendered */
 Logic.rend = !1;
@@ -1578,13 +1586,14 @@ Block.Properties.addProperty = function (name, property) {
 /**
  * @typedef {{nodeList?:(Logic|undefined)[],
  * customInputs?:Ship.CustomInput[],[key:string]:unknown}} ShipProperties
- * @see {Logic} @see {Ship.CustomInput} */
+ * @see {Logic} @see {Ship.CustomInput}
+ * @typedef {"Ship"|"Logic"} EditMode */
 /**
  * @param {string} name
  * @param {Array<number>} version
  * @param {string} time
  * @param {Array<Block>} blocks
- * @param {ShipProperties|null} [properties=null]
+ * @param {ShipProperties|Ship.Mode|null} [properties=null]
  * for usuall ship creation ues @see {Ship.fromObject} */
 function Ship(name, version, time, blocks, properties) {
   this.name = name;
@@ -1957,7 +1966,7 @@ Ship.toDBV = function toDBV(ship) {
     b: blocks,
     nc: connections || shipProp.nodeConnections,
     ci: custominps || [],
-    significantVersion: 13
+    significantVersion: 14
   };
 };
 /** @param {string} key */
@@ -1974,6 +1983,9 @@ Ship.fromDBKey = function (key) {
     "Momentum Wheel": "Reaction Wheel",
     "Small Fuel Tank": "Small Hydrogen Tank",
     "Medium Fuel Tank": "Medium Hydrogen Tank",
+    // There seems to be older "T2 Battery" name version, T1 is a guess
+    "T1 Battery": "Small Battery",
+    "T2 Battery": "Small Battery",
     "Small Crate": "Small Storage Rack",
     "Medium Crate": "Medium Storage Rack",
     "T1 Drill": "Small Hydraulic Drill",
@@ -2086,6 +2098,12 @@ Ship.CustomInput.reassemble = function (blocks, prop) {
     if (blocks[i].internalName === "Control Block")
       checkControlBlock(blocks[i].properties.control);
   prop.customInputs = inputs.slice(j);
+};
+/** @typedef @param {EditMode} mode @param {Ship} ship */
+Ship.Mode = function (mode, ship) {
+  this.mode = mode;
+  this.ship = ship;
+  Object.seal(this);
 };
 
 // generating Droneboi

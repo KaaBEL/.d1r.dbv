@@ -1,6 +1,6 @@
+//@ts-check
 "use strict";
-// v.0.1.40
-// TODO: energy storage stat is broken?
+// v.0.1.41
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -172,6 +172,10 @@ canvas.addEventListener("contextrestored", function () {
       setTimeout(function () {
         backgHangarInit.ready = NaN;
       });
+      break;
+    case "123897b6":
+      console.log("Debug mode (8)");
+      test_debug = !0;
   }
 })(/\/[0-9a-zA-Z._+\-]+\/editor\.html(?:#[^?]*)?($|\?[^=]*)/);
 
@@ -672,11 +676,6 @@ onFile.temporaray = function (uar) {
 };
 file.input.onchange = onFile;
 
-function dbv_findPos() {
-  var posArr = ship.blocks.map(function (e) {
-    return e.position;
-  });
-}
 /** @type {()=>string} */
 var placingBlock = function () {
   return ["Core", "Block", "Wedge", "Small Hydrogen Thruster",
@@ -1794,10 +1793,13 @@ Command.push("Vehicle stats", function (items, collapsed) {
   for (var j = 0, texts = [], l = 13; j < l;)
     items.push(texts[j++] = tN(""), EL("br"));
   var riftLY = items[items.length - l * 2 + 19] = EL("input"),
+    /** @type {Text|HTMLSpanElement} */
     red = items[items.length - l * 2 + 21] = EL("span");
   red.style.color = "red";
   red = red.appendChild(tN(""));
   riftLY.oninput = function () {
+    if (!(red instanceof Text))
+      return;
     function rcAmount() {
       return crystals + (crystals > 1 ? " RCs" : " RC") +
         " (" + (10000 / sums.weight * crystals) + " LY)";
@@ -1808,10 +1810,9 @@ Command.push("Vehicle stats", function (items, collapsed) {
     texts[10].data = "LY ";
     red.data = texts[11].data = "";
     dist ?
-      (crystals > sums.blocks[796] || 0) * 4 ?
-        texts[11].data = "requires " + rcAmount() +
-          ", remember to take mo\
-re crystals for further travelling and enough for return." :
+      +(crystals > sums.blocks[796] || 0) * 4 ?
+        texts[11].data = "requires " + rcAmount() + ", remember to take mor\
+e crystals for further travelling and enough for return." :
         red.data = "you don't have enough Rift Drives to use " +
           rcAmount() + " for the jump, lighter vehicle needs less RCs." :
       texts[11].data = riftLY.value ?
@@ -1826,6 +1827,7 @@ ut.";
 ! ";
   };
   function updateStats() {
+  // TODO: visual centre of mass is unfinished
   //+  var xForce = 0, yForce = 0, forces = 0;
     function anyUse(val) {
       var block = blocks[i], prop = block.properties || OC();
@@ -1836,7 +1838,7 @@ ut.";
   //+         // something with yForce
   //+         0 :
   //+         ;
-        return (prop.control || [0])[0] / 1E6 * val;
+        return +(prop.control || [0])[0] / 1E6 * val;
   //+     }
   //+     if (id === 70)
   //+       //
@@ -1878,7 +1880,7 @@ ut.";
     texts[8].data = "Ore mined: " + -sums.use.cargo + "/" +
       (blocks.length - skipped.use.cargo);
     // correct for typescript
-    riftLY.oninput([][0]);
+    riftLY.oninput && riftLY.oninput([][0]);
     // after adding more text lines don't forget changing j < <texts.length>
   }
   updateStats();
@@ -1912,7 +1914,8 @@ The weight of that vehicle is " + weight + " mass units and with " + drives +
 ll Rift Drives into account, although in the game you are allowed to buy onl\
 y 1. It also shows ammount of blocks in it and time when the vehicle had the\
 se stats, because it doesn't update after this command have been opened, onl\
-y changing amount of RC recalculates distance.");
+y changing amount of RC recalculates distance.\nThanks to catcat9999 for sha\
+ring block capacity/use stats from source code in Discord.");
 Command.groupName = "";
 Command.push("Set camera view", function (items, collapsed) {
   var viewX = EL("input"), viewY = EL("input"), zoom = EL("input");
@@ -2239,6 +2242,17 @@ function rend_checkColors() {
     });
 };
 var rend_colors = rend_initColors();
+function enableLogicEditing() {
+  var mode = ship.prop;
+  if (mode instanceof Ship.Mode)
+    mode;
+};
+function enableShipEditing() {
+  var mode = ship.prop;
+  if (mode instanceof Ship.Mode)
+    mode;
+  press = old_UI;
+};
 
 /** @type {Block[]} */
 var foundBlocks = [];
@@ -2320,6 +2334,7 @@ var old_UI = Command.press = press = function (x, y) {
   Edit.eventFire();
   render();
 };
+
 /** @type {(x:number,y:number,e:MouseEvent)=>void} */
 function commands(x, y, e) {
   /** also problem initial low resolution on touchscreen devices...
