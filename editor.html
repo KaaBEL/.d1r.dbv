@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.1.41 -->
+<!-- v.0.1.42 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -82,9 +82,11 @@
     editor with many building functions, more powerfull and customizable
     tools for advanced drone designs. It is currently in development.
     <h2>How to use it?</h2>
-    <span style="color: red;">Disclaimer: Vehicles builded in way that
-    it cannot be replicated by using only vanilla in-game editor after
-    clearing building grid, such as with overlapping blocks, can result in
+    <span style="color: red;">Disclaimer: Vehicles buildead in a way that
+    it cannot be replicated by using only unmodified vanilla in-game
+    editor without exploiting any bugs or with otherwise altered
+    functionality starting from scratch by clearing the build area with
+    designated button, such as with overlapping blocks, can result in
     ban if used in (multiplayer) 'Conquest' mode.</span> Exporting
     feature is limited to existing blocks and usuall positions/rotations
     beacause of that. While holding mouse and moving view position is
@@ -522,7 +524,7 @@
       bd.onmousemove = function (e) {
         if (foreign)
           return over(e);
-        if (!(e.buttons & 1))
+        if (!(e.buttons & 5))
           return;
         var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop;
         if (!moving && (Date.now() < mouseStamp + mouseInit.time &&

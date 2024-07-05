@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.41
+// v.0.1.42
 /** @TODO check significantVersion */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -17,6 +17,12 @@ function __extends(_new_class, _super) {
   }
   __.prototype = _super.prototype;
   _new_class.prototype = new __();
+}
+/** @template {any} T @param {T} val @returns {()=>T} */
+function __private(val) {
+  return function () {
+    return val;
+  }
 }
 /** @type {typeof defaults|null} */
 var settings = null;
@@ -128,11 +134,12 @@ function dictionaryDefs(dicNum, dicVal, closure) {
   console.timeEnd(closure);
 }
 
-/** object is sealed
+/** instance is sealed
  * @template {number} T
  * @param {T} type @param {number} x @param {number} y as definition
  * x, y is position relative to middle, else used by rendering method,
- * pairs is initialized -1 or [] depending on type, owner is null */
+ * pairs is initialized -1 or [] depending on type, owner is null
+ * for logigs documentation/data @see {Logic.VALUE} */
 function Logic(type, x, y) {
   /** 0|1 = input, has only index reference to source, 2|3 = output */
   this.type = type;
@@ -227,6 +234,8 @@ Object.freeze(Logic.VALUE);
 // (v.0.1.20.2) I might've accidently screw this method up so much
 // this method is supposed to be the initialize default, not
 // Logic(property).fromObject at the same time... BRUH
+// (v.0.1.42) IDEA for logics system to just use references to block
+// and optionally specify nth node, each block then must know its index
 /** @TODO Logics rework update ^ */
 /** addDefault but for Logic - if property contains nodeIndex data it
  * will use them to reassemble these connections, to reassamble them
@@ -463,7 +472,7 @@ ay|__placeholder(?:839|84[0-26-9]|85[0-3])__");
 
 /** letter case of block names doesn't matter when loaded by game,
  * Block name definitions require strict letter cases here */
-/**
+/** instance is sealed
  * @typedef {[number,number,number]} XYZPosition
  * @typedef {[0|1|2,boolean,0|1|2|3]} Rotation
  * @typedef {keyof typeof Color.ID|""|null} Colors
@@ -1094,9 +1103,9 @@ Block.COST = {
 Block.arrayFromObjects = function arrayFromObjects(blocks, logics$) {
   var bs = blocks instanceof Array ? blocks : [blocks];
   /** nodeIndex (DBV "ni") property of a block is number[] type:
-   * + it contains inputs and outputs indexes
-   * + their connections are specified in "nc" DBV savefile property
-   * + each index specifies whether it's input/output, bool/numerical,
+   * = it contains inputs and outputs indexes
+   * = their connections are specified in "nc" DBV savefile property
+   * = each index specifies whether it's input/output, bool/numerical,
    *   where is display position of node at that index, it is
    *   different for each block type,
    *   all are defined in @see {Logic.VALUE}
@@ -1286,8 +1295,8 @@ Block.rotate = function (rot, x, y, z) {
   }
   return [rot[0] = face, rot[1] = side, rot[2] = turn];
 };
-/** object is frost
- * @typedef {{x: number, y: number, w: number, h: number}}
+/** instance is frost
+ * @typedef {{x:number,y:number,w:number,h:number}}
  * @param {number} x @param {number} y
  * @param {number} w @param {number} h */
 Block.Size = function Size(x, y, w, h) {
@@ -1303,10 +1312,10 @@ Block.Size.height = 4;
  * @typedef {[number,number,number,number,number]} PreciseDef
  * @typedef {[number]|[number,number,number]|PreciseDef} SizeDef
  * @typedef {SizeDef|SizeDef[]} SizesArg
- * @type {(...arg: SizesArg[]) => {[key: number]: Block.Size}} */
+ * @type {(...arg:SizesArg[])=>{[key:number]:Block.Size}} */
 Block.Size.genterateSizes = function () {
   var r = {690: new this(0, 0, 2, 2)},
-    /** @type {{[key: number]: SizeDef|SizeDef[], length: number}} */
+    /** @type {{[key:number]:SizeDef|SizeDef[],length:number}} */
     a = arguments;
   // by replacing nw = 0 with nw = [] it will log sizes and do 'reflow'
   for (var i = 0, j = 0, l = 690, nw = 0; l < Block.NAME.length; l++)
@@ -1588,21 +1597,24 @@ Block.Properties.addProperty = function (name, property) {
  * customInputs?:Ship.CustomInput[],[key:string]:unknown}} ShipProperties
  * @see {Logic} @see {Ship.CustomInput}
  * @typedef {"Ship"|"Logic"} EditMode */
-/**
+/** instance is sealed
  * @param {string} name
  * @param {Array<number>} version
  * @param {string} time
  * @param {Array<Block>} blocks
- * @param {ShipProperties|Ship.Mode|null} [properties=null]
+ * @param {ShipProperties|null} [properties=null]
+ * @param {Ship.Mode} [mode="Ship"]
  * for usuall ship creation ues @see {Ship.fromObject} */
-function Ship(name, version, time, blocks, properties) {
+function Ship(name, version, time, blocks, properties, mode) {
   this.name = name;
   this.gameVersion = version;
   this.dateTime = time;
   this.blocks = blocks;
   // optional logic blocks requiring bounding to ownerShip adds complications
-  /** Ship properties (shortcut since it is db/dr non-standard) */
+  /** Ship properties (shortcut name since it is db/dr non-standard) */
   this.prop = properties || null;
+  //-rhere must be private property afterall
+  this.getMode = __private(mode || new Ship.Mode("Ship", this));
   Object.seal(this);
 }
 Ship.prototype.selectRect = (
@@ -2052,7 +2064,7 @@ Ship.fromDBKey = function (key) {
   var obj = {nodeList: logics};
   return new Ship("[unnamed]", [], dateTime(1714557750), blocks, obj);
 };
-/** object is sealed @param {string} name @param {number} type */
+/** instance is sealed @param {string} name @param {number} type */
 Ship.CustomInput = function CustomInput(name, type) {
   this.name = name;
   /** type: -1 = unknown, 0 = Button, 1 = Switch. */
@@ -2099,11 +2111,13 @@ Ship.CustomInput.reassemble = function (blocks, prop) {
       checkControlBlock(blocks[i].properties.control);
   prop.customInputs = inputs.slice(j);
 };
-/** @typedef @param {EditMode} mode @param {Ship} ship */
+/** instance is frost
+ * @typedef Ship.Mode @property {EditMode} mode @property {Ship} ship
+ * @param {EditMode} mode @param {Ship} ship */
 Ship.Mode = function (mode, ship) {
   this.mode = mode;
   this.ship = ship;
-  Object.seal(this);
+  Object.freeze(this);
 };
 
 // generating Droneboi

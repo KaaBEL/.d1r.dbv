@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.41
+// v.0.1.42
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -148,12 +148,11 @@ canvas.addEventListener("contextrestored", function () {
     case "2b675e07":
     case "ab235503":
       console.log("Fun mode 2");
-      /** @type {(x:number,y:number)=>void} */
-      var oldPress = F;
       setTimeout(function () {
-        oldPress = press;
-        press = function () {
+        var oldPress = press, oldContme = contextmenu;
+        press = contextmenu = function () {
           press = oldPress;
+          contextmenu = oldContme;
           expr = "";
         };
       }, 1500);
@@ -2119,6 +2118,11 @@ function check_contentScript() {
   }
 }
 
+/** @param {number} x @param {number} y */
+function edit_logic(x, y) {
+  ;
+}
+
 /** renderedShip moved to @see {ship} */
 
 function rend_backgPattern() {
@@ -2242,16 +2246,23 @@ function rend_checkColors() {
     });
 };
 var rend_colors = rend_initColors();
-function enableLogicEditing() {
-  var mode = ship.prop;
-  if (mode instanceof Ship.Mode)
-    mode;
-};
 function enableShipEditing() {
-  var mode = ship.prop;
-  if (mode instanceof Ship.Mode)
-    mode;
+  var mode = ship.getMode();
+  ship = mode.ship;
   press = old_UI;
+  render();
+};
+function enableLogicEditing() {
+  var mode = ship.getMode();
+  if (mode.mode === "Logic")
+    return;
+  for (var i = 0, old = ship.blocks, blocks = []; i < old.length; i++)
+    if (Logic.VALUE[Block.ID[old[i].internalName]])
+      blocks.push(old[i]);
+  ship = new Ship(ship.name, ship.gameVersion, ship.dateTime,
+    blocks, ship.prop, new Ship.Mode("Logic", ship));
+  press = edit_logic;
+  render();
 };
 
 /** @type {Block[]} */
@@ -2405,8 +2416,14 @@ over = function over(e) {
   else
     cmds.style.webkitUserSelect = cmds.style.userSelect = "";
   // TODO: some nice system to account for end/'hoverleave'
+  // ^ will hopefully inherit final form which also "doublepress" and
+  // other advanced gestures will be provided with
 };
 
+/** should serve its purpouse by providing up to date rendering function
+ * however to meet requirements of many various uses, and be aware of
+ * possible optimisations, a system of global and local (single use)
+ * settings to provide interface with multiple rendering methods */
 render = function () {
   var rq = -1;
   return function requestRendering() {
