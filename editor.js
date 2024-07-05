@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.42
+// v.0.1.43
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -1505,7 +1505,8 @@ Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
     error.innerText = "";
     var old = ship, s = inp.value;
     try {
-      ship = s.slice(0, 18) === "UGxheWVyVmVoaWNsZT" ?
+      ship = s.slice(0, 18) === "UGxheWVyVmVoaWNsZT" ||
+        s.slice(0, 10) === "VmVoaWNsZT" ?
         Ship.fromDBKey(atob(s)) :
         Ship.fromObject(decodeCmprsShip(base64ToUint8array(s)));
       render();
