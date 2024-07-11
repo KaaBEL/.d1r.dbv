@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.43
+// v.0.1.44
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -960,7 +960,9 @@ Command.push("Setup Properties", function (items, collapsed) {
       props.appendChild(node);
     }
     /** @type {Block} */
-    var block = ship.blocks[text.data = "" + idx], p;
+    var block = ship.blocks[text.data = "" + idx],
+      /** Block.PROP defeinition of type of current processed block */
+      p;
     if (!block)
       return render();
     name.value = block.internalName;
@@ -1058,11 +1060,22 @@ Command.push("Setup Properties", function (items, collapsed) {
             break;
           itm;
         case "Text Inputs":
+          // !!! only one Item of this property type possible
           if (!(itm instanceof Items["Text Inputs"]))
             break;
-          itm;
+          var txtI = i, txtInput = props.appendChild(EL("input"));
+          txtInput.value = "" + control[txtI];
+          txtInput.oninput = function () {
+            control[txtI] = txtInput.value;
+          };
+          if (itm.default.length > 1) {
+            props.appendChild(tN("INTERNAL ERROR WITH PROPERTY EDIT!"));
+            console.error("Can't display and edit more than one text.");
+            i += itm.default.length - 1;
+          }
         case "WeldGroups":
           itm instanceof Items.WeldGroups && addWeldGroups(itm);
+          i += itm.default.length - 1;
       }
       p[i].type !== "WeldGroups" && props.appendChild(EL("br"));
     }
@@ -1790,7 +1803,7 @@ Command.push("Vehicle stats", function (items, collapsed) {
       tmpSums[stat] += parse ? parse(value) : value :
       tmpSkip[stat]++;
   }
-  for (var j = 0, texts = [], l = 13; j < l;)
+  for (var j = 0, texts = [], l = 14; j < l;)
     items.push(texts[j++] = tN(""), EL("br"));
   var riftLY = items[items.length - l * 2 + 19] = EL("input"),
     /** @type {Text|HTMLSpanElement} */
@@ -1802,7 +1815,7 @@ Command.push("Vehicle stats", function (items, collapsed) {
       return;
     function rcAmount() {
       return crystals + (crystals > 1 ? " RCs" : " RC") +
-        " (" + (10000 / sums.weight * crystals) + " LY)";
+        " (reach " + (10000 / sums.weight * crystals) + " LY)";
     }
     texts[9].data = "Rift drive distance: ";
     var dist = +riftLY.value,
@@ -1811,8 +1824,9 @@ Command.push("Vehicle stats", function (items, collapsed) {
     red.data = texts[11].data = "";
     dist ?
       +(crystals > sums.blocks[796] || 0) * 4 ?
-        texts[11].data = "requires " + rcAmount() + ", remember to take mor\
-e crystals for further travelling and enough for return." :
+        texts[11].data = "requires " + rcAmount() +
+          ", remember to take mo\
+re crystals for further travelling and enough for return." :
         red.data = "you don't have enough Rift Drives to use " +
           rcAmount() + " for the jump, lighter vehicle needs less RCs." :
       texts[11].data = riftLY.value ?
@@ -1825,29 +1839,34 @@ ut.";
     if (sums.blocks[796] > 1)
       red.data += "You can't buy more then one Small Rift Drive in Conquest\
 ! ";
+    if (dist < 0)
+      texts[10].data += "Unless you own Time Travel Machine block, you can'\
+t regain the Rift Crystals by travelling back. ";
   };
   function updateStats() {
-  // TODO: visual centre of mass is unfinished
-  //+  var xForce = 0, yForce = 0, forces = 0;
+    var xForce = 0, yForce = 0, forces = 0, xWeight = 0, yWeight = 0;
+    var useVal = 0;
     function anyUse(val) {
-      var block = blocks[i], prop = block.properties || OC();
-      if (id > 737 && id < 747)
-  //+{
-  //+       forces++;
-  //+       blocks[i].rotation[2] & 1 ?
-  //+         // something with yForce
-  //+         0 :
-  //+         ;
-        return +(prop.control || [0])[0] / 1E6 * val;
-  //+     }
-  //+     if (id === 70)
-  //+       //
-      return val instanceof Array ? val[0] / val[1] : val;
+      return useVal = val instanceof Array ?
+        val[0] / val[1] :
+       +(prop.control || [0])[0] / 1E6 * val;
     }
     sums = JSON.parse(stringify);
     skipped = JSON.parse(stringify);
+    texts[13].data = '';
     for (var blocks = ship.blocks, i = blocks.length; i-- > 0;) {
-      var id = Block.ID[blocks[i].internalName];
+      var block = blocks[i], prop = block.properties || OC();
+      var id = Block.ID[block.internalName];
+      var rot = 10 - block.rotation[2] & 3, size = Block.Size.VALUE[id];
+      var ow = size.w, oh = size.h, w = ow + (ow & 16), h = oh + (oh & 16);
+      var x = (ow & 16) / 32, y = (oh & 16) / 32;
+      /** @type {number[]} */
+      var xys = [x, y, -x, -y], position = block.position;
+      x = position[1] + (rot & 1 ? h / 32 : w / 32) + xys[rot];
+      y = position[2] + (rot & 1 ? w / 32 : h / 32) + xys[rot + 3 & 3];
+      xWeight += x * (Block.WEIGHT[id] || 0);
+      yWeight += y * (Block.WEIGHT[id] || 0);
+      texts[13].data += " id"+id+'x'+x+'y'+y;
       checkStat("cost", Block.COST[id], function (val) {
         return val < 0 ? 0 : val;
       });
@@ -1857,6 +1876,13 @@ ut.";
       checkStat("use.fuel", Block.FUEL_USE[id], anyUse);
       checkStat("store.energy", Block.ENERGY_STORE[id]);
       checkStat("use.energy", Block.ENERGY_USE[id], anyUse);
+      if (id > 737 && id < 747 || id === 70) {
+        forces += useVal;
+        rot & 1 ?
+          yForce += y * useVal :
+          xForce += x * useVal;
+        texts[13].data += 'r'+rot+'t';
+      }
       checkStat("store.cargo", Block.CARGO_STORE[id]);
       checkStat("use.cargo", Block.CARGO_USE[id], anyUse);
       sums.blocks[id] ? sums.blocks[id]++ : sums.blocks[id] = 1;
@@ -1879,6 +1905,11 @@ ut.";
       (blocks.length - skipped.store.cargo);
     texts[8].data = "Ore mined: " + -sums.use.cargo + "/" +
       (blocks.length - skipped.use.cargo);
+    texts[12].data = "WIP debugging data: "
+      "(Force: " + forces + ", x: " + xForce + ", y: " +
+      yForce + ", result: " + (xForce / forces) + "; Weight: " +
+      sums.weight + ", x: " + xWeight + ", y: " + yWeight + ", result: " +
+      (xWeight / sums.weight) + ", " + (yWeight / sums.weight) + ")";
     // correct for typescript
     riftLY.oninput && riftLY.oninput([][0]);
     // after adding more text lines don't forget changing j < <texts.length>

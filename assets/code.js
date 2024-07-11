@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.42
+// v.0.1.44
 /** @TODO check significantVersion */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -228,7 +228,9 @@ Logic.VALUE = Logic.generateLogic(
     {k: 1, x: 1, y: 1},
     {k: 3, x: 1, y: -1}
   ],
-  "2", "2", "2", "6");
+  "2", "2", "2", "6"
+  // , 692, [{k: 1, x: -1, y: -1}, {k: 3, x: 1, y: 1}]
+  );
 Logic.dashOff = 0;
 Object.freeze(Logic.VALUE);
 // (v.0.1.20.2) I might've accidently screw this method up so much
@@ -1978,7 +1980,7 @@ Ship.toDBV = function toDBV(ship) {
     b: blocks,
     nc: connections || shipProp.nodeConnections,
     ci: custominps || [],
-    significantVersion: 14
+    significantVersion: 15
   };
 };
 /** @param {string} key */
