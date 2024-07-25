@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.44
+// v.0.1.45
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -117,7 +117,8 @@ canvas.addEventListener("contextrestored", function () {
   // taken from: https://stackoverflow.com/a/8831937
   for (var i = 0, l = (expr += "ABCD").length, hash = 0; i < l;) {
     hash = (hash << 5) - hash + expr.charCodeAt(i++);
-    hash |= 0; // Convert to 32bit integer
+    // Convert to 32bit integer
+    hash |= 0;
   }
   // end of taken
   expr = (hash < 0 ? hash + 0xffffffff : hash).toString(16);
@@ -1328,22 +1329,27 @@ Command.push("Display Logic", function (items, collapsed) {
     var strMap = (ship.prop && ship.prop.customInputs || []).map(String);
     /** @param {unknown} param */
     function checkControlBlock(param) {
-      if (typeof param != "string")
+      if (!(param instanceof Array))
+        return console.error("Control Block custom parameter is not an Array\
+.");
+      if (typeof param[0] != "string")
         return console.error("Index 0 of Control Block parameter property is\
 n't string.");
-      if (param === old)
-        return void (block.properties[0] = replace);
-      if (options.indexOf(param) === -1 || strMap.indexOf(param) === -1)
-        block.properties[0] = "Up";
+      if (param[0] === old)
+        return void (param[0] = replace);
+      if (options.indexOf(param[0]) === -1 ||
+        strMap.indexOf(param[0]) === -1)
+        param[0] = "Up";
     }
     for (i = ship.blocks.length; i-- > 0;)
       if ((block = ship.blocks[i]).internalName === "Control Block")
-        checkControlBlock(block.properties[0]);
+        checkControlBlock(block.properties.control);
   }
-  var customInputs = EL(), add = EL("button");
+  var customInputs = EL(), template = EL("button");
   /** @param {MouseEvent|Ship.CustomInput} e */
   function addCustomInput(e) {
-    var isInit = e instanceof Ship.CustomInput, remove = EL("button");
+    var isInit = e instanceof Ship.CustomInput,
+      remove = EL("button");
     if (!(this instanceof HTMLButtonElement || isInit))
       return;
     var custom = new Ship.CustomInput("Button", 0),
@@ -1352,7 +1358,11 @@ n't string.");
       (inputs = prop.customInputs).push(custom) :
       prop.customInputs = inputs = []);
     /** @type {Node} */
-    var from = this || add, prev, toggle = EL("input"), name = EL("input");
+    var from = this || template,
+      /** @type {Node|null} */
+      prev;
+    /** @type {Node&{onclick?:typeof template.onclick}} */
+    var add = EL("button"), toggle = EL("input"), name = EL("input");
     while ((prev = from.previousSibling) && prev.nodeName !== "BR")
       from = prev;
     toggle.type = "checkbox";
@@ -1374,14 +1384,12 @@ n't string.");
       custom.name = name.value;
     };
     customInputs.insertBefore(name, from);
-    /** @type {Node&{onclick?:typeof add.onclick}} */
-    (
-      customInputs.insertBefore(add.cloneNode(!0), from)
-    ).onclick = add.onclick;
+    customInputs.insertBefore(add = template.cloneNode(!0), from);
+    add.onclick = template.onclick;
     remove.style.width = "unset";
     remove.style.display = "initial";
     remove.appendChild(tN("Remove"));
-    /** @type {Node&{onclick?:typeof add.onclick}} */
+    /** @type {Node&{onclick?:typeof template.onclick}} */
     (
       customInputs.insertBefore(remove, from)
     ).onclick = function () {
@@ -1399,10 +1407,10 @@ n't string.");
     };
     var br = customInputs.insertBefore(EL("br"), from);
   };
-  add.style.width = "unset";
-  add.style.display = "initial";
-  customInputs.appendChild(add).appendChild(tN("Add"));
-  add.onclick = addCustomInput;
+  template.style.width = "unset";
+  template.style.display = "initial";
+  customInputs.appendChild(template).appendChild(tN("Add"));
+  template.onclick = addCustomInput;
   var inputs = ship.prop && ship.prop.customInputs || [];
   for (var j = 0; j < inputs.length;)
     addCustomInput(inputs[j++]);
@@ -1442,11 +1450,13 @@ Command.push("Import/Export DBV", function (items, collapsed) {
   elBtn.appendChild(tN("Import"));
   error.style.color = "red";
   onFile.temporaray = function (buffer) {
-    if (buffer[0] !== 123 || buffer.slice(-1)[0] !== 125)
+    if (buffer[0] !== 123 || buffer[buffer.length - 1] !== 125)
       return false;
     try {
-      var s = String.fromCharCode.apply(String, buffer);
-      Ship.fromObject(JSON.parse(s));
+      var s = String.fromCharCode.apply(String, buffer),
+        obj = JSON.parse(s);
+      Ship.fromObject(obj);
+      !(obj.significantVersion > 15) && ship.fixPositionAdjustment(!0);
     } catch (err) {
       error.innerText = err;
       console.error(err);
@@ -1462,7 +1472,13 @@ Command.push("Import/Export DBV", function (items, collapsed) {
   (elBtn = EL("button")).onclick = function () {
     error.innerText = "";
     try {
+      if (ship.prop) {
+        var logics = ship.prop.nodeList;
+        ship.prop.nodeList = UDF;
+      }
       var s = JSON.stringify(ship);
+      if (ship.prop && typeof logics != "undefined")
+        ship.prop.nodeList = logics;
       download.href = URL.createObjectURL(
         new Blob([s], {type: "application/json"})
       );
@@ -1478,7 +1494,9 @@ Command.push("Import/Export DBV", function (items, collapsed) {
   (elBtn = EL("button")).onclick = function () {
     error.innerText = "";
     try {
-      ship = Ship.fromObject(JSON.parse(json.value));
+      var obj = JSON.parse(json.value);
+      ship = Ship.fromObject(obj);
+      !(obj.significantVersion > 15) && ship.fixPositionAdjustment(!0);
       render();
     } catch (err) {
       error.innerText = err;
@@ -1493,7 +1511,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
   items.push(elBtn, div);
 }, "Export and Import are functions using displayed vehicle as target.\nExpo\
 rting creates JSON key of ship and puts it in text input, the key doesn't in\
-clude non existent or blocks inavalable in game.\nImporting displays vehicle\
+clude nonexistent or blocks unavailable in game.\nImporting displays vehicle\
  of JSON key from text input.\nUpload from file/files button is used to load\
  file content into text input.\nJSON key is the content of .dbv savefile. It\
  contains textual data and can be opened using text editor.");
@@ -1504,7 +1522,9 @@ Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
     error.innerText = "";
     var bs = ship.blocks;
     try {
-      inp.value = uint8arrayToBase64(encodeCmprsShip(ship));
+      ship.withPositionAdjustment(function (temp) {
+        inp.value = uint8arrayToBase64(encodeCmprsShip(temp));
+      });
       render();
     } catch (err) {
       error.innerText = err;
@@ -1518,10 +1538,13 @@ Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
     error.innerText = "";
     var old = ship, s = inp.value;
     try {
-      ship = s.slice(0, 18) === "UGxheWVyVmVoaWNsZT" ||
-        s.slice(0, 10) === "VmVoaWNsZT" ?
-        Ship.fromDBKey(atob(s)) :
-        Ship.fromObject(decodeCmprsShip(base64ToUint8array(s)));
+      if (!/^(:?UGxheWVy)?VmVoaWNsZT/.test(s.slice(0, 18))) {
+        var obj = decodeCmprsShip(base64ToUint8array(s));
+        ship = Ship.fromObject(obj);
+        if (typeof obj != "string")
+          ship.fixPositionAdjustment(!(obj.significantVersion > 15));
+      } else
+        ship = Ship.fromDBKey(atob(s));
       render();
     } catch (err) {
       error.innerText = err;
@@ -1949,6 +1972,7 @@ y changing amount of RC recalculates distance.\nThanks to catcat9999 for sha\
 ring block capacity/use stats from source code in Discord.");
 Command.groupName = "";
 Command.push("Set camera view", function (items, collapsed) {
+  // TODO: one input with code like vX<vX>vY<vY>sc<sc> so can save a view
   var viewX = EL("input"), viewY = EL("input"), zoom = EL("input");
   var elBtn = EL("button");
   items.push({name: "View x", inp: viewX},
@@ -2154,6 +2178,10 @@ function check_contentScript() {
 function edit_logic(x, y) {
   ;
 }
+/** @param {number} x @param {number} y */
+function edit_logicmove(x, y) {
+  return !1;
+}
 
 /** renderedShip moved to @see {ship} */
 
@@ -2230,7 +2258,9 @@ function backgHangarInit() {
 backgHangarInit.ship = Ship.fromObject({b:[]});
 backgHangarInit.ready = 0;
 var rend_background = defaults.editorBackground ?
-  rend_backgPattern : rend_backgColor, rend_initialized = [F];
+  rend_backgPattern :
+  rend_backgColor;
+var rend_initialized = [F], rend_180 = !1;
 rend_initialized.push(function () {
   backgHangarInit.ready++ && backgHangarInit();
 });
@@ -2278,10 +2308,25 @@ function rend_checkColors() {
     });
 };
 var rend_colors = rend_initColors();
+/** @param {Block} block @param {number} index -1 for no index */
+function LogicBlock(block, index) {
+  this.internalName = block.internalName;
+  this.position = 
+    /** @type {XYZPosition} */
+    (block.position.slice());
+  this.rotation = block.rotation;
+  this.properties = block.properties;
+  this.logicPosition = block.position;
+  this.logicBlockIndex = index;
+}
+__extends(LogicBlock, Block);
 function enableShipEditing() {
   var mode = ship.getMode();
-  ship = mode.ship;
+  ship = mode.getShip();
   press = old_UI;
+  move = function () {
+    return !0;
+  };
   render();
 };
 function enableLogicEditing() {
@@ -2289,11 +2334,40 @@ function enableLogicEditing() {
   if (mode.mode === "Logic")
     return;
   for (var i = 0, old = ship.blocks, blocks = []; i < old.length; i++)
-    if (Logic.VALUE[Block.ID[old[i].internalName]])
-      blocks.push(old[i]);
-  ship = new Ship(ship.name, ship.gameVersion, ship.dateTime,
-    blocks, ship.prop, new Ship.Mode("Logic", ship));
+    if (Logic.VALUE[Block.ID[old[i].internalName]]) {
+      var logicBlock = old[i];
+      if (logicBlock instanceof LogicBlock) {
+        var temp = logicBlock.logicPosition;
+        logicBlock.logicPosition = logicBlock.position;
+        logicBlock.position = temp;
+      } else
+        old[i] = new LogicBlock(logicBlock, i);
+      blocks.push(logicBlock);
+    }
+  mode = new Ship.Mode("Ship", new Ship("", [], "", []));
+  old = [];
+  // updating the global ship to Logic mode, original is included
+  ship = new Ship(
+    ship.name,
+    ship.gameVersion,
+    ship.dateTime,
+    blocks,
+    ship.prop,
+    Ship.Mode.useParser("Logic", ship, function (ship) {
+      for (var i = 0, blocks = ship.blocks; i < old.length; i++) {
+        var logicBlock = blocks[i], temp = logicBlock.position;
+        if (!(logicBlock instanceof LogicBlock))
+          throw new Error("Block imposter within Logic mode ship!");
+        logicBlock.position = logicBlock.logicPosition;
+        logicBlock.logicPosition = temp;
+        if (logicBlock.logicBlockIndex === -1)
+          logicBlock.logicBlockIndex = blocks.push(logicBlock);
+      }
+      return ship;
+    }
+  ));
   press = edit_logic;
+  move = edit_logicmove;
   render();
 };
 
@@ -2325,6 +2399,7 @@ var old_UI = Command.press = press = function (x, y) {
     } else {
       var s = e.internalName, rot = e.rotation[2], pos = e.position;
       [
+        "Slab Wedge",
         "Wedge",
         "Wedge 1x2",
         "Wedge 1x4",
@@ -2333,11 +2408,12 @@ var old_UI = Command.press = press = function (x, y) {
         "Smooth Corner 1x4"
       ].indexOf(s) < 0 ||
         rot === 3 && (e.rotation[1] = !e.rotation[1]);
-      var size = Block.Size.VALUE[Block.ID[s]];
-      if ((size.w | size.h) & 16)
-        rot > 1 ?
-          rot === 3 ? --pos[2] : --pos[1] :
-          rot === 1 ? ++pos[2] : ++pos[1];
+      // posadj
+      // var size = Block.Size.VALUE[Block.ID[s]];
+      // if ((size.w | size.h) & 16)
+      //   rot > 1 ?
+      //     rot === 3 ? --pos[2] : --pos[1] :
+      //     rot === 1 ? ++pos[2] : ++pos[1];
       //@ts-ignore
       e.rotation[2] = rot + 1 & 3;
     }
@@ -2505,15 +2581,13 @@ var rend_speeeeed = {}, rend_logs = 69;
     var w = ow + (ow & 16), h = oh + (oh & 16), tiny = (oh | ow) & 16;
     // position to draw block in canvas
     var dx = -pos[1] * sc + vX, dy = pos[2] * sc + vY;
-    // position corrections for rotations and tiny blocks
-    dx += (objs[i].rotation[1] ?
-      rot === 0 ? 32 - w : rot === 3 ? 32 - h : tiny :
-      rot === 2 ? 32 - w : rot === 3 ? 32 - h : tiny) * sc / 16;
-    rot === 0 ?
-      dy += (32 - h - tiny) * sc / 16 :
-      rot === (objs[i].rotation[1] ? 1 : 3) ?
-        dy += (32 - w - tiny) * sc / 16 :
-        0;
+    // position correction for tiny blocks and rotations
+    dy -= rot === (objs[i].rotation[1] ? 1 : 3) ?
+      (w - 32) * sc / 16 :
+      rot === 0 ? (h - 32) * sc / 16 : 0;
+    dx -= rot === (objs[i].rotation[1] ? 0 : 2) ?
+      (w - 32) * sc / 16 :
+      rot === 3 ? (h - 32) * sc / 16 : 0;
     // update logic nodes render posiotions
     /** @type {typeof Logic.nodes[number]} */
     var node, indexes = objs[i].properties.nodeIndex;
@@ -2612,6 +2686,12 @@ var rend_speeeeed = {}, rend_logs = 69;
     }
   }
   utilities.rend_UI();
+  if (rend_180) {
+    ctx.setTransform(1, 0, 0, 1, canvas.width, canvas.height);
+    ctx.rotate(Math.PI);
+    ctx.globalCompositeOperation = "copy";
+    ctx.drawImage(canvas, 0, 0);
+  }
   var t = Date.now() - t | 0;
   rend_speeeeed[t] = rend_speeeeed[t] + 1 || 0;
 }
@@ -2626,3 +2706,53 @@ function onlyConsole(m,s,l,c,e) {
     return "" + m + "\n" + e.stack;
   return "" + m + "\n\t" + s + ":" + l + ":" + c;
 };
+
+// // requieres loading colors texture, texture mask, texture overlay sources
+// if (typeof imgColor == "undefined")
+//   var imgColor;
+// imgColor = (IMG("0") || EL(console.error("no IMG"))).cloneNode();
+// if (typeof imgMask == "undefined")
+//   var imgMask;
+// if (typeof imgOverlay == "undefined")
+//   var imgOverlay;
+// /** DBV textures MS paint simple to source v2
+//  * @param {number} w width
+//  * @param {number} h height
+//  * @param {HTMLImageElement|HTMLVideoElement|HTMLCanvasElement} imMask
+//  * @param {HTMLImageElement|HTMLVideoElement|HTMLCanvasElement} imOverlay
+// */
+// function blockTexturesToSource(w, h, imMask, imOverlay) {
+//   WH(ctx, imMask);
+//   ctx.drawImage(imMask, 0, 0);
+//   var i = 0, maDat = ctx.getImageData(0, 0, w * 32, h * 32);
+//   WH(ctx, imOverlay);
+//   ctx.drawImage(imOverlay, 0, 0);
+//   var ovDat = ctx.getImageData(0, 0, w * 32, h * 32),
+//     ovDatView = new DataView(ovDat.data.buffer);
+//   maDat.forClamp(function (j, v) {
+//     var n = v.getUint32(j), ni = i++ >> 3;
+//     var b = n < 256 || (n & 255) === 0;
+//     v.setUint32(j, b ? 0 : 0x004000ff);
+//     n = ovDatView.getUint32(j);
+//     if (n !== 0xffffffff && !b) {
+//       n = (
+//         ovDatView.getUint8(j) + (n >> 16 & 255) + (n >> 8 & 255)
+//       ) / 5 + 96;
+//       ovDatView.setUint32(j, 255-n);
+//     } else
+//       ovDatView.setUint32(j, n === 0xffffffff ? 0 : n);
+//   });
+//   WH(ctx, w * 32, h * 32);
+//   ctx.putImageData(maDat, 0, 0);
+//   var s = "" + canvas.toDataURL("image/png");
+//   imgMask ?
+//     console.log("binary mask:\n") || console.log(s) :
+//     (imgMask = EL("img")).src = s;
+//   WH(ctx, w * 32, h * 32);
+//   ctx.putImageData(ovDat, 0, 0);
+//   s = "" + canvas.toDataURL("image/png");
+//   imgOverlay ?
+//     console.log("overlay image:\n") || console.log(s) :
+//     (imgOverlay = EL("img")).src = s;
+// }
+// blockTexturesToSource(50, 4, IMG("1"), IMG("2"));

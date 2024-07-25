@@ -1,4 +1,4 @@
-// v.0.1.41
+// v.0.1.45
 var _ge: any;
 function GE(v: any) {return document.getElementById(typeof v=="number"&&v==v?
   (_ge=v+1)-1:v==void 0?v=_ge++:v)}
@@ -19,7 +19,7 @@ var press = function press(x: number, y: number) {
 };
 
 /** return true if move is used outside UI API */
-var move = function move(x, y) {
+var move = function move(x: number, y: number) {
   return Boolean(console.log(x, y));
 };
 

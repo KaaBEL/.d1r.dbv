@@ -1,7 +1,7 @@
 //@ts-check
 "use strict";
-// v.0.1.44
-/** @TODO check significantVersion */
+// v.0.1.45
+/** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
   /** @type {()=>safe} should be safe with safe type */
@@ -501,7 +501,7 @@ function Block(name, pos, rot, prop, color) {
   Object.seal(this);
 }
 // NOTE that blocks definitions will be version dependant over time
-// there is just no need to implement it yet (allows cross version editing)
+// (allows cross version editing) there is just no need to implement it yet
 /** object is frost */
 Block.NAME = {
   0: "block",
@@ -788,6 +788,8 @@ Block.ID = {
   "T1 Rammer": 1043,
   "T1 Nano Healer": 1060
 };
+// Block.NAME[703] = "Slab Wedge";
+// Block.ID["Slab Wedge"] = 703;
 Object.freeze(Block.NAME);
 Object.freeze(Block.ID);
 dictionaryDefs(Block.NAME, Block.ID, "Block definitions");
@@ -1103,7 +1105,7 @@ Block.COST = {
  * @param {object[]|object} blocks
  * @param {Logic<any>[]&{nc?:any}} [logics$] */
 Block.arrayFromObjects = function arrayFromObjects(blocks, logics$) {
-  var bs = blocks instanceof Array ? blocks : [blocks];
+  var warn = 1, bs = blocks instanceof Array ? blocks : [blocks];
   /** nodeIndex (DBV "ni") property of a block is number[] type:
    * = it contains inputs and outputs indexes
    * = their connections are specified in "nc" DBV savefile property
@@ -1152,17 +1154,29 @@ Block.arrayFromObjects = function arrayFromObjects(blocks, logics$) {
         indexes[i] = ncProperty[indexes[i]];
     return indexes;
   }
+  var propertyNames = new RegExp("^(internalName|name|n|position|pos|p|rotat\
+ion|rot|r|properties|prop|f|flipped|wg|weld|color|s|c|ni|invalidName)$");
   for (var i = 0, r = []; i < bs.length; i++) {
     var block = bs[i], o = {
       name: block.internalName || block.name || block.n,
       pos: block.position || block.pos || block.p,
-      rot: block.rotation || block.rot || block.r,
+      rot: block.rotation || block.rot || block.r || 0,
       prop: block.properties || block.prop || {color: ""},
       flip: block.f || block.flipped,
       weld: block.wg || block.weld
     };
     o.prop.color = block.color || block.s || o.prop.color || "";
-    var name = typeof o.name == "string" ? o.name : "__unknown__",
+    for (var p in block)
+      if (warn)
+        propertyNames.test(p) || warn-- && console.warn("Unknown prop" +
+          "erty name: " + JSON.stringify(p) + " at: " + i);
+      else
+        break;
+    var name = (typeof o.name == "string" ?
+        o.name !== "__unknown__" ?
+          o.name :
+          (o.prop.invalidName || "") + "" :
+        "") || "__unknown__",
       pos = (o.pos instanceof Array && o.pos.length !== 2 ?
         o.pos :
         []).map(function (e) {
@@ -1180,17 +1194,18 @@ Block.arrayFromObjects = function arrayFromObjects(blocks, logics$) {
       o.prop.invalidName = name;
       name = "__unknown__";
     }
-    if (o.pos.length === 2) {
+    if (o.pos instanceof Array && o.pos.length === 2) {
       if (typeof o.prop.color != "string")
        o.prop.color = Color.default(name);
       if (typeof o.rot != "number")
         console.warn("incorrect array position length or wrong rota" +
           "tion? at: Block.arrayFromObjects, blocks: ", bs, " i: ", i);
       var adjX = 0, adjY = 0, size = Block.Size.VALUE[Block.ID[name]];
-      if (size && ((size.w | size.h) & 16)) {
-        rot[2] > 1 ? adjY = 1 : 0;
-        (rot[2] + 1 & 3) > 1 ? adjX = 1 : 0;
-      }
+      // posadj
+      // if (size && ((size.w | size.h) & 16)) {
+      //   rot[2] > 1 ? adjY = 1 : 0;
+      //   (rot[2] + 1 & 3) > 1 ? adjX = 1 : 0;
+      // }
       pos = [0, o.pos[0] * 2 + adjX, o.pos[1] * 2 + adjY];
     }
     // is keeping custom parameter properties not changed a good idea?
@@ -1350,8 +1365,10 @@ Block.Size.genterateSizes = function () {
 // (TODO:) blocks were still not tested properly all at once, one more
 // undetected bug with block or texture and adding unit test for it
 Block.Size.VALUE = Block.Size.genterateSizes([[0], [1], [2], [7, 1, 2]],
-  [[8, 1, 4], [50], [51, 1, 1], [52], [107, 1, 2], [9, 1, 4], [53], [54]],
-  [[55], [56, .5, .5], [3], [100, 2, 2], [10, 3, 4], [102, .5, .5]],
+  [[8, 1, 4], [50], [51, 1, .5], [52], [107, 1, 2], [9, 1, 4], [53]],
+  // [[54], [55], [48, 1, .5], [56, .5, .5], [3], [100, 2, 2], [10, 3, 4]],
+  // [[102, .5, .5]],
+  [[54], [55], [56, .5, .5], [3], [100, 2, 2], [10, 3, 4], [102, .5, .5]],
   [[152], [103, 1, 2], [13, 2, 3], [4], [5], [104, 2, 2], [15, 3, 3]],
   [[6], [18, 2, 2], [20, 2, 3], [163], [118, 2, 2], [31, 3, 3], [167]],
   [[106], [156], [164], [165], [166], [182], [170], [171], [22]],
@@ -1611,12 +1628,13 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.name = name;
   this.gameVersion = version;
   this.dateTime = time;
+  /** @type {(Block|LogicBlock)[]} */
   this.blocks = blocks;
-  // optional logic blocks requiring bounding to ownerShip adds complications
   /** Ship properties (shortcut name since it is db/dr non-standard) */
   this.prop = properties || null;
-  //-rhere must be private property afterall
   this.getMode = __private(mode || new Ship.Mode("Ship", this));
+  /** to track Droneboi Vehicles editor version in its JSON savefiles */
+  this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
 Ship.prototype.selectRect = (
@@ -1878,6 +1896,50 @@ Ship.prototype.mirror2d = (
     Edit.eventFire(this);
   }
 );
+/** @param {number} x @param {number} y @returns -1 if nothing found */
+Ship.prototype.blockAt = function (x, y) {
+  // ENDED / CONTINUE HERE
+  return -1;
+};
+/** used to revert position adjustment from vehicles 'infected' by it:
+ * https://github.com/KaaBEL/.d1r.dbv/commit/0b8156e155383059cf1aeeb4a997818
+3c92b92f8#diff-fa9a713c17c685348118b8d29bd55f10491e651ccafaf45d1044ed01ffe6e
+80bL1414 
+ * @param {boolean} [fixSlab] if true it also fixes wrong Slab size */
+Ship.prototype.fixPositionAdjustment = function (fixSlab) {
+  var slabsFix = fixSlab ? Block.Size.VALUE[696] : null;
+  console.log(this.name + ".PositionAdjustment(" + fixSlab + ")");
+  for (var i = 0; i < this.blocks.length; i++) {
+    var e = this.blocks[i], rot = e.rotation[2],
+      size = Block.Size.VALUE[Block.ID[e.internalName]];
+    if (size === slabsFix)
+      continue;
+    if (size && ((size.w | size.h) & 16)) {
+      rot > 1 ? e.position[2] -= 1 : 0;
+      (rot + 1 & 3) > 1 ? e.position[1] -= 1 : 0;
+    }
+  }
+};
+/** allows using position adjustment for certain operations such as,
+ * DR base64 keys prototype @param {(ship:Ship)=>void} operation */
+Ship.prototype.withPositionAdjustment = function (operation) {
+  var l = 0, adjusted = [], adjustment = [], block = this.blocks[0];
+  for (var i = 0, n = 0; i < this.blocks.length; i++) {
+    var block = adjusted[l] = this.blocks[i],
+      rot = block.rotation[2],
+      size = Block.Size.VALUE[Block.ID[block.internalName]];
+    if (size && ((size.w | size.h) & 16)) {
+      (rot + 1 & 3) > 1 ? block.position[1] += n = 1 : n = 0;
+      rot > 1 ? block.position[2] += (n |= 2) >>> 1 : 0;
+      adjustment[l++] = n;
+    }
+  }
+  operation(this);
+  for (i = adjusted.length; i-- > 0;) {
+    adjusted[i].position[1] -= adjustment[i] & 1;
+    adjusted[i].position[2] -= adjustment[i] >>> 1;
+  }
+};
 /** @param {object} object */
 Ship.fromObject = function fromObject(object) {
   var o = {
@@ -1931,10 +1993,11 @@ Ship.toDBV = function toDBV(ship) {
     e = ship.blocks[i];
     var rot = e.rotation[2], adjX = 0, adjY = 0;
     var size = Block.Size.VALUE[Block.ID[e.internalName]];
-    if (size && ((size.w | size.h) & 16)) {
-      rot > 1 ? adjY = .5 : 0;
-      (rot + 1 & 3) > 1 ? adjX = .5 : 0;
-    }
+    // posadj
+    // if (size && ((size.w | size.h) & 16)) {
+    //   rot > 1 ? adjY = .5 : 0;
+    //   (rot + 1 & 3) > 1 ? adjX = .5 : 0;
+    // }
     /__placeholder\d+__/.test(e.internalName) || blocks.push({
       n: e.internalName,
       p: [Math.floor(e.position[1]) / 2 - adjX,
@@ -1980,7 +2043,7 @@ Ship.toDBV = function toDBV(ship) {
     b: blocks,
     nc: connections || shipProp.nodeConnections,
     ci: custominps || [],
-    significantVersion: 15
+    significantVersion: Ship.VERSION
   };
 };
 /** @param {string} key */
@@ -2050,9 +2113,10 @@ Ship.fromDBKey = function (key) {
     o = (o[1] || "").split("~");
     var x = +(o[0] ||"").replace(",", ".") * 2 || 0,
       y = +(o[1] || "").replace(",", ".") * 2 || 0;
-    var size = Block.Size.VALUE[Block.ID[name]] || {};
-    if ((size.w | size.h) & 16)
-      rot === 2 ? ++y + ++x : rot === 1 ? ++x : rot === 3 ? ++y : 0;
+    // posadj
+    // var size = Block.Size.VALUE[Block.ID[name]] || {};
+    // if ((size.w | size.h) & 16)
+    //   rot === 2 ? ++y + ++x : rot === 1 ? ++x : rot === 3 ? ++y : 0;
     blocks[i] = new Block(name, [0, x, y], [
         0,
         flip,
@@ -2066,6 +2130,8 @@ Ship.fromDBKey = function (key) {
   var obj = {nodeList: logics};
   return new Ship("[unnamed]", [], dateTime(1714557750), blocks, obj);
 };
+/** @type {16} significantVersion: 16 (integer) */
+Ship.VERSION = 16;
 /** instance is sealed @param {string} name @param {number} type */
 Ship.CustomInput = function CustomInput(name, type) {
   this.name = name;
@@ -2080,10 +2146,6 @@ Ship.CustomInput.prototype.toString = function () {
 Ship.CustomInput.reassemble = function (blocks, prop) {
   /** @type {Ship.CustomInput[]} */
   var inputs = [], defs = Block.Properties.VALUE[803][0].item.options;
-  // for (var i = (defs = defs.concat([])).length, j = i; i-- > 0;) {
-  //   inputs[i + j] = new Ship.CustomInput(defs[i + j] = defs[i] + 1, 1);
-  //   inputs[i] = new Ship.CustomInput(defs[i] += 0, 0);
-  // }
   for (var i = defs.length, j = i; i-- > 0;)
     inputs[i] = new Ship.CustomInput(defs[i], 0);
   /** @type {safe} custom input from savefile */
@@ -2114,12 +2176,28 @@ Ship.CustomInput.reassemble = function (blocks, prop) {
   prop.customInputs = inputs.slice(j);
 };
 /** instance is frost
- * @typedef Ship.Mode @property {EditMode} mode @property {Ship} ship
- * @param {EditMode} mode @param {Ship} ship */
+ * (keeping reference to mode object also keeps its old ship object)
+ * @typedef Ship.Mode @property {EditMode} mode @property {()=>Ship} getShip
+ * @param {EditMode} mode @param {Ship|(()=>Ship)} ship */
 Ship.Mode = function (mode, ship) {
   this.mode = mode;
-  this.ship = ship;
+  this.getShip = ship instanceof Ship ? __private(ship) : ship;
   Object.freeze(this);
+};
+/** adds a layer for the parser to pass stored global ship in mode
+ * to pars functione, next parser calls only return the parse function
+ * result and not do parsing again (in case it just modifies global
+ * ship /the usual case which recycles global @see {ship} object)
+ * @param {EditMode} mode
+ * @param {Ship} globalShip @param {(ship:Ship)=>Ship} parse */
+Ship.Mode.useParser = function (mode, globalShip, parse) {
+  var isParsed = !1;
+  return new Ship.Mode(mode, function () {
+    if (isParsed)
+      return globalShip;
+    isParsed = !0;
+    return globalShip = parse(globalShip);
+  });
 };
 
 // generating Droneboi
@@ -2417,9 +2495,11 @@ function wVersion(arr) {
   }
 }
 
-/** @param {Ship} ship */
+/** @param {Ship} ship base64 key prototype */
 function encodeCmprsShip(ship) {
-  // version 0.1.0 (midified version 0.0.3)
+  // version 0.0.significantVersion
+  // versions 16 and further will significantVersion of Db Vehicle editor
+  //-version 0.0.4 (modified version 0.0.3)
   var l, n, id, p_i, chunkEnd, s, propertiesStr = "";
   var propertiesRef = [], b, arr, min, max, prev, size = [], sizeB = [];
   // id length
@@ -2431,7 +2511,7 @@ function encodeCmprsShip(ship) {
   /** @type {number[]} */
   var rotations = [], kB = [buffer];
   // data block: compression version
-  wVersion([0, 0, 4]);
+  wVersion([0, 0, Ship.VERSION]);
   // data block: name
   buffer[i++] = l = ship.name.length;
   if (l > 255)
@@ -2708,6 +2788,8 @@ function decodeCmprsShip(cmprsShip) {
   while (n < 2)
     if (arr[n++] > 0)
       return er("unknown file vesrion");
+  if (arr.length > 2 && arr[2] > 15)
+    ship.significantVersion = arr[2];
   // data block: name
   l = buffer[i++];
   while (l-- > 0)
@@ -2876,7 +2958,8 @@ function decodeCmprsShip(cmprsShip) {
   if (l = properties.length) {
     if (buffer[buffer.length - 1] !== 93)
       return er("unexpected end of data");
-      s = String.fromCharCode.apply(String, buffer.slice(i));
+    for (s = ""; i < buffer.length;)
+      s += String.fromCharCode(buffer[i++]);
     try {
       arr = JSON.parse(s);
     } catch (err) {
