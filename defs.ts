@@ -1,4 +1,4 @@
-// v.0.1.45
+// v.0.1.46
 var _ge: any;
 function GE(v: any) {return document.getElementById(typeof v=="number"&&v==v?
   (_ge=v+1)-1:v==void 0?v=_ge++:v)}
@@ -370,14 +370,15 @@ touchesInit.time = 350;
 touchesInit.move = 13;
 
 var mouseStamp = 0, test_debug = !1;
-if (typeof WheelEvent == "undefined")
-  //@ts-ignore
-  var WheelEvent = Object;
+var WheelSroll = typeof WheelEvent == "undefined" ? Object : WheelEvent;
+if (window.MouseWheelEvent === UDF)
+  var MouseWheelEvent = Object;
 function mouseInit() {
   if (!bd)
     return console.error("bd is null, UI wasn't initialized");
   bd.onwheel = bd.onmousewheel = function (e) {
-    if (e.target !== canvas || !(e instanceof WheelEvent))
+    if (e.target !== canvas || !(e instanceof WheelSroll ||
+      e instanceof MouseWheelEvent))
       return;
     test_debug && console.log("onwheel", +new Date / 100 | 0, e.deltaY ||
       -(e.wheelDelta || 0), +new Date, sc);
@@ -395,8 +396,7 @@ function mouseInit() {
       over(e);
     else
       taken = move(x, y);
-    if (e.buttons === 1)
-      mouseStamp = Date.now();
+    mouseStamp = e.buttons === 1 ? Date.now() : 0;
     pX = gX = e.pageX - canvas.offsetLeft;
     pY = gY = e.pageY - canvas.offsetTop;
   }

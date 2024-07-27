@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.45
+// v.0.1.46
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -470,7 +470,7 @@ Color.default = function getColor(name) {
 };
 Color.colorlessRegexp = new RegExp("Struct|Glass Block|Glass Wedge|Sol\
 ar Block|Solar Panel|Hinge|Piston|Ghost Block|Gauge|Dial|Digital Displ\
-ay|__placeholder(?:839|84[0-26-9]|85[0-3])__");
+ay|__placeholder(?:84[0-26-9]|85[0-3])__");
 
 /** letter case of block names doesn't matter when loaded by game,
  * Block name definitions require strict letter cases here */
@@ -530,6 +530,7 @@ Block.NAME = {
   700: "Struct",
   701: "Glass Block",
   702: "Glass Wedge",
+  703: "Slab Wedge",
   738: "Tiny Hydrogen Thruster",
   739: "Small Hydrogen Thruster",
   740: "Medium Hydrogen Thruster",
@@ -694,6 +695,7 @@ Block.ID = {
   "Struct": 700,
   "Glass Block": 701,
   "Glass Wedge": 702,
+  "Slab Wedge": 703,
   "Tiny Hydrogen Thruster": 738,
   "Small Hydrogen Thruster": 739,
   "Medium Hydrogen Thruster": 740,
@@ -788,8 +790,6 @@ Block.ID = {
   "T1 Rammer": 1043,
   "T1 Nano Healer": 1060
 };
-// Block.NAME[703] = "Slab Wedge";
-// Block.ID["Slab Wedge"] = 703;
 Object.freeze(Block.NAME);
 Object.freeze(Block.ID);
 dictionaryDefs(Block.NAME, Block.ID, "Block definitions");
@@ -1033,6 +1033,7 @@ Block.COST = {
   700: 100,
   701: 100,
   702: 100,
+  703: 100,
   738: 100,
   739: 100,
   740: 400,
@@ -1323,12 +1324,12 @@ Block.Size = function Size(x, y, w, h) {
   this.h = h;
   Object.freeze(this);
 };
-Block.Size.width = 50;
-Block.Size.height = 4;
+Block.Size.width = 4;
+Block.Size.height = 48;
 /**
  * @typedef {[number,number,number,number,number]} PreciseDef
- * @typedef {[number]|[number,number,number]|PreciseDef} SizeDef
- * @typedef {SizeDef|SizeDef[]} SizesArg
+ * @typedef {[number|string]|[number|string,number,number]} SizeDef
+ * @typedef {(SizeDef|PreciseDef)|(SizeDef|PreciseDef)[]} SizesArg
  * @type {(...arg:SizesArg[])=>{[key:number]:Block.Size}} */
 Block.Size.genterateSizes = function () {
   var r = {690: new this(0, 0, 2, 2)},
@@ -1342,7 +1343,13 @@ Block.Size.genterateSizes = function () {
       var v = a[i];
       //@ts-ignore
       v instanceof Array && v[j] instanceof Array ? v = v[j++] : j = 3;
-      var x = (v[0] % this.width) * 32, y = v[0] / this.width << 5;
+      if (typeof v[0] == "number")
+        var x = (v[0] % this.width) * 32, y = v[0] / this.width << 5;
+      else {
+        x = +(v[0] + " ").split(" ")[0] >>> 5 << 5;
+        y = +(v[0] + " ").split(" ")[1] >>> 5 << 5;
+        v[0] = (x >>> 5) + (y >>> 5) * this.width;
+      }
       if (typeof nw == "object") { 
         var vup = v[0] / this.width << 0;
         console.log(Block.NAME[l], v[0] % this.width, vup, v);
@@ -1364,24 +1371,23 @@ Block.Size.genterateSizes = function () {
 };
 // (TODO:) blocks were still not tested properly all at once, one more
 // undetected bug with block or texture and adding unit test for it
-Block.Size.VALUE = Block.Size.genterateSizes([[0], [1], [2], [7, 1, 2]],
-  [[8, 1, 4], [50], [51, 1, .5], [52], [107, 1, 2], [9, 1, 4], [53]],
-  // [[54], [55], [48, 1, .5], [56, .5, .5], [3], [100, 2, 2], [10, 3, 4]],
-  // [[102, .5, .5]],
-  [[54], [55], [56, .5, .5], [3], [100, 2, 2], [10, 3, 4], [102, .5, .5]],
-  [[152], [103, 1, 2], [13, 2, 3], [4], [5], [104, 2, 2], [15, 3, 3]],
-  [[6], [18, 2, 2], [20, 2, 3], [163], [118, 2, 2], [31, 3, 3], [167]],
-  [[106], [156], [164], [165], [166], [182], [170], [171], [22]],
-  [[23, 1, 2], [72], [122], [181], [123], [172], [173, 1, .5], [46]],
-  [[130, 1, .5], [180, 1, .5], [24, .5, .5], [74], [124], [174], [25]],
-  [[75], [125], [175], [26, 1, .5], [76, .5, .5], [126, 1, .5]],
-  [[176, .5, .5], [27], [77], [127], [177], [28, 1, .5], [78, 1, .5]],
-  [[128, 1, .5], [178, 1, .5], [29], [79], [129], [179, .5, 1]],
-  [[30, .5, .5], [80, 1, .5], [183, 1, .5], [40], [41], [42], [43], [44]],
-  [[45], [144, 2, 2], [134, 1, 2], [135, 1, 2], [136, 1, 2], [189]],
-  [[140, 2, 2], [142, 2, 2], [84], [85], [86], [92, 4, 1], [90, 2, 1]],
-  [[38, 2, 3], [87], [34, 4, 1], [47], [188], [187], [96], [97], [147]],
-  [[146]]);
+Block.Size.VALUE = Block.Size.genterateSizes([[128], [52], [53]],
+  [[54, 1, 2], [55, 1, 4], [56], [57, 1, 0.5], [60], [61, 1, 2]],
+  [[71, 1, 4], [35], [150], [151], [62, 1, 0.5], [8, 0.5, 0.5], [4]],
+  [[28, 2, 2], [13, 3, 4], [9, 0.5, 0.5], [0], [1, 1, 2], [2, 2, 3]],
+  [[34], [89], [86, 2, 2], [92, 3, 3], [41], [44, 2, 2], [42, 2, 3]],
+  [[88], [80, 2, 2], [68, 3, 3], [24], [36], [37], [38], [39], [40]],
+  [[167], [172], [173], [136], [133, 1, 2], [12], [132], [31], [171]],
+  [[174], [129, 1, 0.5], [175], [131, 1, 0.5], [130, 1, 0.5]],
+  [[95, 0.5, 0.5], [99], [103], [104], [105], [106], [107], [108]],
+  [[109, 1, 0.5], [110, 0.5, 0.5], [111, 1, 0.5], [112, 0.5, 0.5]],
+  [[113], [114], [115], [116], [117, 1, 0.5], [118, 1, 0.5]],
+  [[119, 1, 0.5], [120, 1, 0.5], [121], [122], [123], [124, 0.5, 1]],
+  [[125, 0.5, 0.5], [126, 1, 0.5], [127, 1, 0.5], [176], [177], [178]],
+  [[179], [180], [181], [134, 2, 2], [164, 1, 2], [165, 1, 2]],
+  [[166, 1, 2], [183], [184, 2, 2], [186, 2, 2], [160], [161], [162]],
+  [[144, 4, 1], [158, 2, 1], [148, 2, 3], [163], [140, 4, 1], [182]],
+  [[155], [154], [16], [30], [64], [66]]);
 /** object is frost
  * @template {"BLOCK"|"PYRAMID"|"WEDGE"} T @param {T} type */
 Block.Mirror = function Mirror(type) {
@@ -1896,10 +1902,29 @@ Ship.prototype.mirror2d = (
     Edit.eventFire(this);
   }
 );
-/** @param {number} x @param {number} y @returns -1 if nothing found */
-Ship.prototype.blockAt = function (x, y) {
-  // ENDED / CONTINUE HERE
-  return -1;
+/** @param {number} x @param {number} y @returns null if nothing found */
+Ship.prototype.blockAtPonit = function (x, y) {
+  for (var bs = ship.blocks, i = bs.length; i-- > 0;) {
+    var block = bs[i] || {}, pos = block.position;
+    // calculations from expensiveRenderer
+    var size = Block.Size.VALUE[Block.ID[block.internalName]] ||
+      {w: 1, h: 1};
+    var w = size.w >>> 4, h = size.h >>> 4;
+    var cx = -pos[1], cy = pos[2], rot = 10 - block.rotation[2] & 3;
+    cy -= rot === (block.rotation[1] ? 1 : 3) ?
+      (w - 2) :
+      rot === 0 ? (h - 2) : 0;
+    cx -= rot === (block.rotation[1] ? 0 : 2) ?
+      (w - 2) :
+      rot === 3 ? (h - 2) : 0;
+    var cw = rot & 1 ? h : w, ch = rot & 1 ? w : h;
+    // if (i === 8 && block.internalName === "Large Hydrogen Tank")
+    //   debugger;
+    if (-x < cx || y < cy || -x > cx + cw || y > cy + ch)
+      continue;
+    return {block: block, id: i, x: cx, y: cy, w: cw, h: ch, lx: x, ly: y};
+  }
+  return {lx: x, ly: y};
 };
 /** used to revert position adjustment from vehicles 'infected' by it:
  * https://github.com/KaaBEL/.d1r.dbv/commit/0b8156e155383059cf1aeeb4a997818
@@ -2130,8 +2155,8 @@ Ship.fromDBKey = function (key) {
   var obj = {nodeList: logics};
   return new Ship("[unnamed]", [], dateTime(1714557750), blocks, obj);
 };
-/** @type {16} significantVersion: 16 (integer) */
-Ship.VERSION = 16;
+/** @type {17} significantVersion: 17 (integer) */
+Ship.VERSION = 17;
 /** instance is sealed @param {string} name @param {number} type */
 Ship.CustomInput = function CustomInput(name, type) {
   this.name = name;
