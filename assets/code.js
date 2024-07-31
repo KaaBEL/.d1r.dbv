@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.46
+// v.0.1.47
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -647,6 +647,7 @@ Block.NAME = {
   856: "__placeholder856__",
   // station floor 3 1x1
   857: "__placeholder857__",
+  1023: "__NULL__",
   // 1024: Core, 1025: T1 Block, 1026: T2 Block, 1027: T1 Wedge,
   //  1028: T1 Wedge 1x2, 1029: T2 Wedge, 1030: Structure Block,
   //  1031: Glass Block,
@@ -785,6 +786,7 @@ Block.ID = {
   "__placeholder855__": 855,
   "__placeholder856__": 856,
   "__placeholder857__": 857,
+  "__NULL__": 1023,
   "Afterburner": 1035,
   "Dynamo Thruster": 1037,
   "T1 Rammer": 1043,
@@ -1387,7 +1389,7 @@ Block.Size.VALUE = Block.Size.genterateSizes([[128], [52], [53]],
   [[179], [180], [181], [134, 2, 2], [164, 1, 2], [165, 1, 2]],
   [[166, 1, 2], [183], [184, 2, 2], [186, 2, 2], [160], [161], [162]],
   [[144, 4, 1], [158, 2, 1], [148, 2, 3], [163], [140, 4, 1], [182]],
-  [[155], [154], [16], [30], [64], [66]]);
+  [[155], [154], [-1, -1, -1], [16], [30], [64], [66]]);
 /** object is frost
  * @template {"BLOCK"|"PYRAMID"|"WEDGE"} T @param {T} type */
 Block.Mirror = function Mirror(type) {
@@ -1612,6 +1614,26 @@ Block.Properties.addProperty = function (name, property) {
             p.item.default[j++];
   return property;
 };
+// is this additional class a good idea?
+/** instance is frost
+ * @param {Block} block @param {number} id @param {number} x
+ * @param {number} y @param {number} w @param {number} h */
+Block.Selected = function (block, id, x, y, w, h) {
+  this.block = block;
+  this.id = id;
+  this.x = x;
+  this.y = y;
+  this.w = w;
+  this.h = h;
+  Object.freeze(this);
+};
+// or just have a type instead
+/**
+ * @typedef {{block:Block,id:number,
+ *   x:number,y:number,w:number,h:number}} SelectedBlock
+ */
+/** @type {SelectedBlock} */
+var selection;
 
 /**
  * @typedef {Block[]&{parentShip:Ship}} BlockSelection
@@ -1903,7 +1925,7 @@ Ship.prototype.mirror2d = (
   }
 );
 /** @param {number} x @param {number} y @returns null if nothing found */
-Ship.prototype.blockAtPonit = function (x, y) {
+Ship.prototype.blockAtPonit2d = function (x, y) {
   for (var bs = ship.blocks, i = bs.length; i-- > 0;) {
     var block = bs[i] || {}, pos = block.position;
     // calculations from expensiveRenderer
@@ -1922,9 +1944,9 @@ Ship.prototype.blockAtPonit = function (x, y) {
     //   debugger;
     if (-x < cx || y < cy || -x > cx + cw || y > cy + ch)
       continue;
-    return {block: block, id: i, x: cx, y: cy, w: cw, h: ch, lx: x, ly: y};
+    return new Block.Selected(block, i, cx, cy, cw, ch);
   }
-  return {lx: x, ly: y};
+  return null;
 };
 /** used to revert position adjustment from vehicles 'infected' by it:
  * https://github.com/KaaBEL/.d1r.dbv/commit/0b8156e155383059cf1aeeb4a997818
@@ -2226,6 +2248,7 @@ Ship.Mode.useParser = function (mode, globalShip, parse) {
 };
 
 // generating Droneboi
+/** global ship that's being rendered and editng */
 var ship = Ship.fromObject({name: "Starter Droneboi", ci: []});
 // var block = new Block("Block", [0, 0, 0], [0, !0, 0]),
 //   ship = new Ship("None", [0, 9], "never", [block]);

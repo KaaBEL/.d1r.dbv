@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.1.46 -->
+<!-- v.0.1.47 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -107,7 +107,7 @@
       <time itemprop="dateModified" content="2023-03-14" datetime="2023-03-14">Last updated, March 14, 2023</time>
     </div>
   </footer>
-  <!-- v.0.0.20 -->
+  <!-- v.0.0.21 -->
   <script>
     "use strict";
     var _ge;
@@ -131,7 +131,7 @@
     };
 
     /** return true if move is used outside UI API */
-    var move = function move(x, y) {
+    var move = function move(x, y, e) {
       return Boolean(console.log(x, y));
     };
 
@@ -516,7 +516,7 @@
         if (foreign = e.target !== canvas)
           over(e);
         else
-          taken = move(x, y);
+          taken = e.buttons === 1 && move(x, y, e);
         mouseStamp = e.buttons === 1 ? Date.now() : 0;
         pX = gX = e.pageX - canvas.offsetLeft;
         pY = gY = e.pageY - canvas.offsetTop;
@@ -530,7 +530,7 @@
         if (!moving && (Date.now() < mouseStamp + mouseInit.time &&
           Math.abs(gX - x) < mouseInit.move &&
           Math.abs(gY - y) < mouseInit.move || taken))
-          return;
+          return taken && move(x, y, e);
         moving = !0;
         // works on add difference basis to not fight with other movement
         vX += x - pX || 0;
@@ -549,7 +549,7 @@
           return press(x, y);
           // || console.log("press: x, y", gX - x, gY - y, "(moving)", moving, "!taken", !taken);
         else if (taken || !moving)
-          return;
+          return taken && move(x, y, e);
         // console.log("moving: x, y", gX - x, gY - y, "moving", moving, "(taken)", taken);
         vX += x - pX || 0;
         vY += y - pY || 0;

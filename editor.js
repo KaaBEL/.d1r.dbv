@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.46
+// v.0.1.47
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -414,6 +414,7 @@ var helpCanvas = document.createElement("canvas"),
     // shut up chromium browsers
     {willReadFrequently: true}));
 
+/** original settings variable, defines type for settings */
 var defaults = {
   /** (default) true: image pattern, false: color */
   editorBackground: typeof DOMMatrix != "undefined",
@@ -428,7 +429,7 @@ var defaults = {
   buildReplace: !1,
   editorBackgroundStage: 1
 },
-  /** @type {typeof defaults|null} */
+  /** @type {typeof defaults|null} alternative to original */
   settings = defaults;
 // naming may change? + meaningless comment
 function saveSettings() {
@@ -2182,9 +2183,9 @@ function edit_logic(x, y) {
   ;
 }
 /** @param {number} x @param {number} y */
-function edit_logicmove(x, y) {
+var edit_logicmove = function (x, y) {
   return !1;
-}
+};
 
 /** renderedShip moved to @see {ship} */
 
@@ -2324,20 +2325,25 @@ function LogicBlock(block, index) {
   this.logicBlockIndex = index;
 }
 __extends(LogicBlock, Block);
+function DefaultUI() {
+  throw new TypeError("Illegal constructor");
+  this.mode = "any";
+}
+
+DefaultUI.rend = F;
 function enableShipEditing() {
   var mode = ship.getMode();
   ship = mode.getShip();
   press = old_UI;
-  move = function () {
-    return !0;
-  };
   render();
 };
 function enableLogicEditing() {
-  var mode = ship.getMode();
+  var oX = 0, oY = 0, mode = ship.getMode();
   if (mode.mode === "Logic")
     return;
-  for (var i = 0, old = ship.blocks, blocks = []; i < old.length; i++)
+  /** @type {Block[]} */
+  var blocks = [];
+  for (var i = 0, old = ship.blocks; i < old.length; i++)
     if (Logic.VALUE[Block.ID[old[i].internalName]]) {
       var logicBlock = old[i];
       if (logicBlock instanceof LogicBlock) {
@@ -2371,7 +2377,54 @@ function enableLogicEditing() {
     }
   ));
   press = edit_logic;
-  move = edit_logicmove;
+  /** @type {Block.Selected|null} */
+  var found = null, movingId = -1;
+  move = edit_logicmove = function (x, y, e) {
+    if (e.type === "mousedown") {
+      if (!(found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc)))
+        return !1;
+      // offsets
+      oX = (vX - x) / sc - found.block.position[1];
+      oY = (y - vY) / sc - found.block.position[2];
+      //-console.log("oX:", oX, "oY:", oY);
+      blocks = ship.blocks;
+      blocks[movingId = blocks.length] = blocks[found.id];
+      blocks[found.id] = new Block("__NULL__", [0, 0, 0], [0, !1, 0]);
+      render();
+      return !0;
+    } else if (e.type === "mousemove") {
+      if (!found)
+        return !1;
+      found.block.position[1] = (vX - x) / sc - oX;
+      found.block.position[2] = (y - vY) / sc - oY;
+      render();
+    } else if (e.type === "mouseup") {
+      if (!found)
+        return !1;
+      if ((movingId = blocks[movingId] === found.block ?
+        movingId :
+        blocks.indexOf(found.block)) === -1)
+        throw new Error("Block found not found, at edit_logicmove.");
+      if ((blocks[found.id] || {}).internalName === "__NULL__") {
+        blocks[found.id] = blocks[movingId];
+        del.call(blocks, movingId);
+      } else
+        throw new Error("Block __NULL__ not found, at edit_logicmove.");
+      render();
+    } else
+      console.error("edit_logicmove unhandled event type: " +
+        e.type + " add it!");
+    return !1;
+  };
+  DefaultUI.rend = function () {
+    if (!found)
+      return;
+    ctx.lineWidth = defaults.highlightWidth;
+    ctx.strokeStyle = defaults.highlightColor;
+    var dx = found.x * sc + vX, dy = found.y * sc + vY;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.strokeRect(dx, dy, found.w * sc, found.h * sc);
+  };
   render();
 };
 
@@ -2700,6 +2753,7 @@ var rend_speeeeed = {}, rend_logs = 69;
     }
   }
   utilities.rend_UI();
+  DefaultUI.rend();
   if (rend_180) {
     ctx.setTransform(1, 0, 0, 1, canvas.width, canvas.height);
     ctx.rotate(Math.PI);
@@ -2720,260 +2774,3 @@ function onlyConsole(m,s,l,c,e) {
     return "" + m + "\n" + e.stack;
   return "" + m + "\n\t" + s + ":" + l + ":" + c;
 };
-
-/** @TODO remove in v.0.1.47 */
-// // requieres loading colors texture, texture mask, texture overlay sources
-// if (typeof imgColor == "undefined")
-//   var imgColor;
-// imgColor = (IMG("0") || EL(console.error("no IMG"))).cloneNode();
-// if (typeof imgMask == "undefined")
-//   var imgMask;
-// if (typeof imgOverlay == "undefined")
-//   var imgOverlay;
-// /** DBV textures MS paint simple to source v2
-//  * @param {number} w width
-//  * @param {number} h height
-//  * @param {HTMLImageElement|HTMLVideoElement|HTMLCanvasElement} imMask
-//  * @param {HTMLImageElement|HTMLVideoElement|HTMLCanvasElement} imOverlay
-// */
-// function blockTexturesToSource(w, h, imMask, imOverlay) {
-//   WH(ctx, imMask);
-//   ctx.drawImage(imMask, 0, 0);
-//   var i = 0, maDat = ctx.getImageData(0, 0, w * 32, h * 32);
-//   WH(ctx, imOverlay);
-//   ctx.drawImage(imOverlay, 0, 0);
-//   var ovDat = ctx.getImageData(0, 0, w * 32, h * 32),
-//     ovDatView = new DataView(ovDat.data.buffer);
-//   maDat.forClamp(function (j, v) {
-//     var n = v.getUint32(j), ni = i++ >> 3;
-//     var b = n < 256 || (n & 255) === 0;
-//     v.setUint32(j, b ? 0 : 0x004000ff);
-//     n = ovDatView.getUint32(j);
-//     if (n !== 0xffffffff && !b) {
-//       n = (
-//         ovDatView.getUint8(j) + (n >> 16 & 255) + (n >> 8 & 255)
-//       ) / 5 + 96;
-//       ovDatView.setUint32(j, 255-n);
-//     } else
-//       ovDatView.setUint32(j, n === 0xffffffff ? 0 : n);
-//   });
-//   WH(ctx, w * 32, h * 32);
-//   ctx.putImageData(maDat, 0, 0);
-//   var s = "" + canvas.toDataURL("image/png");
-//   imgMask ?
-//     console.log("binary mask:\n") || console.log(s) :
-//     (imgMask = EL("img")).src = s;
-//   WH(ctx, w * 32, h * 32);
-//   ctx.putImageData(ovDat, 0, 0);
-//   s = "" + canvas.toDataURL("image/png");
-//   imgOverlay ?
-//     console.log("overlay image:\n") || console.log(s) :
-//     (imgOverlay = EL("img")).src = s;
-// }
-// blockTexturesToSource(50, 4, IMG("1"), IMG("2"));
-
-var ship = Ship.fromObject(JSON.parse('{"n":"Tested KS-34-4","gv":"1.0.4","d\
-t":"27.07.2024 13:46:57","ls":1,"b":[{"n":"Solar Block","p":[1.0,-6.0],"r":9\
-0,"f":false,"s":null,"wg":0,"c":[],"ni":[]},{"n":"LED","p":[-4.0,-5.0],"r":1\
-80,"f":false,"s":"Red Hazard Stripes","wg":0,"c":[],"ni":[73]},{"n":"Medium \
-Storage Rack","p":[3.0,2.0],"r":0,"f":false,"s":"Black","wg":0,"c":[],"ni":[\
-]},{"n":"Medium Storage Rack","p":[-4.0,2.0],"r":0,"f":false,"s":"Black","wg\
-":0,"c":[],"ni":[]},{"n":"Armor Block","p":[-1.0,3.0],"r":0,"f":false,"s":"D\
-ark Blue","wg":0,"c":[],"ni":[]},{"n":"Solar Block","p":[-2.0,2.0],"r":0,"f"\
-:false,"s":null,"wg":0,"c":[],"ni":[]},{"n":"Solar Block","p":[-2.0,1.0],"r"\
-:0,"f":false,"s":null,"wg":0,"c":[],"ni":[]},{"n":"Solar Block","p":[2.0,2.0\
-],"r":0,"f":false,"s":null,"wg":0,"c":[],"ni":[]},{"n":"Solar Block","p":[2.\
-0,1.0],"r":0,"f":false,"s":null,"wg":0,"c":[],"ni":[]},{"n":"Solar Block","p\
-":[-2.0,3.0],"r":180,"f":false,"s":null,"wg":0,"c":[],"ni":[]},{"n":"Medium \
-Ion Thruster","p":[4.0,-3.0],"r":180,"f":false,"s":"Yellow","wg":0,"c":[9000\
-.0],"ni":[1,2]},{"n":"Medium Ion Thruster","p":[4.0,-7.0],"r":180,"f":false,\
-"s":"Yellow Hazard Stripes","wg":0,"c":[9000.0],"ni":[7,8]},{"n":"Medium Ion\
- Thruster","p":[-4.0,-7.0],"r":180,"f":false,"s":"Yellow Hazard Stripes","wg\
-":0,"c":[9000.0],"ni":[74,75]},{"n":"Medium Ion Thruster","p":[-4.0,-3.0],"r\
-":180,"f":false,"s":"Yellow","wg":0,"c":[9000.0],"ni":[76,77]},{"n":"Solar B\
-lock","p":[3.0,-4.0],"r":270,"f":false,"s":null,"wg":0,"c":[],"ni":[]},{"n":\
-"Large Storage Rack","p":[1.0,-7.0],"r":180,"f":false,"s":"Yellow","wg":0,"c\
-":[],"ni":[]},{"n":"Large Ion Thruster","p":[3.0,-7.0],"r":180,"f":false,"s"\
-:"Yellow Hazard Stripes","wg":0,"c":[27000.0],"ni":[71,72]},{"n":"Dock","p":\
-[-4.5,-5.0],"r":90,"f":false,"s":"Yellow Hazard Stripes","wg":0,"c":[],"ni":\
-[34]},{"n":"Dock","p":[4.5,-5.0],"r":270,"f":false,"s":"Yellow Hazard Stripe\
-s","wg":0,"c":[],"ni":[35]},{"n":"LED","p":[4.0,-5.0],"r":270,"f":false,"s":\
-"Red Hazard Stripes","wg":0,"c":[],"ni":[70]},{"n":"LED","p":[-4.0,-5.0],"r"\
-:90,"f":false,"s":"Festive Red","wg":0,"c":[],"ni":[78]},{"n":"LED","p":[4.0\
-,-5.0],"r":0,"f":false,"s":"Festive Green","wg":0,"c":[],"ni":[79]},{"n":"St\
-ruct","p":[3.0,-6.0],"r":0,"f":false,"s":null,"wg":0,"c":[],"ni":[]},{"n":"C\
-amera Block","p":[2.0,3.0],"r":0,"f":false,"s":"Dark Blue","wg":0,"c":[],"ni\
-":[]},{"n":"Armor Block","p":[1.0,3.0],"r":0,"f":false,"s":"Dark Blue","wg":\
-0,"c":[],"ni":[]},{"n":"Large Ion Thruster","p":[-2.0,-7.0],"r":180,"f":fals\
-e,"s":"Yellow Hazard Stripes","wg":0,"c":[27000.0],"ni":[80,81]},{"n":"Struc\
-t","p":[-2.0,-6.0],"r":180,"f":false,"s":null,"wg":0,"c":[],"ni":[]},{"n":"S\
-olar Block","p":[-3.0,-4.0],"r":180,"f":false,"s":null,"wg":0,"c":[],"ni":[]\
-},{"n":"Solar Block","p":[0.0,0.0],"r":180,"f":false,"s":null,"wg":0,"c":[],\
-"ni":[]},{"n":"Solar Block","p":[0.0,-1.0],"r":180,"f":false,"s":null,"wg":0\
-,"c":[],"ni":[]},{"n":"Small Battery","p":[0.0,-2.0],"r":0,"f":false,"s":"Na\
-vy","wg":0,"c":[],"ni":[]},{"n":"Delay","p":[0.0,-6.0],"r":180,"f":false,"s"\
-:"Navy","wg":0,"c":[1.0],"ni":[82,83]},{"n":"NOT Gate","p":[0.0,-6.0],"r":0,\
-"f":false,"s":"Navy","wg":0,"c":[],"ni":[84,85]},{"n":"Struct","p":[3.0,-2.0\
-],"r":0,"f":false,"s":null,"wg":0,"c":[],"ni":[]},{"n":"Struct","p":[-3.0,-6\
-.0],"r":180,"f":false,"s":null,"wg":0,"c":[],"ni":[]},{"n":"LED","p":[-4.0,-\
-6.0],"r":180,"f":false,"s":"Red","wg":0,"c":[],"ni":[69]},{"n":"LED","p":[4.\
-0,-6.0],"r":270,"f":false,"s":"Lime","wg":0,"c":[],"ni":[86]},{"n":"Small Ba\
-ttery","p":[-3.0,-5.0],"r":0,"f":false,"s":"Yellow Hazard Stripes","wg":0,"c\
-":[],"ni":[]},{"n":"Small Battery","p":[3.0,-5.0],"r":0,"f":false,"s":"Yello\
-w Hazard Stripes","wg":0,"c":[],"ni":[]},{"n":"Solar Block","p":[-3.0,-3.0],\
-"r":0,"f":false,"s":null,"wg":0,"c":[],"ni":[]},{"n":"Solar Block","p":[3.0,\
--3.0],"r":0,"f":false,"s":null,"wg":0,"c":[],"ni":[]},{"n":"Slab","p":[4,-9]\
-,"r":270,"f":false,"s":"Dark Gray","c":[],"ni":[],"wg":0},{"n":"Slab","p":[-\
-4,-9],"r":90,"f":false,"s":"Dark Gray","c":[],"ni":[],"wg":0},{"n":"Slab","p\
-":[-3,-10],"r":180,"f":false,"s":"Dark Gray","c":[],"ni":[],"wg":0},{"n":"Sl\
-ab","p":[3,-10],"r":180,"f":false,"s":"Dark Gray","c":[],"ni":[],"wg":0},{"n\
-":"Wedge 1x2","p":[2,-15],"r":90,"f":false,"s":"White","c":[],"ni":[],"wg":0\
-},{"n":"Wedge 1x2","p":[3,-15],"r":0,"f":false,"s":"White","c":[],"ni":[],"w\
-g":0},{"n":"Wedge 1x2","p":[3,-16],"r":270,"f":false,"s":"White","c":[],"ni"\
-:[],"wg":0},{"n":"Wedge 1x2","p":[2,-16],"r":180,"f":false,"s":"White","c":[\
-],"ni":[],"wg":0},{"n":"Wedge 1x2","p":[-2,-14],"r":270,"f":true,"s":"White"\
-,"c":[],"ni":[],"wg":0},{"n":"Wedge 1x2","p":[-3,-14],"r":0,"f":true,"s":"Wh\
-ite","c":[],"ni":[],"wg":0},{"n":"Wedge 1x2","p":[-3,-15],"r":90,"f":true,"s\
-":"White","c":[],"ni":[],"wg":0},{"n":"Wedge 1x2","p":[-2,-15],"r":180,"f":t\
-rue,"s":"White","c":[],"ni":[],"wg":0},{"n":"Slab Wedge","p":[4,-10],"r":270\
-,"f":true,"s":"Red Hazard Stripes","c":[],"ni":[],"wg":0},{"n":"Slab Wedge",\
-"p":[4,-11],"r":270,"f":false,"s":"Red Hazard Stripes","c":[],"ni":[],"wg":0\
-},{"n":"Slab Wedge","p":[3,-11],"r":180,"f":true,"s":"Red Hazard Stripes","c\
-":[],"ni":[],"wg":0},{"n":"Slab Wedge","p":[2,-11],"r":0,"f":true,"s":"Red H\
-azard Stripes","c":[],"ni":[],"wg":0},{"n":"Slab Wedge","p":[-2,-11],"r":0,"\
-f":false,"s":"Red Hazard Stripes","c":[],"ni":[],"wg":0},{"n":"Slab Wedge","\
-p":[-3,-11],"r":180,"f":false,"s":"Red Hazard Stripes","c":[],"ni":[],"wg":0\
-},{"n":"Slab Wedge","p":[-4,-11],"r":90,"f":true,"s":"Red Hazard Stripes","c\
-":[],"ni":[],"wg":0},{"n":"Slab Wedge","p":[-4,-10],"r":90,"f":false,"s":"Re\
-d Hazard Stripes","c":[],"ni":[],"wg":0},{"n":"Slab","p":[-4.5,-9],"r":0,"f"\
-:false,"s":"White","c":[],"ni":[],"wg":0},{"n":"Slab","p":[-5.5,-9],"r":90,"\
-f":false,"s":"White","c":[],"ni":[],"wg":0},{"n":"Slab","p":[-5.5,-10],"r":1\
-80,"f":false,"s":"White","c":[],"ni":[],"wg":0},{"n":"Slab","p":[-4.5,-10],"\
-r":270,"f":false,"s":"White","c":[],"ni":[],"wg":0},{"n":"Slab","p":[-7.5,-8\
-.5],"r":0,"f":false,"s":"White","c":[],"ni":[],"wg":0},{"n":"Slab","p":[-8.5\
-,-8.5],"r":90,"f":false,"s":"White","c":[],"ni":[],"wg":0},{"n":"Slab","p":[\
--8.5,-9.5],"r":180,"f":false,"s":"White","c":[],"ni":[],"wg":0},{"n":"Slab",\
-"p":[-7.5,-9.5],"r":270,"f":false,"s":"White","c":[],"ni":[],"wg":0},{"n":"S\
-lab","p":[-11,-8.5],"r":0,"f":false,"s":"White","c":[],"ni":[],"wg":0},{"n":\
-"Slab","p":[-12,-8.5],"r":90,"f":false,"s":"White","c":[],"ni":[],"wg":0},{"\
-n":"Slab","p":[-12,-9.5],"r":180,"f":false,"s":"White","c":[],"ni":[],"wg":0\
-},{"n":"Slab","p":[-11,-9.5],"r":270,"f":false,"s":"White","c":[],"ni":[],"w\
-g":0},{"n":"Tiny Hydrogen Thruster","p":[-4.5,-12],"r":0,"f":false,"s":"Yell\
-ow","c":[1125],"ni":[86],"wg":0},{"n":"Tiny Hydrogen Thruster","p":[-6,-11.5\
-],"r":90,"f":false,"s":"Yellow","c":[1125],"ni":[87],"wg":0},{"n":"Tiny Hydr\
-ogen Thruster","p":[-6.5,-13],"r":180,"f":false,"s":"Yellow","c":[1125],"ni"\
-:[88],"wg":0},{"n":"Tiny Hydrogen Thruster","p":[-5,-13.5],"r":270,"f":false\
-,"s":"Yellow","c":[1125],"ni":[89],"wg":0},{"n":"Tiny Hydrogen Thruster","p"\
-:[-7.5,-11.5],"r":0,"f":false,"s":"Yellow","c":[1125],"ni":[90],"wg":0},{"n"\
-:"Tiny Hydrogen Thruster","p":[-9.5,-11.5],"r":90,"f":false,"s":"Yellow","c"\
-:[1125],"ni":[91],"wg":0},{"n":"Tiny Hydrogen Thruster","p":[-9.5,-13.5],"r"\
-:180,"f":false,"s":"Yellow","c":[1125],"ni":[92],"wg":0},{"n":"Tiny Hydrogen\
- Thruster","p":[-7.5,-13.5],"r":270,"f":false,"s":"Yellow","c":[1125],"ni":[\
-93],"wg":0},{"n":"Tiny Hydrogen Thruster","p":[-11,-11.5],"r":0,"f":false,"s\
-":"Yellow","c":[1125],"ni":[94],"wg":0},{"n":"Tiny Hydrogen Thruster","p":[-\
-12.5,-12],"r":90,"f":false,"s":"Yellow","c":[1125],"ni":[95],"wg":0},{"n":"T\
-iny Hydrogen Thruster","p":[-12,-13.5],"r":180,"f":false,"s":"Yellow","c":[1\
-125],"ni":[96],"wg":0},{"n":"Tiny Hydrogen Thruster","p":[-10.5,-13],"r":270\
-,"f":false,"s":"Yellow","c":[1125],"ni":[97],"wg":0},{"n":"Gauge","p":[-4.5,\
--15],"r":0,"f":false,"s":null,"c":[-1,1],"ni":[98],"wg":0},{"n":"Gauge","p":\
-[-6,-14.5],"r":90,"f":false,"s":null,"c":[-1,1],"ni":[99],"wg":0},{"n":"Gaug\
-e","p":[-6.5,-16],"r":180,"f":false,"s":null,"c":[-1,1],"ni":[100],"wg":0},{\
-"n":"Gauge","p":[-5,-16.5],"r":270,"f":false,"s":null,"c":[-1,1],"ni":[101],\
-"wg":0},{"n":"Gauge","p":[-7.5,-14.5],"r":0,"f":false,"s":null,"c":[-1,1],"n\
-i":[102],"wg":0},{"n":"Gauge","p":[-9.5,-14.5],"r":90,"f":false,"s":null,"c"\
-:[-1,1],"ni":[103],"wg":0},{"n":"Gauge","p":[-9.5,-16.5],"r":180,"f":false,"\
-s":null,"c":[-1,1],"ni":[104],"wg":0},{"n":"Gauge","p":[-7.5,-16.5],"r":270,\
-"f":false,"s":null,"c":[-1,1],"ni":[105],"wg":0},{"n":"Gauge","p":[-11,-14.5\
-],"r":0,"f":false,"s":null,"c":[-1,1],"ni":[106],"wg":0},{"n":"Gauge","p":[-\
-12.5,-15],"r":90,"f":false,"s":null,"c":[-1,1],"ni":[107],"wg":0},{"n":"Gaug\
-e","p":[-12,-16.5],"r":180,"f":false,"s":null,"c":[-1,1],"ni":[108],"wg":0},\
-{"n":"Gauge","p":[-10.5,-16],"r":270,"f":false,"s":null,"c":[-1,1],"ni":[109\
-],"wg":0},{"n":"Tiny Hydrogen Thruster","p":[0,-12],"r":0,"f":false,"s":"Yel\
-low","c":[1125],"ni":[110],"wg":0},{"n":"Tiny Hydrogen Thruster","p":[-1,-12\
-],"r":90,"f":false,"s":"Yellow","c":[1125],"ni":[111],"wg":0},{"n":"Tiny Hyd\
-rogen Thruster","p":[-1,-13],"r":180,"f":false,"s":"Yellow","c":[1125],"ni":\
-[112],"wg":0},{"n":"Tiny Hydrogen Thruster","p":[0,-13],"r":270,"f":false,"s\
-":"Yellow","c":[1125],"ni":[113],"wg":0},{"n":"Gauge","p":[0,-15],"r":0,"f":\
-false,"s":null,"c":[-1,1],"ni":[114],"wg":0},{"n":"Gauge","p":[-1,-15],"r":9\
-0,"f":false,"s":null,"c":[-1,1],"ni":[115],"wg":0},{"n":"Gauge","p":[-1,-16]\
-,"r":180,"f":false,"s":null,"c":[-1,1],"ni":[116],"wg":0},{"n":"Gauge","p":[\
-0,-16],"r":270,"f":false,"s":null,"c":[-1,1],"ni":[117],"wg":0}],"nc":[{"Ite\
-m1":15,"Item2":51},{"Item1":26,"Item2":54},{"Item1":29,"Item2":37},{"Item1":\
-30,"Item2":50},{"Item1":16,"Item2":56},{"Item1":18,"Item2":24},{"Item1":31,"\
-Item2":33},{"Item1":22,"Item2":20},{"Item1":25,"Item2":39},{"Item1":49,"Item\
-2":28},{"Item1":21,"Item2":52},{"Item1":63,"Item2":60},{"Item1":64,"Item2":5\
-8},{"Item1":66,"Item2":62},{"Item1":5,"Item2":11},{"Item1":42,"Item2":83},{"\
-Item1":43,"Item2":85},{"Item1":65,"Item2":85},{"Item1":67,"Item2":83},{"Item\
-1":73,"Item2":83},{"Item1":74,"Item2":12},{"Item1":76,"Item2":12},{"Item1":7\
-0,"Item2":83},{"Item1":78,"Item2":85},{"Item1":79,"Item2":85},{"Item1":80,"I\
-tem2":12},{"Item1":82,"Item2":85},{"Item1":84,"Item2":83}]}'));
-render();
-
-var rend_highlight = -1, logX = 0, logY = 0;
-onmousemove = function () {
-  var x = 0, y = 0;
-  utilities.rend_UI = function () {
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = "#000";
-    ctx.stroke(new Path2D("M" + x + "," + (y - 3) + "l3,-18h-6z"));
-    ctx.stroke(new Path2D("M" + (x - 3) + "," + y + "l-18,3v-6z"));
-    ctx.fillStyle = "#fff";
-    ctx.fill(new Path2D("M" + x + "," + (y - 3) + "l3,-18h-6z"));
-    ctx.fill(new Path2D("M" + (x - 3) + "," + y + "l-18,3v-6z"));
-    var found = rend_highlight === -1 ?
-      ship.blockAtPonit(logX, logY) :
-      {id: rend_highlight};
-    if (typeof found.id == "number") {
-      // var dx = found.x, dy = found.y, w = found.w, h = found.h;
-      var block = ship.blocks[found.id] || {}, s = block.internalName, pos;
-      if (!(pos = block.position))
-        return;
-      // calculations from expensiveRenderer
-      var size = Block.Size.VALUE[Block.ID[s]] || {w: .5, h: .5};
-      var w = size.w, h = size.h, rot = 10 - block.rotation[2] & 3;
-      var dx = -pos[1] * sc + vX, dy = pos[2] * sc + vY;
-      dy -= rot === (block.rotation[1] ? 1 : 3) ?
-        (w - 32) * sc / 16 :
-        rot === 0 ? (h - 32) * sc / 16 : 0;
-      dx -= rot === (block.rotation[1] ? 0 : 2) ?
-        (w - 32) * sc / 16 :
-        rot === 3 ? (h - 32) * sc / 16 : 0;
-      var dw = (rot & 1 ? h : w) * sc / 16,
-        dh = (rot & 1 ? w : h) * sc / 16;
-      ctx.lineWidth = defaults.highlightWidth;
-      ctx.strokeStyle = defaults.highlightColor;
-      ctx.strokeRect(dx, dy, dw, dh);
-      if (1) {
-        // var pos = found.block.position;
-        ctx.strokeStyle = "#9fc1a9";
-        // ctx.strokeStyle = "#d79300";
-        dx = -pos[1] * sc + vX;
-        dy = pos[2] * sc + vY;
-        ctx.strokeRect(dx - 1, dy - 1, sc + 2, sc + 2);
-      }
-      // ctx.strokeStyle = "#bf67ff";
-      // ctx.beginPath();
-      // ctx.arc((1 - found.lx) * sc, found.ly * sc + vY,
-      //   5, Math.PI * 2, 0);
-      // ctx.stroke();
-    }
-  };
-  return function (e) {
-    logX = (vX - (x = e.pageX - canvas.offsetLeft)) / sc;
-    logY = ((y = e.pageY - canvas.offsetTop) - vY) / sc;
-    // live expression: Math.ceil(logX) + " " + Math.floor(logY);
-    render();
-  };
-}();
-
-// rend_180 = !0;
-
-setTimeout(function () {
-  if (rend_background.primary)
-    rend_background = rend_background.primary;
-}, 1000);
-
-// vX = 147;
-// vY = 500;
-// sc = 14.4;
-
