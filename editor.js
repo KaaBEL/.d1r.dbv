@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.47
+// v.0.1.48
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -874,7 +874,7 @@ Command.push("Select Block", function (items, collapsed) {
   items.push(btn);
   for (var i = 690, s = ""; i < Block.NAME.length; i++)
     if (s = bcks[i] || Block.NAME[i])
-      if (!/__placeholder\d+__/.test(s)) {
+      if (!/__(?:placeholder\d+|NULL)__/.test(s)) {
         btn = EL("button");
         btn.appendChild(tN(s));
         btn.onclick = blockBind(Block.NAME[i], !1);
@@ -2169,6 +2169,49 @@ var cmdsHeader = EL(), cmds = (function () {
   }
   return (bd || EL()).appendChild(nav);
 })();
+
+/** instance is sealed @param {string} name @param {string} icon */
+function Tool(name, icon) {
+  this.name = name;
+  this.icon = icon;
+  Object.seal(this);
+}
+/** @type {Tool[]} */
+Tool.list = [];
+
+Tool.list.push(new Tool("Tune", "M4a4,24265 c51,2f0,273,ad3,931,f85 c8da,714\
+,103d,642,13d7,615 c1ea0,-178,3dbe,974,552e,20cc c2c36,2c08,2c5b,7392,53,9fc\
+9 c-867,7af,-a8f,ddf,-b1e,1559 c-1ef,7c7,317,107b,4f9,1362 c8b3,d64,146d,1a9\
+e,26e0,2d98 c1373,1401,1fab,1b72,306a,2858 c257,1cd,965,5e8,117b,472 cb43,-1\
+45,fe6,-715,1251,-9c1 c1495,-16ba,324a,-250c,535e,-252b c3e66,-39,712a,322e,\
+7163,7095 c0,5d4,92,c04,744,16f2 c424,6dc,dcc,9ca,113d,a29 c0,0,20fd,324,376\
+c,329 c16ff,4,3469,-26b,419e,-41d c2ee,-60,ad3,-273,f85,-932 c713,-8da,641,-\
+103e,614,-13d7 c-17a,-1ea0,971,-3dbf,20c7,-5530 c2c06,-2c39,7390,-2c62,9fc9,\
+-5c cd1,d0,7c5,9ed,129d,bf5 cf64,225,1922,-777,1922,-777 cfb8,-cc5,1805,-12c\
+7,2cc2,-284c c147d,-1543,199b,-1c93,253a,-2b8e c1cf,-255,5f0,-960,481,-1177 \
+c-13b,-b44,-707,-fec,-9b1,-1259 c-16a8,-14a8,-24e1,-3269,-24e3,-537e c-3,-3e\
+66,328f,-70ff,70f6,-7102 c977,b9,1148,-196,16f8,-677 c6e0,-41e,9d5,-e7d,a37,\
+-11ed c0,0,31b,-2617,2d7,-42b0 c-3b,-196d,-129,-24ee,-393,-37ce c-60,-2ee,-2\
+72,-ad3,-930,-f86 c-8d9,-714,-103d,-643,-13d7,-617 c-1ea0,176,-3dbd,-979,-55\
+2c,-20d2 c-2c33,-2c0b,-2c53,-7395,-47,-9fc9 c699,-5e0,a90,-dde,b20,-1558 c1f\
+0,-7c6,-2d2,-10ac,-4f8,-1362 c-1b2d,-2241,-31ad,-36cb,-5683,-5516 c-242,-1e7\
+,-914,-5f0,-112b,-482 c-b44,13b,-fec,706,-125a,9b0 c-14a9,16a7,-326c,24de,-5\
+380,24de c-3e66,0,-70fc,-3295,-70fc,-70fc c0,-693,-24e,-1148,-72f,-16f9 c-41\
+d,-6e0,-dc9,-9aa,-1134,-a38 c-dca,-23e,-2664,-437,-3d26,-41a c-1714,-90,-28b\
+2,22c,-3d58,4cf c-2ee,5f,-ad3,271,-f86,92f c-715,8d9,-644,103c,-618,13d6 c17\
+4,1ea0,-97c,3dbd,-20d7,552a c-2c0e,2c31,-7398,2c4d,-9fc9,3e c-666,-771,-d25,\
+-a91,-149e,-b21 c-7c6,-137,-1168,2cd,-141b,4f7 c0,0,-1a53,123e,-2a8c,2349 c-\
+177b,18a9,-1bbe,1fba,-2a89,32ce c-1cf,255,-5f0,960,-481,1177 c13b,b44,707,fe\
+c,9b1,1259 c16a8,14a8,24e1,326a,24e3,537e c3,3e66,-328f,70ff,-70f6,7102 c-a8\
+d,0,-1148,24f,-16f8,730 c-6e0,41e,-9e9,dc2,-a37,1134 c-19c,1232,-330,1df2,-3\
+b0,37fa c-aa,2277,294,3088,486,4273 z M2fd6e,297fb c0,0,-80e5,-8034,-80e5,-8\
+034 c979,-15f8,eb9,-2e30,eb9,-47a2 c0,-63fe,-510f,-b50d,-b50d,-b50d c-11c2,0\
+,-22ec,28e,-3323,752 c-c13,365,-fcd,129f,-738,1da6 c3c,8e,5938,5b41,5938,5b4\
+1 l-8dc,4b9e l-4af8,93d c0,0,-5c72,-5aa3,-5cb3,-5abf c-6f5,-6c0,-1857,-49d,-\
+1b7f,5b6 c-51f,10c3,-7e1,228f,-7e1,34ff c0,63fe,510f,b50d,b50d,b50d c17f7,0,\
+2ed8,-4a8,43c8,-d1d l8497,8218 c-2dcd,1d59,-6443,2e5d,-9eb3,2e5d c-a2ac,0,-1\
+268b,-83df,-1268b,-1268b c0,-a2ac,83df,-1268b,1268b,-1268b ca2ac,0,1268b,83d\
+f,1268b,1268b c0,36c5,-ef3,6a0d,-28fe,95fc z"));
 function check_contentScript() {
   var contentScript = GE("contentScript"), data = "";
   if (contentScript && (data = contentScript.innerText)) {
@@ -2230,9 +2273,9 @@ var rend_backgHangar = F;
   xhr.send();
 }();
 function backgHangarInit() {
-  var backgPrimary = rend_background,
-    hgw = 544, hgh = 654;
-  rend_background = F;
+  var backgPrimary = rend_background, hgw = 544, hgh = 654;
+  var defRend = DefaultUI.rend;
+  DefaultUI.rend = rend_background = F;
   var ocw = canvas.width, och = canvas.height;
   canvas.width = hgw;
   canvas.height = hgh;
@@ -2242,6 +2285,7 @@ function backgHangarInit() {
   vY = 464;
   ship = backgHangarInit.ship;
   expensiveRenderer();
+  DefaultUI.rend = defRend;
   var hangarBackground = EL('img');
   hangarBackground.src = canvas.toDataURL('image/png');
   canvas.width = ocw;
@@ -2329,12 +2373,46 @@ function DefaultUI() {
   throw new TypeError("Illegal constructor");
   this.mode = "any";
 }
-
+DefaultUI.createTile = function () {
+  /** @type {XYZPosition} */
+  var pos = [0, 0, 0],
+    /** @type {Rotation} */
+    rot = [0, !1, 0];
+  /** @param {unknown} val */
+  return function (val) {
+    if (typeof val == "number" && typeof Block.NAME[val] == "string")
+      return new Block(Block.NAME[val], pos, rot);
+    if (typeof Block.ID["" + val] == "number")
+      return new Block("" + val, pos, rot);
+    if (val instanceof Tool)
+      return val;
+    for (var i = Tool.list.length; i-- > 0;)
+      if (Tool.list[i].name === "" + val)
+        return Tool.list[i];
+    return null;
+  };
+}();
+/** @typedef {Block|LogicBlock|Tool|null} TileType */
+/** @param {number|string} type @param {unknown[]} [tiles=[]] */
+DefaultUI.createFolder = function (type, tiles) {
+  var folder =
+    /** @type {TileType[]&{type:TileType}} */
+    ((tiles || []).map(DefaultUI.createTile));
+  folder.type = DefaultUI.createTile(type);
+  return folder;
+};
+DefaultUI.TILE = {};
 DefaultUI.rend = F;
+/** @type {(TileType[]&{type:TileType})[]} */
+DefaultUI.blockBars = [DefaultUI.createFolder("Tune", [690, "Tune"])];
+DefaultUI.folderSelected = 0;
+DefaultUI.inventoryIcon = !0;
+
 function enableShipEditing() {
   var mode = ship.getMode();
   ship = mode.getShip();
   press = old_UI;
+  DefaultUI.rend = F;
   render();
 };
 function enableLogicEditing() {
@@ -2416,16 +2494,132 @@ function enableLogicEditing() {
         e.type + " add it!");
     return !1;
   };
+  var oldWidth = 0, oldHeight = 0;
   DefaultUI.rend = function () {
-    if (!found)
-      return;
-    ctx.lineWidth = defaults.highlightWidth;
-    ctx.strokeStyle = defaults.highlightColor;
-    var dx = found.x * sc + vX, dy = found.y * sc + vY;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.strokeRect(dx, dy, found.w * sc, found.h * sc);
+    if (found) {
+      ctx.lineWidth = defaults.highlightWidth;
+      ctx.strokeStyle = defaults.highlightColor;
+      var dx = found.x * sc + vX, dy = found.y * sc + vY;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.strokeRect(dx, dy, found.w * sc, found.h * sc);
+    }
+    var w = canvas.width, h = canvas.height;
+    if (oldWidth !== w || oldHeight !== h) {
+      // reflow for blockbar items
+    }
+    test_juhus(w, h);
   };
   render();
+};
+function test_juhus(w, h) {
+  /** @param {Block|LogicBlock} block */
+  function blockIcon(block) {
+    helpCanvas.width = helpCanvas.height = 32;
+    rc.fillStyle = "#fff";
+    rc.fillRect(0, 0, 32, 32);
+    var size = Block.Size.VALUE[Block.ID[block.internalName]];
+    rc.drawImage(imgOverlay, -size.x, -size.y);
+  }
+  function parseParam(s) {
+    return (s[0] === "-" ? -("0x" + s.slice(1)) : +("0x" + s)) / 1024;
+  }
+  /** @param {Tool} tool @param {number} size */
+  function toolIcon(tool, size) {
+    rc.canvas.width = rc.canvas.height = size;
+    rc.scale(size / 256, size / 256);
+    rc.beginPath();
+    var ctxCommands = {
+      M: rc.moveTo,
+      L: rc.lineTo,
+      C: rc.bezierCurveTo,
+      Z: rc.closePath
+    };
+    var rX = 0, rY = 0, x = 0, y = 0;
+    tool.icon.split(" ").map(function (e, i) {
+      var params = e.slice(1).split(",").map(e.charCodeAt(0) & 32 ?
+        function (e, i) {
+            var n = parseParam(e);
+            return i & 1 ? y = rY + n : x = rX + n;
+          } :
+        function (e, i) {
+            var n = parseParam(e);
+            return i & 1 ? y = n : x = n;
+          });
+      if (!e.length)
+        return console.error("No command at: " + i + "th \" \"");
+      var c = e[0].toUpperCase();
+      if (!ctxCommands[c])
+        return console.error("Missing command " + c);
+      ctxCommands[c].apply(rc, params);
+      rX = x;
+      rY = y;
+    });
+    rc.imageSmoothingQuality 
+    rc.fillStyle = "#ffffff";
+    rc.fill();
+  }
+  /** @param {TileType} type @param {number} size */
+  function doAnIcon(type, size) {
+    if (type instanceof Tool)
+      toolIcon(type, size);
+    if (type instanceof Block)
+      blockIcon(type);
+  }
+  ctx.globalAlpha = .9;
+  ctx.lineJoin = "round";
+  ctx.beginPath();
+  ctx.moveTo(7, h - 19);
+  ctx.arcTo(7, h - 7, 19, h - 7, 5);
+  ctx.arcTo(272, h - 7, 272, h - 19, 5);
+  ctx.arcTo(272, h - 272, 260, h - 272, 5);
+  ctx.arcTo(7, h - 272, 7, h - 260, 5);
+  ctx.closePath();
+  ctx.moveTo(279, h - 19);
+  ctx.arcTo(279, h - 7, 291, h - 7, 5);
+  ctx.arcTo(w - 7, h - 7, w - 7, h - 19, 5);
+  ctx.arcTo(w - 7, h - 101, w - 19, h - 101, 5);
+  ctx.lineTo(279, h - 101);
+  ctx.closePath();
+  ctx.fillStyle = "#0c243c";
+  ctx.fill();
+  var bars = DefaultUI.blockBars;
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = "#547faa";
+  for (var i = 0, sw = 279; i < bars.length; i++) {
+    if (!bars[i])
+      continue;
+    var b = i === DefaultUI.folderSelected, n = b ? 168 : 153;
+    ctx.globalAlpha = b ? .9 : .8;
+    ctx.beginPath();
+    ctx.moveTo(sw, h - 101);
+    ctx.arcTo(sw, h - n, sw + 12, h - n, 5);
+    ctx.arcTo(sw + 54, h - n, sw += 54, h - 146, 5);
+    ctx.lineTo(sw, h - 101);
+    ctx.closePath();
+    ctx.fillStyle = b ? "#0c243c" : "#000c1c";
+    ctx.fill();
+    doAnIcon(bars[i].type || [][0], 40);
+    ctx.globalAlpha = 1;
+    ctx.drawImage(helpCanvas, sw - 47, h - (b ? 161 : 146), 40, 40);
+    sw += 3;
+    n = 200;
+    for (var j = 0; j < bars[i].length; j++) {
+      var tile = bars[i][j];
+      n += 87;
+      if (!tile)
+        continue;
+      ctx.beginPath();
+      ctx.moveTo(n, h - 25);
+      ctx.arcTo(n, h - 15, n + 78, h - 15, 5);
+      ctx.arcTo(n + 78, h - 15, n + 78, h - 93, 5);
+      ctx.arcTo(n + 78, h - 93, n, h - 93, 5);
+      ctx.arcTo(n, h - 93, n, h, 5);
+      ctx.closePath();
+      ctx.stroke();
+      doAnIcon(tile, 60);
+      ctx.drawImage(helpCanvas, n + 9, h - 84, 60, 60);
+    }
+  }
 };
 
 /** @type {Block[]} */
@@ -2598,23 +2792,13 @@ render = function () {
       expensiveRenderer();
     });
   };
-/** devtools can't debug requestedFrame well @TODO also remove in v.0.1.47 */
-// }() && function () {
-//   var rq = -1;
-//   return function requestRendering() {
-//     clearTimeout(rq);
-//     rq = setTimeout(function () {
-//       rq = -1;
-//       expensiveRenderer();
-//     }, 16);
-//   };
 }();
 var rend_speeeeed = {}, rend_logs = 69;
 /*async*/ function expensiveRenderer() {
   var t = Date.now(), AT = ", at expensiveRenderer();";
   canvas.width = canvas.width;
   rend_background();
-  ctx.imageSmoothingEnabled = false;
+  ctx.imageSmoothingEnabled = ctx.msImageSmoothingEnabled = !1;
   var objs = ship.blocks, n = 0;
   if (
     Logic.rend &&
@@ -2774,3 +2958,112 @@ function onlyConsole(m,s,l,c,e) {
     return "" + m + "\n" + e.stack;
   return "" + m + "\n\t" + s + ":" + l + ":" + c;
 };
+
+// .d1r.dbv DBVE icon v3
+// requires db1 core without the two outlines and core with
+// red fill in middle repainted to white
+// WH(ctx, 256, 256);
+// ctx.scale(16, 16);
+// ctx.imageSmoothingEnabled = false;
+// // WH(ctx, 16, 16);
+// ctx.fillStyle = "#ffffff";
+// ctx.fillRect(0, 0, 16, 16);
+// ctx.fillStyle = "#" + (16737894).toString(16);
+// ctx.fillStyle = "#ff3333";
+// ctx.fillRect(5, 5, 6, 6);
+// // ctx.globalAlpha = 51 / 255;
+// ctx.strokeStyle = "#191919";
+// ctx.strokeStyle = "#cccccc";
+// ctx.strokeRect(.5, .5, 15, 15);
+// ctx.strokeStyle = "#470000";
+// ctx.strokeStyle = "#cc2929";
+// ctx.strokeRect(5.5, 5.5, 5, 5);
+// ctx.globalAlpha = 1;
+// // ctx.drawImage(IMG(0), 0, 0);
+// var rc = sShot.getContext("2d");
+// WH(rc, ctx.canvas);
+// rc.setTransform(ctx.getTransform());
+// rc.lineWidth = 1.3;
+// rc.lineJoin = "round";
+// rc.lineCap = "round";
+// rc.strokeStyle = "#9f9f8f";
+// rc.strokeStyle = "#6E7069";
+// rc.beginPath();
+// rc.moveTo(8, 14);
+// rc.lineTo(8, 15.5 - 7.5 / 3);
+// rc.lineTo(.5, .5 + 7.5 / 2 + 15 / 3);
+// rc.lineTo(.5, 15.5 - 7.5 / 2);
+// rc.lineTo(8, 15.5);
+// rc.lineTo(15.5, 15.5 - 7.5 / 2);
+// rc.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
+// rc.lineTo(8 + 7.5 / 6, 15.5 - 37.5 / 12);
+// rc.moveTo(15.5, .5 + 7.5 / 2 + 15 / 3);
+// rc.lineTo(15.5 - 30 / 19, .5 + 7.5 / 2 + 15 / 3 - 15 / 19);
+// rc.stroke();
+// rc.strokeStyle = "#030e2f";
+// rc.beginPath();
+// rc.moveTo(.5 + 46 / 12, .5 + 52 / 12);
+// // rc.moveTo(.5 + 37.5 / 6, .5 + 37.5 / 12);
+// rc.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
+// rc.lineTo(8, .5);
+// rc.lineTo(.5, .5 + 7.5 / 2);
+// rc.lineTo(.5 + 7.5 / 3, .5 + 15 / 3);
+// rc.lineTo(.5 + 7.5 / 3 + 37.5 * 4 / 24, .5 + 15 / 3 + 31 * 4 / 24);
+// // rc.lineTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
+// rc.moveTo(8 + 7.5 / 3, .5 + 7.5 / 6);
+// rc.lineTo(8 + 7.5 / 3 + 15 * 4 / 29, .5 + 7.5 / 6 + 52.5 * 4 / 29);
+// rc.moveTo(.5, 5.9);
+// rc.lineTo(.5, 7.7);
+// rc.stroke();
+// ctx.globalCompositeOperation = "destination-in";
+// ctx.drawImage(rc.canvas, 0, 0, 16, 16);
+// ctx.globalCompositeOperation = "destination-over";
+// // ctx.globalAlpha = .5;
+// // ctx.fillStyle = "#000000";
+// // ctx.fillRect(5, 5, 6, 6);
+// // ctx.globalAlpha = 51 / 255;
+// // ctx.strokeStyle = "#000000";
+// // ctx.strokeRect(5.5, 5.5, 5, 5);
+// // ctx.globalAlpha = 1;
+// ctx.fillStyle = "#" + (16737894).toString(16);
+// ctx.strokeStyle = "#470000";
+// ctx.strokeRect(5.5, 5.5, 5, 5);
+// ctx.fillRect(5, 5, 6, 6);
+// ctx.fillStyle = "#030e2f";
+// ctx.beginPath();
+// ctx.moveTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
+// ctx.lineTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 3 - 15 / 6);
+// ctx.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
+// ctx.lineTo(8, .5);
+// ctx.lineTo(0, .5 + 7.5 / 2);
+// ctx.lineTo(0, .5 + 7.5 / 2 + 15 / 3);
+// ctx.lineTo(.5 - 7.5 / 3 + 7.5, .5 + 22.5 / 2);
+// // ctx.moveTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
+// // ctx.lineTo(8, 15.5 - 7.5 / 3);
+// // ctx.lineTo(8, 15.5);
+// // ctx.lineTo(8 + 7.5 / 3, 15.5 - 7.5 / 6);
+// // ctx.moveTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 3 - 15 / 6);
+// // ctx.lineTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 2 + 7.5 / 6);
+// // ctx.lineTo(15.5, 15.5 - 7.5 / 2);
+// // ctx.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
+// // ctx.moveTo(.5 + 7.5 / 3, .5 + 15 / 3);
+// // ctx.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
+// // ctx.lineTo(8 + 7.5 / 3 + 15 * 4 / 29, .5 + 7.5 / 6 + 52.5 * 4 / 29);
+// // ctx.lineTo(.5 + 7.5 / 3 + 37.5 * 4 / 24, .5 + 15 / 3 + 31 * 4 / 24);
+// ctx.closePath();
+// // ctx.globalCompositeOperation = "source-over";
+// ctx.fill();
+// // ctx.globalCompositeOperation = "destination-over";
+// ctx.fillStyle = "#6E7069";
+// ctx.beginPath();
+// ctx.moveTo(15.5 - 15 / 4, .5 + 7.5 / 2 + 15 / 3 - 15 / 8);
+// ctx.lineTo(.5, .5 + 7.5 / 2 + 15 / 3);
+// ctx.lineTo(.5, 15.5 - 7.5 / 2);
+// ctx.lineTo(8, 15.5);
+// ctx.lineTo(15.5, 15.5 - 7.5 / 2);
+// ctx.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
+// ctx.closePath();
+// ctx.fill();
+// ctx.lineWidth = 1;
+// ctx.strokeStyle = "#000000";
+// ctx.strokeRect(.5, .5, 15, 15);

@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.47
+// v.0.1.48
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -231,7 +231,6 @@ Logic.VALUE = Logic.generateLogic(
   "2", "2", "2", "6"
   // , 692, [{k: 1, x: -1, y: -1}, {k: 3, x: 1, y: 1}]
   );
-Logic.dashOff = 0;
 Object.freeze(Logic.VALUE);
 // (v.0.1.20.2) I might've accidently screw this method up so much
 // this method is supposed to be the initialize default, not
@@ -360,13 +359,8 @@ Logic.removeLogic = function (block, logics) {
           pairs.pairs = -1;
   }
 };
-//-Logic.enableLogicEditing = function () {
-//-  ;
-//-};
-//-Logic.enableShipEditing = function () {
-//-  ;
-//-};
 // Logic static properties
+Logic.dashOff = 0;
 /** specifies when logic nodes and connections should be rendered */
 Logic.rend = !1;
 /** global (logics) nodeList */
@@ -2018,7 +2012,6 @@ Ship.fromObject = function fromObject(object) {
     blocks = o.blocks instanceof Array ?
       Block.arrayFromObjects(o.blocks, logics) :
       Block.generateArray(-69, logics),
-    /** */ //+???
     props = o.props;
   delete logics.nc;
   Logic.reassemble(blocks, logics);
@@ -2547,7 +2540,6 @@ function wVersion(arr) {
 function encodeCmprsShip(ship) {
   // version 0.0.significantVersion
   // versions 16 and further will significantVersion of Db Vehicle editor
-  //-version 0.0.4 (modified version 0.0.3)
   var l, n, id, p_i, chunkEnd, s, propertiesStr = "";
   var propertiesRef = [], b, arr, min, max, prev, size = [], sizeB = [];
   // id length

@@ -1,4 +1,4 @@
-// v.0.1.47
+// v.0.1.48
 var _ge: any;
 function GE(v: any) {return document.getElementById(typeof v=="number"&&v==v?
   (_ge=v+1)-1:v==void 0?v=_ge++:v)}
@@ -556,4 +556,7 @@ declare interface Console {
   err: Console["error"] | undefined;
   /** can be set to throw error by enabling with throwErrors fnuction */
   error: Console["error"];
+}
+declare interface CanvasRenderingContext2D {
+  msImageSmoothingEnabled?: boolean;
 }

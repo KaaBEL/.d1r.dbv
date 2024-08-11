@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<!-- v.0.1.47 -->
+<!-- v.0.1.48 -->
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Check out the early state of Droneboi opensource online Vehicle editor.">
-  <link rel="icon" href="https://kaabel.github.io/favicon.ico" type="image/x-icon">
-  <link rel="icon shortcut" href="https://kaabel.github.io/favicon.svg" type="image/svg+xml">
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Check out the early state of Droneboi opensource online Vehicle editor." />
+  <link rel="icon" href="https://kaabel.github.io/.d1r.dbv/favicon.png" type="image/png" />
+  <link rel="icon shortcut" href="https://kaabel.github.io/favicon.svg" type="image/svg+xml" />
   <title>Droneboi Vehicle editor</title>
-  <link rel="canonical" content="https://kaabel.github.io/.d1r.dbv/editor.html">
+  <link rel="canonical" content="https://kaabel.github.io/.d1r.dbv/editor.html" />
   <style>
     body {
       margin: 0;
@@ -100,8 +100,8 @@
       <a href="https://github.com/KaaBEL">
         <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="16" height="16" viewBox="0,0,16,16">
           <g data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill-rule="nonzero" stroke="none" style="mix-blend-mode: normal">
-            <path d="M8,0c4.416,0 8,3.576 8,8c0,4.416 -3.576,8 -8,8c-4.416,0 -8,-3.576 -8,-8c0,-4.416 3.576,-8 8,-8z" fill="#f9c00f"/>
-            <path d="M3,2h5v4h4v-4h1v5h-2l2,7h-1.3l-2,-7h-1.7v7h-5z" fill="#000"/>
+            <path d="M8,0c4.416,0 8,3.576 8,8c0,4.416 -3.576,8 -8,8c-4.416,0 -8,-3.576 -8,-8c0,-4.416 3.576,-8 8,-8z" fill="#f9c00f" />
+            <path d="M3,2h5v4h4v-4h1v5h-2l2,7h-1.3l-2,-7h-1.7v7h-5z" fill="#000" />
           </g>
         </svg><pre>KaaBEL</pre></a>
       <time itemprop="dateModified" content="2023-03-14" datetime="2023-03-14">Last updated, March 14, 2023</time>
@@ -267,9 +267,8 @@
       softHandlers = softHandlers || [F, F, F, F];
       errorHandlers = errorHandlers || [F, F, F];
       /** @typedef {Array<[number,string,number]>} touchlog */
-      var //-evState = 0,
-        /** @type {{a:touchlog,tch:{ch:TouchEvent,cs:TouchList}}} */
-        o = {},
+      /** @type {{a:touchlog,tch:{ch:TouchEvent,cs:TouchList}}} */
+      var o = {},
         /** @type {Array<boolean>} */
         events = [!1],
         /** @type {tchsDat} */
