@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.48
+// v.0.1.49
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -1354,6 +1354,8 @@ Block.Size.genterateSizes = function () {
         //@ts-ignore
         nw.push(v);
       }
+      if (((v[1] || 1) < 0 || (v[2] || 1) < 0) && v[0] !== -1)
+        throw new Error("Neither width nor height can be negative.");
       r[l] = new this(x, y, (v[1] || 1) * 32, (v[2] || 1) * 32);
       if (j >= a[i].length)
         if (++i < a.length)
@@ -1950,6 +1952,8 @@ Ship.prototype.blockAtPonit2d = function (x, y) {
 Ship.prototype.fixPositionAdjustment = function (fixSlab) {
   var slabsFix = fixSlab ? Block.Size.VALUE[696] : null;
   console.log(this.name + ".PositionAdjustment(" + fixSlab + ")");
+  if (this.getMode().mode !== "Ship")
+    console.warn("Fixing ship in not default Ship.Mode!");
   for (var i = 0; i < this.blocks.length; i++) {
     var e = this.blocks[i], rot = e.rotation[2],
       size = Block.Size.VALUE[Block.ID[e.internalName]];
@@ -2028,6 +2032,8 @@ Ship.fromObject = function fromObject(object) {
 };
 /** @param {Ship} ship */
 Ship.toDBV = function toDBV(ship) {
+  if (ship.getMode().mode !== "Ship")
+    console.warn("Converting Ship that isn't Ship.Mode \"Ship\".");
   var blocks = [];
   for (var i = 0, e = ship.blocks[0]; i < ship.blocks.length; i++) {
     e = ship.blocks[i];
@@ -2170,8 +2176,8 @@ Ship.fromDBKey = function (key) {
   var obj = {nodeList: logics};
   return new Ship("[unnamed]", [], dateTime(1714557750), blocks, obj);
 };
-/** @type {17} significantVersion: 17 (integer) */
-Ship.VERSION = 17;
+/** @constant @type {18} significantVersion: 18 (integer) */
+Ship.VERSION = 18;
 /** instance is sealed @param {string} name @param {number} type */
 Ship.CustomInput = function CustomInput(name, type) {
   this.name = name;
@@ -2215,7 +2221,7 @@ Ship.CustomInput.reassemble = function (blocks, prop) {
       checkControlBlock(blocks[i].properties.control);
   prop.customInputs = inputs.slice(j);
 };
-/** instance is frost
+/** instance is frost, (experimental class is frost)
  * (keeping reference to mode object also keeps its old ship object)
  * @typedef Ship.Mode @property {EditMode} mode @property {()=>Ship} getShip
  * @param {EditMode} mode @param {Ship|(()=>Ship)} ship */
@@ -2224,6 +2230,9 @@ Ship.Mode = function (mode, ship) {
   this.getShip = ship instanceof Ship ? __private(ship) : ship;
   Object.freeze(this);
 };
+// when encoding ship, it might need to be in "Ship" mode
+/** @constant @type {Ship.Mode} */
+Ship.Mode.NONE = new Ship.Mode("Ship", new Ship("", [], "", []));
 /** adds a layer for the parser to pass stored global ship in mode
  * to pars functione, next parser calls only return the parse function
  * result and not do parsing again (in case it just modifies global
@@ -2239,6 +2248,7 @@ Ship.Mode.useParser = function (mode, globalShip, parse) {
     return globalShip = parse(globalShip);
   });
 };
+Object.freeze(Ship.Mode);
 
 // generating Droneboi
 /** global ship that's being rendered and editng */
@@ -2540,6 +2550,8 @@ function wVersion(arr) {
 function encodeCmprsShip(ship) {
   // version 0.0.significantVersion
   // versions 16 and further will significantVersion of Db Vehicle editor
+  if (ship.getMode().mode !== "Ship")
+    console.warn("Converting Ship that isn't Ship.Mode \"Ship\".");
   var l, n, id, p_i, chunkEnd, s, propertiesStr = "";
   var propertiesRef = [], b, arr, min, max, prev, size = [], sizeB = [];
   // id length

@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.48
+// v.0.1.49
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -42,7 +42,14 @@ function throwErrors() {
 
 if (/https?/.test(location.protocol) && navigator.serviceWorker)
   try {
+    // @type {ServiceWorkerContainer}
     var swc = navigator.serviceWorker, sw = swc.controller;
+    /** fix for service worker for http localhost */
+    //-var sw_scope = sw_http[0] === "http" ?
+    //-  "./" :
+    //-  "https://kaabel.github.io/.d1r.dbv/";
+    //-  sw || swc.register(sw_scope + "offline_test.js",
+    //-  {scope: sw_scope}).then(function (swr) {
     sw || swc.register("/.d1r.dbv/offline_test.js",
       {scope: "/.d1r.dbv/"}).then(function (swr) {
         sw = (swr.installing || swr.waiting || swr.active);
@@ -793,7 +800,8 @@ Command.push = function (name, initialize, description, settings) {
   return this.list.push(new Command(name, description, itemsInit,
     settings.group));
 };
-/** used to pause ongoing functionalities when Command hides */
+/** used to pause ongoing functionalities when Command hides
+ * #CMDSTOP But what is it actally for? */
 Command.stop = function () {
   Command.rend_UI = utilities.rend_UI;
   utilities.rend_UI = F;
@@ -1492,6 +1500,9 @@ Command.push("Import/Export DBV", function (items, collapsed) {
       error.innerText = err;
       console.error(err);
     }
+    if (ship.getMode().mode !== "Ship")
+      console.warn(error.innerText += "\nConverting Ship that isn't " +
+        "Ship.Mode \"Ship\"!");
   };
   elBtn.appendChild(tN("Export"));
   items.push(elBtn);
@@ -1974,6 +1985,10 @@ y 1. It also shows ammount of blocks in it and time when the vehicle had the\
 se stats, because it doesn't update after this command have been opened, onl\
 y changing amount of RC recalculates distance.\nThanks to catcat9999 for sha\
 ring block capacity/use stats from source code in Discord.");
+Command.add("Editing Mode", [
+  {name: "Enable Logic Editing", type: "button", fn: enableLogicEditing},
+  {name: "Enable Ship Editing", type: "button", fn: enableShipEditing}
+], "Editing modes is the newest feature that is Work In Progress.");
 Command.groupName = "";
 Command.push("Set camera view", function (items, collapsed) {
   // TODO: one input with code like vX<vX>vY<vY>sc<sc> so can save a view
@@ -2212,6 +2227,83 @@ b0,37fa c-aa,2277,294,3088,486,4273 z M2fd6e,297fb c0,0,-80e5,-8034,-80e5,-8\
 2ed8,-4a8,43c8,-d1d l8497,8218 c-2dcd,1d59,-6443,2e5d,-9eb3,2e5d c-a2ac,0,-1\
 268b,-83df,-1268b,-1268b c0,-a2ac,83df,-1268b,1268b,-1268b ca2ac,0,1268b,83d\
 f,1268b,1268b c0,36c5,-ef3,6a0d,-28fe,95fc z"));
+Tool.list.push(new Tool("Rotate", "M3ffec,1ffd8 c0,11abb,-e532,1ffee,-1ffee,\
+1ffee c-86ef,0,-101ad,-3434,-15d21,-8984 c-7,-7,-1dd5,1e1c,-1e42,1e7e c-523,\
+49e,-c05,771,-1395,771 c-dae,0,-1922,-93d,-1c14,-15a2 c-2c,-bc,-2b38,-d613,-\
+2b9c,-d7c9 c-72,-1f3,-ae,-3fa,-ae,-60f c0,-f6c,ce6,-1bed,1cd0,-1bed c3ac,0,7\
+30,aa,a6b,1e1 c64a,25d,bcde,3da5,bf45,3e46 cc42,335,1548,e10,1548,1af6 c0,80\
+2,-37a,f3b,-90d,1453 c-112,fa,-239b,2445,-239b,2445 c459b,3fc8,a25d,66b4,108\
+37,66b4 cd80e,0,18734,-af26,18734,-18734 c0,-3ea,-e,-7d2,-2c,-bb6 c-86,-11ce\
+,-1c4,-2841,-1c4,-290a c0,-f6c,ce6,-1bed,1cd0,-1bed c1df,0,3b4,2c,57a,81 c62\
+4,125,3fa5,d93,41df,e1c cc8e,303,15dd,e02,15dd,1b1c c0,4b0,a0,102a,a0,26cc z\
+ M13,20027 c0,-11abb,e532,-1ffee,1ffee,-1ffee c86ef,0,101ad,3434,15d21,8984 \
+c7,7,1dd5,-1e1c,1e42,-1e7e c523,-49e,c05,-771,1395,-771 cdae,0,1922,93d,1c14\
+,15a2 c2c,bc,2b38,d613,2b9c,d7c9 c72,1f3,ae,3fa,ae,60f c0,f6c,-ce6,1bed,-1cd\
+0,1bed c-3ac,0,-730,-aa,-a6b,-1e1 c-64a,-25d,-bcde,-3da5,-bf45,-3e46 c-c42,-\
+335,-1548,-e10,-1548,-1af6 c0,-802,37a,-f3b,90d,-1453 c112,-fa,239b,-2445,23\
+9b,-2445 c-459b,-3fc8,-a25d,-66b4,-10837,-66b4 c-d80e,0,-18734,af26,-18734,1\
+8734 c0,3ea,e,7d2,2c,bb6 c86,11ce,1c4,2841,1c4,290a c0,f6c,-ce6,1bed,-1cd0,1\
+bed c-1df,0,-3b4,-2c,-57a,-81 c-624,-125,-3fa5,-d93,-41df,-e1c c-c8e,-303,-1\
+5dd,-e02,-15dd,-1b1c c0,-4b0,-a0,-102a,-a0,-26cc z"));
+Tool.list.push(new Tool("Skin", "M2b144,2d362 c0,0,-4d72,4e17,-4d7d,4e21 c-6\
+e7,65c,-1048,a45,-1a9c,a45 c-ab5,0,-1464,-433,-1b5c,-afc c-520,-4fd,-454c,-4\
+679,-4a44,-4b4c c-c03,-ba9,-1c66,-12d7,-2e77,-12d7 c-173c,0,-2bb3,be1,-37a5,\
+1de5 c-3b0,590,-9298,df16,-9552,e385 c-1613,23e6,-3db8,3bd6,-6af4,3bd6 c-454\
+b,0,-7d25,-382c,-7d25,-7d78 c0,-26dd,11ca,-499a,2d89,-609e ca03,-84e,edd5,-9\
+d74,f33b,-a153 c10e2,-c1b,1be2,-1fe5,1be2,-3642 c0,-1388,-864,-251b,-15c5,-3\
+14e c-572,-4f7,-44e4,-449f,-475f,-46c5 c-7cd,-6c0,-cb5,-1088,-cb5,-1b69 c0,-\
+9a5,3da,-126d,a2a,-1900 c183,-193,4f49,-4f2a,4f49,-4f2a z M7edc,3b238 c1b9d\
+,0,314d,-145e,314d,-2ffb c0,-1b9d,-1662,-3200,-3200,-3200 c-1b9d,0,-2ffb,15e\
+1,-2ffb,317e c0,1b9d,1511,307c,30ae,307c z M2e440,29ff9 c0,0,111b3,-1140f,11\
+267,-114ca c54f,-583,88e,-ce3,88e,-14fe c0,-7fb,-326,-f41,-851,-14be c-34e,-\
+382,-3563,-3816,-39d6,-3b78 c-57e,-42d,-c70,-6ab,-13fd,-6ab c-660,0,-c51,1c6\
+,-1151,4d8 c-233,159,-712d,4dd6,-712d,4dd6 c0,0,4b83,-6f75,4e90,-7539 c3fc,-\
+668,5e2,-185b,-4d7,-2330 c-354,-35c,-70d9,-715b,-744c,-74a9 c-5d4,-594,-de0,\
+-8b5,-16c0,-906 c-c44,-70,-26d5,f20,-26d5,f20 c0,0,1181,-18e9,11f2,-2556 c3e\
+,-6e8,-21b,-d30,-627,-123c c-1dc,-251,-2951,-2a0d,-2954,-2a10 c-5dd,-5de,-e1\
+d,-95f,-1741,-95f c-969,0,-11e1,3b9,-17c5,9e6 c-1ec,203,-112c8,11207,-112c8,\
+11207 z"));
+Tool.list.push(new Tool("Inventory", "M2400,0 c-12d2,0,-2400,112d,-2400,23ff\
+ vda22 c0,12d2,112d,2400,23ff,2400 hda22 c12d2,0,2400,-112d,2400,-2400 v-da2\
+2 c0,-12d2,-112d,-2400,-2400,-2400 z M2400,16666 c-12d2,0,-2400,112d,-2400,2\
+3ff vda22 c0,12d2,112d,2400,23ff,2400 hda22 c12d2,0,2400,-112d,2400,-2400 v-\
+da22 c0,-12d2,-112d,-2400,-2400,-2400 z M2400,2cccc c-12d2,0,-2400,112d,-240\
+0,23ff vda22 c0,12d2,112d,2400,23ff,2400 hda22 c12d2,0,2400,-112d,2400,-2400\
+ v-da22 c0,-12d2,-112d,-2400,-2400,-2400 z M27155,2222 c-ea3,0,-1bff,d5c,-1c\
+00,1bff v94cc c0,ea3,d5c,1bff,1bff,1c00 h94cc cea3,0,1c00,-d5c,1c00,-1c00 v-\
+94cc c0,-ea3,-d5c,-1c00,-1c00,-1c00 z M1ee22,16666 c-12d2,0,-2400,112d,-2400\
+,23ff v0 c0,12d2,112d,2400,23ff,2400 h1b400 c12d2,0,2400,-112d,2400,-2400 v0\
+ c0,-12d2,-112d,-2400,-2400,-2400 z M1ba22,1eeee c-12d2,0,-2400,112d,-2400,2\
+400 v0 c0,12d2,112d,2400,23ff,2400 h21c00 c12d2,0,2400,-112d,2400,-2400 v0 c\
+0,-12d2,-112d,-2400,-2400,-2400 z M21a22,27777 c-12d2,0,-2400,112d,-2400,23f\
+f v0 c0,12d2,112d,2400,23ff,2400 h13c00 c12d2,0,2400,-112d,2400,-2400 v0 c0,\
+-12d2,-112d,-2400,-2400,-2400 z M1e622,30000 c-12d2,0,-2400,112d,-2400,23ff \
+v0 c0,12d2,112d,2400,23ff,2400 h1c400 c12d2,0,2400,-112d,2400,-2400 v0 c0,-1\
+2d2,-112d,-2400,-2400,-2400 z M1fe22,38888 c-12d2,0,-2400,112d,-2400,23ff v0\
+ c0,12d2,112d,2400,23ff,2400 h19400 c12d2,0,2400,-112d,2400,-2400 v0 c0,-12d\
+2,-112d,-2400,-2400,-2400 z"));
+Tool.list.push(new Tool("Flip", "M2497,3d3e7 c-1420,0,-2470,-1050,-2470,-247\
+0 c0,-4ef,fb,-9a3,2c1,-dee c3fe,-9a4,1662c,-35d83,16900,-362b1 c62e,-b51,123\
+2,-12ff,2000,-12ff c1420,0,2470,1050,2470,2470 c0,5a3,0,351a7,0,35f70 c0,142\
+0,-1050,2470,-2470,2470 c-87d,0,-15eba,-41,-16752,-41 z M27458,3d429 c-1420,\
+0,-2470,-1050,-2470,-2470 c0,-dc8,0,-359cd,0,-35f70 c0,-1420,1050,-2470,2470\
+,-2470 cdce,0,19d1,7ad,2000,12ff c2d4,52e,16502,3590c,16900,362b1 c1c6,44a,2\
+c1,8ff,2c1,dee c0,1420,-1050,2470,-2470,2470 c-898,0,-15ed5,41,-16752,41 z M\
+3a5de,38baa l-10dfa,-287d3 v287d7 z M22770,6dd0" +
+  "$ins; M22770,14947$ins; M22778,224b6$ins; M22770,3002d$ins; M22770,3db79$\
+ins;".replace(/\$ins;/g, " c0,142a,-1059,2483,-2483,2483 c-142a,0,-2483,-105\
+9,-2483,-2483 v-4949 c0,-142a,1059,-2483,2483,-2483 c142a,0,2483,1059,2483,2\
+483 c0,708,0,4316,0,4949 z")));
+Tool.list.push(new Tool("Clone", "M2ba5a,2bab5 vda5e c0,33ca,-29fc,5dc6,-5dc\
+6,5dc6 h-1fdbd c-33ca,0,-5dc6,-29fc,-5dc6,-5dc6 v-1fd62 c0,-33ca,29fc,-5dc6,\
+5dc6,-5dc6 hda3f l11,-daf0 c0,-33ca,29fc,-5dc6,5dc6,-5dc6 h1fda6 c33ca,0,5dc\
+6,29fc,5dc6,5dc6 v1fdf3 c0,33ca,-29fc,5dc6,-5dc6,5dc6 z M25a7a,18270 c-5e82,\
+30,-1bfcd,e4,-1f71e,d4 c-f11,-4,-180c,a9e,-1815,19ce c-3a,5fa0,-10c,1baf6,-b\
+6,1f335 c16,edc,8e7,18b9,1948,18b7 l1f71e,-37 cc02,-1,15a5,-862,15a8,-1707 l\
+83,-1f5a7 c6,-de2,-7ef,-19b0,-16a8,-19a9 z M394a4,4b8f l-1fa26,-1ac c-e4d,70\
+,-169d,c12,-16a6,1820 l-a3,d63a ld185,67 c3c14,9,66ad,2841,6729,5855 l-33,de\
+f3 ld5ec,1a6 cba6,-76,175b,-a4c,17d6,-1935 l-61,-1f52a c-5,-f8c,-a81,-17f3,-\
+146b,-17a5 z"));
 function check_contentScript() {
   var contentScript = GE("contentScript"), data = "";
   if (contentScript && (data = contentScript.innerText)) {
@@ -2273,31 +2365,41 @@ var rend_backgHangar = F;
   xhr.send();
 }();
 function backgHangarInit() {
-  var backgPrimary = rend_background, hgw = 544, hgh = 654;
-  var defRend = DefaultUI.rend;
+  var backgPrimary = rend_background;
+  var defRend = DefaultUI.rend, hgw = 544, hgh = 654;
   DefaultUI.rend = rend_background = F;
-  var ocw = canvas.width, och = canvas.height;
+  var octx = ctx, osc = sc, oxV = vX, oyV = vY, oship = ship;
+  /** @type {HTMLImageElement|null} */
+  var hangarImg = EL("img"), hangarCanv = canvas = EL("canvas");
   canvas.width = hgw;
   canvas.height = hgh;
-  var osc = sc, oxV = vX, oyV = vY, oship = ship;
+  ctx = hangarCanv.getContext("2d") || ctx;
   sc = 8;
   vX = 264;
   vY = 464;
   ship = backgHangarInit.ship;
   expensiveRenderer();
+  try {
+    hangarImg.src = canvas.toDataURL();
+    canvas.width = canvas.height = 8;
+  } catch (e) {
+    hangarImg = null;
+  }
   DefaultUI.rend = defRend;
-  var hangarBackground = EL('img');
-  hangarBackground.src = canvas.toDataURL('image/png');
-  canvas.width = ocw;
-  canvas.height = och;
+  canvas = (ctx = octx).canvas;
   sc = osc;
   vX = oxV;
   vY = oyV;
   ship = oship;
   function backgSecondary() {
     backgPrimary();
-    ctx.drawImage(hangarBackground, sc * -33 + vX, sc * -58 + vY,
-      sc * hgw / 8, sc * hgh / 8);
+    ctx.drawImage(
+      hangarImg || hangarCanv,
+      sc * -33 + vX,
+      sc * -58 + vY,
+      sc * hgw / 8,
+      sc * hgh / 8
+    );
   };
   backgSecondary.primary = backgPrimary;
   rend_background = backgSecondary;
@@ -2404,14 +2506,35 @@ DefaultUI.createFolder = function (type, tiles) {
 DefaultUI.TILE = {};
 DefaultUI.rend = F;
 /** @type {(TileType[]&{type:TileType})[]} */
-DefaultUI.blockBars = [DefaultUI.createFolder("Tune", [690, "Tune"])];
-DefaultUI.folderSelected = 0;
+DefaultUI.blockBars = [
+  DefaultUI.createFolder("Tune", [690, "Tune"]),
+  DefaultUI.createFolder("Rotate", ["Rotate", 802]),
+  DefaultUI.createFolder("Skin", ["Skin", 832]),
+  DefaultUI.createFolder("Inventory", ["Inventory", 815]),
+  DefaultUI.createFolder("Clone"),
+  DefaultUI.createFolder("Flip", ["Flip", 822])
+];
+DefaultUI.selectedFolder = DefaultUI.blockBars.length - 1;
 DefaultUI.inventoryIcon = !0;
+/** @type {TileType[]} */
+DefaultUI.toolBar = [
+  DefaultUI.createTile("Tune"),
+  DefaultUI.createTile("Rotate"),
+  DefaultUI.createTile("Skin"),
+  DefaultUI.createTile("Clone"),
+  DefaultUI.createTile("Flip"),
+  null,
+  null,
+  DefaultUI.createTile("Inventory")
+];
 
 function enableShipEditing() {
   var mode = ship.getMode();
   ship = mode.getShip();
   press = old_UI;
+  move = function (x, y, z) {
+    return false;
+  };
   DefaultUI.rend = F;
   render();
 };
@@ -2420,19 +2543,23 @@ function enableLogicEditing() {
   if (mode.mode === "Logic")
     return;
   /** @type {Block[]} */
-  var blocks = [];
-  for (var i = 0, old = ship.blocks; i < old.length; i++)
-    if (Logic.VALUE[Block.ID[old[i].internalName]]) {
-      var logicBlock = old[i];
-      if (logicBlock instanceof LogicBlock) {
-        var temp = logicBlock.logicPosition;
-        logicBlock.logicPosition = logicBlock.position;
-        logicBlock.position = temp;
-      } else
-        old[i] = new LogicBlock(logicBlock, i);
-      blocks.push(logicBlock);
-    }
-  mode = new Ship.Mode("Ship", new Ship("", [], "", []));
+  var blocks = [], last = blocks[0];
+  for (var i = 0, old = mode.getShip().blocks; i < old.length; i++) {
+    if (!Logic.VALUE[Block.ID[old[i].internalName]])
+      continue;
+    var logicBlock = old[i];
+    if (logicBlock instanceof LogicBlock) {
+      var temp = logicBlock.logicPosition;
+      logicBlock.logicPosition = logicBlock.position;
+      logicBlock.position = temp;
+    } else
+      old[i] = logicBlock = new LogicBlock(logicBlock, i);
+    blocks.push(logicBlock);
+    if (last && last.position[1] <= logicBlock.position[1])
+      logicBlock.position[1] = Math.floor(last.position[1] - 2);
+    last = logicBlock;
+  }
+  mode = Ship.Mode.NONE;
   old = [];
   // updating the global ship to Logic mode, original is included
   ship = new Ship(
@@ -2441,17 +2568,27 @@ function enableLogicEditing() {
     ship.dateTime,
     blocks,
     ship.prop,
-    Ship.Mode.useParser("Logic", ship, function (ship) {
-      for (var i = 0, blocks = ship.blocks; i < old.length; i++) {
-        var logicBlock = blocks[i], temp = logicBlock.position;
+    Ship.Mode.useParser("Logic", ship, function (global) {
+      old = ship.blocks.sort(function (a, b) {
+        return b.position[1] - a.position[1];
+      });
+      for (var i = 0, indexes = [0]; i < old.length; i++) {
+        var logicBlock = old[i], temp = logicBlock.position;
         if (!(logicBlock instanceof LogicBlock))
           throw new Error("Block imposter within Logic mode ship!");
         logicBlock.position = logicBlock.logicPosition;
         logicBlock.logicPosition = temp;
-        if (logicBlock.logicBlockIndex === -1)
-          logicBlock.logicBlockIndex = blocks.push(logicBlock);
+        indexes[i] = logicBlock.logicBlockIndex;
       }
-      return ship;
+      indexes.sort(function (a, b) {
+        return a - b;
+      });
+      for (i = old.length; i-- > 0;)
+        if (indexes[i] === -1)
+          global.blocks.push(old[i]);
+        else
+          global.blocks[indexes[i]] = old[i];
+      return global;
     }
   ));
   press = edit_logic;
@@ -2479,15 +2616,52 @@ function enableLogicEditing() {
     } else if (e.type === "mouseup") {
       if (!found)
         return !1;
-      if ((movingId = blocks[movingId] === found.block ?
+      if ((blocks[movingId] === found.block ?
         movingId :
-        blocks.indexOf(found.block)) === -1)
+        movingId = blocks.indexOf(found.block)) === -1)
         throw new Error("Block found not found, at edit_logicmove.");
       if ((blocks[found.id] || {}).internalName === "__NULL__") {
-        blocks[found.id] = blocks[movingId];
+        blocks[found.id] = found.block;
         del.call(blocks, movingId);
       } else
         throw new Error("Block __NULL__ not found, at edit_logicmove.");
+      blocks.sort(function (a, b) {
+        return b.position[1] - a.position[1];
+      });
+/** unsuccessfull attempt for block insert without sorting all
+ * @TODO in v.0.1.50 replace with link to this */
+//       var pos = found.block.position[1], idx = found.id;
+//       if ((blocks[found.id] || {}).internalName === "__NULL__") {
+//         del.call(blocks, movingId);
+//         idx + 1 < blocks.length ?
+//           blocks[idx].position = blocks[idx + 1].position :
+//           blocks.length--;
+//       } else
+//         throw new Error("Block __NULL__ not found, at edit_logicmove.");
+//       for (var dest =  blocks.length; dest > 0;) {
+//         var cpr = blocks[--dest].position[1];
+//         if (cpr >= pos && dest && blocks[dest - 1].position[1] > cpr)
+//           break;
+//       }
+//       if (idx > dest)
+//         for (; idx-- > dest;)
+//           blocks[idx + 1] = blocks[idx];
+//       else
+//         for (; idx < dest; idx++)
+//           blocks[idx] = blocks[idx + 1];
+//       blocks[dest] = found.block;
+/** scripts used for debugging that overcomplicated solution */
+// new Error(ship.blocks.map(function (e) {
+//   return e.internalName + "\t" + e.position[1];
+// }).join("\n"));
+//
+// ship.blocks.push(new Block("Numerical Switchbox",[0, 2, 4],[0, !1, 0],{
+//   color: "White"
+// }));
+// ship.blocks.push(new Block("Constant On Signal",[0, -1, 4],[0, !1, 0],{
+//   color: "White"
+// }));
+// enableLogicEditing();
       render();
     } else
       console.error("edit_logicmove unhandled event type: " +
@@ -2532,14 +2706,21 @@ function test_juhus(w, h) {
       M: rc.moveTo,
       L: rc.lineTo,
       C: rc.bezierCurveTo,
-      Z: rc.closePath
+      Z: rc.closePath,
+      H: function (n) {
+        this.lineTo(n, rY);
+      },
+      V: function (n) {
+        this.lineTo(x = rX, rY = n);
+      }
     };
     var rX = 0, rY = 0, x = 0, y = 0;
     tool.icon.split(" ").map(function (e, i) {
+      var c = e[0].toUpperCase();
       var params = e.slice(1).split(",").map(e.charCodeAt(0) & 32 ?
         function (e, i) {
             var n = parseParam(e);
-            return i & 1 ? y = rY + n : x = rX + n;
+            return i & 1 || c === "V" ? y = rY + n : x = rX + n;
           } :
         function (e, i) {
             var n = parseParam(e);
@@ -2555,7 +2736,7 @@ function test_juhus(w, h) {
       rY = y;
     });
     rc.imageSmoothingQuality 
-    rc.fillStyle = "#ffffff";
+    rc.fillStyle = "#dbecfe";
     rc.fill();
   }
   /** @param {TileType} type @param {number} size */
@@ -2565,14 +2746,30 @@ function test_juhus(w, h) {
     if (type instanceof Block)
       blockIcon(type);
   }
+  /** @param {TileType} tile */
+  function doTheItem(tile) {
+    tw += 87;
+    if (!tile)
+      return;
+    ctx.beginPath();
+    ctx.moveTo(tw, th - 25);
+    ctx.arcTo(tw, th - 15, tw + 78, th - 15, 5);
+    ctx.arcTo(tw + 78, th - 15, tw + 78, th - 93, 5);
+    ctx.arcTo(tw + 78, th - 93, tw, th - 93, 5);
+    ctx.arcTo(tw, th - 93, tw, th, 5);
+    ctx.closePath();
+    ctx.stroke();
+    doAnIcon(tile, 60);
+    ctx.drawImage(helpCanvas, tw + 9, th - 84, 60, 60);
+  }
   ctx.globalAlpha = .9;
   ctx.lineJoin = "round";
   ctx.beginPath();
   ctx.moveTo(7, h - 19);
   ctx.arcTo(7, h - 7, 19, h - 7, 5);
-  ctx.arcTo(272, h - 7, 272, h - 19, 5);
-  ctx.arcTo(272, h - 272, 260, h - 272, 5);
-  ctx.arcTo(7, h - 272, 7, h - 260, 5);
+  ctx.arcTo(275, h - 7, 275, h - 19, 5);
+  ctx.arcTo(275, h - 275, 263, h - 275, 5);
+  ctx.arcTo(7, h - 275, 7, h - 263, 5);
   ctx.closePath();
   ctx.moveTo(279, h - 19);
   ctx.arcTo(279, h - 7, 291, h - 7, 5);
@@ -2585,15 +2782,15 @@ function test_juhus(w, h) {
   var bars = DefaultUI.blockBars;
   ctx.lineWidth = 2;
   ctx.strokeStyle = "#547faa";
-  for (var i = 0, sw = 279; i < bars.length; i++) {
+  for (var i = 0, sw = 279, th = h; i < bars.length; i++) {
     if (!bars[i])
       continue;
-    var b = i === DefaultUI.folderSelected, n = b ? 168 : 153;
+    var b = i === DefaultUI.selectedFolder, tw = b ? 168 : 153;
     ctx.globalAlpha = b ? .9 : .8;
     ctx.beginPath();
     ctx.moveTo(sw, h - 101);
-    ctx.arcTo(sw, h - n, sw + 12, h - n, 5);
-    ctx.arcTo(sw + 54, h - n, sw += 54, h - 146, 5);
+    ctx.arcTo(sw, h - tw, sw + 12, h - tw, 5);
+    ctx.arcTo(sw + 54, h - tw, sw += 54, h - 146, 5);
     ctx.lineTo(sw, h - 101);
     ctx.closePath();
     ctx.fillStyle = b ? "#0c243c" : "#000c1c";
@@ -2602,22 +2799,15 @@ function test_juhus(w, h) {
     ctx.globalAlpha = 1;
     ctx.drawImage(helpCanvas, sw - 47, h - (b ? 161 : 146), 40, 40);
     sw += 3;
-    n = 200;
-    for (var j = 0; j < bars[i].length; j++) {
-      var tile = bars[i][j];
-      n += 87;
-      if (!tile)
-        continue;
-      ctx.beginPath();
-      ctx.moveTo(n, h - 25);
-      ctx.arcTo(n, h - 15, n + 78, h - 15, 5);
-      ctx.arcTo(n + 78, h - 15, n + 78, h - 93, 5);
-      ctx.arcTo(n + 78, h - 93, n, h - 93, 5);
-      ctx.arcTo(n, h - 93, n, h, 5);
-      ctx.closePath();
-      ctx.stroke();
-      doAnIcon(tile, 60);
-      ctx.drawImage(helpCanvas, n + 9, h - 84, 60, 60);
+    tw = 200;
+    for (var j = 0; b && j < bars[i].length; j++)
+      doTheItem(bars[i][j]);
+  }
+  for (var j = 0, tw = -72; j < DefaultUI.toolBar.length; j++) {
+    doTheItem(DefaultUI.toolBar[j]);
+    if (tw > 123) {
+      th -= 87;
+      tw = -72;
     }
   }
 };
@@ -2625,6 +2815,10 @@ function test_juhus(w, h) {
 /** @type {Block[]} */
 var foundBlocks = [];
 
+/** do in v.0.1.50
+ * @TODO HERE fix this ui mess with one system unitfied with Ship.Modes
+ * Command.stop where @see Command.press is used for seems to be for
+ * keeping old_UI or something #CMDSTOP */
 var old_UI = Command.press = press = function (x, y) {
   x = Math.floor((vX - x) / 2 / sc + 1);
   y = Math.floor((y - vY) / 2 / sc);
@@ -2722,6 +2916,7 @@ function commands(x, y, e) {
     if (el === dest)
       break;
     else if (!(el = el.parentNode)) {
+      // #CMDSTOP and why not Command.stop in here?
       e.button !== -1 && e.cancelable && e.preventDefault();
       utilities.rend_UI = Command.rend_UI;
       press = Command.press;
@@ -2826,7 +3021,8 @@ var rend_speeeeed = {}, rend_logs = 69;
     if (!size) {
       rend_logs > 0 && rend_logs-- && console.error(objs[i], AT);
       continue;
-    }
+    } else if (size.w <= 0 || size.h <= 0)
+      continue;
     var rot = 10 - objs[i].rotation[2] & 3;
     var ow = size.w, oh = size.h, sw = 0, sh = 0;
     var w = ow + (ow & 16), h = oh + (oh & 16), tiny = (oh | ow) & 16;
@@ -2958,112 +3154,3 @@ function onlyConsole(m,s,l,c,e) {
     return "" + m + "\n" + e.stack;
   return "" + m + "\n\t" + s + ":" + l + ":" + c;
 };
-
-// .d1r.dbv DBVE icon v3
-// requires db1 core without the two outlines and core with
-// red fill in middle repainted to white
-// WH(ctx, 256, 256);
-// ctx.scale(16, 16);
-// ctx.imageSmoothingEnabled = false;
-// // WH(ctx, 16, 16);
-// ctx.fillStyle = "#ffffff";
-// ctx.fillRect(0, 0, 16, 16);
-// ctx.fillStyle = "#" + (16737894).toString(16);
-// ctx.fillStyle = "#ff3333";
-// ctx.fillRect(5, 5, 6, 6);
-// // ctx.globalAlpha = 51 / 255;
-// ctx.strokeStyle = "#191919";
-// ctx.strokeStyle = "#cccccc";
-// ctx.strokeRect(.5, .5, 15, 15);
-// ctx.strokeStyle = "#470000";
-// ctx.strokeStyle = "#cc2929";
-// ctx.strokeRect(5.5, 5.5, 5, 5);
-// ctx.globalAlpha = 1;
-// // ctx.drawImage(IMG(0), 0, 0);
-// var rc = sShot.getContext("2d");
-// WH(rc, ctx.canvas);
-// rc.setTransform(ctx.getTransform());
-// rc.lineWidth = 1.3;
-// rc.lineJoin = "round";
-// rc.lineCap = "round";
-// rc.strokeStyle = "#9f9f8f";
-// rc.strokeStyle = "#6E7069";
-// rc.beginPath();
-// rc.moveTo(8, 14);
-// rc.lineTo(8, 15.5 - 7.5 / 3);
-// rc.lineTo(.5, .5 + 7.5 / 2 + 15 / 3);
-// rc.lineTo(.5, 15.5 - 7.5 / 2);
-// rc.lineTo(8, 15.5);
-// rc.lineTo(15.5, 15.5 - 7.5 / 2);
-// rc.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
-// rc.lineTo(8 + 7.5 / 6, 15.5 - 37.5 / 12);
-// rc.moveTo(15.5, .5 + 7.5 / 2 + 15 / 3);
-// rc.lineTo(15.5 - 30 / 19, .5 + 7.5 / 2 + 15 / 3 - 15 / 19);
-// rc.stroke();
-// rc.strokeStyle = "#030e2f";
-// rc.beginPath();
-// rc.moveTo(.5 + 46 / 12, .5 + 52 / 12);
-// // rc.moveTo(.5 + 37.5 / 6, .5 + 37.5 / 12);
-// rc.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
-// rc.lineTo(8, .5);
-// rc.lineTo(.5, .5 + 7.5 / 2);
-// rc.lineTo(.5 + 7.5 / 3, .5 + 15 / 3);
-// rc.lineTo(.5 + 7.5 / 3 + 37.5 * 4 / 24, .5 + 15 / 3 + 31 * 4 / 24);
-// // rc.lineTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
-// rc.moveTo(8 + 7.5 / 3, .5 + 7.5 / 6);
-// rc.lineTo(8 + 7.5 / 3 + 15 * 4 / 29, .5 + 7.5 / 6 + 52.5 * 4 / 29);
-// rc.moveTo(.5, 5.9);
-// rc.lineTo(.5, 7.7);
-// rc.stroke();
-// ctx.globalCompositeOperation = "destination-in";
-// ctx.drawImage(rc.canvas, 0, 0, 16, 16);
-// ctx.globalCompositeOperation = "destination-over";
-// // ctx.globalAlpha = .5;
-// // ctx.fillStyle = "#000000";
-// // ctx.fillRect(5, 5, 6, 6);
-// // ctx.globalAlpha = 51 / 255;
-// // ctx.strokeStyle = "#000000";
-// // ctx.strokeRect(5.5, 5.5, 5, 5);
-// // ctx.globalAlpha = 1;
-// ctx.fillStyle = "#" + (16737894).toString(16);
-// ctx.strokeStyle = "#470000";
-// ctx.strokeRect(5.5, 5.5, 5, 5);
-// ctx.fillRect(5, 5, 6, 6);
-// ctx.fillStyle = "#030e2f";
-// ctx.beginPath();
-// ctx.moveTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
-// ctx.lineTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 3 - 15 / 6);
-// ctx.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
-// ctx.lineTo(8, .5);
-// ctx.lineTo(0, .5 + 7.5 / 2);
-// ctx.lineTo(0, .5 + 7.5 / 2 + 15 / 3);
-// ctx.lineTo(.5 - 7.5 / 3 + 7.5, .5 + 22.5 / 2);
-// // ctx.moveTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
-// // ctx.lineTo(8, 15.5 - 7.5 / 3);
-// // ctx.lineTo(8, 15.5);
-// // ctx.lineTo(8 + 7.5 / 3, 15.5 - 7.5 / 6);
-// // ctx.moveTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 3 - 15 / 6);
-// // ctx.lineTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 2 + 7.5 / 6);
-// // ctx.lineTo(15.5, 15.5 - 7.5 / 2);
-// // ctx.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
-// // ctx.moveTo(.5 + 7.5 / 3, .5 + 15 / 3);
-// // ctx.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
-// // ctx.lineTo(8 + 7.5 / 3 + 15 * 4 / 29, .5 + 7.5 / 6 + 52.5 * 4 / 29);
-// // ctx.lineTo(.5 + 7.5 / 3 + 37.5 * 4 / 24, .5 + 15 / 3 + 31 * 4 / 24);
-// ctx.closePath();
-// // ctx.globalCompositeOperation = "source-over";
-// ctx.fill();
-// // ctx.globalCompositeOperation = "destination-over";
-// ctx.fillStyle = "#6E7069";
-// ctx.beginPath();
-// ctx.moveTo(15.5 - 15 / 4, .5 + 7.5 / 2 + 15 / 3 - 15 / 8);
-// ctx.lineTo(.5, .5 + 7.5 / 2 + 15 / 3);
-// ctx.lineTo(.5, 15.5 - 7.5 / 2);
-// ctx.lineTo(8, 15.5);
-// ctx.lineTo(15.5, 15.5 - 7.5 / 2);
-// ctx.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
-// ctx.closePath();
-// ctx.fill();
-// ctx.lineWidth = 1;
-// ctx.strokeStyle = "#000000";
-// ctx.strokeRect(.5, .5, 15, 15);
