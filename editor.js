@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.49
+// v.0.1.50
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -44,12 +44,6 @@ if (/https?/.test(location.protocol) && navigator.serviceWorker)
   try {
     // @type {ServiceWorkerContainer}
     var swc = navigator.serviceWorker, sw = swc.controller;
-    /** fix for service worker for http localhost */
-    //-var sw_scope = sw_http[0] === "http" ?
-    //-  "./" :
-    //-  "https://kaabel.github.io/.d1r.dbv/";
-    //-  sw || swc.register(sw_scope + "offline_test.js",
-    //-  {scope: sw_scope}).then(function (swr) {
     sw || swc.register("/.d1r.dbv/offline_test.js",
       {scope: "/.d1r.dbv/"}).then(function (swr) {
         sw = (swr.installing || swr.waiting || swr.active);
@@ -742,10 +736,9 @@ function Command(name, description, items, setting) {
 /** @type {Command[]} */
 Command.list = [];
 Command.groupName = "";
-Command.press = press;
 Command.rend_UI = F;
-// I probably just made something I will never use #RIPCMDSRLD
-Command.currentInit = F;
+Command.listening = -1;
+Command.NAME = {"Setup Properties": "Setup Properties"};
 /**
  * @type {{
  *   (name: string, items: [{name:string,type:string,
@@ -793,24 +786,9 @@ Command.push = function (name, initialize, description, settings) {
         el.appendChild(EL("br"));
       }
   }
-  // #RIPCMDSRLD
-  settings.reloads && Edit.listeners.push(function () {
-    Command.currentInit();
-  });
   return this.list.push(new Command(name, description, itemsInit,
     settings.group));
 };
-/** used to pause ongoing functionalities when Command hides
- * #CMDSTOP But what is it actally for? */
-Command.stop = function () {
-  Command.rend_UI = utilities.rend_UI;
-  utilities.rend_UI = F;
-  press = old_UI;
-  render();
-  Edit.listeners[Command.listening] = F;
-};
-Command.listening = -1;
-Command.NAME = {"Setup Properties": "Setup Properties"};
 
 Command.push("Select Block", function (items, collapsed) {
   var bcks = {
@@ -1636,7 +1614,7 @@ Command.push("Transfrom tool", function (items, collapsed) {
     selectX0.value = selectY0.value = "";
     selectX1.value = selectY1.value = "";
     selecting = 2;
-    press = Command.press = function (x, y) {
+    press = function (x, y) {
       x = Math.floor((vX - x) / sc + 1);
       y = Math.floor((y - vY) / sc);
       if (selecting)
@@ -2091,14 +2069,15 @@ eate 'grabable' surface for touch screens at any time any time.\nTo move the\
  Commands tab around you can grab it 'with' top part, where changes to point\
 er hand, you can move it slightly behind edges on right and left side.\nCONT\
 EXTMENU NOTES\nSome browsers have option to save or copy image in the canvas\
-, it can be used to make precise image of your vehicle in high quality. When\
- the Commands tab is right clicked the tab dissapears and activated contextm\
-enu is able to capture to visual.\n\nMENU\nIn menu there is list of Commands\
-, click one of the buttons to open coresponding Command, optionaly sorted in\
- collapsed groups. X sign in top right corner closes the Commands tab.\n\nCO\
-MMAND\nWhen Command is opened its name displays in 'top part', there's also \
-< sign to return back to menu, X sign won't do that. Each command has some i\
-nputs/buttons, their purpouse is explained in description.");
+ in 'rightclick menu', it can be used to make precise image of your vehicle \
+in high quality. When the Commands tab is right clicked the tab dissapears a\
+nd activated contextmenu is able to capture to visual.\n\nMENU\nIn menu ther\
+e is list of Commands, click one of the buttons to open coresponding Command\
+, optionaly sorted in collapsed groups. X sign in top right corner closes th\
+e Commands tab.\n\nCOMMAND\nWhen Command is opened its name displays in 'top\
+ part', there's also < sign to return back to menu, X sign won't do that. Ea\
+ch command has some inputs/buttons, their purpouse is explained in descripti\
+on.");
 
 var cmdsHeader = EL(), cmds = (function () {
   /** for #commandsTab styles @see {addingStyles} */
@@ -2117,14 +2096,16 @@ var cmdsHeader = EL(), cmds = (function () {
     content.style.display = cmdsHeader.innerText = "";
     items.style.display = "none";
     back.visibility = "hidden";
-    Command.stop();
+    utilities.rend_UI = F;
+    press = DefaultUI.press;
+    move = DefaultUI.move;
+    render();
   };
   e0.appendChild(cmdsHeader);
   e1 = e0.appendChild(EL("button"));
   e1.appendChild(tN("X"));
   e1.onclick = function () {
     nav.style.display = "none";
-    Command.stop();
   };
   var content = nav.appendChild(EL()), items = nav.appendChild(EL());
   content.className = "content";
@@ -2138,8 +2119,7 @@ var cmdsHeader = EL(), cmds = (function () {
       el.innerText = "Description:\n" + item.description;
       el.style.color = "#879b90";
     }
-    // Command.currentInit #RIPCMDSRLD
-    return Command.currentInit = function () {
+    return function () {
       cmdsHeader.innerText = item.name;
       content.style.display = "none";
       items.style.display = "";
@@ -2527,12 +2507,19 @@ DefaultUI.toolBar = [
   null,
   DefaultUI.createTile("Inventory")
 ];
+/** DefaultUI.press, .move, .contextmenu, .over are memory for
+ * 'default' action bind 'callback' for current Ship.Mode,
+ * for example used in Command.stop() */
+DefaultUI.press = press;
+DefaultUI.move = move;
+DefaultUI.contextmenu = contextmenu;
+DefaultUI.over = over;
 
 function enableShipEditing() {
   var mode = ship.getMode();
   ship = mode.getShip();
-  press = old_UI;
-  move = function (x, y, z) {
+  press = DefaultUI.press = old_UI;
+  move = DefaultUI.move = function (x, y, z) {
     return false;
   };
   DefaultUI.rend = F;
@@ -2573,28 +2560,30 @@ function enableLogicEditing() {
         return b.position[1] - a.position[1];
       });
       for (var i = 0, indexes = [0]; i < old.length; i++) {
-        var logicBlock = old[i], temp = logicBlock.position;
-        if (!(logicBlock instanceof LogicBlock))
-          throw new Error("Block imposter within Logic mode ship!");
+        var block = old[i], temp = block.position;
+        if (!(block instanceof LogicBlock)) {
+          console.error("Block imposter within Logic mode ship!");
+          var logicBlock = new LogicBlock(block, -1);
+        } else
+          logicBlock = block;
         logicBlock.position = logicBlock.logicPosition;
         logicBlock.logicPosition = temp;
         indexes[i] = logicBlock.logicBlockIndex;
       }
       indexes.sort(function (a, b) {
-        return a - b;
+        return a === -1 || b === -1 ? +(a === -1) - +(b === -1) : a - b;
       });
       for (i = old.length; i-- > 0;)
-        if (indexes[i] === -1)
-          global.blocks.push(old[i]);
-        else
+        indexes[i] === -1 ?
+          global.blocks.push(old[i]) :
           global.blocks[indexes[i]] = old[i];
       return global;
     }
   ));
-  press = edit_logic;
   /** @type {Block.Selected|null} */
   var found = null, movingId = -1;
-  move = edit_logicmove = function (x, y, e) {
+  DefaultUI.press = press = edit_logic;
+  DefaultUI.move = move = edit_logicmove = function (x, y, e) {
     if (e.type === "mousedown") {
       if (!(found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc)))
         return !1;
@@ -2625,43 +2614,12 @@ function enableLogicEditing() {
         del.call(blocks, movingId);
       } else
         throw new Error("Block __NULL__ not found, at edit_logicmove.");
+      /** unsuccessful attempt for block insert without sorting all at once
+    @see https://github.com/KaaBEL/.d1r.dbv/blob/61fec271ff39/editor.js#L2631
+       * v.0.1.49, might get usefull once... maybe */
       blocks.sort(function (a, b) {
         return b.position[1] - a.position[1];
       });
-/** unsuccessfull attempt for block insert without sorting all
- * @TODO in v.0.1.50 replace with link to this */
-//       var pos = found.block.position[1], idx = found.id;
-//       if ((blocks[found.id] || {}).internalName === "__NULL__") {
-//         del.call(blocks, movingId);
-//         idx + 1 < blocks.length ?
-//           blocks[idx].position = blocks[idx + 1].position :
-//           blocks.length--;
-//       } else
-//         throw new Error("Block __NULL__ not found, at edit_logicmove.");
-//       for (var dest =  blocks.length; dest > 0;) {
-//         var cpr = blocks[--dest].position[1];
-//         if (cpr >= pos && dest && blocks[dest - 1].position[1] > cpr)
-//           break;
-//       }
-//       if (idx > dest)
-//         for (; idx-- > dest;)
-//           blocks[idx + 1] = blocks[idx];
-//       else
-//         for (; idx < dest; idx++)
-//           blocks[idx] = blocks[idx + 1];
-//       blocks[dest] = found.block;
-/** scripts used for debugging that overcomplicated solution */
-// new Error(ship.blocks.map(function (e) {
-//   return e.internalName + "\t" + e.position[1];
-// }).join("\n"));
-//
-// ship.blocks.push(new Block("Numerical Switchbox",[0, 2, 4],[0, !1, 0],{
-//   color: "White"
-// }));
-// ship.blocks.push(new Block("Constant On Signal",[0, -1, 4],[0, !1, 0],{
-//   color: "White"
-// }));
-// enableLogicEditing();
       render();
     } else
       console.error("edit_logicmove unhandled event type: " +
@@ -2679,7 +2637,7 @@ function enableLogicEditing() {
     }
     var w = canvas.width, h = canvas.height;
     if (oldWidth !== w || oldHeight !== h) {
-      // reflow for blockbar items
+      // TODO: reflow for blockbar items
     }
     test_juhus(w, h);
   };
@@ -2815,11 +2773,7 @@ function test_juhus(w, h) {
 /** @type {Block[]} */
 var foundBlocks = [];
 
-/** do in v.0.1.50
- * @TODO HERE fix this ui mess with one system unitfied with Ship.Modes
- * Command.stop where @see Command.press is used for seems to be for
- * keeping old_UI or something #CMDSTOP */
-var old_UI = Command.press = press = function (x, y) {
+var old_UI = DefaultUI.press = press = function (x, y) {
   x = Math.floor((vX - x) / 2 / sc + 1);
   y = Math.floor((y - vY) / 2 / sc);
   var found = [];
@@ -2876,7 +2830,6 @@ var old_UI = Command.press = press = function (x, y) {
     // BLOK for real!!!
     // TODO: now I could use some unit test for logic,
     // how the hack am I supposed to do that
-    /** @TODO unit test for any new feature required */
     var blok = new Block(rand, [0, x * 2, y * 2], [0, !1, 0],
       Block.Properties.addProperty(rand, Logic.addLogic(
         rand,
@@ -2916,14 +2869,10 @@ function commands(x, y, e) {
     if (el === dest)
       break;
     else if (!(el = el.parentNode)) {
-      // #CMDSTOP and why not Command.stop in here?
       e.button !== -1 && e.cancelable && e.preventDefault();
-      utilities.rend_UI = Command.rend_UI;
-      press = Command.press;
-      return render();
+      return;
     }
   st.display = "none";
-  Command.stop();
 }
 function devt_share(inp) {
   var el = GE("commandsTab");
@@ -2936,11 +2885,11 @@ contextmenu = function (x, y, e) {
   if (el instanceof HTMLElement && el.onclick)
     //@ts-ignore
     el.onclick();
-  (contextmenu = commands)(x, y, e);
+  (DefaultUI.contextmenu = contextmenu = commands)(x, y, e);
 };
 
 var cmdsMove = !1, cmdsX = 0, cmdsY = 0;
-over = function over(e) {
+DefaultUI.over = over = function (e) {
   if (e instanceof TouchEvent)
     return;
   if ((e.type === "mousedown" || e.type === "touchstart") &&

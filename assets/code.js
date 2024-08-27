@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.49
+// v.0.1.50
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -2244,8 +2244,9 @@ Ship.Mode.useParser = function (mode, globalShip, parse) {
   return new Ship.Mode(mode, function () {
     if (isParsed)
       return globalShip;
+    globalShip = parse(globalShip)
     isParsed = !0;
-    return globalShip = parse(globalShip);
+    return globalShip;
   });
 };
 Object.freeze(Ship.Mode);
