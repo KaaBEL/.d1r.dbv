@@ -4,12 +4,13 @@ Let me know (on Discord or) by creating issue in case you are interested in cust
 
 ### Currently in progress:
 ### Advanced editor features for DBVE
-**Transform tool**:  
+`Edit: Due to current unpopularity I decided to merge it with and work simultaneously on Default UI update.`  
+**Transform tool**: (not completed, buggy)  
 https://discord.com/channels/749233290241769473/1142927384023154760/1142927384023154760  
 https://discord.com/channels/749233290241769473/1192697437190623353  
 https://discord.com/channels/749233290241769473/1222745899755901019  
 \- lets you select area, (future: selection of any blocks)  
-\- actions are move, rotate, flip, mirror, copy,  
+\- actions are move, rotate, <s>flip</s>, mirror, copy,  
   remove, paint, connection operations  
 https://discord.com/channels/749233290241769473/1207271935235588136  
 \+ fill selection  
@@ -27,7 +28,7 @@ https://discord.com/channels/749233290241769473/1224953734556024882
 (future: somehow separated blueprints,  
   stored, default, import/export all)  
 
-**Ships stats**:  
+**Ships stats**: (not complete, buggy)  
 https://discord.com/channels/749233290241769473/1092806984715210752/1092806984715210752  
 https://discord.com/channels/749233290241769473/1104424600466628608/1104424600466628608  
 \- power&fuel usage, power&fuel generration  
@@ -41,7 +42,7 @@ https://discord.com/channels/749233290241769473/1225047342357549066
 \- available rift driving distance  
 ? acceleration time  
 
-**Logic connections tool**:  
+**Logic connections tool**: (work in progress)  
 https://discord.com/channels/749233290241769473/1148385350503383140  
 https://discord.com/channels/749233290241769473/1149657447762497599  
 https://discord.com/channels/749233290241769473/1168177352338051184  
