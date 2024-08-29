@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.50
+// v.0.1.51
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -40,7 +40,9 @@ function throwErrors() {
   };
 }
 
-if (/https?/.test(location.protocol) && navigator.serviceWorker)
+if (storage.getItem("D1R_DBV_no_offline") !== null)
+  console.log("Service Worker registration is disabled.");
+else if (/https?/.test(location.protocol) && navigator.serviceWorker)
   try {
     // @type {ServiceWorkerContainer}
     var swc = navigator.serviceWorker, sw = swc.controller;
@@ -1814,10 +1816,9 @@ Command.push("Vehicle stats", function (items, collapsed) {
     var stack = stat.split("."), tmpSums = sums, tmpSkip = skipped;
     for (var i = 0; ++i < stack.length; tmpSkip = tmpSkip[stack[i - 1]])
       tmpSums = tmpSums[stack[i - 1]];
-    stat = stack.slice(-1)[0];
     typeof value != "undefined" ?
-      tmpSums[stat] += parse ? parse(value) : value :
-      tmpSkip[stat]++;
+      tmpSums[stack[i - 1]] += parse ? parse(value) : value :
+      tmpSkip[stack[i - 1]]++;
   }
   for (var j = 0, texts = [], l = 14; j < l;)
     items.push(texts[j++] = tN(""), EL("br"));
@@ -1863,9 +1864,11 @@ t regain the Rift Crystals by travelling back. ";
     var xForce = 0, yForce = 0, forces = 0, xWeight = 0, yWeight = 0;
     var useVal = 0;
     function anyUse(val) {
+      var n = +(prop.control || [])[0];
       return useVal = val instanceof Array ?
         val[0] / val[1] :
-       +(prop.control || [0])[0] / 1E6 * val;
+        // TODO: what about this, will it do? I should test it...
+        isNaN(n) ? val : n / 1E6 * val;
     }
     sums = JSON.parse(stringify);
     skipped = JSON.parse(stringify);
@@ -1967,6 +1970,38 @@ Command.add("Editing Mode", [
   {name: "Enable Logic Editing", type: "button", fn: enableLogicEditing},
   {name: "Enable Ship Editing", type: "button", fn: enableShipEditing}
 ], "Editing modes is the newest feature that is Work In Progress.");
+Command.push("Debug Logic circuit", function (items, collapsed) {
+  /** @param {Block|LogicBlock} block @returns {LogicBlock|undefined} */
+  function checkEndComponent(block) {
+    if (!(block instanceof LogicBlock))
+      return;
+    var logic = Logic.VALUE[Block.ID[block.internalName]] || [];
+    for (var i = logic.length; i-- > 0;)
+      if (logic[i].type > 1)
+        return;
+    return block;
+  }
+  var moveBack = EL("button"), err = tN(""), el = EL("div");
+  moveBack.appendChild(tN("Reset end components"));
+  moveBack.onclick = function () {
+    if (ship.getMode().mode !== "Logic")
+      return err.data = "Logic mode only command";
+    for (var i = ship.blocks.length, narr = [], block; i-- > 0;)
+      if (block = checkEndComponent(ship.blocks[i])) {
+        block.position =
+          /** @type {XYZPosition} */
+          (block.logicPosition.slice());
+        var n = block.position[1];
+        block.position[1] += (++narr[n] || (narr[n] = 0)) / 512;
+      }
+    render();
+  };
+  el.style.color = "red";
+  el.appendChild(err);
+  items.push(moveBack, el);
+}, "Reset end components puts all logic blocks with only inputs e.g. thruste\
+rs, drills, weapons... visually at their original positions in vehicle to he\
+lp indetify them. THIS COMMAND IS LOGIC MODE ONLY.");
 Command.groupName = "";
 Command.push("Set camera view", function (items, collapsed) {
   // TODO: one input with code like vX<vX>vY<vY>sc<sc> so can save a view
@@ -2284,6 +2319,20 @@ Tool.list.push(new Tool("Clone", "M2ba5a,2bab5 vda5e c0,33ca,-29fc,5dc6,-5dc\
 ,-169d,c12,-16a6,1820 l-a3,d63a ld185,67 c3c14,9,66ad,2841,6729,5855 l-33,de\
 f3 ld5ec,1a6 cba6,-76,175b,-a4c,17d6,-1935 l-61,-1f52a c-5,-f8c,-a81,-17f3,-\
 146b,-17a5 z"));
+Tool.list.push(new Tool("Undo", "M3f6f3,16ab0 cc15,c15,c15,1fad,0,2bc2 c-c15\
+,c15,-1fad,c15,-2bc2,0 c0,0,-334f,-32bd,-ba42,-2670 c-c4f3,ef0,-12d5f,89d9,-\
+12d5f,89d9 c42b1,42b1,7222,7222,732f,732f cc15,c15,c15,1fad,0,2bc2 c-4b5,4b5\
+,-a8f,795,-10aa,89f c-6aa,122,-21ce2,5967,-22309,59df c-8af,a8,-1198,-254,-1\
+83c,-8f9 c-6b7,-6b7,-9b3,-fc1,-8f3,-1888 c85,-615,5940,-21dea,599b,-2210e cc\
+3,-6b4,3b8,-d35,8dc,-1259 cc15,-c15,1fad,-c15,2bc2,0 c62,62,733f,733f,733f,7\
+33f c0,0,76,-a5,152,-152 c88c2,-6b53,1cea0,-db12,2f024,5037 z"));
+Tool.list.push(new Tool("Redo", "Mb37,16889 c12184,-12b4a,26761,-bb8b,2f024,\
+-5037 cdb,ac,152,152,152,152 c0,0,72dc,-72dc,733f,-733f cc15,-c15,1fad,-c15,\
+2bc2,0 c524,524,818,ba5,8dc,1259 c5b,324,5916,21af9,599b,2210e cc0,8c7,-23b,\
+11d0,-8f3,1888 c-6a4,6a4,-f8d,9a2,-183c,8f9 c-626,-77,-21c5f,-58bd,-22309,-5\
+9df c-61a,-109,-bf4,-3e9,-10aa,-89f c-c15,-c15,-c15,-1fad,0,-2bc2 c10d,-10d,\
+307e,-307e,732f,-732f c0,0,-686c,-7ae9,-12d5f,-89d9 c-86f2,-c4d,-ba42,2670,-\
+ba42,2670 c-c15,c15,-1fad,c15,-2bc2,0 c-c15,-c15,-c15,-1fad,0,-2bc2 z"));
 function check_contentScript() {
   var contentScript = GE("contentScript"), data = "";
   if (contentScript && (data = contentScript.innerText)) {
@@ -2297,8 +2346,8 @@ function check_contentScript() {
 function edit_logic(x, y) {
   ;
 }
-/** @param {number} x @param {number} y */
-var edit_logicmove = function (x, y) {
+/** @param {number} x @param {number} y @param {MouseEvent} e */
+var edit_logicmove = function (x, y, e) {
   return !1;
 };
 
@@ -2492,7 +2541,8 @@ DefaultUI.blockBars = [
   DefaultUI.createFolder("Skin", ["Skin", 832]),
   DefaultUI.createFolder("Inventory", ["Inventory", 815]),
   DefaultUI.createFolder("Clone"),
-  DefaultUI.createFolder("Flip", ["Flip", 822])
+  DefaultUI.createFolder("Redo"),
+  DefaultUI.createFolder("Flip", ["Flip", 822, "Undo"])
 ];
 DefaultUI.selectedFolder = DefaultUI.blockBars.length - 1;
 DefaultUI.inventoryIcon = !0;
@@ -2504,8 +2554,8 @@ DefaultUI.toolBar = [
   DefaultUI.createTile("Clone"),
   DefaultUI.createTile("Flip"),
   null,
-  null,
-  DefaultUI.createTile("Inventory")
+  DefaultUI.createTile("Undo"),
+  DefaultUI.createTile("Redo")
 ];
 /** DefaultUI.press, .move, .contextmenu, .over are memory for
  * 'default' action bind 'callback' for current Ship.Mode,
@@ -2739,7 +2789,7 @@ function test_juhus(w, h) {
   ctx.fill();
   var bars = DefaultUI.blockBars;
   ctx.lineWidth = 2;
-  ctx.strokeStyle = "#547faa";
+  ctx.strokeStyle = "#5577aa";
   for (var i = 0, sw = 279, th = h; i < bars.length; i++) {
     if (!bars[i])
       continue;
@@ -2767,6 +2817,11 @@ function test_juhus(w, h) {
       th -= 87;
       tw = -72;
     }
+  }
+  if (DefaultUI.inventoryIcon) {
+    th = h;
+    tw = w - 94 - 87;
+    doTheItem(DefaultUI.createTile("Inventory"));
   }
 };
 
@@ -3096,6 +3151,7 @@ var rend_speeeeed = {}, rend_logs = 69;
 init = function () {
   rend_checkColors();
   check_contentScript();
+  enableLogicEditing();
 };
 
 function onlyConsole(m,s,l,c,e) {
@@ -3103,3 +3159,59 @@ function onlyConsole(m,s,l,c,e) {
     return "" + m + "\n" + e.stack;
   return "" + m + "\n\t" + s + ":" + l + ":" + c;
 };
+
+// Script to showcase Logic editing
+ship = Ship.fromObject(decodeCmprsShip(base64ToUint8array("gIAEDEFOT05fU2h1d\
+HRsZQAEXVy0aoC/TzvnFnWt0z4R4pYUZx2CorwBRXLToKjrQJPehCK9CdKboLhB4MUPQVwDhrgGi\
+GuAuAaIa4C1XkER14AjrgFBjHHEFUWbA4oxBxTVDSjWu1FsOeBYccQw3YRiywPBlnFsGcGWcTR3Y\
+Ggxji0HODKK5gYEzYXmQnOhrhXKGhDENSCIa0DR5oKjywFFigOOFQcczw0obnxxxDXgqGsSmGvBE\
+1uuied3AltbMCw0NSw0NSw2OCwwLDQ1LDAsNDUsMTEzLDcxLDAsNDUsMCw0NSwwLDQ1LDAsNDUsM\
+Tg0LDY4LDI1Miw2OSwzMjEsNDQsMzIxLDQ0LDMyMSw0NCwzMjEsNDQsMzIxLDQ0LDMyMSw0NCwzM\
+jEsNDQsMzIxLDQ0LDM2NSw1OSwzMjEsNDQsNDI0LDcwLDQ5NCw2NCw1NTgsNzAsNjI4LDQ5LDY3N\
+yw2Miw3MzksNTYsNzk1LDY3LDg2Miw2Miw5MjQsNjIsOTg2LDYyLDEwNDgsNjIsMTExMCw2NSwxM\
+Tc1LDU5LDEyMzQsNjIsMTI5Niw2MiwxMzU4LDY1LDE0MjMsNjUsMTQ4OCw2NSwxNTUzLDY1LDE2M\
+TgsNDQsMzIxLDQ0LDMyMSw0NCwzMjEsNDQsMTY2Miw3MCwxNzMyLDYyLDE3OTQsMzksMTgzMyw1N\
+iwxODg5LDY2LDE5NTUsNjEsMzIxLDQ0LDMyMSw0NCwzMjEsNDQsMzIxLDQ0XSwie1wiY29sb3JcI\
+jpcIk9yYW5nZVwiLFwiY29udHJvbFwiOltdLFwid2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiR\
+GFyayBHcmF5XCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzNdLFwid2VsZEdyb\
+3VwXCI6MH17XCJjb2xvclwiOlwiRGFyayBHcmF5XCIsXCJjb250cm9sXCI6WzE4MDAwXSxcIm5vZ\
+GVJbmRleFwiOlsyLDFdLFwid2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiRGFyayBHcmF5XCIsX\
+CJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzRdLFwid2VsZEdyb3VwXCI6MH17XCJjb\
+2xvclwiOlwiV2hpdGVcIixcImNvbnRyb2xcIjpbWzAsMCwwLDBdXSxcIm5vZGVJbmRleFwiOls1X\
+SxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6W10sXCJ3Z\
+WxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJcIixcImNvbnRyb2xcIjpbMSwwXSxcIm5vZGVJbmRle\
+FwiOlszNF0sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJXaGl0ZVwiLFwiY29udHJvbFwiO\
+ltdLFwibm9kZUluZGV4XCI6WzIzLDIyLDIxLDIwXSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcI\
+jpcIldoaXRlXCIsXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMTksMThdLFwid2VsZEdyb\
+3VwXCI6MH17XCJjb2xvclwiOlwiTGlnaHQgR3JheVwiLFwiY29udHJvbFwiOls3NTAwXSxcIm5vZ\
+GVJbmRleFwiOlsyNF0sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJMaWdodCBHcmF5XCIsX\
+CJjb250cm9sXCI6W10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJXaGl0ZVwiLFwiY29ud\
+HJvbFwiOlswXSxcIm5vZGVJbmRleFwiOlsxN10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6X\
+CJcIixcImNvbnRyb2xcIjpbXSxcIm5vZGVJbmRleFwiOlsxMV0sXCJ3ZWxkR3JvdXBcIjowfXtcI\
+mNvbG9yXCI6XCJXaGl0ZVwiLFwiY29udHJvbFwiOlsyNzAwMF0sXCJub2RlSW5kZXhcIjpbNyw2X\
+SxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIkJsYWNrXCIsXCJjb250cm9sXCI6WzBdLFwib\
+m9kZUluZGV4XCI6WzM3XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIkJsYWNrXCIsXCJjb\
+250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzM2XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcI\
+jpcIkJsYWNrXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzM4XSxcIndlbGRHcm91c\
+FwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6W\
+zM1XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzExM\
+jVdLFwibm9kZUluZGV4XCI6WzMxXSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIlwiLFwiY\
+29udHJvbFwiOlsxLDBdLFwibm9kZUluZGV4XCI6WzMzXSxcIndlbGRHcm91cFwiOjB9e1wiY29sb\
+3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzMyXSxcIndlbGRHc\
+m91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4X\
+CI6WzI1XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6W\
+zExMjVdLFwibm9kZUluZGV4XCI6WzI3XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoa\
+XRlXCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzMwXSxcIndlbGRHcm91cFwiO\
+jB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6W\
+zI4XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzExM\
+jVdLFwibm9kZUluZGV4XCI6WzI5XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIkJsYWNrX\
+CIsXCJjb250cm9sXCI6W10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJXaGl0ZVwiLFwiY\
+29udHJvbFwiOltdLFwibm9kZUluZGV4XCI6WzE2LDE1LDE0LDEzXSxcIndlbGRHcm91cFwiOjB9e\
+1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzEyXSxcI\
+ndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIlwiLFwiY29udHJvbFwiOltdLFwid2VsZEdyb3VwX\
+CI6MH17XCJjb2xvclwiOlwiXCIsXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMTBdLFwid\
+2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiV2hpdGVcIixcImNvbnRyb2xcIjpbNDUwMF0sXCJub\
+2RlSW5kZXhcIjpbOSw4XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb\
+250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMjZdLFwid2VsZEdyb3VwXCI6MH0iXQ=="
+.replace(/ /g, ""))));
+ship.fixPositionAdjustment(!0);

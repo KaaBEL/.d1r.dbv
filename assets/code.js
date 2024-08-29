@@ -1,6 +1,6 @@
 //@ts-check
 "use strict";
-// v.0.1.50
+// v.0.1.51
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -26,6 +26,10 @@ function __private(val) {
 }
 /** @type {typeof defaults|null} */
 var settings = null;
+// @ts-ignore
+if (typeof ncalc == "undefined")
+  /** @type {NCalcJS|null} */
+  var ncalc = null;
 
 /** timeToString @param {number} [t=Date.now()] @param {number} [f=1] ?1 */
 function dateTime(t, f) {
@@ -135,13 +139,14 @@ function dictionaryDefs(dicNum, dicVal, closure) {
 }
 
 /** instance is sealed
- * @template {number} T
+ * @template {0|1|2|3} T
  * @param {T} type @param {number} x @param {number} y as definition
  * x, y is position relative to middle, else used by rendering method,
  * pairs is initialized -1 or [] depending on type, owner is null
  * for logigs documentation/data @see {Logic.VALUE} */
 function Logic(type, x, y) {
-  /** 0|1 = input, has only index reference to source, 2|3 = output */
+  /** 0|1 = input, has only index reference to source, 2|3 = output
+   * @type {T} */
   this.type = type;
   this.x = x;
   this.y = y;
@@ -152,13 +157,21 @@ function Logic(type, x, y) {
   this.owner = null;
   Object.seal(this);
 }
+// Logic static properties
+Logic.dashOff = 0;
+/** specifies when logic nodes and connections should be rendered */
+Logic.rend = !1;
+/** global (logics) nodeList */
+Logic.nodes =
+  /** @type {(Logic|undefined)[]&{ownerShip:Ship}} */
+  ([UDF]);
 /** @param {...{k:number,x:number,y:number}[]|string|number} args */
 Logic.generateLogic = function () {
   /** @type {{[key:number]:Logic[]|undefined}} */
   var o = {},
-    /** @type {{k:number,x:number,y:number}[][]} */
+    /** @type {{k:0|1|2|3,x:number,y:number}[][]} */
     defs = [];
-  /** @param {{k:number,x:number,y:number}[]|string} arg  */
+  /** @param {{k:0|1|2|3,x:number,y:number}[]|string} arg  */
   function setLogic(arg) {
     var nodesDef = typeof arg == "string" ?
       defs[Number(arg)] :
@@ -359,16 +372,7 @@ Logic.removeLogic = function (block, logics) {
           pairs.pairs = -1;
   }
 };
-// Logic static properties
-Logic.dashOff = 0;
-/** specifies when logic nodes and connections should be rendered */
-Logic.rend = !1;
-/** global (logics) nodeList */
-Logic.nodes =
-  /** @type {(Logic|undefined)[]&{ownerShip:Ship}} */
-  ([UDF]);
-if (Logic.nodes[0] && Logic.nodes[0].type === 1)
-  Logic.nodes[0].type;
+// removed suspiciosly useless code v.0.1.51
 
 function Color() {
   this.prop = !1;
@@ -1661,6 +1665,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
+/** @constant @type {18} significantVersion: 18 (integer) */
+Ship.VERSION = 18;
 Ship.prototype.selectRect = (
   /**
    * @overload @returns {Block[]&{parentShip:Ship}}
@@ -2176,8 +2182,6 @@ Ship.fromDBKey = function (key) {
   var obj = {nodeList: logics};
   return new Ship("[unnamed]", [], dateTime(1714557750), blocks, obj);
 };
-/** @constant @type {18} significantVersion: 18 (integer) */
-Ship.VERSION = 18;
 /** instance is sealed @param {string} name @param {number} type */
 Ship.CustomInput = function CustomInput(name, type) {
   this.name = name;

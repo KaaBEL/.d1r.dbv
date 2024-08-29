@@ -1,0 +1,12 @@
+### v.0.1.51 ###
+# assets/numericals_tutrial.md
+# .gitignore
+# unit_tests.js
+# texture_colors_preview_db2.png
+node_modules/**
+node_modules/**.**
+node_modules
+package-lock.json
+# assets/ncalc.web.js
+package.json
+# manifest.json

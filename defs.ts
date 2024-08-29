@@ -1,4 +1,4 @@
-// v.0.1.48
+// v.0.1.51
 var _ge: any;
 function GE(v: any) {return document.getElementById(typeof v=="number"&&v==v?
   (_ge=v+1)-1:v==void 0?v=_ge++:v)}
@@ -403,7 +403,7 @@ function mouseInit() {
   bd.onmousemove = function (e) {
     if (foreign)
       return over(e);
-    if (!(e.buttons & 1))
+    if (!(e.buttons & 5))
       return;
     var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop;
     if (!moving && (Date.now() < mouseStamp + mouseInit.time &&
@@ -488,8 +488,8 @@ var foreign1 = !1, touchStamp = 0, prevCount = 0;
 function thetouchstart(all: touches, changed: TchD[], ev: TouchEvent) {
   if (prevCount === 0)
     touchStamp = Date.now();
-  if (all[0] && all[0].srcTarget !== canvas)
-    over(all[0]);
+  if (changed[0] && changed[0].srcTarget !== canvas)
+    over(changed[0]);
   else if (all.length > 1 && !actionType && all[0] && all[1] &&
     Date.now() < touchStamp + touchesInit.time) {
     moveScore = moveCount = 0;
@@ -498,23 +498,43 @@ function thetouchstart(all: touches, changed: TchD[], ev: TouchEvent) {
   prevCount = all.count;
 }
 function thetouchmove(all: touches, changed: TchD[], ev: TouchEvent) {
-  if (all[0] && all[0].srcTarget !== canvas)
-    over(all[0]);
+  if (changed[0] && changed[0].srcTarget !== canvas)
+    over(changed[0]);
   else if (actionType > 1 && all[0] && all[1])
     touchGrab(all, ev);
 }
 function thetouchend(all: touches, changed: TchD[], ev: TouchEvent) {
   if (all.count === 0)
     actionType = 0;
-  if (all[0] && all[0].srcTarget !== canvas)
-    over(all[0]);
-  else if (actionType > 1 && all[0] && all[1])
-    touchGrab(all, ev);
+  if (changed[0] && changed[0].srcTarget !== canvas)
+    over(changed[0]);
+  else if (actionType > 1 && changed[0] && changed[1])
+    touchGrab(changed, ev);
   prevCount = all.count;
+  //ev.cancelable && ev.preventDefault();
 }
 function thetouchcancel(all: touches, changed: TchD[], ev: TouchEvent) {
   console.error("Touches canceled");
   prevCount = touchStamp = actionType = 0;
+  //ev.cancelable && ev.preventDefault();
+}
+
+document.body.onload = function initDoc() {};
+
+type NCalcJS = typeof import("c:/Users/Ja/Jaaa_0/deltarealm/.d1r.dbv/assets/\
+ncalc.web");
+var ncalc: NCalcJS | null = null;
+try {
+  import("./assets/ncalc.web.js").then(function (m) {
+    ncalc = m;
+  }).catch(console.error);
+} catch (e) {
+  console.error(e);
+}
+function test_bruh() {
+  if (!ncalc)
+    return alert("Sadly NCalcJS is not supported in your browser");
+  ncalc.ArgumentException
 }
 
 /** Definitons of Property item structs */
