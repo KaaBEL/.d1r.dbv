@@ -1,6 +1,8 @@
 //@ts-check
+/// <reference path="assets/code.js" types="./editor.js" />
 "use strict";
-// v.0.1.51
+// v.0.1.52
+/** @TODO v0.1.53: move to code directory */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -928,12 +930,12 @@ Command.push("Setup Properties", function (items, collapsed) {
     Object.freeze(this);
   }
   function displayProperties() {
-    /** @param {WeldGroups} item */
+    /** @param {import("code/defs").WeldGroups} item */
     function addWeldGroups(item) {
       var b0 = item.default[0] instanceof Array;
       (b0 && weldSelects[0].p == "weldGroup" ? weldSelects = [] : b0) ?
-        //@ts-ignore
-        control[item.idx].forEach(function (e, i, a) {
+        /** @type {[number,number,number,number]} */
+        (control[item.idx]).forEach(function (e, i, a) {
             weldSelects.push(new Ref(a, i));
           }) :
         weldSelects.push(new Ref(control, item.idx));
@@ -1161,7 +1163,7 @@ Command.push("Setup Properties", function (items, collapsed) {
     ship.blocks[idx].properties.weldGroup = Number(weldGroup.value);
   }
   collapsed.rend_UI = function () {
-    var block = ship.blocks[idx] || {}, s = block.internalName, pos;
+    var block = ship.blocks[idx], s = block.internalName, pos;
     if (!(pos = block.position))
       return;
     // calculations from expensiveRenderer
@@ -2488,22 +2490,6 @@ function rend_checkColors() {
     });
 };
 var rend_colors = rend_initColors();
-/** @param {Block} block @param {number} index -1 for no index */
-function LogicBlock(block, index) {
-  this.internalName = block.internalName;
-  this.position = 
-    /** @type {XYZPosition} */
-    (block.position.slice());
-  this.rotation = block.rotation;
-  this.properties = block.properties;
-  this.logicPosition = block.position;
-  this.logicBlockIndex = index;
-}
-__extends(LogicBlock, Block);
-function DefaultUI() {
-  throw new TypeError("Illegal constructor");
-  this.mode = "any";
-}
 DefaultUI.createTile = function () {
   /** @type {XYZPosition} */
   var pos = [0, 0, 0],
@@ -2586,11 +2572,12 @@ function enableLogicEditing() {
       continue;
     var logicBlock = old[i];
     if (logicBlock instanceof LogicBlock) {
+      logicBlock.logicBlockIndex = i;
       var temp = logicBlock.logicPosition;
       logicBlock.logicPosition = logicBlock.position;
       logicBlock.position = temp;
     } else
-      old[i] = logicBlock = new LogicBlock(logicBlock, i);
+      old[i] = logicBlock = new LogicBlock(logicBlock, i, ship);
     blocks.push(logicBlock);
     if (last && last.position[1] <= logicBlock.position[1])
       logicBlock.position[1] = Math.floor(last.position[1] - 2);
@@ -2613,7 +2600,7 @@ function enableLogicEditing() {
         var block = old[i], temp = block.position;
         if (!(block instanceof LogicBlock)) {
           console.error("Block imposter within Logic mode ship!");
-          var logicBlock = new LogicBlock(block, -1);
+          var logicBlock = new LogicBlock(block, -1, global);
         } else
           logicBlock = block;
         logicBlock.position = logicBlock.logicPosition;
@@ -2862,18 +2849,12 @@ var old_UI = DefaultUI.press = press = function (x, y) {
         "Smooth Corner 1x4"
       ].indexOf(s) < 0 ||
         rot === 3 && (e.rotation[1] = !e.rotation[1]);
-      // posadj
-      // var size = Block.Size.VALUE[Block.ID[s]];
-      // if ((size.w | size.h) & 16)
-      //   rot > 1 ?
-      //     rot === 3 ? --pos[2] : --pos[1] :
-      //     rot === 1 ? ++pos[2] : ++pos[1];
       //@ts-ignore
       e.rotation[2] = rot + 1 & 3;
     }
     Edit.eventFire();
     return e;
-  })
+  });
   // placingBlock function executed sets blockBind.changingColor
   var rand = placingBlock(),
     logics = ship.prop && ship.prop.nodeList || [];

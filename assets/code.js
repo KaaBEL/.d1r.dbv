@@ -1,6 +1,8 @@
 //@ts-check
+/// <reference path="../code/defs.d.ts" />
 "use strict";
-// v.0.1.51
+// v.0.1.52
+/** @TODO v0.1.53: move to code directory */
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -138,6 +140,7 @@ function dictionaryDefs(dicNum, dicVal, closure) {
   console.timeEnd(closure);
 }
 
+/** @typedef {Block|LogicBlock} ShipBlock */
 /** instance is sealed
  * @template {0|1|2|3} T
  * @param {T} type @param {number} x @param {number} y as definition
@@ -150,11 +153,14 @@ function Logic(type, x, y) {
   this.type = type;
   this.x = x;
   this.y = y;
-  /** @type {T extends 0|1?number:number[]} reference(s) to connected */
-  //@ts-ignore
-  this.pairs = type > 1 ? [] : -1;
-  /** @type {Block|null} */
+  this.pairs =
+    /** @type {T extends 0|1?number:number[]} reference(s) to connected */
+    (type > 1 ? [] : -1);
+  /** @type {ShipBlock|null} */
   this.owner = null;
+  this.value =
+    /** @type {T extends 1|3?number:boolean} */
+    (type & 1 ? 0 : false);
   Object.seal(this);
 }
 // Logic static properties
@@ -165,18 +171,28 @@ Logic.rend = !1;
 Logic.nodes =
   /** @type {(Logic|undefined)[]&{ownerShip:Ship}} */
   ([UDF]);
-/** @param {...{k:number,x:number,y:number}[]|string|number} args */
+/** @typedef {(arg:Logic[],physics:Physics)=>void} LExec */
+/** @param {...{k:number,x:number,y:number}[]|string|number|LExec} args */
 Logic.generateLogic = function () {
-  /** @type {{[key:number]:Logic[]|undefined}} */
+  /** @type {{[key:number]:Logic[]&{exec:LExec|LExec&safe}|undefined}} */
   var o = {},
     /** @type {{k:0|1|2|3,x:number,y:number}[][]} */
-    defs = [];
-  /** @param {{k:0|1|2|3,x:number,y:number}[]|string} arg  */
+    defs = [],
+    /** @type {LExec} */
+    func = function (arg, physics) {};
+  /** @param {{k:0|1|2|3,x:number,y:number}[]|string} arg */
   function setLogic(arg) {
+    if (typeof arg == "function")
+      return void (func = arg);
     var nodesDef = typeof arg == "string" ?
       defs[Number(arg)] :
-      defs[defs.length] = arg;
-    for (var i = 0, nodes = o[l++] = []; i < nodesDef.length;) {
+      defs[defs.length] = arg,
+      nodes = [];
+      (o[l++] = nodes =
+        /** @type {Logic[]&{exec:LExec|LExec&safe}} */
+        (nodes)
+      ).exec = func;
+    for (var i = 0; i < nodesDef.length;) {
       var def = nodesDef[i++];
       nodes.push(Object.freeze(new Logic(def.k, def.x / 2, def.y / -2)));
     }
@@ -194,12 +210,27 @@ Logic.generateLogic = function () {
 /** Older instances of Logics comments/documenting for comparsion:
  * v.0.1.20.3 @see https://github.com/KaaBEL/.d1r.dbv/blob/1ed349b2230ddd8f3b64a6cd082d10fe7eeaeedc/assets/code.js
  * v.0.1.22 @see https://github.com/KaaBEL/.d1r.dbv/blob/1392589299b68fb61c1a87bc7e4616f6d20af75d/assets/code.js */
-/** entire oject is frost @type {{[key:number]:Logic[]|undefined}} */
+/** entire oject is frost */
 Logic.VALUE = Logic.generateLogic(
+  /** 738: Tiny Hydrogen Thruster @type {LExec} */
+  function (arg) {
+    console.log(arg[0]); // set an effect when thruster is enabled
+  },
   // def0
   738, [{k: 0, x: 0, y: 0}],
+  /** 739: Small Hydrogen Thruster */
+  function (arg) {
+    console.log(arg[0], arg[1]);
+  },
   // def1
   [{k: 0, x: 0, y: 1}, {k: 1, x: 0, y: -1}],
+  /** 740: Medium Hydrogen Thruster */
+  /** 741: Large Hydrogen Thruster */
+  /** 742: Tiny Ion Thruster */
+  /** 743: Small Ion Thruster */
+  /** 744: Medium Ion Thruster */
+  /** 745: Large Ion Thruster */
+  /** 746: Reaction Wheel */
   // def2
   "1", "1", "0", "1", "1", "1", 746, [{k: 1, x: 0, y: 0}],
   770, "0",
@@ -373,6 +404,49 @@ Logic.removeLogic = function (block, logics) {
   }
 };
 // removed suspiciosly useless code v.0.1.51
+/** @param {Ship} ship */
+Logic.expensiveExec = function (ship) {
+  for (var i = 0, blocks = ship.blocks; i > blocks.length; i++) {
+    var o = blocks[i], logic = Logic.VALUE[Block.ID[o.internalName]]; 
+    if (!logic)
+      continue;
+    var block = o instanceof LogicBlock && o ||
+      (blocks[i] = o = new LogicBlock(o, i, ship)),
+      nodeList = ship.prop && ship.prop.nodeList || [];
+    // Get corresponding inputs/outputs for the operation
+    for (var j = logic.length, arg = []; j-- > 0;) {
+      var node = nodeList[block.properties.nodeIndex[j]];
+      if (!node)
+        console.error("Index: " + j + " is missing from nodeList.");
+      else if (node.owner !== o)
+        console.error(node.owner instanceof LogicBlock ?
+          "missing or wrong node.owner!?" :
+          "node.owner is not LogicBlock!?");
+      else if (node.pairs instanceof Array)
+        arg[j] = node;
+      else {
+        var pairs = nodeList[node.pairs];
+        if (!pairs)
+          console.error("Referenced index from: " + node +
+            "is missing from nodeList: " + nodeList);
+        else
+          arg[j] = node;
+      }
+    }
+    logic.exec(arg, o.getPhysics());
+  }
+};
+// /** more confusation added to the Logic mess, OH YEAHH!!!
+//  * @param {(Logic<any>|undefined)[]} logics @param {Ship} ship
+//  * @param {number} i @param {Block|LogicBlock} oldOwner */
+// Logic.checkNodeOwners = function (logics, ship, i, oldOwner) {
+//   if (ship.prop && ship.prop.nodeList !== logics)
+//     return console.error("Inputted incompatible nedoList (logics).");
+//   var node = logics[i];
+//   if (!node)
+//     return console.error();
+//   if (node.owner !== oldOwner)
+// };
 
 function Color() {
   this.prop = !1;
@@ -470,6 +544,32 @@ Color.colorlessRegexp = new RegExp("Struct|Glass Block|Glass Wedge|Sol\
 ar Block|Solar Panel|Hinge|Piston|Ghost Block|Gauge|Dial|Digital Displ\
 ay|__placeholder(?:84[0-26-9]|85[0-3])__");
 
+/** class is frost */
+function Physics() {
+  this.enabled = false;
+  this.force = 0;
+  Object.seal(this);
+}
+// Only the Physics class initially, better classification system
+// should be decided after 
+// /** class is frost */
+// Physics.PBlock = function () {
+//   this.enabled = false;
+// };
+/** initPhysics is executed in context of Block constructor, the brackets
+ * keep ts from asssiming it's PBlock property and uses its (this)context
+ * @constant */
+Physics.INIT = (function initPhysics() {
+  var blockPhysics = new Physics();
+  if (this instanceof Block)
+    /** @this {Block} */
+    this.getPhysics = function () {
+      return blockPhysics;
+    };
+  return blockPhysics;
+});
+Object.freeze(Physics);
+
 /** letter case of block names doesn't matter when loaded by game,
  * Block name definitions require strict letter cases here */
 /** instance is sealed
@@ -496,6 +596,7 @@ function Block(name, pos, rot, prop, color) {
   this.properties =
     /** @type {{[key:string]:unknown,color:Colors}&BlockProps} */
     (prop);
+  this.getPhysics = Physics.INIT;
   Object.seal(this);
 }
 // NOTE that blocks definitions will be version dependant over time
@@ -1202,11 +1303,6 @@ ion|rot|r|properties|prop|f|flipped|wg|weld|color|s|c|ni|invalidName)$");
         console.warn("incorrect array position length or wrong rota" +
           "tion? at: Block.arrayFromObjects, blocks: ", bs, " i: ", i);
       var adjX = 0, adjY = 0, size = Block.Size.VALUE[Block.ID[name]];
-      // posadj
-      // if (size && ((size.w | size.h) & 16)) {
-      //   rot[2] > 1 ? adjY = 1 : 0;
-      //   (rot[2] + 1 & 3) > 1 ? adjX = 1 : 0;
-      // }
       pos = [0, o.pos[0] * 2 + adjX, o.pos[1] * 2 + adjY];
     }
     // is keeping custom parameter properties not changed a good idea?
@@ -1437,6 +1533,7 @@ Block.Mirror.VALUE = {
 };
 
 // TODO: To be considered for resystemizing
+/** @typedef {import("code/defs").ItemTs} ItemTs */
 /** @template {keyof ItemTs} T @param {T} type @param {string} name */
 Block.Properties = function (type, name) {
   this.type = type;
@@ -1614,9 +1711,8 @@ Block.Properties.addProperty = function (name, property) {
             p.item.default[j++];
   return property;
 };
-// is this additional class a good idea?
 /** instance is frost
- * @param {Block} block @param {number} id @param {number} x
+ * @param {ShipBlock} block @param {number} id @param {number} x
  * @param {number} y @param {number} w @param {number} h */
 Block.Selected = function (block, id, x, y, w, h) {
   this.block = block;
@@ -1627,13 +1723,54 @@ Block.Selected = function (block, id, x, y, w, h) {
   this.h = h;
   Object.freeze(this);
 };
-// or just have a type instead
+
 /**
- * @typedef {{block:Block,id:number,
- *   x:number,y:number,w:number,h:number}} SelectedBlock
- */
-/** @type {SelectedBlock} */
-var selection;
+ * @param {Block} block @param {number} index -1 for no index
+ * @param {Ship} ship */
+function LogicBlock(block, index, ship) {
+  this.internalName = block.internalName;
+  this.position = 
+    /** @type {XYZPosition} */
+    (block.position.slice());
+  this.rotation = block.rotation;
+  this.properties =
+    /** @type {typeof block.properties&{nodeIndex:number[]}} */
+    (function (prop, logicBlock) {
+      var logic = Logic.VALUE[Block.ID[block.internalName]] || [];
+      var ni = prop.nodeIndex instanceof Array ?
+        prop.nodeIndex :
+        prop.nodeIndex = [];
+      if (ni.length !== logic.length)
+        console.warn("Why does block id: " + index + "has " +
+          (ni.length > logic.length ? "more" : "less") +
+          " nodeIdentifier (nodeIndex property) slots?", block);
+      /** @type {Logic<any>|undefined} */
+      var node, nodeList = ship.prop && ship.prop.nodeList || [];
+      for (var l = logic.length; l-- > ni.length;) {
+        node = new Logic(logic[l].type, 0, 0);
+        ni[l] = nodeList.push(node) - 1;
+        node.owner = logicBlock;
+      }
+      for (l++; l-- > 0;)
+        if (!(node = nodeList[ni[l]]) || !node.owner)
+          console.error("LogicBlock: node or node.owner is missing.");
+        else if (node.owner !== block)
+          console.error("LogicBlock: wrong owner:", node.owner, block);
+        else
+          node.owner = logicBlock;
+      return prop;
+    }(block.properties, this));
+  this.getPhysics = block.getPhysics;
+  this.logicPosition = block.position;
+  this.logicBlockIndex = index;
+  /** @type {number[]} */
+  this.logicValues = [];
+}
+__extends(LogicBlock, Block);
+function DefaultUI() {
+  throw new TypeError("Illegal constructor");
+  this.mode = "any";
+}
 
 /**
  * @typedef {Block[]&{parentShip:Ship}} BlockSelection
@@ -1646,9 +1783,9 @@ var selection;
  * @typedef {"Ship"|"Logic"} EditMode */
 /** instance is sealed
  * @param {string} name
- * @param {Array<number>} version
+ * @param {number[]} version
  * @param {string} time
- * @param {Array<Block>} blocks
+ * @param {ShipBlock[]} blocks
  * @param {ShipProperties|null} [properties=null]
  * @param {Ship.Mode} [mode="Ship"]
  * for usuall ship creation ues @see {Ship.fromObject} */
@@ -1665,8 +1802,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @constant @type {18} significantVersion: 18 (integer) */
-Ship.VERSION = 18;
+/** @constant @type {19} significantVersion: 19 (integer) */
+Ship.VERSION = 19;
 Ship.prototype.selectRect = (
   /**
    * @overload @returns {Block[]&{parentShip:Ship}}
@@ -1710,7 +1847,7 @@ Ship.prototype.removeRect = function (xl, yt, zr, xr, yb, zf) {
     if (pos[0] < x || pos[0] > xl || pos[1] < y || pos[1] > yt ||
       pos[2] < z || pos[2] > zr)
       continue;
-    Logic.removeLogic(all[i], (ship.prop ? ship.prop.nodeList : 0) || []);
+    Logic.removeLogic(all[i], ship.prop && ship.prop.nodeList || []);
     all[i] = all.slice(-1)[0];
     all.length--;
   }
@@ -1929,7 +2066,7 @@ Ship.prototype.mirror2d = (
 /** @param {number} x @param {number} y @returns null if nothing found */
 Ship.prototype.blockAtPonit2d = function (x, y) {
   for (var bs = ship.blocks, i = bs.length; i-- > 0;) {
-    var block = bs[i] || {}, pos = block.position;
+    var block = bs[i], pos = block.position;
     // calculations from expensiveRenderer
     var size = Block.Size.VALUE[Block.ID[block.internalName]] ||
       {w: 1, h: 1};
@@ -2045,11 +2182,6 @@ Ship.toDBV = function toDBV(ship) {
     e = ship.blocks[i];
     var rot = e.rotation[2], adjX = 0, adjY = 0;
     var size = Block.Size.VALUE[Block.ID[e.internalName]];
-    // posadj
-    // if (size && ((size.w | size.h) & 16)) {
-    //   rot > 1 ? adjY = .5 : 0;
-    //   (rot + 1 & 3) > 1 ? adjX = .5 : 0;
-    // }
     /__placeholder\d+__/.test(e.internalName) || blocks.push({
       n: e.internalName,
       p: [Math.floor(e.position[1]) / 2 - adjX,
@@ -2153,7 +2285,7 @@ Ship.fromDBKey = function (key) {
   ];
   for (var i = arr.length - 1, logics = []; i-- > 0;) {
     var o = arr[i].split(";"), name = conN[o[0]] || o[0];
-    // o[1] position
+    // o[1] position, used below to replace contents of array o
     var rot = +(o[2] + "").replace(",", ".") / 90 || 0 & 3;
     // o[4] controll groups not used
     var ctrl = [+o[3] || 0],
@@ -2163,12 +2295,8 @@ Ship.fromDBKey = function (key) {
     // o[6] [Use rotation, Up, Down, Left, Right]
       flip = !!+o[7];
     o = (o[1] || "").split("~");
-    var x = +(o[0] ||"").replace(",", ".") * 2 || 0,
+    var x = +(o[0] || "").replace(",", ".") * 2 || 0,
       y = +(o[1] || "").replace(",", ".") * 2 || 0;
-    // posadj
-    // var size = Block.Size.VALUE[Block.ID[name]] || {};
-    // if ((size.w | size.h) & 16)
-    //   rot === 2 ? ++y + ++x : rot === 1 ? ++x : rot === 3 ? ++y : 0;
     blocks[i] = new Block(name, [0, x, y], [
         0,
         flip,
@@ -2455,7 +2583,7 @@ function rotateBlock(r) {
     }
   return [face, o_side, rot];
 }
-var i, j, buffer = new Uint8Array();
+var i, j, buffer = new Uint8Array(0);
 // sorts blocks by position x than y than z
 function sortShip() {
   var i, l, n = 0, vals, refs, b = ship.blocks, _b = [];
@@ -2762,7 +2890,8 @@ function encodeCmprsShip(ship) {
   }
   // joins binary data of required length to one file
   buffer = new Uint8Array((kB.length - 1 << 10) + i);
-  for (j = l = 0; l < buffer.length; kB[j++] = new Uint8Array()) {
+  // How did it with new Uint8Array(), zero length Uint8Array?
+  for (j = l = 0; l < buffer.length; kB[j++] = new Uint8Array(1040)) {
     (n = buffer.length - l) > 1023 ? n = 1024 : 0;
     arr = kB[j];
     for (i = 0; i < n;)

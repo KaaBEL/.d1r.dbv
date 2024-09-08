@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.1.51 -->
+<!-- v.0.1.52 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -21,7 +21,9 @@
     }
     canvas {
       width: 100%;
+      width: 100vw;
       height: 100%;
+      height: 100vh;
     }
     #info a {
       color: #77b;
@@ -66,7 +68,6 @@
     body.scroll {
       overflow-y: scroll;
     }
-    /* These 4 crazy lines took me 'entire' day to come to (after completelty remaking the info message system) */
     body.scroll canvas {
       position: fixed;
       top: 0;

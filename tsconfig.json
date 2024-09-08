@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "module": "none",
+    "noImplicitAny": false,
+    "removeComments": true,
+    "preserveConstEnums": true,
+    "sourceMap": true,
+    "outDir": "./output/",
+    "allowJs": true,
+    "checkJs": true
+  },
+  "files": [
+    "defs.ts",
+    "code/defs.d.ts",
+    "assets/code.js",
+    "editor.js"
+  ]
+}
