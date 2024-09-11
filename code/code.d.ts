@@ -1,7 +1,4 @@
 // v.0.1.52
-import "../defs";
-/** @TODO v0.1.53: move to code directory */
-
 /** Definitons of Property item structs for code.js */
 interface Slider {
   min: number;

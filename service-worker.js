@@ -1,5 +1,5 @@
 "use strict";
-// v.0.1.28
+// v.0.1.53
 // ^ also the global version of project, the initial source:
 // https://github.com/KaaBEL/Deltarealm-b64-keys/blob/main/service-worker.js
 /** @type {ServiceWorkerGlobalScope} */
@@ -22,12 +22,17 @@ SW.oninstall = ev => {
 //   });
 // };
 
-const srcName = /^[^?#]*\/([^?#]*)/;
+const srcName = /^[^?#]*\/([^?#]*)/, idsMap = {
+  "editor.html.ts": "defs.ts",
+  "code.d.ts": "defs.d.ts",
+  "service-worker.js": "offline_test.js"
+};
 /** @param {FetchEvent} ev */
 SW.onfetch = ev => {
   const response = (async () => {
     let r = null;
-    const id = srcName.exec(new URL(ev.request.url).href)[1] || "";
+    const s = srcName.exec(new URL(ev.request.url).href)[1] || "";
+    const id = idsMap[s] || s;
     try {
       r = await fetch(ev.request.url);
     } catch (e) {

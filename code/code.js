@@ -1,8 +1,7 @@
 //@ts-check
-/// <reference path="../code/defs.d.ts" />
+/// <reference path="./code.d.ts" types="./code.js" />
 "use strict";
-// v.0.1.52
-/** @TODO v0.1.53: move to code directory */
+// v.0.1.53
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -1533,7 +1532,6 @@ Block.Mirror.VALUE = {
 };
 
 // TODO: To be considered for resystemizing
-/** @typedef {import("code/defs").ItemTs} ItemTs */
 /** @template {keyof ItemTs} T @param {T} type @param {string} name */
 Block.Properties = function (type, name) {
   this.type = type;

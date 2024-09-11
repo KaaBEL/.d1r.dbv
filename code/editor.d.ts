@@ -1,5 +1,4 @@
-// v.0.1.52
-/** @TODO v0.1.53: move to code directory */
+// v.0.1.53
 /** defining new property on Console for editor.js */
 declare interface Console {
   err: Console["error"] | undefined;

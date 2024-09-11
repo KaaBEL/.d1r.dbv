@@ -1,5 +1,4 @@
-// v.0.1.52
-/** @TODO v0.1.53: rename back to editor.html.ts */
+// v.0.1.53
 var _ge: any;
 function GE(v: any) {return document.getElementById(typeof v=="number"&&v==v?
   (_ge=v+1)-1:v==void 0?v=_ge++:v)}
@@ -48,7 +47,26 @@ var bd: HTMLElement & {onmousewheel?: (
 var UDF: undefined, F: () => void, TCH: Touch;
 
 /** @TODO check the definitions for new changes at some point */
-/** tested object for touch data */
+type tchsDat = (TchD|null)[];
+type touches = (TchD|null)[] & {count: number};
+/** fires when action of event doesn't correspond with touches array
+ * @returns {boolean} ? keep current touches : reset to the new action
+ */// ^ swaped result by boolean (should reset on default: void functions) */
+interface errorH {
+  (touches: touches, faulty: Touch, ev: TouchEvent): boolean;
+}
+/** fires when event is fired, may give all or portion of changed touches */
+interface softH {
+  (touches: touches, changed: (TchD|null)[], ev: TouchEvent): void;
+}
+/** fires when all events were collected, possibly one cycle */
+interface hardH {
+  (touches: touches, added: tchsDat, removed: tchsDat): void;
+}
+type handler = (e: TouchEvent) => void;
+
+/** tested object for touch data
+ */
 class TchD {
   event: TouchEvent;
   identifier: number;
@@ -85,7 +103,17 @@ class TchD {
   srcTarget: EventTarget;
   update: (touch: Touch, touchEvent: TouchEvent) => TchD;
   
-  constructor (src: HTMLElement, touch: Touch, touchEvent: TouchEvent) {
+  constructor ()
+  constructor (src: HTMLElement, touch: Touch, touchEvent: TouchEvent)
+  constructor (src?: HTMLElement, touch?: Touch, touchEvent?: TouchEvent) {
+    if (!arguments.length)
+      try {
+        src = document.createElement("div");
+        touch = new Touch({identifier: 0, target: src});
+        touchEvent = new TouchEvent("cancel");
+      } catch (e) {
+        touch = touchEvent = {} as any;
+      }
     this.event = touchEvent;
     this.identifier = touch.identifier;
     this.target = touch.target;
@@ -139,29 +167,12 @@ class TchD {
       this.time = tmp;
       return this;
     };
+    return Object.seal(this);
   }
 }
 
-type touches = (TchD|null)[] & {count: number};
-/** fires when action of event doesn't correspond with touches array
- * @returns {boolean} ? keep current touches : reset to the new action
- */// ^ swaped result by boolean (should reset on default: void functions) */
-interface errorH {
-  (touches: touches, faulty: Touch, ev: TouchEvent): boolean;
-}
-/** fires when event is fired, may give all or portion of changed touches */
-interface softH {
-  (touches: touches, changed: TchD[], ev: TouchEvent): void;
-}
-/** fires when all events were collected, possibly one cycle */
-interface hardH {
-  (touches: touches, added: TchD[], removed: TchD[]): void;
-}
-interface softInterH {
-  (e: TouchEvent): void;
-}
-var arr: any[];
-function test_touches(targ: HTMLElement, calls: softInterH[],
+/** aditional/optional js logging of touch events */
+function test_touches(targ: HTMLElement, calls: handler[],
   globalArr: any, customLog?: Function | any[] | any) {
   var a: any[] = [], t: {ch: Touch, cs?: TouchList} = {ch: TCH},
     custLog: () => any[] = typeof customLog == "function" ?
@@ -190,7 +201,7 @@ function test_touches(targ: HTMLElement, calls: softInterH[],
       })
     ], custLog()).concat(e.timeStamp - n, p);
   }
-  function fn(s: string, f: softInterH) {
+  function fn(s: string, f?: handler) {
     // ef in tchLog
     var prpt = s !== "cancel:" ?
       function (e: TouchEvent, arr) {
@@ -214,17 +225,18 @@ function test_touches(targ: HTMLElement, calls: softInterH[],
           console.log([a]);
           (a = []).length = 10;
         }
-        f(e);
+        f && f(e);
       }
     function withLog(e: TouchEvent) {
       delete a[a.push(tchLog(s, e, function (e) {
         return e.targetTouches;
       })) - 64];
-      f(e);
+      f && f(e);
     }
     return f ? withLog : prcs;
   }
   if (calls instanceof Array ? globalArr : calls = []) {
+    //@ts-ignore
     (globalArr = typeof arr === "undefined" && (a.length = 10) &&
       Object.defineProperty(window, "tchs", {
         get: function (p?) {
@@ -248,8 +260,8 @@ function touchesInit(src: HTMLElement,
   softHandl?: [softH, softH, softH, softH],
   errorHandl?: [errorH, errorH, errorH] | typeof F[]) {
   //@ts-ignore
-  src = src instanceof HTMLElement ? src : console.error("Not src EL" +
-    " at touchesInit  beggining.");
+  src = src instanceof HTMLElement ? src : console.error("No src EL" +
+    " at touchesInit beggining.");
   var hardHandler = hardHandl || F,
     softHandlers = softHandl || [F, F, F, F],
     errorHandlers = errorHandl || [F, F, F];
@@ -257,17 +269,17 @@ function touchesInit(src: HTMLElement,
   /** placeholder of "new TchD()" *///@ts-ignore
   const newTchD = new TchD();
   var o: {a: touchlog, tch: {ch: Touch, cs?: TouchList}},
-    events: boolean[] = [!1];
-  var temp = [newTchD], added = [newTchD], removed = [newTchD];
-  type handler = (e: TouchEvent) => void;
-  var touches: (TchD|null)[] & {count: number} = function () {
-      //@ts-ignore
-      var arr: TchD[] & {count: number} = [newTchD];
-      arr.count = 0;
+    events: boolean[] = [],
+    temp: tchsDat = [],
+    added: tchsDat = [],
+    removed: tchsDat = [],
+    touches: touches = function () {
+      var arr: touches;
+      (arr = [] as touches).count = 0;
       return arr;
     }(),
     identifiers: number[] = [-1],
-    handlers: [softInterH, softInterH, softInterH, softInterH] = [
+    handlers: [handler, handler, handler, handler] = [
       onstart,
       onmove,
       onend,
@@ -276,19 +288,23 @@ function touchesInit(src: HTMLElement,
   [events, temp, added, removed, touches, identifiers].map(function (e) {
     e.length = 0;
   });
-
-  console.log(o = test_touches(src, handlers, 1, function () {
-    return [events, temp.length, added.length, removed.length,
-      touches.length, identifiers].map(
-      function (e, i) {
-        if (typeof e == "number")
-          return e;
-        return e.join(",") + " ".slice(+!i);
-      }
-    );
-  }));
-
-  function createTouch(tch: Touch, ev: TouchEvent, i: number): boolean {
+    
+  // console.log(o = test_touches(src, handlers, 1, function () {
+  //   return [events, temp.length, added.length, removed.length,
+  //     touches.length, identifiers].map(
+  //     function (e, i) {
+  //       if (typeof e == "number")
+  //         return e;
+  //       return e.join(",") + " ".slice(+!i);
+  //     }
+  //   );
+  // }));
+  src.ontouchstart = onstart;
+  src.ontouchmove = onmove;
+  src.ontouchend = onend;
+  src.ontouchcancel = oncancel;
+  // ontouches events handling
+  function createTouch(tch: Touch, ev: TouchEvent, i: number) {
     if (i === UDF) {
       if ((i = identifiers.indexOf(tch.identifier)) >= 0)
         return errorHandlers[0](touches, tch, ev) ?
@@ -301,7 +317,7 @@ function touchesInit(src: HTMLElement,
     identifiers[i] = tch.identifier;
     touches[i] = added[i] = temp[i] = new TchD(src, tch, ev);
   }
-  function updateTouch(tch: Touch, ev: TouchEvent, i: number): boolean {
+  function updateTouch(tch: Touch, ev: TouchEvent, i: number) {
     if (i === UDF) {
       if ((i = identifiers.indexOf(tch.identifier)) < 0)
         return errorHandlers[1](touches, tch, ev) ?
@@ -309,15 +325,15 @@ function touchesInit(src: HTMLElement,
           !!+console.error("Adding Touch", createTouch(tch, ev, i));
     }
     events[i] = !0;
-    temp[i] = touches[i].update(tch, ev);
+    temp[i] = (touches[i] || newTchD).update(tch, ev);
   }
   function removeTouch(tch: Touch, ev: TouchEvent, i: number) {
     var j = identifiers.indexOf(tch.identifier);
     if (j < 0 && errorHandlers[2](touches, tch, ev))
       return console.error("Can't remove unexisting Touch");
     events[j] = !0;
-    identifiers[j] = -1;//@ts-ignore
-    removed[j] = temp[j] = touches[j].update(tch, ev);
+    identifiers[j] = -1;
+    removed[j] = temp[j] = (touches[j] || newTchD).update(tch, ev);
     touches[j] = null;
     for (j = touches.length - 1; j > 0 && touches[j] === null;)
       touches.length--;
@@ -349,7 +365,11 @@ function touchesInit(src: HTMLElement,
     return !0;
   }
   function onstart(e: TouchEvent) {
+    // checkEvent = each complete input contains only one event for each
+    // touch ?
+    // has 2 outcomes: assigning new start tchs : fire UI complete input;
     if (checkEvent(e.changedTouches))
+    // start of existing | end/cancel of unexisting further throws error
       prcsTouches(0, "start", e, createTouch);
     else
       inputTouches(0, "start", e, createTouch);
@@ -361,6 +381,7 @@ function touchesInit(src: HTMLElement,
       inputTouches(1, "move", e, updateTouch);
   }
   function onend(e: TouchEvent) {
+    // remove existing one else throw error, conditioned in updateRemoved...
     if (checkEvent(e.changedTouches))
       prcsTouches(2, "end", e, removeTouch);
     else
@@ -374,7 +395,9 @@ function touchesInit(src: HTMLElement,
   }
   return o;
 }
+/** settings: allowed press time legth, @see {mouseInit.time} */
 touchesInit.time = 350;
+/** allowed press precision, @see {mouseInit.move} */
 touchesInit.move = 13;
 
 var mouseStamp = 0, test_debug = !1;
@@ -458,7 +481,7 @@ mouseInit.time = 350;
 /** allowed press precision, @see {touchesInit.move} */
 mouseInit.move = 4;
 
-var actionType: number, moveScore: number, moveCount: number;
+var actionType = 0, moveScore = 0, moveCount = 0;
 function touchGrab(all: TchD[], ev: Event) {
   ev.cancelable && ev.preventDefault();
   var x0 = all[0].movX,
@@ -471,6 +494,7 @@ function touchGrab(all: TchD[], ev: Event) {
     vY += (y0 + y1) / n;
   }
   if (actionType > 3 || actionType === 2) {
+    test_debug && console.log("ontouch zoom");
     var prev = sc, w = canvas.width / 2, h = canvas.height / 2;
     sc += ((all[0].pageX > all[1].pageX ?
         x0 - x1 :
@@ -481,6 +505,8 @@ function touchGrab(all: TchD[], ev: Event) {
       sc / (237 << +(actionType === 2));
     vX = (vX - w) * sc / prev + w;
     vY = (vY - h) * sc / prev + h;
+    // TODO: the default (actionType = 2) is supposed to detect either
+    // zooming in/out or movement, It did it very stubbornly though
     actionType === 2 ?
       ++moveCount > 4 ?
         actionType = Math.abs(moveScore) > touchesInit.move / 2 ?
@@ -527,23 +553,106 @@ function thetouchcancel(all: touches, changed: TchD[], ev: TouchEvent) {
   //ev.cancelable && ev.preventDefault();
 }
 
-document.body.onload = function initDoc() {};
+declare interface Navigator {
+  userAgentData?: object;
+}
+document.body.onload = function initDoc() {
+  function resizeWindow() {
+    var w = window.innerWidth,// * devicePixelRatio,
+      h = window.innerHeight;// * devicePixelRatio;
+    if (w > 4096 || h > 4096)
+      if (w > h) {
+        h = h * 4096 / w;
+        w = 4096;
+      } else {
+        w = w * 4096 / h;
+        h = 4096;
+      }
+    vX -= (canvas.width - w) / 2;
+    vY -= (canvas.height - h) / 2;
+    canvas.width = w;
+    canvas.height = h;
+    render();
+  }
 
+  window.onresize = resizeWindow;
+
+  mouseInit();
+
+  touchesInit(bd, null, [thetouchstart, thetouchmove, thetouchend,
+    thetouchcancel]);
+
+  /** touch logs
+   * @namespace init
+   * @typedef {string} color
+   */
+  var logIdx = 0,
+  prevClr = 0,
+  /** @type {Array<color>} */
+  clr = ["#ffffff", "#447c55", "#d11943"],
+  /** @type {HTMLDivElement} */
+  logSrc,
+  touchErrors = false;
+  (function () {
+    // that's actualy very funny trick (overwriting existing function)
+    // :D
+    var error = console.error;
+    return function () {
+      for (var i = arguments.length, arr = [],
+      el = document.createElement("span"); i-- > 0;)
+        arr[i] = arguments[i];
+      el.style.color = "#d11943";
+      el.innerText = arr.join("");
+      GE(85).appendChild(el);
+      error.apply(console, arr);
+    };
+  });
+  function spanLog(clrId, s) {
+    if (logIdx && prevClr === clrId)
+      return logSrc.childNodes[logIdx - 1].innerText += s;
+    var el = document.createElement("span");
+    el.style.color = clr[prevClr = clrId];
+    el.innerText = s;
+    if (logSrc.childNodes[logIdx])
+      logSrc.replaceChild(el, logSrc.childNodes[logIdx]);
+    else
+      logSrc.appendChild(el);
+    logIdx++;
+  }
+  function completeSpanLog() {
+    while (logIdx < logSrc.childNodes.length)
+      logSrc.removeChild(logSrc.childNodes[logIdx]);
+  }
+
+  GE("info").onclick = function (e) {
+    document.body.classList.remove("scroll");
+    this instanceof Node && document.body.removeChild(this);
+  };
+  document.head.appendChild(document.createComment(navigator.userAgent +
+    JSON.stringify(navigator.userAgentData || {})));
+  for (var i = 0, ch = document.head.childNodes; i < ch.length; i++) {}
+    if (ch[i].nodeName === "TITLE")
+      (ch[i] as HTMLTitleElement).text = "D1R DBV editor";
+
+  init();
+
+  vX = 128;
+  vY = 64;
+  resizeWindow();
+};
+
+// Here because of tsconfig.json, bruh
 declare var Promise: any;
 
-type NCalcJS = typeof import("c:/Users/Ja/Jaaa_0/deltarealm/.d1r.dbv/assets/\
+type NCalcJS = typeof import("c:/Users/Ja/Jaaa_0/deltarealm/.d1r.dbv/code/\
 ncalc.web");
 var ncalc: NCalcJS | null = null;
 try {
   //@ts-ignore
-  import("./assets/ncalc.web.js").then(function (m) {
-    ncalc = m;
-  }).catch(console.error);
+  if (!/^file|^content/.test(location.protocol))
+    import("./code/ncalc.web.js").then(function (module) {
+      ncalc = module;
+    }).catch(console.error);
 } catch (e) {
   console.error(e);
-}
-function test_bruh() {
-  if (!ncalc)
-    return alert("Sadly NCalcJS is not supported in your browser");
-  ncalc.ArgumentException
 }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.1.52 -->
+<!-- v.0.1.53 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -11,7 +11,7 @@
   <title>Droneboi Vehicles editor</title>
   <meta name="theme-color" content="#111111"/>
   <link rel="manifest" type="application/manifest+json" href="./manifest.json"/>
-  <link rel="canonical" content="https://kaabel.github.io/.d1r.dbv/editor.html" />
+  <link rel="canonical" href="https://kaabel.github.io/.d1r.dbv/editor.html"/>
   <style>
     body {
       position: relative;
@@ -166,6 +166,122 @@
     } catch (e) {
       TCH = {};
     }
+
+    /** @typedef {Array<TchD|null>} tchsDat */
+    /** @typedef {(TchD|null)[] & {count: number}} touches */
+    /** fires when action of event doesn't correspond with touches array
+     * @callback errorH
+     * @param {touches} touches @param {Touch} faulty @param {TouchEvent}
+     * @returns {boolean} ? keep current touches : reset to the new action
+     */// ^ swaped result by boolean (should reset on default: void functions)
+    /** fires when event is fired, may give all or portion of changed touches
+     * @callback softH
+     * @param {touches} touches
+     * @param {tchsDat} changed
+     * @param {TouchEvent} ev
+     * @returns {void} */
+    /** fires when all events were collected, possibly one cycle
+     * @callback hardH
+     * @param {touches} touches
+     * @param {tchsDat} added
+     * @param {tchsDat} removed
+     * @returns {void} */
+    /** @typedef {(e:TouchEvent)=>void} handler */
+
+    /** tested object for touch data
+     * @param {HTMLElement} src
+     * @param {Touch} touch
+     * @param {TouchEvent} touchEvent */
+    function TchD(src, touch, touchEvent) {
+      if (!arguments.length)
+        try {
+          src = document.createElement("div");
+          touch = new Touch({identifier: 0, target: src});
+          touchEvent = new TouchEvent("cancel");
+        } catch (e) {
+          touch = touchEvent = {};
+        }
+      /** @type {TouchEvent} */
+      this.event = touchEvent;
+      /** @type {number} */
+      this.identifier = touch.identifier;
+      /** @type {EventTarget} */
+      this.target = touch.target;
+      /** @type {string} */
+      this.type = touchEvent.type;
+      /** @type {number} */
+      this.pageX = touch.pageX;
+      /** @type {number} */
+      this.pageY = touch.pageY;
+      /** @type {number} */
+      this.clientX = touch.clientX;
+      /** @type {number} */
+      this.clientY = touch.clientY;
+      /** @type {number} */
+      this.screenX = touch.screenX;
+      /** @type {number} */
+      this.screenY = touch.screenY;
+      /** @type {number} */
+      this.force = touch.force;
+      /** @type {number} */
+      this.radiusX = touch.radiusX;
+      /** @type {number} */
+      this.radiusY = touch.radiusY;
+      /** @type {number} position within element */
+      this.posX = touch.pageX - src.offsetLeft;
+      /** @type {number} position within element */
+      this.posY = touch.pageY - src.offsetTop;
+      /** @type {number} starting position */
+      this.sX = this.posX;
+      /** @type {number} starting position */
+      this.sY = this.posY;
+      /** @type {number} movement */
+      this.movX = 0;
+      /** @type {number} movement */
+      this.movY = 0;
+      /** @type {number} timestamp */
+      this.time = Date.now();
+      /** @type {number} timestamp of previous */
+      this.pTime = 0;
+      /** @type {number} start timestamp */
+      this.sTime = this.time;
+      /** @type {EventTarget} source target */
+      this.srcTarget = this.target;
+      /** @method update @this {TchD} */
+      this.update = function (touch, touchEvent) {
+        if (!(touch instanceof Touch))
+          throw new TypeError("1. arg: touch is not type of Touch");
+        if (touch.identifier !== this.identifier)
+          throw new Error("attempt to udpdate with different identifier");
+        if (!(touchEvent instanceof TouchEvent))
+          throw new TypeError("2. arg: touchEvent is not type of TouchEvent");
+        this.event = touchEvent;
+        this.target = touch.target;
+        this.pageX = touch.pageX;
+        this.pageY = touch.pageY;
+        this.clientX = touch.clientX;
+        this.clientY = touch.clientY;
+        this.screenX = touch.screenX;
+        this.screenY = touch.screenY;
+        this.force = touch.force;
+        this.radiusX = touch.radiusX;
+        this.radiusY = touch.radiusY;
+        this.type = touchEvent.type;
+        var tmp = touch.pageX - src.offsetLeft;
+        this.movX = tmp - this.posX;
+        this.posX = tmp;
+        tmp = touch.pageY - src.offsetTop;
+        this.movY = tmp - this.posY;
+        this.posY = tmp;
+        tmp = Date.now()
+        this.pTime = this.time;
+        this.time = tmp;
+        return this;
+      };
+      return Object.seal(this);
+    }
+    
+    /** aditional/optional js logging of touch events */
     function test_touches(targ, calls, globalArr, customLog) {
       var a = [], t = {ch: TCH}, custLog = typeof customLog == "function" ?
         customLog : customLog === UDF ? function () { return [] } :
@@ -199,7 +315,7 @@
               arr.push(map.call(e.changedTouches, function (e) {
                 return e.identifier;
               }));
-              return t.cs = e.touches
+              return t.cs = e.touches;
             } :
           function (e) {return t.cs = e.changedTouches};
         function prcs(e) {
@@ -215,13 +331,13 @@
               console.log([a]);
               (a = []).length = 10;
             }
-            f(e);
+            f && f(e);
           }
         function withLog(e) {
           delete a[a.push(tchLog(s, e, function (e) {
             return e.targetTouches;
           })) - 64];
-          f(e);
+          f && f(e);
         }
         return f ? withLog : prcs;
       }
@@ -239,61 +355,40 @@
       targ.ontouchstart = fn(" start:", calls[0]);
       targ.ontouchmove = fn("  move:", calls[1]);
       targ.ontouchend = fn("   end:", calls[2]);
-    
+
       return {a: a, tch: t};
     }
     
-    /** @typedef {Array<TchD|null>} tchsDat */
-    /** @typedef {(TchD|null)[] & {count: number}} touches */
-    /** fires when action of event doesn't correspond with touches array
-     * @callback errorH
-     * @param {touches} touches
-     * @param {TchD} faulty
-     * @returns {boolean} ? keep current touches : reset to the new action
-     */// ^ swaped result by boolean (should reset on default: void functions)
-    /** fires when event is fired, may give all or portion of changed touches
-     * @callback softH
-     * @param {touches} touches
-     * @param {tchsDat} changed
-     * @param {TouchEvent} ev
-     * @returns {void} */
-    /** fires when all events were collected, possibly one cycle
-     * @callback hardH
-     * @param {touches} touches
-     * @param {tchsDat} added
-     * @param {tchsDat} removed
-     * @returns {void} */
     /**
      * @param {HTMLElement} src
      * @param {hardH} [hardHandler]
      * @param {[softH,softH,softH,softH]} [softHandlers]
      * @param {[errorH,errorH,errorH]} [errorHandlers] */
     function touchesInit(src, hardHandler, softHandlers, errorHandlers) {
-      src = src instanceof HTMLElement ? src : console.error("Not s EL" +
-        " at touchesInit  beggining.");
+      src = src instanceof HTMLElement ? src : console.error("No src EL" +
+        " at touchesInit beggining.");
       hardHandler = hardHandler || F;
       softHandlers = softHandlers || [F, F, F, F];
       errorHandlers = errorHandlers || [F, F, F];
       /** @typedef {Array<[number,string,number]>} touchlog */
       /** @type {{a:touchlog,tch:{ch:TouchEvent,cs:TouchList}}} */
       var o = {},
-        /** @type {Array<boolean>} */
-        events = [!1],
+        /** @type {boolean} */
+        events = [],
         /** @type {tchsDat} */
-        temp = [new TchD()],
+        temp = [],
         /** @type {tchsDat} */
-        added = [new TchD()],
+        added = [],
         /** @type {tchsDat} */
-        removed = [new TchD()],
-        /** @type {tchsDat & {count: number}} */
+        removed = [],
+        /** @type {touches} */
         touches = function () {
-          var arr = [new TchD()];
+          var arr = [];
           arr.count = 0;
           return arr;
         }(),
         /** @type {Array<number>} */
         identifiers = [-1],
-        /** @typedef {(e:TouchEvent)=>void} handler */
         /** @type {[handler,handler,handler,handler]} */
         handlers = [onstart, onmove, onend, oncancel];
       [events, temp, added, removed, touches, identifiers].map(function (e) {
@@ -315,10 +410,8 @@
       src.ontouchend = onend;
       src.ontouchcancel = oncancel;
       // ontouches events handling
-    
       function createTouch(tch, ev, i) {
         if (i === UDF) {
-          // console.log(tch.identifier);
           if ((i = identifiers.indexOf(tch.identifier)) >= 0)
             return errorHandlers[0](touches, tch, ev) ?
               console.error("Can't add existing Touch") :
@@ -387,12 +480,14 @@
         else
           inputTouches(0, "start", e, createTouch);
       }
+      /** @param {TouchEvent} e */
       function onmove(e) {
         if (checkEvent(e.changedTouches))
           prcsTouches(1, "move", e, updateTouch);
         else
           inputTouches(1, "move", e, updateTouch);
       }
+      /** @param {TouchEvent} e */
       function onend(e) {
         // remove existing one else throw error, conditioned in updateRemoved...
         if (checkEvent(e.changedTouches))
@@ -400,6 +495,7 @@
         else
           inputTouches(2, "end", e, removeTouch);
       }
+      /** @param {TouchEvent} e */
       function oncancel(e) {
         if (checkEvent(e.changedTouches))
           prcsTouches(3, "cancel", e, removeTouch);
@@ -413,89 +509,6 @@
     /** allowed press precision, @see {mouseInit.move} */
     touchesInit.move = 13;
     
-    /** tested object for touch data
-     * @param {HTMLElement} src
-     * @param {Touch} touch
-     * @param {TouchEvent} touchEvent */
-    function TchD(src, touch, touchEvent) {
-      if (!arguments.length)
-        try {
-          src = document.createElement("div");
-          touch = new Touch({identifier: 0, target: src});
-          touchEvent = new TouchEvent("cancel");
-        } catch (e) {
-          touch = touchEvent = {};
-        }
-      /** @type {TouchEvent} */
-      this.event = touchEvent;
-      /** @type {number} */
-      this.identifier = touch.identifier;
-      /** @type {EventTarget} */
-      this.target = touch.target;
-      /** @type {string} */
-      this.type = touchEvent.type;
-      /** @type {number} */this.pageX = touch.pageX;
-      /** @type {number} */this.pageY = touch.pageY;
-      /** @type {number} */this.clientX = touch.clientX;
-      /** @type {number} */this.clientY = touch.clientY;
-      /** @type {number} */this.screenX = touch.screenX;
-      /** @type {number} */this.screenY = touch.screenY;
-      /** @type {number} */this.force = touch.force;
-      /** @type {number} */this.radiusX = touch.radiusX;
-      /** @type {number} */this.radiusY = touch.radiusY;
-      /** @type {number} position within element */
-      this.posX = touch.pageX - src.offsetLeft;
-      /** @type {number} position within element */
-      this.posY = touch.pageY - src.offsetTop;
-      /** @type {number} starting position */
-      this.sX = this.posX;
-      /** @type {number} starting position */
-      this.sY = this.posY;
-      /** @type {number} movement */
-      this.movX = 0;
-      /** @type {number} movement */
-      this.movY = 0;
-      /** @type {number} timestamp */
-      this.time = Date.now();
-      /** @type {number} timestamp of previous */
-      this.pTime = 0;
-      /** @type {number} start timestamp */
-      this.sTime = this.time;
-      /** @type {EventTarget} source target */
-      this.srcTarget = this.target;
-      /** @method update @this {TchD} */
-      this.update = function update(touch, touchEvent) {
-        if (!(touch instanceof Touch))
-          throw new TypeError("1. arg: touch is not type of Touch");
-        if (touch.identifier !== this.identifier)
-          throw new Error("attempt to udpdate with different identifier");
-        if (!(touchEvent instanceof TouchEvent))
-          throw new TypeError("2. arg: touchEvent is not type of TouchEvent");
-        this.event = touchEvent;
-        this.target = touch.target;
-        this.pageX = touch.pageX;
-        this.pageY = touch.pageY;
-        this.clientX = touch.clientX;
-        this.clientY = touch.clientY;
-        this.screenX = touch.screenX;
-        this.screenY = touch.screenY;
-        this.force = touch.force;
-        this.radiusX = touch.radiusX;
-        this.radiusY = touch.radiusY;
-        this.type = touchEvent.type;
-        var tmp = touch.pageX - src.offsetLeft;
-        this.movX = tmp - this.posX;
-        this.posX = tmp;
-        tmp = touch.pageY - src.offsetTop;
-        this.movY = tmp - this.posY;
-        this.posY = tmp;
-        tmp = Date.now()
-        this.pTime = this.time;
-        this.time = tmp;
-        return this;
-      };
-      return Object.seal(this);
-    }
 
     var mouseStamp = 0, test_debug = !1;
     var WheelSroll = typeof WheelEvent == "undefined" ? Object : WheelEvent;
@@ -656,7 +669,7 @@
 
     document.body.onload = function initDoc() {
       function resizeWindow() {
-        var  w = window.innerWidth,// * devicePixelRatio,
+        var w = window.innerWidth,// * devicePixelRatio,
           h = window.innerHeight;// * devicePixelRatio;
         if (w > 4096 || h > 4096)
           if (w > h) {
@@ -724,13 +737,14 @@
 
       GE("info").onclick = function (e) {
         document.body.classList.remove("scroll");
-        document.body.removeChild(this);
+        this instanceof Node && document.body.removeChild(this);
       };
       document.head.appendChild(document.createComment(navigator.userAgent +
         JSON.stringify(navigator.userAgentData || {})));
       for (var i = 0, ch = document.head.childNodes; i < ch.length; i++)
         if (ch[i].nodeName === "TITLE")
-          ch[i].text = "D1R DBV editor";
+          /** @type {HTMLTitleElement} */
+          (ch[i]).text = "D1R DBV editor";
 
       init();
 
@@ -744,14 +758,15 @@
     var ncalc = null;
     try {
       if (!/^file|^content/.test(location.protocol))
-        import("./assets/ncalc.web.js").then(function (module) {
+        import("./code/ncalc.web.js").then(function (module) {
           ncalc = module;
         }).catch(console.error);
     } catch (e) {
       console.error(e);
     }
   </script>
-  <script type="text/javascript" src="./assets/code.js"></script>
-  <script type="text/javascript" src="./editor.js"></script>
+  <script type="text/javascript" src="./code/code.js"></script>
+  <script type="text/javascript" src="./code/editor.js"></script>
+  <script src="./code/unit_tests.js"></script>
 </body>
 </html>
