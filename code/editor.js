@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.js" types="./editor.js" />
 "use strict";
-// v.0.1.53
+// v.0.1.54
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -1315,12 +1315,9 @@ Command.push("Display Logic", function (items, collapsed) {
     return true;
   });
   updateNodeSelect();
-  /** @param {string} old @param {string} replace */
-  function updateControlParams(old, replace) {
-    /** @type {Block} */
-    var block, options = Block.Properties.VALUE[803][0].item.options;
-    var strMap = (ship.prop && ship.prop.customInputs || []).map(String);
-    /** @param {unknown} param */
+  /** @param {string} old @param {string} replacer */
+  function updateControlParams(old, replacer) {
+    /** @param {unknown} param custom parameter (DBV block's "c") property */
     function checkControlBlock(param) {
       if (!(param instanceof Array))
         return console.error("Control Block custom parameter is not an Array\
@@ -1329,11 +1326,12 @@ Command.push("Display Logic", function (items, collapsed) {
         return console.error("Index 0 of Control Block parameter property is\
 n't string.");
       if (param[0] === old)
-        return void (param[0] = replace);
-      if (options.indexOf(param[0]) === -1 ||
-        strMap.indexOf(param[0]) === -1)
+        return void (param[0] = replacer);
+      if (options.indexOf(param[0]) === -1)
         param[0] = "Up";
     }
+    /** @type {Block} */
+    var block, options = Block.Properties.getInputOptions(ship.prop);
     for (i = ship.blocks.length; i-- > 0;)
       if ((block = ship.blocks[i]).internalName === "Control Block")
         checkControlBlock(block.properties.control);
@@ -1970,7 +1968,9 @@ ring block capacity/use stats from source code in Discord.");
 Command.add("Editing Mode", [
   {name: "Enable Logic Editing", type: "button", fn: enableLogicEditing},
   {name: "Enable Ship Editing", type: "button", fn: enableShipEditing}
-], "Editing modes is the newest feature that is Work In Progress.");
+], "Editing modes is the newest feature that is Work In Progress. Be aware t\
+hat non of the older commands were designed to be compatible with other mode\
+s in my.");
 Command.push("Debug Logic circuit", function (items, collapsed) {
   /** @param {Block|LogicBlock} block @returns {LogicBlock|undefined} */
   function checkEndComponent(block) {
@@ -1981,6 +1981,13 @@ Command.push("Debug Logic circuit", function (items, collapsed) {
       if (logic[i].type > 1)
         return;
     return block;
+  }
+  var inputOptions = Block.Properties.getInputOptions(ship.prop);
+  for (var i = 0, inputs = []; i < inputOptions.length; i++) {
+    var option = EL("input");
+    option.type = "checkbox";
+    inputs.push(option);
+    items.push(option, tN(inputOptions[i]), EL("br"));
   }
   var moveBack = EL("button"), err = tN(""), el = EL("div");
   moveBack.appendChild(tN("Reset end components"));
@@ -1999,7 +2006,7 @@ Command.push("Debug Logic circuit", function (items, collapsed) {
   };
   el.style.color = "red";
   el.appendChild(err);
-  items.push(moveBack, el);
+  items.push(EL("br"), moveBack, el);
 }, "Reset end components puts all logic blocks with only inputs e.g. thruste\
 rs, drills, weapons... visually at their original positions in vehicle to he\
 lp indetify them. THIS COMMAND IS LOGIC MODE ONLY.");
@@ -2343,152 +2350,10 @@ function check_contentScript() {
   }
 }
 
-/** @param {number} x @param {number} y */
-function edit_logic(x, y) {
-  ;
+function DefaultUI() {
+  throw new TypeError("Illegal constructor");
+  this.mode = "any";
 }
-/** @param {number} x @param {number} y @param {MouseEvent} e */
-var edit_logicmove = function (x, y, e) {
-  return !1;
-};
-
-/** renderedShip moved to @see {ship} */
-
-function rend_backgPattern() {
-  try {
-    helpCanvas.width = imgBackg.naturalWidth || imgBackg.offsetWidth;
-    helpCanvas.height = imgBackg.naturalHeight || imgBackg.offsetHeight;
-    ctx.fillStyle = ctx.createPattern(imgBackg, "repeat") || "";
-    if (helpCanvas.width === 64) {
-      var n = sc / 32, sx = vX - sc, sy = vY - sc, idk = 32;
-      canvas.style.backgroundColor = defaults.editorBackgroundColor;
-    } else
-      var n = sc / 2, sx = vX - sc * 37, sy = vY - sc * 37, idk = 74;
-    ctx.translate(sx, sy);
-    ctx.scale(n, n);
-    ctx.fillRect(-vX / n + idk, -vY / n + idk,
-      canvas.width / n, canvas.height / n);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-  } catch (e) {
-    console.debug(e, "at drawing background");
-  }
-}
-function rend_backgColor() {
-  canvas.style.backgroundColor = defaults.editorBackgroundColor;
-}
-var rend_backgHangar = F;
-+function () {
-  var xhr = new XMLHttpRequest();
-  xhr.open("GET",
-    "https://kaabel.github.io/.d1r.dbv/assets/AlphaLunar.json");
-  xhr.onreadystatechange = function () {
-    if (xhr.readyState !== 4)
-      return;
-    try {
-      backgHangarInit.ship = Ship.fromObject(
-        JSON.parse(xhr.responseText));
-      backgHangarInit.ready++ && backgHangarInit();
-    } catch (e) {
-      console.error(xhr.responseText ? e : "xhr empty response");
-    }
-  };
-  xhr.send();
-}();
-function backgHangarInit() {
-  var backgPrimary = rend_background;
-  var defRend = DefaultUI.rend, hgw = 544, hgh = 654;
-  DefaultUI.rend = rend_background = F;
-  var octx = ctx, osc = sc, oxV = vX, oyV = vY, oship = ship;
-  /** @type {HTMLImageElement|null} */
-  var hangarImg = EL("img"), hangarCanv = canvas = EL("canvas");
-  canvas.width = hgw;
-  canvas.height = hgh;
-  ctx = hangarCanv.getContext("2d") || ctx;
-  sc = 8;
-  vX = 264;
-  vY = 464;
-  ship = backgHangarInit.ship;
-  expensiveRenderer();
-  try {
-    hangarImg.src = canvas.toDataURL();
-    canvas.width = canvas.height = 8;
-  } catch (e) {
-    hangarImg = null;
-  }
-  DefaultUI.rend = defRend;
-  canvas = (ctx = octx).canvas;
-  sc = osc;
-  vX = oxV;
-  vY = oyV;
-  ship = oship;
-  function backgSecondary() {
-    backgPrimary();
-    ctx.drawImage(
-      hangarImg || hangarCanv,
-      sc * -33 + vX,
-      sc * -58 + vY,
-      sc * hgw / 8,
-      sc * hgh / 8
-    );
-  };
-  backgSecondary.primary = backgPrimary;
-  rend_background = backgSecondary;
-  render();
-};
-backgHangarInit.ship = Ship.fromObject({b:[]});
-backgHangarInit.ready = 0;
-/** @type {(()=>void)&{primary?:()=>void}} */
-var rend_background = defaults.editorBackground ?
-  rend_backgPattern :
-  rend_backgColor;
-var rend_initialized = [F], rend_180 = !1;
-rend_initialized.push(function () {
-  backgHangarInit.ready++ && backgHangarInit();
-});
-function rend_initColors() {
-  helpCanvas.width = helpCanvas.height = 32;
-  for (var i = Color.NAME.length, patterns = []; i-- > 0;) {
-    try {
-      rc.drawImage(imgColor, 0, i * -32);
-    } catch (e) {}
-    patterns[i] = rc.createPattern(helpCanvas, "repeat") || "";
-  }
-  return patterns;
-}
-function rend_checkColors() {
-  rc.fillStyle = rend_colors[0];
-  rc.fillRect(0, 0, 32, 32);
-  var dat = rc.getImageData(0, 0, 32, 32).data;
-  rc.fillStyle = rend_colors[1];
-  rc.fillRect(0, 0, 32, 32);
-  var cpr = rc.getImageData(0, 0, 32, 32).data;
-  // Samsung Internet had some anomally 1s in ImageDatas
-  for (var i = dat.length, b = 0, itv = 0; i-- > 0 && b < 16;)
-    b += +(dat[i] !== cpr[i]);
-  b < 16 ?
-    // necessary for some browsers to assign color textures properly
-    (itv = setInterval(function () {
-      helpCanvas.width = helpCanvas.height = 32;
-      try {
-        rc.drawImage(imgColor, 0, i * -32);
-      } catch (e) {
-        if (imgColor.complete === !1)
-          return i = 0;
-      }
-      rend_colors[i] = rc.createPattern(helpCanvas, "repeat") || "";
-      if (++i >= rend_colors.length) {
-        clearInterval(itv);
-        rend_initialized.forEach(function (e) {
-          e();
-        });
-        render();
-      }
-    }, i = 0)) :
-    rend_initialized.forEach(function (e) {
-      e();
-    });
-};
-var rend_colors = rend_initColors();
 DefaultUI.createTile = function () {
   /** @type {XYZPosition} */
   var pos = [0, 0, 0],
@@ -2811,6 +2676,153 @@ function test_juhus(w, h) {
   }
 };
 
+/** @param {number} x @param {number} y */
+function edit_logic(x, y) {
+  ;
+}
+/** @param {number} x @param {number} y @param {MouseEvent} e */
+var edit_logicmove = function (x, y, e) {
+  return !1;
+};
+
+/** renderedShip moved to @see {ship} */
+
+function rend_backgPattern() {
+  try {
+    helpCanvas.width = imgBackg.naturalWidth || imgBackg.offsetWidth;
+    helpCanvas.height = imgBackg.naturalHeight || imgBackg.offsetHeight;
+    ctx.fillStyle = ctx.createPattern(imgBackg, "repeat") || "";
+    if (helpCanvas.width === 64) {
+      var n = sc / 32, sx = vX - sc, sy = vY - sc, idk = 32;
+      canvas.style.backgroundColor = defaults.editorBackgroundColor;
+    } else
+      var n = sc / 2, sx = vX - sc * 37, sy = vY - sc * 37, idk = 74;
+    ctx.translate(sx, sy);
+    ctx.scale(n, n);
+    ctx.fillRect(-vX / n + idk, -vY / n + idk,
+      canvas.width / n, canvas.height / n);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+  } catch (e) {
+    console.debug(e, "at drawing background");
+  }
+}
+function rend_backgColor() {
+  canvas.style.backgroundColor = defaults.editorBackgroundColor;
+}
+var rend_backgHangar = F;
++function () {
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET",
+    "https://kaabel.github.io/.d1r.dbv/assets/AlphaLunar.json");
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState !== 4)
+      return;
+    try {
+      backgHangarInit.ship = Ship.fromObject(
+        JSON.parse(xhr.responseText));
+      backgHangarInit.ready++ && backgHangarInit();
+    } catch (e) {
+      console.error(xhr.responseText ? e : "xhr empty response");
+    }
+  };
+  xhr.send();
+}();
+function backgHangarInit() {
+  var backgPrimary = rend_background;
+  var defRend = DefaultUI.rend, hgw = 544, hgh = 654;
+  DefaultUI.rend = rend_background = F;
+  var octx = ctx, osc = sc, oxV = vX, oyV = vY, oship = ship;
+  /** @type {HTMLImageElement|null} */
+  var hangarImg = EL("img"), hangarCanv = canvas = EL("canvas");
+  canvas.width = hgw;
+  canvas.height = hgh;
+  ctx = hangarCanv.getContext("2d") || ctx;
+  sc = 8;
+  vX = 264;
+  vY = 464;
+  ship = backgHangarInit.ship;
+  expensiveRenderer();
+  try {
+    hangarImg.src = canvas.toDataURL();
+    canvas.width = canvas.height = 8;
+  } catch (e) {
+    hangarImg = null;
+  }
+  DefaultUI.rend = defRend;
+  canvas = (ctx = octx).canvas;
+  sc = osc;
+  vX = oxV;
+  vY = oyV;
+  ship = oship;
+  function backgSecondary() {
+    backgPrimary();
+    ctx.drawImage(
+      hangarImg || hangarCanv,
+      sc * -33 + vX,
+      sc * -58 + vY,
+      sc * hgw / 8,
+      sc * hgh / 8
+    );
+  };
+  backgSecondary.primary = backgPrimary;
+  rend_background = backgSecondary;
+  render();
+};
+backgHangarInit.ship = Ship.fromObject({b:[]});
+backgHangarInit.ready = 0;
+/** @type {(()=>void)&{primary?:()=>void}} */
+var rend_background = defaults.editorBackground ?
+  rend_backgPattern :
+  rend_backgColor;
+var rend_initialized = [F], rend_180 = !1;
+rend_initialized.push(function () {
+  backgHangarInit.ready++ && backgHangarInit();
+});
+function rend_initColors() {
+  helpCanvas.width = helpCanvas.height = 32;
+  for (var i = Color.NAME.length, patterns = []; i-- > 0;) {
+    try {
+      rc.drawImage(imgColor, 0, i * -32);
+    } catch (e) {}
+    patterns[i] = rc.createPattern(helpCanvas, "repeat") || "";
+  }
+  return patterns;
+}
+function rend_checkColors() {
+  rc.fillStyle = rend_colors[0];
+  rc.fillRect(0, 0, 32, 32);
+  var dat = rc.getImageData(0, 0, 32, 32).data;
+  rc.fillStyle = rend_colors[1];
+  rc.fillRect(0, 0, 32, 32);
+  var cpr = rc.getImageData(0, 0, 32, 32).data;
+  // Samsung Internet had some anomally 1s in ImageDatas
+  for (var i = dat.length, b = 0, itv = 0; i-- > 0 && b < 16;)
+    b += +(dat[i] !== cpr[i]);
+  b < 16 ?
+    // necessary for some browsers to assign color textures properly
+    (itv = setInterval(function () {
+      helpCanvas.width = helpCanvas.height = 32;
+      try {
+        rc.drawImage(imgColor, 0, i * -32);
+      } catch (e) {
+        if (imgColor.complete === !1)
+          return i = 0;
+      }
+      rend_colors[i] = rc.createPattern(helpCanvas, "repeat") || "";
+      if (++i >= rend_colors.length) {
+        clearInterval(itv);
+        rend_initialized.forEach(function (e) {
+          e();
+        });
+        render();
+      }
+    }, i = 0)) :
+    rend_initialized.forEach(function (e) {
+      e();
+    });
+};
+var rend_colors = rend_initColors();
+
 /** @type {Block[]} */
 var foundBlocks = [];
 
@@ -3131,7 +3143,6 @@ var rend_speeeeed = {}, rend_logs = 69;
 init = function () {
   rend_checkColors();
   check_contentScript();
-  enableLogicEditing();
 };
 
 function onlyConsole(m,s,l,c,e) {

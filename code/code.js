@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.d.ts" types="./code.js" />
 "use strict";
-// v.0.1.53
+// v.0.1.54
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -1206,7 +1206,7 @@ Block.COST = {
  * @param {object[]|object} blocks
  * @param {Logic<any>[]&{nc?:any}} [logics$] */
 Block.arrayFromObjects = function arrayFromObjects(blocks, logics$) {
-  var warn = 1, bs = blocks instanceof Array ? blocks : [blocks];
+  var warn = 3, bs = blocks instanceof Array ? blocks : [blocks];
   /** nodeIndex (DBV "ni") property of a block is number[] type:
    * = it contains inputs and outputs indexes
    * = their connections are specified in "nc" DBV savefile property
@@ -1587,8 +1587,7 @@ Block.Properties.itemTypes = ["Slider", "Integer Slider", "Dropdown",
  */
 /** @typedef {Block.Properties<keyof ItemTs>} Props */
 /**
- * @type {<T extends PropsArg[]>(argArr: T)=>Props[]}
- */
+ * @type {<T extends PropsArg[]>(argArr: T)=>Props[]} */
 Block.Properties.justOne = function (argArr) {
   for (var j = 0, r = []; j < argArr.length; j++) {
     var p, v = argArr[j];
@@ -1635,7 +1634,7 @@ Block.Properties.justOne = function (argArr) {
 /**
  * @type {{[key:number]:Props[]|undefined,
  * 803:[Block.Properties<"Dropdown">]}}
- */
+ * @see {Ship.CustomInput} @see {ShipProperties} */
 Block.Properties.VALUE = Block.PROP = {
   738: Block.Properties.justOne([[1, "Force", 375, 1125, 1125]]),
   // 738: + old logical input node
@@ -1660,7 +1659,7 @@ Block.Properties.VALUE = Block.PROP = {
   792: Block.Properties.justOne([[0, "Gear Ratio", 0.2, 3, 1], [5, 0]]),
   803:
     // custom parameter (DBV block's "c") property contains option string
-    // instead of number reference to option index
+    // instead of number reference to option index (as for Ship class)
     // (which's in Block.Properties<"Dropdown"> item.default[0])
     /** @type {[Block.Properties<"Dropdown">]} */
     (Block.Properties.justOne([[2, "Controls", [
@@ -1709,6 +1708,16 @@ Block.Properties.addProperty = function (name, property) {
             p.item.default[j++];
   return property;
 };
+/** returns <default input optoins>.concat([custom input options])
+ * @param {ShipProperties|null} prop */
+Block.Properties.getInputOptions = function (prop) {
+  var arrMaybe = (prop || OC()).customInputs;
+  return Block.Properties.VALUE[803][0].item.options.concat(
+    (arrMaybe instanceof Array ?
+      arrMaybe :
+      []).map(String)
+  );
+}
 /** instance is frost
  * @param {ShipBlock} block @param {number} id @param {number} x
  * @param {number} y @param {number} w @param {number} h */
@@ -1765,10 +1774,6 @@ function LogicBlock(block, index, ship) {
   this.logicValues = [];
 }
 __extends(LogicBlock, Block);
-function DefaultUI() {
-  throw new TypeError("Illegal constructor");
-  this.mode = "any";
-}
 
 /**
  * @typedef {Block[]&{parentShip:Ship}} BlockSelection
@@ -1800,8 +1805,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @constant @type {19} significantVersion: 19 (integer) */
-Ship.VERSION = 19;
+/** @constant @type {20} significantVersion: 20 (integer) */
+Ship.VERSION = 20;
 Ship.prototype.selectRect = (
   /**
    * @overload @returns {Block[]&{parentShip:Ship}}
@@ -2214,13 +2219,13 @@ Ship.toDBV = function toDBV(ship) {
     /** @type {Ship.CustomInput|{type:number,name:string}} */
     var custom = inputs[i] || OC(), s = custom.name;
     n = custom.type;
-    n === 0 || n === 1 || n === -1 && typeof s == "string" &&
+    (n === 0 || n === 1 || n === -1) && typeof s == "string" &&
       custominps.push({n: s, t: n === -1 ? 0 : n});
   }
   return {
     n: ship.name,
     gv: ship.gameVersion.join("."),
-    dt: ship.dateTime ,
+    dt: ship.dateTime,
     ls: shipProp.launchpadSize || 0,
     b: blocks,
     nc: connections || shipProp.nodeConnections,
@@ -2320,19 +2325,20 @@ Ship.CustomInput.prototype.toString = function () {
 };
 /** @param {Block[]} blocks @param {safe} prop ShipProperties */
 Ship.CustomInput.reassemble = function (blocks, prop) {
-  /** @type {Ship.CustomInput[]} */
-  var inputs = [], defs = Block.Properties.VALUE[803][0].item.options;
-  for (var i = defs.length, j = i; i-- > 0;)
-    inputs[i] = new Ship.CustomInput(defs[i], 0);
+  // This Ship.CustomInput.reassemble code feels so ...loading
   /** @type {safe} custom input from savefile */
   var old, inputsOld = prop.customInputs instanceof Array ?
     prop.customInputs :
     [];
+  /** @type {Ship.CustomInput[]} */
+  var inputs = [], used = Block.Properties.getInputOptions(prop);
+  for (var i = used.length, j = i; i-- > 0;)
+    inputs[i] = new Ship.CustomInput(used[i], 0);
   for (j += i = inputsOld.length; i-- > 0;)
     if ((old = inputsOld[i]) instanceof Object) {
       inputs[--j] = new Ship.CustomInput("" + (old.n || old.name),
         typeof old.t == "number" ? old.t : +(old.type || 0));
-      defs[j] = inputs[j].name;
+      used[j] = inputs[j].name;
     } else
       console.warn("CustomInput check- not passed.");
   /** @param {unknown} control */
@@ -2342,9 +2348,12 @@ Ship.CustomInput.reassemble = function (blocks, prop) {
     var name = control[0];
     if (typeof name != "string")
       return console.warn("ControlBlock check1 not passed.");
-    defs.indexOf(name) === -1 &&
+// defs used to check for cunstomInputs not
+// found in ship.prop.customInputs
+    used.indexOf(name) === -1 &&
       inputs.push(new Ship.CustomInput(name, -1)) &&
-      defs.push(name);
+      // if found then remeber to not include dplicates
+      used.push(name);
   }
   for (var i = blocks.length; i-- > 0;)
     if (blocks[i].internalName === "Control Block")

@@ -4,6 +4,7 @@
     "noImplicitAny": false,
     "removeComments": true,
     "preserveConstEnums": true,
+    "strictNullChecks": true,
     "sourceMap": true,
     "outDir": "./output/",
     "allowJs": true,

@@ -46,6 +46,7 @@ https://discord.com/channels/749233290241769473/1225047342357549066
 https://discord.com/channels/749233290241769473/1148385350503383140  
 https://discord.com/channels/749233290241769473/1149657447762497599  
 https://discord.com/channels/749233290241769473/1168177352338051184  
+https://discord.com/channels/749233290241769473/1208883912089280522  
 (https://discord.com/channels/749233290241769473/1192783658801696868)  
 \+ displays all logic blocks of the ship left-to-right or top-to-bottom  
 https://discord.com/channels/749233290241769473/1225047342357549066  
