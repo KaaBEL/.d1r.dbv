@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.js" types="./editor.js" />
 "use strict";
-// v.0.1.54
+// v.0.1.55
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -934,15 +934,15 @@ Command.push("Setup Properties", function (items, collapsed) {
       var b0 = item.default[0] instanceof Array;
       (b0 && weldSelects[0].p == "weldGroup" ? weldSelects = [] : b0) ?
         /** @type {[number,number,number,number]} */
-        (control[item.idx]).forEach(function (e, i, a) {
+        (customParam[item.idx]).forEach(function (e, i, a) {
             weldSelects.push(new Ref(a, i));
           }) :
-        weldSelects.push(new Ref(control, item.idx));
+        weldSelects.push(new Ref(customParam, item.idx));
     }
     /** @param {Ref} ref */
     function initWeldGroup(ref) {
       // onchange event handler has live reference to the value
-      // kept in its own scope and assigned from properties.control
+      // kept in its own scope and assigned from properties.customParameter
       var node = 
       /** @type {HTMLSelectElement} */
         (weldGroup.cloneNode(!0));
@@ -977,7 +977,7 @@ Command.push("Setup Properties", function (items, collapsed) {
       initWeldGroup(weldSelects[0]);
       return render();
     }
-    var control = block.properties.control || [""];
+    var customParam = block.properties.customParameter || [""];
     for (var i = 0, Items = Block.Properties.Items; i < p.length; i++) {
       p[i].name && props.appendChild(tN(p[i].name + ": "));
       switch ((itm = p[i].item) && p[i].type) {
@@ -994,13 +994,13 @@ Command.push("Setup Properties", function (items, collapsed) {
           slider.min = input.min = "" + itm.min;
           slider.max = input.max = "" + itm.max;
           slider.step = "0.1";
-          slider.value = input.value = "" + control[sldI];
+          slider.value = input.value = "" + customParam[sldI];
           slider.oninput = input.oninput = function () {
             if (!(this instanceof HTMLInputElement))
               return;
             slider.value = this.value;
             this.type == "range" ? input.value = slider.value : 0;
-            control[sldI] = Number(slider.value) || 0;
+            customParam[sldI] = Number(slider.value) || 0;
           };
         case "Integer Slider":
           if (!(itm instanceof Items["Integer Slider"]))
@@ -1014,13 +1014,13 @@ Command.push("Setup Properties", function (items, collapsed) {
           intSlider.min = intInp.min = "" + itm.min;
           intSlider.max = intInp.max = "" + itm.max;
           intSlider.step = "1";
-          intSlider.value = intInp.value = "" + control[intI];
+          intSlider.value = intInp.value = "" + customParam[intI];
           intSlider.oninput = intInp.oninput = function () {
             if (!(this instanceof HTMLInputElement))
               return;
             intSlider.value = this.value;
             this.type == "range" ? intInp.value = intSlider.value : 0;
-            control[intI] = Number(intSlider.value) || 0;
+            customParam[intI] = Number(intSlider.value) || 0;
           };
         case "Dropdown":
           // !!! only one Item of this property type possible
@@ -1041,13 +1041,13 @@ Command.push("Setup Properties", function (items, collapsed) {
             dropdown.add(opt);
           }
           j = p[i].name === "Controls" ?
-            list.indexOf("" + control[dpdwnI]) :
-            +control[dpdwnI];
+            list.indexOf("" + customParam[dpdwnI]) :
+            +customParam[dpdwnI];
           j < 0 ?
             (dropdown.item(j) || OC()).selected = !0 :
             console.error("Not existing custom input selected!");
           dropdown.onchange = function () {
-            control[dpdwnI] = dropdown.value;
+            customParam[dpdwnI] = dropdown.value;
           };
         case "Number Inputs":
           if (!(itm instanceof Items["Number Inputs"]))
@@ -1058,9 +1058,9 @@ Command.push("Setup Properties", function (items, collapsed) {
           if (!(itm instanceof Items["Text Inputs"]))
             break;
           var txtI = i, txtInput = props.appendChild(EL("input"));
-          txtInput.value = "" + control[txtI];
+          txtInput.value = "" + customParam[txtI];
           txtInput.oninput = function () {
-            control[txtI] = txtInput.value;
+            customParam[txtI] = txtInput.value;
           };
           if (itm.default.length > 1) {
             props.appendChild(tN("INTERNAL ERROR WITH PROPERTY EDIT!"));
@@ -1323,9 +1323,9 @@ Command.push("Display Logic", function (items, collapsed) {
         return console.error("Control Block custom parameter is not an Array\
 .");
       if (typeof param[0] != "string")
-        return console.error("Index 0 of Control Block parameter property is\
-n't string.");
-      if (param[0] === old)
+        console.warn("Index 0 of Control Block custom parameter property isn\
+'t string.");
+      if ((param[0] += "") === old)
         return void (param[0] = replacer);
       if (options.indexOf(param[0]) === -1)
         param[0] = "Up";
@@ -1334,7 +1334,7 @@ n't string.");
     var block, options = Block.Properties.getInputOptions(ship.prop);
     for (i = ship.blocks.length; i-- > 0;)
       if ((block = ship.blocks[i]).internalName === "Control Block")
-        checkControlBlock(block.properties.control);
+        checkControlBlock(block.properties.customParameter);
   }
   var customInputs = EL(), template = EL("button");
   /** @param {MouseEvent|Ship.CustomInput} e */
@@ -1863,7 +1863,7 @@ t regain the Rift Crystals by travelling back. ";
     var xForce = 0, yForce = 0, forces = 0, xWeight = 0, yWeight = 0;
     var useVal = 0;
     function anyUse(val) {
-      var n = +(prop.control || [])[0];
+      var n = +(prop.customParameter || [])[0];
       return useVal = val instanceof Array ?
         val[0] / val[1] :
         // TODO: what about this, will it do? I should test it...
@@ -1965,10 +1965,15 @@ y 1. It also shows ammount of blocks in it and time when the vehicle had the\
 se stats, because it doesn't update after this command have been opened, onl\
 y changing amount of RC recalculates distance.\nThanks to catcat9999 for sha\
 ring block capacity/use stats from source code in Discord.");
-Command.add("Editing Mode", [
-  {name: "Enable Logic Editing", type: "button", fn: enableLogicEditing},
-  {name: "Enable Ship Editing", type: "button", fn: enableShipEditing}
-], "Editing modes is the newest feature that is Work In Progress. Be aware t\
+Command.push("Editing Mode", function (items) {
+  var button0 = EL("button");
+  button0.appendChild(tN("Enable Logic Editing"));
+  button0.onclick = enableLogicEditing;
+  var button1 = EL("button");
+  button1.appendChild(tN("Enable Ship Editing"));
+  button1.onclick = enableShipEditing;
+  items.push(button0, button1);
+}, "Editing modes is the newest feature that is Work In Progress. Be aware t\
 hat non of the older commands were designed to be compatible with other mode\
 s in my.");
 Command.push("Debug Logic circuit", function (items, collapsed) {
@@ -1982,13 +1987,35 @@ Command.push("Debug Logic circuit", function (items, collapsed) {
         return;
     return block;
   }
+  items.push(tN("In-game controls, buttons, switches:"), EL("br"));
+  /** @type {string[]} */
+  var inputs = ship.getPhysics().selectedInputs = [];
   var inputOptions = Block.Properties.getInputOptions(ship.prop);
-  for (var i = 0, inputs = []; i < inputOptions.length; i++) {
+  for (var i = 0; i < inputOptions.length; i++) {
     var option = EL("input");
     option.type = "checkbox";
-    inputs.push(option);
-    items.push(option, tN(inputOptions[i]), EL("br"));
+    option.oninput = function () {
+      if (!(this instanceof HTMLInputElement))
+        return;
+      var n = inputs.indexOf(this.name);
+      n === -1 ? inputs.push(this.name) : delete inputs[n];
+    };
+    // there's nothing to restrict from selecting up + down and more at once
+    items.push(option, tN(option.name = inputOptions[i]), EL("br"));
   }
+  var runTick = EL("button"), display = EL("input");
+  display.type = "checkbox";
+  display.onclick = function () {
+    Physics.rend.reporter = display.checked;
+    render();
+  };
+  items.push({name: "Display reporters", inp: display});
+  runTick.appendChild(tN("Run tick for logic circuit"));
+  runTick.onclick = function () {
+    Physics.rend.reporter = display.checked = true;
+    Logic.expensiveExec(ship);
+    render();
+  };
   var moveBack = EL("button"), err = tN(""), el = EL("div");
   moveBack.appendChild(tN("Reset end components"));
   moveBack.onclick = function () {
@@ -2006,10 +2033,10 @@ Command.push("Debug Logic circuit", function (items, collapsed) {
   };
   el.style.color = "red";
   el.appendChild(err);
-  items.push(EL("br"), moveBack, el);
+  items.push(runTick, EL("br"), moveBack, el);
 }, "Reset end components puts all logic blocks with only inputs e.g. thruste\
 rs, drills, weapons... visually at their original positions in vehicle to he\
-lp indetify them. THIS COMMAND IS LOGIC MODE ONLY.");
+lp indetify them.");
 Command.groupName = "";
 Command.push("Set camera view", function (items, collapsed) {
   // TODO: one input with code like vX<vX>vY<vY>sc<sc> so can save a view
@@ -3079,6 +3106,16 @@ var rend_speeeeed = {}, rend_logs = 69;
     rc.globalCompositeOperation = "source-over";
     rc.drawImage(imgOverlay, size.x, size.y, w, h, 0, 0, w, h);
     ctx.drawImage(helpCanvas, dx, dy, sw * sc / 16, sh * sc / 16);
+    if (Physics.rend.reporter && objs[i] instanceof LogicBlock) {
+      var str = objs[i].getPhysics().reporter;
+      ctx.font = "24px sans-serif";
+      ctx.globalAlpha = defaults.logicPreviewAlpha;
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(dx, dy, ctx.measureText(str).width + 8, 32);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(str, dx + 4, dy + 25);
+    }
     // await new Promise(function (res) {
     //   var tfn = expensiveRenderer;//@ts-ignore
     //   clearTimeout(tfn.tOut);tfn.tOut = setTimeout(res, 100);
@@ -3206,3 +3243,39 @@ CI6MH17XCJjb2xvclwiOlwiXCIsXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMTBdLFwid\
 250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMjZdLFwid2VsZEdyb3VwXCI6MH0iXQ=="
 .replace(/ /g, ""))));
 ship.fixPositionAdjustment(!0);
+// ship = Ship.fromObject({"n":"Ingame logic preview","gv":"","dt":"15.09.2024 \
+// 11:29:59","ls":0,"b":[{"n":"Core","p":[0,0],"r":180,"f":false,"s":"White",
+// "c":[],"ni":[],"wg":0},{"n":"Small Battery","p":[1,0.5],"r":180,"f":false,"s\
+// ":"White","c":[],"ni":[],"wg":0},{"n":"Small Battery","p":[-1,0.5],"r":180,"\
+// f":false,"s":"White","c":[],"ni":[],"wg":0},{"n":"Small Storage Rack",
+// "p":[1,-0.5],"r":180,"f":false,"s":"White","c":[],"ni":[],"wg":0},{"n":"Smal\
+// l Storage Rack","p":[-1,-0.5],"r":180,"f":false,"s":"White","c":[],"ni":[],"\
+// wg":0},{"n":"Reaction Wheel","p":[1,1.5],"r":180,"f":false,"s":"White",
+// "c":[7500],"ni":[13],"wg":0},{"n":"Distance Sensor","p":[0,-1],"r":180,
+// "f":false,"s":"White","c":[],"ni":[2],"wg":0},{"n":"Speed Sensor",
+// "p":[0,1],"r":180,"f":false,"s":"White","c":[0],"ni":[3],"wg":0},{"n":"AND G\
+// ate","p":[0,2],"r":180,"f":false,"s":"White","c":[],"ni":[6,5,4],"wg":0},{"n\
+// ":"Small Hydraulic Drill","p":[1,-1.5],"r":180,"f":false,"s":"White",
+// "c":[],"ni":[7],"wg":0},{"n":"Small Hydraulic Drill","p":[-1,-1.5],"r":180,"\
+// f":false,"s":"White","c":[],"ni":[8],"wg":0},{"n":"Small Ion Thruster",
+// "p":[1,2.5],"r":180,"f":false,"s":"White","c":[4500],"ni":[10,9],"wg":0},{"n\
+// ":"Small Ion Thruster","p":[-1,2.5],"r":180,"f":false,"s":"White",
+// "c":[4500],"ni":[12,11],"wg":0},{"n":"Threshold Gate","p":[-0.5,1.5],
+// "r":270,"f":false,"s":"White","c":[0,1],"ni":[14,1],"wg":0},{"n":"Threshold \
+// Gate","p":[-1.5,1.5],"r":90,"f":false,"s":"White","c":[0,1],"ni":[16,15],"wg\
+// ":0},{"n":"Tiny Ion Thruster","p":[2,-0.5],"r":0,"f":false,"s":"White",
+// "c":[1125],"ni":[17],"wg":0},{"n":"Tiny Ion Thruster","p":[2,2],"r":0,
+// "f":false,"s":"White","c":[1125],"ni":[20],"wg":0},
+// {"n":"Tiny Ion Thruster","p":[-1.5,2],"r":0,"f":false,"s":"White",
+// "c":[1125],"ni":[21],"wg":0},{"n":"Tiny Ion Thruster","p":[-1.5,-0.5],
+// "r":0,"f":false,"s":"White","c":[1125],"ni":[18],"wg":0},{"n":"Small Solar P\
+// anel","p":[2,0],"r":270,"f":false,"s":"White","c":[],"ni":[19],
+// "wg":0},{"n":"Small Solar Panel","p":[2,1],"r":270,"f":false,"s":"White",
+// "c":[],"ni":[22],"wg":0},{"n":"Small Solar Panel","p":[-2,0],"r":90,
+// "f":false,"s":"White","c":[],"ni":[23],"wg":0},{"n":"Small Solar Panel",
+// "p":[-2,1],"r":90,"f":false,"s":"White","c":[],"ni":[24],"wg":0}],"nc":[{"It\
+// em1":24,"Item2":4},{"Item1":23,"Item2":4},{"Item1":22,"Item2":4},
+// {"Item1":19,"Item2":4},{"Item1":16,"Item2":2},{"Item1":14,"Item2":3},{"Item1\
+// ":8,"Item2":15},{"Item1":7,"Item2":15},{"Item1":6,"Item2":1},{"Item1":5,"Ite\
+// m2":15}],"ci":[],"significantVersion":20});
+// //XD

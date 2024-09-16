@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.d.ts" types="./code.js" />
 "use strict";
-// v.0.1.54
+// v.0.1.55
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -157,8 +157,9 @@ function Logic(type, x, y) {
     (type > 1 ? [] : -1);
   /** @type {ShipBlock|null} */
   this.owner = null;
+  /** each output node has value, for input nodes it's undefined */
   this.value =
-    /** @type {T extends 1|3?number:boolean} */
+    /** @type {T extends 2?boolean:T extends 3?number:undefined} */
     (type & 1 ? 0 : false);
   Object.seal(this);
 }
@@ -170,7 +171,9 @@ Logic.rend = !1;
 Logic.nodes =
   /** @type {(Logic|undefined)[]&{ownerShip:Ship}} */
   ([UDF]);
-/** @typedef {(arg:Logic[],physics:Physics)=>void} LExec */
+/**
+ * @callback LExec @param {Logic<2|3>[]} arg
+ * @param {LogicBlock} block @param {Ship} ship @returns {void} */
 /** @param {...{k:number,x:number,y:number}[]|string|number|LExec} args */
 Logic.generateLogic = function () {
   /** @type {{[key:number]:Logic[]&{exec:LExec|LExec&safe}|undefined}} */
@@ -178,11 +181,15 @@ Logic.generateLogic = function () {
     /** @type {{k:0|1|2|3,x:number,y:number}[][]} */
     defs = [],
     /** @type {LExec} */
-    func = function (arg, physics) {};
+    func = function (arg, block) {},
+    /** @constant */
+    AT = " at Logic.generateLogic.";
   /** @param {{k:0|1|2|3,x:number,y:number}[]|string} arg */
   function setLogic(arg) {
     if (typeof arg == "function")
       return void (func = arg);
+    if (typeof arg == "undefined")
+      return console.warn("Found \"undefined\" type" + AT);
     var nodesDef = typeof arg == "string" ?
       defs[Number(arg)] :
       defs[defs.length] = arg,
@@ -200,56 +207,228 @@ Logic.generateLogic = function () {
     typeof a[i] == "number" ?
       l = a[i] :
       OP.call(o, l) ?
-        console.error("Property ", l++, "already exists, at generateLogic") :
+        console.error("Property ", l++, "already exists" + AT) :
         setLogic(a[i]);
   return o;
 };
-
+/** 738, 739, 740, 741, 742, 743, 744, 745 Thrusters @type {LExec} */
+Logic.execThruster = function (arg, block) {
+  // so now we can set the debugging value/state acordingly
+  console.log("execThruster",
+    block.getPhysics().reporter = arg[0].value ? "ON" : "OFF");
+};
+/** 770: Drill, 771: Cannon, 772: Rotary Cannon, 773: Plasma Cannon
+ * 774: Pulse Laser, 775: Beam Laser, 791, ... @type {LExec} */
+Logic.execToolBlock = function (arg, block) {
+  block.getPhysics().reporter = arg[0].value ? "ON" : "OFF";
+};
+/** 790: Hinge, 792: Piston @type {LExec} */
+Logic.execPistonHinge = function (arg, block) {
+  block.getPhysics().reporter = "" + arg[0].value;
+};
+/** 802: Constant On Signal @type {LExec} */
+Logic.execConstantTrue = function (arg, block) {
+  console.log("execConstantTrue", arg[0].value = true);
+  // logic blocks show up boolean value, they do not do things to be turned ON/OFF,... wOOOOOOOOOOOOOOOOOOOOw
+  block.getPhysics().reporter = "" + arg[0].value;
+};
+/** 803: Control Block @type {LExec} */
+Logic.execControlBlock = function (arg, block) {
+  var custom = block.properties.customParameter || [];
+  console.log("execControlBlock", arg[0].value =
+    // also should be boolean, btw
+    ship.getPhysics().selectedInputs.indexOf("" + custom[0]) !== -1);
+  block.getPhysics().reporter = "" + arg[0].value;
+};
+/** 804: AND Gate @type {LExec} */
+Logic.execANDGate = function (arg, block) {
+  console.log("execANDGate",
+    arg[2].value = arg[0].value && arg[1].value);
+  block.getPhysics().reporter = "" + arg[2].value;
+};
+/** 805: NAND Gate @type {LExec} */
+Logic.execNANDGate = function (arg, block) {
+  console.log("execNANDGate",
+    arg[2].value = !(arg[0].value && arg[1].value));
+  block.getPhysics().reporter = "" + arg[2].value;
+};
+/** 806: OR Gate @type {LExec} */
+Logic.execORGate = function (arg, block) {
+  console.log("execORGate",
+    arg[2].value = arg[0].value || arg[1].value);
+  block.getPhysics().reporter = "" + arg[2].value;
+};
+/** 807: NOR Gate @type {LExec} */
+Logic.execNORGate = function (arg, block) {
+  console.log("execNORGate",
+    arg[2].value = !(arg[0].value || arg[1].value));
+  block.getPhysics().reporter = "" + arg[2].value;
+};
+/** 808: XOR Gate @type {LExec} */
+Logic.execXORGate = function (arg, block) {
+  console.log("execXORGate",
+    arg[2].value = arg[0].value !== arg[1].value);
+  block.getPhysics().reporter = "" + arg[2].value;
+};
+/** 809: XNOR Gate @type {LExec} */
+Logic.execXNORGate = function (arg, block) {
+  console.log("execXNORGate",
+    arg[2].value = arg[0].value === arg[1].value);
+  block.getPhysics().reporter = "" + arg[2].value;
+};
+/** 810: NOT Gate @type {LExec} */
+Logic.execNOTGate = function (arg, block) {
+  console.log("execNOTGate",
+    arg[1].value = !arg[0].value);
+  block.getPhysics().reporter = "" + arg[1].value;
+};
+/** 813: Constant Number @type {LExec} */
+Logic.execConstantNumber = function (arg, block) {
+  var custom = block.properties.customParameter || [];
+  console.log("execConstantNumber", arg[0].value = +custom[0]);
+  block.getPhysics().reporter = "" + arg[0].value;
+};
+/** Unimplemented LogicBlock execution @type {LExec} */
+Logic.execUnimplemented = function (arg, block) {
+  block.getPhysics().reporter = "X";
+};
+/** 818: Numerical Inverter @type {LExec} */
+Logic.execNumericalInverter = function (arg, block) {
+  console.log("execNumericalInverter", arg[1].value = -arg[0].value);
+  block.getPhysics().reporter = "" + arg[1].value;
+};
+/** 819: Clamp @type {LExec} */
+Logic.execClamp = function (arg, block) {
+  var val = +arg[0].value,
+    custom = block.properties.customParameter || [];
+  console.log("execClamp", arg[1].value = val < +custom[0] ?
+    +custom[0] :
+    val > +custom[1] ?
+      +custom[1] :
+      val);
+  block.getPhysics().reporter = "" + arg[1].value;
+};
+/** 820: Abs @type {LExec} */
+Logic.execAbs = function (arg, block) {
+  console.log("execAbs", arg[1].value = Math.abs(+arg[0].value));
+  block.getPhysics().reporter = "" + arg[1].value;
+};
+/** 821: ThresholdGate @type {LExec} */
+Logic.execThresholdGate = function (arg, block) {
+  var val = +arg[0].value,
+    custom = block.properties.customParameter || [];
+  console.log("execThresholdGate", arg[1].value = val < +custom[0] ?
+    +custom[0] :
+    val > +custom[1] ?
+      +custom[1] :
+      val);
+  block.getPhysics().reporter = "" + arg[1].value;
+};
+/** 822: Numerical Switchbox @type {LExec} */
+Logic.execNumericalSwitchbox = function (arg, block) {
+  arg[1].value = Math.abs(+arg[0].value);
+  console.log("execNumericalSwitchbox", arg[1].value);
+  block.getPhysics().reporter = "" + arg[1].value;
+};
+/** 822: FUNCTION BLOCK @type {LExec} */
+Logic.execFunctionExpensive = function (arg, block) {
+  // It's the FUNCTION BLOCK time! :D
+  if (!ncalc)
+    return console.error("No NCalcJS :( " +
+      (block.getPhysics().reporter = ":("));
+  var custom = block.properties.customParameter || [],
+    e = new ncalc.Expression("" + custom[0]);
+  e.CacheEnabled = false;
+  e.Parameters.Pi = Math.PI;
+  e.Parameters.E = Math.E;
+  e.Parameters.x = +arg[0].value;
+  e.Parameters.y = +arg[1].value;
+  e.Parameters.z = +arg[2].value;
+  try {
+    var result = e.Evaluate();
+    if (typeof result == "string")
+      console.error("Result of Function Expression can't be a string in Dron\
+eboi: Counqest?");
+    arg[3].value = +result;
+  } catch (err) {
+    console.error(err instanceof ncalc.EvaluationException ?
+      "NCalcJS evaluation error: " + err.message :
+      err);
+  }
+  console.log("execFunctionExpensive", arg[3].value);
+  block.getPhysics().reporter = "" + arg[3].value;
+};
+/** Unimplemented LogicBloc
 /** @TODO later improve logic comments briefness+clarity (in progress) */
 /** Older instances of Logics comments/documenting for comparsion:
  * v.0.1.20.3 @see https://github.com/KaaBEL/.d1r.dbv/blob/1ed349b2230ddd8f3b64a6cd082d10fe7eeaeedc/assets/code.js
  * v.0.1.22 @see https://github.com/KaaBEL/.d1r.dbv/blob/1392589299b68fb61c1a87bc7e4616f6d20af75d/assets/code.js */
 /** entire oject is frost */
 Logic.VALUE = Logic.generateLogic(
-  /** 738: Tiny Hydrogen Thruster @type {LExec} */
-  function (arg) {
-    console.log(arg[0]); // set an effect when thruster is enabled
-  },
+  Logic.execThruster,
   // def0
   738, [{k: 0, x: 0, y: 0}],
-  /** 739: Small Hydrogen Thruster */
-  function (arg) {
-    console.log(arg[0], arg[1]);
-  },
   // def1
   [{k: 0, x: 0, y: 1}, {k: 1, x: 0, y: -1}],
-  /** 740: Medium Hydrogen Thruster */
-  /** 741: Large Hydrogen Thruster */
-  /** 742: Tiny Ion Thruster */
-  /** 743: Small Ion Thruster */
-  /** 744: Medium Ion Thruster */
-  /** 745: Large Ion Thruster */
+  "1", "1", "0", "1", "1", "1",
   /** 746: Reaction Wheel */
+  Logic.execUnimplemented,
   // def2
-  "1", "1", "0", "1", "1", "1", 746, [{k: 1, x: 0, y: 0}],
-  770, "0",
+  746, [{k: 1, x: 0, y: 0}],
+  Logic.execToolBlock,
   // def3
-  "0", "0", "0", "0", "0", 789, [{k: 0, x: 0, y: 2}],
-  "2", "0", "2",
+  770, "0", "0", "0", "0", "0", "0", 789, [{k: 0, x: 0, y: 2}],
+  Logic.execPistonHinge,
+  "2",
+  Logic.execToolBlock,
+  "0",
+  Logic.execPistonHinge,
+  "2",
+  Logic.execToolBlock,
+  795, "0", 798, "0", "0",
+  Logic.execConstantTrue,
   // def4
-  795, "0", 798, "0", "0", 802, [{k: 2, x: 0, y: 0}],
+  802, [{k: 2, x: 0, y: 0}],
+  Logic.execControlBlock,
+  "4",
+  Logic.execANDGate,
   // def5
-  "4", [{k: 0, x: -1, y: -1}, {k: 0, x: -1, y: 1}, {k: 2, x: 1, y: 0}],
+  [{k: 0, x: -1, y: -1}, {k: 0, x: -1, y: 1}, {k: 2, x: 1, y: 0}],
+  Logic.execNANDGate,
+  "5",
+  Logic.execORGate,
+  "5",
+  Logic.execNORGate,
+  "5",
+  Logic.execXORGate,
+  "5",
+  Logic.execXNORGate,
+  "5",
+  Logic.execNOTGate,
   // def6
-  "5", "5", "5", "5", "5", [{k: 0, x: -1, y: 0}, {k: 2, x: 1, y: 0}],
+  [{k: 0, x: -1, y: 0}, {k: 2, x: 1, y: 0}],
+  Logic.execUnimplemented,
+  "0",
+  "6",
+  Logic.execConstantNumber,
   // def7
-  "0", "6", [{k: 3, x: 0, y: 0}],
+  [{k: 3, x: 0, y: 0}],
+  Logic.execUnimplemented,
+  // GPS Sensor
   // def8
-  "7", "7", "7", [{k: 3, x: -1, y: 0}, {k: 3, x: 1, y: 0}],
+  [{k: 3, x: -1, y: 0}, {k: 3, x: 1, y: 0}],
+  "7", "7", "7",
+  Logic.execNumericalInverter,
   // def9
   [{k: 1, x: -1, y: 0}, {k: 3, x: 1, y: 0}],
+  Logic.execClamp,
+  "9",
+  Logic.execAbs,
+  "9",
+  Logic.execThresholdGate,
   // def10
-  "9", "9", [{k: 1, x: -1, y: 0}, {k: 2, x: 1, y: 0}],
+  [{k: 1, x: -1, y: 0}, {k: 2, x: 1, y: 0}],
+  Logic.execNumericalSwitchbox,
   // def11
   [
     {k: 0, x: -1, y: -1},
@@ -257,6 +436,7 @@ Logic.VALUE = Logic.generateLogic(
     {k: 1, x: 1, y: 1},
     {k: 3, x: 1, y: -1}
   ],
+  Logic.execFunctionExpensive,
   // def12
   [
     {k: 1, x: -1, y: -1},
@@ -264,6 +444,7 @@ Logic.VALUE = Logic.generateLogic(
     {k: 1, x: 1, y: 1},
     {k: 3, x: 1, y: -1}
   ],
+  Logic.execUnimplemented,
   // def13
   [
     {k: 0, x: -1, y: -1},
@@ -403,17 +584,18 @@ Logic.removeLogic = function (block, logics) {
   }
 };
 // removed suspiciosly useless code v.0.1.51
-/** @param {Ship} ship */
+/** @param {Ship} ship is directly related with Logic.execs */
 Logic.expensiveExec = function (ship) {
-  for (var i = 0, blocks = ship.blocks; i > blocks.length; i++) {
+  var nodeList = ship.prop && ship.prop.nodeList || [];
+  for (var i = 0, blocks = ship.blocks; i < blocks.length; i++) {
     var o = blocks[i], logic = Logic.VALUE[Block.ID[o.internalName]]; 
     if (!logic)
       continue;
-    var block = o instanceof LogicBlock && o ||
-      (blocks[i] = o = new LogicBlock(o, i, ship)),
-      nodeList = ship.prop && ship.prop.nodeList || [];
+    /** @type {Logic<2|3>[]} */
+    var arg = [], block = o instanceof LogicBlock && o ||
+      (blocks[i] = o = new LogicBlock(o, i, ship));
     // Get corresponding inputs/outputs for the operation
-    for (var j = logic.length, arg = []; j-- > 0;) {
+    for (var j = logic.length; j-- > 0;) {
       var node = nodeList[block.properties.nodeIndex[j]];
       if (!node)
         console.error("Index: " + j + " is missing from nodeList.");
@@ -422,17 +604,24 @@ Logic.expensiveExec = function (ship) {
           "missing or wrong node.owner!?" :
           "node.owner is not LogicBlock!?");
       else if (node.pairs instanceof Array)
+        // own output nodes are used as place for result logic.type: 2|3
         arg[j] = node;
       else {
+        // own inputs use the value of output node they are connected with
+        // since it's where the connected logic block stores its result
         var pairs = nodeList[node.pairs];
-        if (!pairs)
-          console.error("Referenced index from: " + node +
-            "is missing from nodeList: " + nodeList);
-        else
-          arg[j] = node;
+        arg[j] = pairs && (pairs.type === 2 || pairs.type === 3 ||
+          +console.log("Connected node is not an output node!")) ?
+          pairs :
+          new Logic(
+            /** @type {2|3} */
+            (node.type + 2 & 3),
+            0,
+            0
+          );
       }
     }
-    logic.exec(arg, o.getPhysics());
+    logic.exec(arg, block, ship);
   }
 };
 // /** more confusation added to the Logic mess, OH YEAHH!!!
@@ -545,8 +734,7 @@ ay|__placeholder(?:84[0-26-9]|85[0-3])__");
 
 /** class is frost */
 function Physics() {
-  this.enabled = false;
-  this.force = 0;
+  this.reporter = "";
   Object.seal(this);
 }
 // Only the Physics class initially, better classification system
@@ -558,16 +746,31 @@ function Physics() {
 /** initPhysics is executed in context of Block constructor, the brackets
  * keep ts from asssiming it's PBlock property and uses its (this)context
  * @constant */
-Physics.INIT = (function initPhysics() {
+Physics.INIT = (function initBlockPhysics() {
   var blockPhysics = new Physics();
   if (this instanceof Block)
-    /** @this {Block} */
     this.getPhysics = function () {
       return blockPhysics;
     };
   return blockPhysics;
 });
+Physics.rend = {reporter: false};
+/** @param {Ship} ship */
+Physics.Ship = function (ship) {
+  /** @type {string[]} list of selected inputs (checked checkbox) */
+  this.selectedInputs = [];
+};
+Physics.Ship.INIT = (function initShipPhysics() {
+  if (!(this instanceof Ship))
+    throw new TypeError("initShipPhysics used not on Ship.");
+  var shipPhysics = new Physics.Ship(this);
+  this.getPhysics = function () {
+    return shipPhysics;
+  };
+  return shipPhysics;
+});
 Object.freeze(Physics);
+Object.freeze(Physics.Ship);
 
 /** letter case of block names doesn't matter when loaded by game,
  * Block name definitions require strict letter cases here */
@@ -575,8 +778,8 @@ Object.freeze(Physics);
  * @typedef {[number,number,number]} XYZPosition
  * @typedef {[0|1|2,boolean,0|1|2|3]} Rotation
  * @typedef {keyof typeof Color.ID|""|null} Colors
- * @typedef {{control?:(number|string|[number,number,number,number])[],
- * nodeIndex?:number[],weldGroup?:number}} BlockProps
+ * @typedef {{customParameter?:(number|string|[number,number,number,
+ * number])[],nodeIndex?:number[],weldGroup?:number}} BlockProps
  * @param {string} name
  * @param {XYZPosition} pos [-: 0, x: p[0] * 2, y: p[1] * 2]
  * @param {Rotation} rot [-: 0, f: f, r: Math.floor(r / 90)]
@@ -1214,7 +1417,8 @@ Block.arrayFromObjects = function arrayFromObjects(blocks, logics$) {
    *   where is display position of node at that index, it is
    *   different for each block type,
    *   all are defined in @see {Logic.VALUE}
-   *   @see https://github.com/KaaBEL/.d1r.dbv/blob/1392589299b68fb61c1a87bc7e4616f6d20af75d/assets/code.js#L112 */
+@see https://github.com/KaaBEL/.d1r.dbv/blob/1392589299b6/assets/code.js#L112
+   * 1392589299b68fb61c1a87bc7e4616f6d20af75d */
   /** in DBV format inputs and output indexes reference indexes of
    * connections (new DBV "nc") property*/
   // TODO: change this variable logics to unpack the connections
@@ -1236,14 +1440,14 @@ Block.arrayFromObjects = function arrayFromObjects(blocks, logics$) {
       }
       return map;
     }();
-  /** @param {any} control custom parameter property actually */
-  function extractLogic(control) {
+  /** @param {any} customParameter custom parameter property actually */
+  function extractLogic(customParameter) {
     var j = 0, props = Block.Properties.VALUE[Block.ID[name]] || [];
     for (var i = props.length; i-- > 0; j += p instanceof Array ?
         p.length :
         1)
       var p = props[i].item.default;
-    return control instanceof Array && control.slice(j);
+    return customParameter instanceof Array && customParameter.slice(j);
   }
   /** @param {number[]} indexes */
   function extractConnections(indexes) {
@@ -1306,7 +1510,9 @@ ion|rot|r|properties|prop|f|flipped|wg|weld|color|s|c|ni|invalidName)$");
     }
     // is keeping custom parameter properties not changed a good idea?
     // block.ni or properties.nodeIndex is used prior to them anyway
-    o.prop.control = block.c || o.prop.control;
+    // should the prop.control stay?
+    o.prop.customParameter = block.c || o.prop.control ||
+      o.prop.custom || o.prop.customParameter;
     if (Logic.VALUE[Block.ID[name]]) {
       var indexes = block.ni || o.prop.nodeIndex;
       o.prop.nodeIndex = indexes instanceof Array &&
@@ -1319,7 +1525,7 @@ ion|rot|r|properties|prop|f|flipped|wg|weld|color|s|c|ni|invalidName)$");
           * = output index references nodeList index the node will
           * end up at, input index references connection to output */
           ncProperty && extractConnections(indexes) :
-          extractLogic(o.prop.control);
+          extractLogic(o.prop.customParameter);
       Logic.addLogic(name, o.prop, logics, r);
     }
     if (Block.ID[name] > 689 && Block.ID[name] < 947)
@@ -1682,6 +1888,7 @@ Block.Properties.VALUE = Block.PROP = {
     "Angular",
     "G-force"
   ], 0]]),
+  819: Block.Properties.justOne([[3, "Range", [0, 1]]]),
   821: Block.Properties.justOne([[3, "Range", [0, 1]]]),
   823: Block.Properties.justOne([[4, "Function", [""]]]),
   825: Block.Properties.justOne([[3, "Range", [-1, 1]]]),
@@ -1696,13 +1903,13 @@ Block.Properties.addProperty = function (name, property) {
     name :
     Block.ID[name]
   ];
-  property.control = [];
+  property.customParameter = [];
   if (!(propsDef instanceof Array))
     return property;
   for (var i = 0, n = 0, p; i < propsDef.length;)
     if ((p = propsDef[i++]) instanceof Block.Properties)
       for (var j = 0, l = p.item.default.length; j < l;)
-        property.control[n++] = p.name === "Controls" &&
+        property.customParameter[n++] = p.name === "Controls" &&
           p.item instanceof Block.Properties.Items.Dropdown ?
             p.item.options[p.item.default[j++]] :
             p.item.default[j++];
@@ -1801,12 +2008,13 @@ function Ship(name, version, time, blocks, properties, mode) {
   /** Ship properties (shortcut name since it is db/dr non-standard) */
   this.prop = properties || null;
   this.getMode = __private(mode || new Ship.Mode("Ship", this));
+  this.getPhysics = Physics.Ship.INIT;
   /** to track Droneboi Vehicles editor version in its JSON savefiles */
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @constant @type {20} significantVersion: 20 (integer) */
-Ship.VERSION = 20;
+/** @constant @type {21} significantVersion: 21 (integer) */
+Ship.VERSION = 21;
 Ship.prototype.selectRect = (
   /**
    * @overload @returns {Block[]&{parentShip:Ship}}
@@ -1886,7 +2094,7 @@ Ship.prototype.fillRect = function (x0, y0, z0, x1, y1, z1, select) {
         name,
         {
           color: properties.color,
-          control: properties.control,
+          customParameter: properties.customParameter,
           weldGroup: properties.weldGroup
         },
         ship.prop && ship.prop.nodeList || [],
@@ -2192,7 +2400,7 @@ Ship.toDBV = function toDBV(ship) {
       r: Math.floor(e.rotation[2] * 90),
       f: e.rotation[1],
       s: e.properties.color,
-      c: e.properties.control || [],
+      c: e.properties.customParameter || [],
       ni: e.properties.nodeIndex || [],
       wg: e.properties.weldGroup || 0
     });
@@ -2306,7 +2514,7 @@ Ship.fromDBKey = function (key) {
         /** @type {0|1|2|3} */
         (rot & 3)
       ], Logic.addLogic(name, {
-          control: [ctrl],
+          customParameter: [ctrl],
           color: color
         }, logics, blocks));
   }
@@ -2341,11 +2549,11 @@ Ship.CustomInput.reassemble = function (blocks, prop) {
       used[j] = inputs[j].name;
     } else
       console.warn("CustomInput check- not passed.");
-  /** @param {unknown} control */
-  function checkControlBlock(control) {
-    if (!(control instanceof Array))
+  /** @param {unknown} customParam */
+  function checkControlBlock(customParam) {
+    if (!(customParam instanceof Array))
       return console.warn("ControlBlock check0 not passed.");
-    var name = control[0];
+    var name = customParam[0];
     if (typeof name != "string")
       return console.warn("ControlBlock check1 not passed.");
 // defs used to check for cunstomInputs not
@@ -2357,7 +2565,7 @@ Ship.CustomInput.reassemble = function (blocks, prop) {
   }
   for (var i = blocks.length; i-- > 0;)
     if (blocks[i].internalName === "Control Block")
-      checkControlBlock(blocks[i].properties.control);
+      checkControlBlock(blocks[i].properties.customParameter);
   prop.customInputs = inputs.slice(j);
 };
 /** instance is frost, (experimental class is frost)
@@ -3168,6 +3376,9 @@ function decodeCmprsShip(cmprsShip) {
     for (i = l - 1 << 1; l-- > 0; i -= 2) {
       obj = JSON.parse(s.slice(arr[i], arr[i] + arr[i | 1]));
       b[properties[l]].properties = obj;
+      // (v.0.1.55) compatibility with old keys for control property
+      if ("control" in obj && !("customParameter" in obj))
+        obj.customParameter = obj.control;
     }
   }
   return ship;

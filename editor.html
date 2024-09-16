@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.1.54 -->
+<!-- v.0.1.55 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -10,7 +10,6 @@
   <link rel="icon shortcut" href="https://kaabel.github.io/.d1r.dbv/favicon.svg" type="image/svg+xml" />
   <title>Droneboi Vehicles editor</title>
   <meta name="theme-color" content="#111111"/>
-  <link rel="manifest" type="application/manifest+json" href="./manifest.json"/>
   <link rel="canonical" href="https://kaabel.github.io/.d1r.dbv/editor.html"/>
   <style>
     body {
@@ -199,13 +198,14 @@
      * @param {Touch} touch
      * @param {TouchEvent} touchEvent */
     function TchD(src, touch, touchEvent) {
+      var source = src || document.createElement("div");
       if (!arguments.length)
         try {
-          src = document.createElement("div");
           touch = new Touch({identifier: 0, target: src});
           touchEvent = new TouchEvent("cancel");
         } catch (e) {
-          touch = touchEvent = {};
+          touch = {};
+          touchEvent = {};
         }
       /** @type {TouchEvent} */
       this.event = touchEvent;
@@ -234,9 +234,9 @@
       /** @type {number} */
       this.radiusY = touch.radiusY;
       /** @type {number} position within element */
-      this.posX = touch.pageX - src.offsetLeft;
+      this.posX = touch.pageX - source.offsetLeft;
       /** @type {number} position within element */
-      this.posY = touch.pageY - src.offsetTop;
+      this.posY = touch.pageY - source.offsetTop;
       /** @type {number} starting position */
       this.sX = this.posX;
       /** @type {number} starting position */
@@ -273,10 +273,10 @@
         this.radiusX = touch.radiusX;
         this.radiusY = touch.radiusY;
         this.type = touchEvent.type;
-        var tmp = touch.pageX - src.offsetLeft;
+        var tmp = touch.pageX - source.offsetLeft;
         this.movX = tmp - this.posX;
         this.posX = tmp;
-        tmp = touch.pageY - src.offsetTop;
+        tmp = touch.pageY - source.offsetTop;
         this.movY = tmp - this.posY;
         this.posY = tmp;
         tmp = Date.now()
@@ -377,7 +377,7 @@
       softHandlers = softHandlers || [F, F, F, F];
       errorHandlers = errorHandlers || [F, F, F];
       /** @typedef {Array<[number,string,number]>} touchlog */
-      /** @type {{a:touchlog,tch:{ch:TouchEvent,cs:TouchList}}} */
+      /** @type {{a?:touchlog,tch?:{ch:TouchEvent,cs:TouchList}}} */
       var o = {},
         /** @type {boolean} */
         events = [],
@@ -696,8 +696,9 @@
 
       mouseInit();
 
-      touchesInit(bd, null, [thetouchstart, thetouchmove, thetouchend,
-        thetouchcancel]);
+      if (bd)
+        touchesInit(bd, UDF, [thetouchstart, thetouchmove, thetouchend,
+          thetouchcancel]);
 
       /** touch logs
        * @namespace init
@@ -720,7 +721,7 @@
             arr[i] = arguments[i];
           el.style.color = "#d11943";
           el.innerText = arr.join("");
-          GE(85).appendChild(el);
+          (GE(85) || GE(8) || el).appendChild(el);
           error.apply(console, arr);
         };
       });
@@ -741,7 +742,7 @@
           logSrc.removeChild(logSrc.childNodes[logIdx]);
       }
 
-      GE("info").onclick = function (e) {
+      (GE("info") || document.createElement("br")).onclick = function (e) {
         document.body.classList.remove("scroll");
         this instanceof Node && document.body.removeChild(this);
       };
@@ -763,10 +764,12 @@
     "use strict";
     var ncalc = null;
     try {
-      if (!/^file|^content/.test(location.protocol))
+      if (/^file|^content/.test(location.protocol)) {
         import("./code/ncalc.web.js").then(function (module) {
           ncalc = module;
         }).catch(console.error);
+        ncalc.Expression.CacheEna
+      }
     } catch (e) {
       console.error(e);
     }

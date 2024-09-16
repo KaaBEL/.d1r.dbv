@@ -1,4 +1,4 @@
-// v.0.1.53
+// v.0.1.55
 var _ge: any;
 function GE(v: any) {return document.getElementById(typeof v=="number"&&v==v?
   (_ge=v+1)-1:v==void 0?v=_ge++:v)}
@@ -106,13 +106,14 @@ class TchD {
   constructor ()
   constructor (src: HTMLElement, touch: Touch, touchEvent: TouchEvent)
   constructor (src?: HTMLElement, touch?: Touch, touchEvent?: TouchEvent) {
-    if (!arguments.length)
+    var source = src || document.createElement("div");
+    // @ts-is-stoopid if (!arguments.length)
       try {
-        src = document.createElement("div");
-        touch = new Touch({identifier: 0, target: src});
+        touch = new Touch({identifier: 0, target: source});
         touchEvent = new TouchEvent("cancel");
       } catch (e) {
-        touch = touchEvent = {} as any;
+        touch = {} as Touch;
+        touchEvent = {} as TouchEvent;
       }
     this.event = touchEvent;
     this.identifier = touch.identifier;
@@ -127,8 +128,8 @@ class TchD {
     this.force = touch.force;
     this.radiusX = touch.radiusX;
     this.radiusY = touch.radiusY;
-    this.posX = touch.pageX - src.offsetLeft;
-    this.posY = touch.pageY - src.offsetTop;
+    this.posX = touch.pageX - source.offsetLeft;
+    this.posY = touch.pageY - source.offsetTop;
     this.sX = this.posX;
     this.sY = this.posY;
     this.movX = 0;
@@ -156,10 +157,10 @@ class TchD {
       this.radiusX = touch.radiusX;
       this.radiusY = touch.radiusY;
       this.type = touchEvent.type;
-      var tmp = touch.pageX - src.offsetLeft;
+      var tmp = touch.pageX - source.offsetLeft;
       this.movX = tmp - this.posX;
       this.posX = tmp;
-      tmp = touch.pageY - src.offsetTop;
+      tmp = touch.pageY - source.offsetTop;
       this.movY = tmp - this.posY;
       this.posY = tmp;
       tmp = Date.now()
@@ -268,14 +269,14 @@ function touchesInit(src: HTMLElement,
   type touchlog = [number,string,number][];
   /** placeholder of "new TchD()" *///@ts-ignore
   const newTchD = new TchD();
-  var o: {a: touchlog, tch: {ch: Touch, cs?: TouchList}},
+  var o: {a?: touchlog, tch?: {ch: Touch, cs?: TouchList}} = {},
     events: boolean[] = [],
     temp: tchsDat = [],
     added: tchsDat = [],
     removed: tchsDat = [],
     touches: touches = function () {
       var arr: touches;
-      (arr = [] as touches).count = 0;
+      (arr = [] as any).count = 0;
       return arr;
     }(),
     identifiers: number[] = [-1],
@@ -482,7 +483,9 @@ mouseInit.time = 350;
 mouseInit.move = 4;
 
 var actionType = 0, moveScore = 0, moveCount = 0;
-function touchGrab(all: TchD[], ev: Event) {
+function touchGrab(all: touches, ev: Event) {
+  if (!all[0] || !all[1])
+    return console.error("");
   ev.cancelable && ev.preventDefault();
   var x0 = all[0].movX,
     y0 = all[0].movY,
@@ -543,7 +546,7 @@ function thetouchend(all: touches, changed: TchD[], ev: TouchEvent) {
   if (changed[0] && changed[0].srcTarget !== canvas)
     over(changed[0]);
   else if (actionType > 1 && changed[0] && changed[1])
-    touchGrab(changed, ev);
+    touchGrab(all, ev);
   prevCount = all.count;
   //ev.cancelable && ev.preventDefault();
 }
@@ -579,8 +582,9 @@ document.body.onload = function initDoc() {
 
   mouseInit();
 
-  touchesInit(bd, null, [thetouchstart, thetouchmove, thetouchend,
-    thetouchcancel]);
+  if (bd)
+    touchesInit(bd, UDF, [thetouchstart, thetouchmove, thetouchend,
+      thetouchcancel]);
 
   /** touch logs
    * @namespace init
@@ -598,12 +602,12 @@ document.body.onload = function initDoc() {
     // :D
     var error = console.error;
     return function () {
-      for (var i = arguments.length, arr = [],
+      for (var i = arguments.length, arr = [] as any[],
       el = document.createElement("span"); i-- > 0;)
         arr[i] = arguments[i];
       el.style.color = "#d11943";
       el.innerText = arr.join("");
-      GE(85).appendChild(el);
+      (GE(85) || GE(8) || el).appendChild(el);
       error.apply(console, arr);
     };
   });
@@ -624,7 +628,7 @@ document.body.onload = function initDoc() {
       logSrc.removeChild(logSrc.childNodes[logIdx]);
   }
 
-  GE("info").onclick = function (e) {
+  (GE("info") || document.createElement("br")).onclick = function (e) {
     document.body.classList.remove("scroll");
     this instanceof Node && document.body.removeChild(this);
   };
