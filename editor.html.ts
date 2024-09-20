@@ -1,4 +1,4 @@
-// v.0.1.55
+// v.0.1.56
 var _ge: any;
 function GE(v: any) {return document.getElementById(typeof v=="number"&&v==v?
   (_ge=v+1)-1:v==void 0?v=_ge++:v)}
@@ -650,12 +650,12 @@ declare var Promise: any;
 
 type NCalcJS = typeof import("c:/Users/Ja/Jaaa_0/deltarealm/.d1r.dbv/code/\
 ncalc.web");
-var ncalc: NCalcJS | null = null;
+var ncalcjs: NCalcJS | null = null;
 try {
   //@ts-ignore
   if (!/^file|^content/.test(location.protocol))
     import("./code/ncalc.web.js").then(function (module) {
-      ncalc = module;
+      ncalcjs = module;
     }).catch(console.error);
 } catch (e) {
   console.error(e);

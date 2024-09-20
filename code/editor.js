@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.js" types="./editor.js" />
 "use strict";
-// v.0.1.55
+// v.0.1.56
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -116,6 +116,8 @@ canvas.addEventListener("contextrestored", function () {
   "{background-color: #000;color: #bbb;border: 1px solid #888;}"
 );
 
+/** to be able to include some fun when editor is initialized */
+var init_funMode = F;
 (function (reg) {
   var expr = (reg.exec("" + location) || [])[1] || "";
   // taken from: https://stackoverflow.com/a/8831937
@@ -171,6 +173,17 @@ canvas.addEventListener("contextrestored", function () {
         placingBlock = function () {return "__unknown__";};
       });
       break;
+    case "17a472d":
+    case "25f75d93":
+    case "9e808430":
+    case "91c5cddf":
+    case "aebec1df":
+      console.log("Fun mode 5");
+      ship = Ship.fromObject(decodeCmprsShip(base64ToUint8array("gIAEEFN0YXJ\
+0ZXIgRHJvbmVib2kABD9TDSCAv6/65vbGnas+ELMGgvIGgrKuIChrYKhuICjrCoKyBpQ34LgncNa\
+A6gak9QRBWQPKGnDcFQjauHnfBwJbWzAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTY\
+sMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNl0sIntcImN\
+vbG9yXCI6XCJMaW1lXCJ9Il0=")));
     case "8bb3bad8":
       console.log("Fun mode 7");
       setTimeout(function () {
@@ -180,6 +193,102 @@ canvas.addEventListener("contextrestored", function () {
     case "123897b6":
       console.log("Debug mode (8)");
       test_debug = !0;
+      break;
+    case "b6f47340":
+      console.log("Fun mode 9");
+      init_funMode = function () {
+        ship = Ship.fromObject(decodeCmprsShip(base64ToUint8array("gIAEDEFOT\
+05fU2h1dHRsZQAEXVy0aoC/TzvnFnWt0z4R4pYUZx2CorwBRXLToKjrQJPehCK9CdKboLhB4MUPQ\
+VwDhrgGiGuAuAaIa4C1XkER14AjrgFBjHHEFUWbA4oxBxTVDSjWu1FsOeBYccQw3YRiywPBlnFsG\
+cGWcTR3YGgxji0HODKK5gYEzYXmQnOhrhXKGhDENSCIa0DR5oKjywFFigOOFQcczw0obnxxxDXgq\
+GsSmGvBE1uuied3AltbMCw0NSw0NSw2OCwwLDQ1LDAsNDUsMTEzLDcxLDAsNDUsMCw0NSwwLDQ1L\
+DAsNDUsMTg0LDY4LDI1Miw2OSwzMjEsNDQsMzIxLDQ0LDMyMSw0NCwzMjEsNDQsMzIxLDQ0LDMyM\
+Sw0NCwzMjEsNDQsMzIxLDQ0LDM2NSw1OSwzMjEsNDQsNDI0LDcwLDQ5NCw2NCw1NTgsNzAsNjI4L\
+DQ5LDY3Nyw2Miw3MzksNTYsNzk1LDY3LDg2Miw2Miw5MjQsNjIsOTg2LDYyLDEwNDgsNjIsMTExM\
+Cw2NSwxMTc1LDU5LDEyMzQsNjIsMTI5Niw2MiwxMzU4LDY1LDE0MjMsNjUsMTQ4OCw2NSwxNTUzL\
+DY1LDE2MTgsNDQsMzIxLDQ0LDMyMSw0NCwzMjEsNDQsMTY2Miw3MCwxNzMyLDYyLDE3OTQsMzksM\
+TgzMyw1NiwxODg5LDY2LDE5NTUsNjEsMzIxLDQ0LDMyMSw0NCwzMjEsNDQsMzIxLDQ0XSwie1wiY\
+29sb3JcIjpcIk9yYW5nZVwiLFwiY29udHJvbFwiOltdLFwid2VsZEdyb3VwXCI6MH17XCJjb2xvc\
+lwiOlwiRGFyayBHcmF5XCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzNdLFwid\
+2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiRGFyayBHcmF5XCIsXCJjb250cm9sXCI6WzE4MDAwX\
+SxcIm5vZGVJbmRleFwiOlsyLDFdLFwid2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiRGFyayBHc\
+mF5XCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzRdLFwid2VsZEdyb3VwXCI6M\
+H17XCJjb2xvclwiOlwiV2hpdGVcIixcImNvbnRyb2xcIjpbWzAsMCwwLDBdXSxcIm5vZGVJbmRle\
+FwiOls1XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6W\
+10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJcIixcImNvbnRyb2xcIjpbMSwwXSxcIm5vZ\
+GVJbmRleFwiOlszNF0sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJXaGl0ZVwiLFwiY29ud\
+HJvbFwiOltdLFwibm9kZUluZGV4XCI6WzIzLDIyLDIxLDIwXSxcIndlbGRHcm91cFwiOjB9e1wiY\
+29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMTksMThdLFwid\
+2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiTGlnaHQgR3JheVwiLFwiY29udHJvbFwiOls3NTAwX\
+SxcIm5vZGVJbmRleFwiOlsyNF0sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJMaWdodCBHc\
+mF5XCIsXCJjb250cm9sXCI6W10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJXaGl0ZVwiL\
+FwiY29udHJvbFwiOlswXSxcIm5vZGVJbmRleFwiOlsxN10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvb\
+G9yXCI6XCJcIixcImNvbnRyb2xcIjpbXSxcIm5vZGVJbmRleFwiOlsxMV0sXCJ3ZWxkR3JvdXBcI\
+jowfXtcImNvbG9yXCI6XCJXaGl0ZVwiLFwiY29udHJvbFwiOlsyNzAwMF0sXCJub2RlSW5kZXhcI\
+jpbNyw2XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIkJsYWNrXCIsXCJjb250cm9sXCI6W\
+zBdLFwibm9kZUluZGV4XCI6WzM3XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIkJsYWNrX\
+CIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzM2XSxcIndlbGRHcm91cFwiOjB9e1wiY\
+29sb3JcIjpcIkJsYWNrXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzM4XSxcIndlb\
+GRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZ\
+GV4XCI6WzM1XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sX\
+CI6WzExMjVdLFwibm9kZUluZGV4XCI6WzMxXSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcI\
+lwiLFwiY29udHJvbFwiOlsxLDBdLFwibm9kZUluZGV4XCI6WzMzXSxcIndlbGRHcm91cFwiOjB9e\
+1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzMyXSxcI\
+ndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZ\
+UluZGV4XCI6WzI1XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250c\
+m9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzI3XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcI\
+jpcIldoaXRlXCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzMwXSxcIndlbGRHc\
+m91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZ\
+GV4XCI6WzI4XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sX\
+CI6WzExMjVdLFwibm9kZUluZGV4XCI6WzI5XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcI\
+kJsYWNrXCIsXCJjb250cm9sXCI6W10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJXaGl0Z\
+VwiLFwiY29udHJvbFwiOltdLFwibm9kZUluZGV4XCI6WzE2LDE1LDE0LDEzXSxcIndlbGRHcm91c\
+FwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6W\
+zEyXSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIlwiLFwiY29udHJvbFwiOltdLFwid2VsZ\
+Edyb3VwXCI6MH17XCJjb2xvclwiOlwiXCIsXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbM\
+TBdLFwid2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiV2hpdGVcIixcImNvbnRyb2xcIjpbNDUwM\
+F0sXCJub2RlSW5kZXhcIjpbOSw4XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlX\
+CIsXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMjZdLFwid2VsZEdyb3VwXCI6MH0iXQ=="
+        .replace(/ /g, ""))));
+        ship.fixPositionAdjustment(!0);
+        enableLogicEditing();
+      };
+      break;
+    case "bad106e2":
+    case "ebbbcdda":
+      ship = Ship.fromObject(JSON.parse('{"n":"Ingame logic prev iew","gv":"\
+","dt":"15.09.2024 11:29:59","ls":0,"b":[{"n":"Core","p":[0,0],"r":180,"f":f\
+alse,"s":"White","c":[],"ni":[],"wg":0},{"n":"Small Battery","p":[1,0.5],"r"\
+:180,"f":false,"s":"White","c":[],"ni":[],"wg":0},{"n":"Small Battery","p":[\
+-1,0.5],"r":180,"f":false,"s":"White","c":[],"ni":[],"wg":0},{"n":"Small Sto\
+rage Rack","p":[1,-0.5],"r":180,"f":false,"s":"White","c":[],"ni":[],"wg":0}\
+,{"n":"Small Storage Rack","p":[-1,-0.5],"r":180,"f":false,"s":"White","c":[\
+],"ni":[],"wg":0},{"n":"Reaction Wheel","p":[1,1.5],"r":180,"f":false,"s":"W\
+hite","c":[7500],"ni":[13],"wg":0},{"n":"Distance Sensor","p":[0,-1],"r":180\
+,"f":false,"s":"White","c":[],"ni":[2],"wg":0},{"n":"Speed Sensor","p":[0,1]\
+,"r":180,"f":false,"s":"White","c":[0],"ni":[3],"wg":0},{"n":"AND Gate","p":\
+[0,2],"r":180,"f":false,"s":"White","c":[],"ni":[6,5,4],"wg":0},{"n":"Small \
+Hydraulic Drill","p":[1,-1.5],"r":180,"f":false,"s":"White","c":[],"ni":[7],\
+"wg":0},{"n":"Small Hydraulic Drill","p":[-1,-1.5],"r":180,"f":false,"s":"Wh\
+ite","c":[],"ni":[8],"wg":0},{"n":"Small Ion Thruster","p":[1,2.5],"r":180,"\
+f":false,"s":"White","c":[4500],"ni":[10,9],"wg":0},{"n":"Small Ion Thruster\
+","p":[-1,2.5],"r":180,"f":false,"s":"White","c":[4500],"ni":[12,11],"wg":0}\
+,{"n":"Threshold Gate","p":[-0.5,1.5],"r":270,"f":false,"s":"White","c":[0,1\
+],"ni":[14,1],"wg":0},{"n":"Threshold Gate","p":[-1.5,1.5],"r":90,"f":false,\
+"s":"White","c":[0,1],"ni":[16,15],"wg":0},{"n":"Tiny Ion Thruster","p":[2,-\
+0.5],"r":0,"f":false,"s":"White","c":[1125],"ni":[17],"wg":0},{"n":"Tiny Ion\
+ Thruster","p":[2,2],"r":0,"f":false,"s":"White","c":[1125],"ni":[20],"wg":0\
+},{"n":"Tiny Ion Thruster","p":[-1.5,2],"r":0,"f":false,"s":"White","c":[112\
+5],"ni":[21],"wg":0},{"n":"Tiny Ion Thruster","p":[-1.5,-0.5],"r":0,"f":fals\
+e,"s":"White","c":[1125],"ni":[18],"wg":0},{"n":"Small Solar Panel","p":[2,0\
+],"r":270,"f":false,"s":"White","c":[],"ni":[19],"wg":0},{"n":"Small Solar P\
+anel","p":[2,1],"r":270,"f":false,"s":"White","c":[],"ni":[22],"wg":0},{"n":\
+"Small Solar Panel","p":[-2,0],"r":90,"f":false,"s":"White","c":[],"ni":[23]\
+,"wg":0},{"n":"Small Solar Panel","p":[-2,1],"r":90,"f":false,"s":"White","c\
+":[],"ni":[24],"wg":0}],"nc":[{"Item1":24,"Item2":4},{"Item1":23,"Item2":4},\
+{"Item1":22,"Item2":4},{"Item1":19,"Item2":4},{"Item1":16,"Item2":2},{"Item1\
+":14,"Item2":3},{"Item1":8,"Item2":15},{"Item1":7,"Item2":15},{"Item1":6,"It\
+em2":1},{"Item1":5,"Item2":15}],"ci":[],"significantVersion":20}'));
   }
 })(/\/[0-9a-zA-Z._+\-]+\/editor\.html(?:#[^?]*)?($|\?[^=]*)/);
 
@@ -2422,6 +2531,11 @@ DefaultUI.blockBars = [
   DefaultUI.createFolder("Flip", ["Flip", 822, "Undo"])
 ];
 DefaultUI.selectedFolder = DefaultUI.blockBars.length - 1;
+/** value & 3: 0 = selected in toolBar, 1 = selected in BlockBar,
+ * 2 = selected inventoryIcon, 3 = reserved for selected in inventory
+ * value >> 2: index of selected tile
+ * value === -1: no tile selected */
+DefaultUI.selectedTile = -1;
 DefaultUI.inventoryIcon = !0;
 /** @type {TileType[]} */
 DefaultUI.toolBar = [
@@ -2632,8 +2746,8 @@ function test_juhus(w, h) {
     if (type instanceof Block)
       blockIcon(type);
   }
-  /** @param {TileType} tile */
-  function doTheItem(tile) {
+  /** @param {TileType} tile @param {unknown} selected boolean */
+  function doTheItem(tile, selected) {
     tw += 87;
     if (!tile)
       return;
@@ -2645,6 +2759,10 @@ function test_juhus(w, h) {
     ctx.arcTo(tw, th - 93, tw, th, 5);
     ctx.closePath();
     ctx.stroke();
+    if (selected) {
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.fill();
+    }
     doAnIcon(tile, 60);
     ctx.drawImage(helpCanvas, tw + 9, th - 84, 60, 60);
   }
@@ -2687,10 +2805,11 @@ function test_juhus(w, h) {
     sw += 3;
     tw = 200;
     for (var j = 0; b && j < bars[i].length; j++)
-      doTheItem(bars[i][j]);
+      doTheItem(bars[i][j],
+        DefaultUI.selectedTile === (j << 2) + 1);
   }
   for (var j = 0, tw = -72; j < DefaultUI.toolBar.length; j++) {
-    doTheItem(DefaultUI.toolBar[j]);
+    doTheItem(DefaultUI.toolBar[j], DefaultUI.selectedTile === (j << 2));
     if (tw > 123) {
       th -= 87;
       tw = -72;
@@ -2699,7 +2818,8 @@ function test_juhus(w, h) {
   if (DefaultUI.inventoryIcon) {
     th = h;
     tw = w - 94 - 87;
-    doTheItem(DefaultUI.createTile("Inventory"));
+    doTheItem(DefaultUI.createTile("Inventory"),
+      (DefaultUI.selectedTile & 3) === 2);
   }
 };
 
@@ -3180,6 +3300,7 @@ var rend_speeeeed = {}, rend_logs = 69;
 init = function () {
   rend_checkColors();
   check_contentScript();
+  init_funMode();
 };
 
 function onlyConsole(m,s,l,c,e) {
@@ -3188,94 +3309,3 @@ function onlyConsole(m,s,l,c,e) {
   return "" + m + "\n\t" + s + ":" + l + ":" + c;
 };
 
-// Script to showcase Logic editing
-ship = Ship.fromObject(decodeCmprsShip(base64ToUint8array("gIAEDEFOT05fU2h1d\
-HRsZQAEXVy0aoC/TzvnFnWt0z4R4pYUZx2CorwBRXLToKjrQJPehCK9CdKboLhB4MUPQVwDhrgGi\
-GuAuAaIa4C1XkER14AjrgFBjHHEFUWbA4oxBxTVDSjWu1FsOeBYccQw3YRiywPBlnFsGcGWcTR3Y\
-Ggxji0HODKK5gYEzYXmQnOhrhXKGhDENSCIa0DR5oKjywFFigOOFQcczw0obnxxxDXgqGsSmGvBE\
-1uuied3AltbMCw0NSw0NSw2OCwwLDQ1LDAsNDUsMTEzLDcxLDAsNDUsMCw0NSwwLDQ1LDAsNDUsM\
-Tg0LDY4LDI1Miw2OSwzMjEsNDQsMzIxLDQ0LDMyMSw0NCwzMjEsNDQsMzIxLDQ0LDMyMSw0NCwzM\
-jEsNDQsMzIxLDQ0LDM2NSw1OSwzMjEsNDQsNDI0LDcwLDQ5NCw2NCw1NTgsNzAsNjI4LDQ5LDY3N\
-yw2Miw3MzksNTYsNzk1LDY3LDg2Miw2Miw5MjQsNjIsOTg2LDYyLDEwNDgsNjIsMTExMCw2NSwxM\
-Tc1LDU5LDEyMzQsNjIsMTI5Niw2MiwxMzU4LDY1LDE0MjMsNjUsMTQ4OCw2NSwxNTUzLDY1LDE2M\
-TgsNDQsMzIxLDQ0LDMyMSw0NCwzMjEsNDQsMTY2Miw3MCwxNzMyLDYyLDE3OTQsMzksMTgzMyw1N\
-iwxODg5LDY2LDE5NTUsNjEsMzIxLDQ0LDMyMSw0NCwzMjEsNDQsMzIxLDQ0XSwie1wiY29sb3JcI\
-jpcIk9yYW5nZVwiLFwiY29udHJvbFwiOltdLFwid2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiR\
-GFyayBHcmF5XCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzNdLFwid2VsZEdyb\
-3VwXCI6MH17XCJjb2xvclwiOlwiRGFyayBHcmF5XCIsXCJjb250cm9sXCI6WzE4MDAwXSxcIm5vZ\
-GVJbmRleFwiOlsyLDFdLFwid2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiRGFyayBHcmF5XCIsX\
-CJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzRdLFwid2VsZEdyb3VwXCI6MH17XCJjb\
-2xvclwiOlwiV2hpdGVcIixcImNvbnRyb2xcIjpbWzAsMCwwLDBdXSxcIm5vZGVJbmRleFwiOls1X\
-SxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6W10sXCJ3Z\
-WxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJcIixcImNvbnRyb2xcIjpbMSwwXSxcIm5vZGVJbmRle\
-FwiOlszNF0sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJXaGl0ZVwiLFwiY29udHJvbFwiO\
-ltdLFwibm9kZUluZGV4XCI6WzIzLDIyLDIxLDIwXSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcI\
-jpcIldoaXRlXCIsXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMTksMThdLFwid2VsZEdyb\
-3VwXCI6MH17XCJjb2xvclwiOlwiTGlnaHQgR3JheVwiLFwiY29udHJvbFwiOls3NTAwXSxcIm5vZ\
-GVJbmRleFwiOlsyNF0sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJMaWdodCBHcmF5XCIsX\
-CJjb250cm9sXCI6W10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJXaGl0ZVwiLFwiY29ud\
-HJvbFwiOlswXSxcIm5vZGVJbmRleFwiOlsxN10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6X\
-CJcIixcImNvbnRyb2xcIjpbXSxcIm5vZGVJbmRleFwiOlsxMV0sXCJ3ZWxkR3JvdXBcIjowfXtcI\
-mNvbG9yXCI6XCJXaGl0ZVwiLFwiY29udHJvbFwiOlsyNzAwMF0sXCJub2RlSW5kZXhcIjpbNyw2X\
-SxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIkJsYWNrXCIsXCJjb250cm9sXCI6WzBdLFwib\
-m9kZUluZGV4XCI6WzM3XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIkJsYWNrXCIsXCJjb\
-250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzM2XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcI\
-jpcIkJsYWNrXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzM4XSxcIndlbGRHcm91c\
-FwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6W\
-zM1XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzExM\
-jVdLFwibm9kZUluZGV4XCI6WzMxXSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIlwiLFwiY\
-29udHJvbFwiOlsxLDBdLFwibm9kZUluZGV4XCI6WzMzXSxcIndlbGRHcm91cFwiOjB9e1wiY29sb\
-3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzMyXSxcIndlbGRHc\
-m91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4X\
-CI6WzI1XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6W\
-zExMjVdLFwibm9kZUluZGV4XCI6WzI3XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoa\
-XRlXCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzMwXSxcIndlbGRHcm91cFwiO\
-jB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6W\
-zI4XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzExM\
-jVdLFwibm9kZUluZGV4XCI6WzI5XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIkJsYWNrX\
-CIsXCJjb250cm9sXCI6W10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJXaGl0ZVwiLFwiY\
-29udHJvbFwiOltdLFwibm9kZUluZGV4XCI6WzE2LDE1LDE0LDEzXSxcIndlbGRHcm91cFwiOjB9e\
-1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzEyXSxcI\
-ndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIlwiLFwiY29udHJvbFwiOltdLFwid2VsZEdyb3VwX\
-CI6MH17XCJjb2xvclwiOlwiXCIsXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMTBdLFwid\
-2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiV2hpdGVcIixcImNvbnRyb2xcIjpbNDUwMF0sXCJub\
-2RlSW5kZXhcIjpbOSw4XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb\
-250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMjZdLFwid2VsZEdyb3VwXCI6MH0iXQ=="
-.replace(/ /g, ""))));
-ship.fixPositionAdjustment(!0);
-// ship = Ship.fromObject({"n":"Ingame logic preview","gv":"","dt":"15.09.2024 \
-// 11:29:59","ls":0,"b":[{"n":"Core","p":[0,0],"r":180,"f":false,"s":"White",
-// "c":[],"ni":[],"wg":0},{"n":"Small Battery","p":[1,0.5],"r":180,"f":false,"s\
-// ":"White","c":[],"ni":[],"wg":0},{"n":"Small Battery","p":[-1,0.5],"r":180,"\
-// f":false,"s":"White","c":[],"ni":[],"wg":0},{"n":"Small Storage Rack",
-// "p":[1,-0.5],"r":180,"f":false,"s":"White","c":[],"ni":[],"wg":0},{"n":"Smal\
-// l Storage Rack","p":[-1,-0.5],"r":180,"f":false,"s":"White","c":[],"ni":[],"\
-// wg":0},{"n":"Reaction Wheel","p":[1,1.5],"r":180,"f":false,"s":"White",
-// "c":[7500],"ni":[13],"wg":0},{"n":"Distance Sensor","p":[0,-1],"r":180,
-// "f":false,"s":"White","c":[],"ni":[2],"wg":0},{"n":"Speed Sensor",
-// "p":[0,1],"r":180,"f":false,"s":"White","c":[0],"ni":[3],"wg":0},{"n":"AND G\
-// ate","p":[0,2],"r":180,"f":false,"s":"White","c":[],"ni":[6,5,4],"wg":0},{"n\
-// ":"Small Hydraulic Drill","p":[1,-1.5],"r":180,"f":false,"s":"White",
-// "c":[],"ni":[7],"wg":0},{"n":"Small Hydraulic Drill","p":[-1,-1.5],"r":180,"\
-// f":false,"s":"White","c":[],"ni":[8],"wg":0},{"n":"Small Ion Thruster",
-// "p":[1,2.5],"r":180,"f":false,"s":"White","c":[4500],"ni":[10,9],"wg":0},{"n\
-// ":"Small Ion Thruster","p":[-1,2.5],"r":180,"f":false,"s":"White",
-// "c":[4500],"ni":[12,11],"wg":0},{"n":"Threshold Gate","p":[-0.5,1.5],
-// "r":270,"f":false,"s":"White","c":[0,1],"ni":[14,1],"wg":0},{"n":"Threshold \
-// Gate","p":[-1.5,1.5],"r":90,"f":false,"s":"White","c":[0,1],"ni":[16,15],"wg\
-// ":0},{"n":"Tiny Ion Thruster","p":[2,-0.5],"r":0,"f":false,"s":"White",
-// "c":[1125],"ni":[17],"wg":0},{"n":"Tiny Ion Thruster","p":[2,2],"r":0,
-// "f":false,"s":"White","c":[1125],"ni":[20],"wg":0},
-// {"n":"Tiny Ion Thruster","p":[-1.5,2],"r":0,"f":false,"s":"White",
-// "c":[1125],"ni":[21],"wg":0},{"n":"Tiny Ion Thruster","p":[-1.5,-0.5],
-// "r":0,"f":false,"s":"White","c":[1125],"ni":[18],"wg":0},{"n":"Small Solar P\
-// anel","p":[2,0],"r":270,"f":false,"s":"White","c":[],"ni":[19],
-// "wg":0},{"n":"Small Solar Panel","p":[2,1],"r":270,"f":false,"s":"White",
-// "c":[],"ni":[22],"wg":0},{"n":"Small Solar Panel","p":[-2,0],"r":90,
-// "f":false,"s":"White","c":[],"ni":[23],"wg":0},{"n":"Small Solar Panel",
-// "p":[-2,1],"r":90,"f":false,"s":"White","c":[],"ni":[24],"wg":0}],"nc":[{"It\
-// em1":24,"Item2":4},{"Item1":23,"Item2":4},{"Item1":22,"Item2":4},
-// {"Item1":19,"Item2":4},{"Item1":16,"Item2":2},{"Item1":14,"Item2":3},{"Item1\
-// ":8,"Item2":15},{"Item1":7,"Item2":15},{"Item1":6,"Item2":1},{"Item1":5,"Ite\
-// m2":15}],"ci":[],"significantVersion":20});
-// //XD

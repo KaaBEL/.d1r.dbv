@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.1.55 -->
+<!-- v.0.1.56 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -75,7 +75,6 @@
 </head>
 <body class="scroll">
   <main id="8">
-    <!-- <iframe id="viewreporter" frameborder="0"></iframe> -->
     <canvas id="0"></canvas>
   </main>
   <footer id="info">
@@ -762,14 +761,12 @@
   </script>
   <script>
     "use strict";
-    var ncalc = null;
+    var ncalcjs = null;
     try {
-      if (/^file|^content/.test(location.protocol)) {
+      if (!/^file|^content/.test(location.protocol))
         import("./code/ncalc.web.js").then(function (module) {
-          ncalc = module;
+          ncalcjs = module;
         }).catch(console.error);
-        ncalc.Expression.CacheEna
-      }
     } catch (e) {
       console.error(e);
     }

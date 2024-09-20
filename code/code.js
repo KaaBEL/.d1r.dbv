@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.d.ts" types="./code.js" />
 "use strict";
-// v.0.1.55
+// v.0.1.56
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -28,9 +28,9 @@ function __private(val) {
 /** @type {typeof defaults|null} */
 var settings = null;
 // @ts-ignore
-if (typeof ncalc == "undefined")
+if (typeof ncalcjs == "undefined")
   /** @type {NCalcJS|null} */
-  var ncalc = null;
+  var ncalcjs = null;
 
 /** timeToString @param {number} [t=Date.now()] @param {number} [f=1] ?1 */
 function dateTime(t, f) {
@@ -213,7 +213,6 @@ Logic.generateLogic = function () {
 };
 /** 738, 739, 740, 741, 742, 743, 744, 745 Thrusters @type {LExec} */
 Logic.execThruster = function (arg, block) {
-  // so now we can set the debugging value/state acordingly
   console.log("execThruster",
     block.getPhysics().reporter = arg[0].value ? "ON" : "OFF");
 };
@@ -229,14 +228,12 @@ Logic.execPistonHinge = function (arg, block) {
 /** 802: Constant On Signal @type {LExec} */
 Logic.execConstantTrue = function (arg, block) {
   console.log("execConstantTrue", arg[0].value = true);
-  // logic blocks show up boolean value, they do not do things to be turned ON/OFF,... wOOOOOOOOOOOOOOOOOOOOw
   block.getPhysics().reporter = "" + arg[0].value;
 };
 /** 803: Control Block @type {LExec} */
 Logic.execControlBlock = function (arg, block) {
   var custom = block.properties.customParameter || [];
   console.log("execControlBlock", arg[0].value =
-    // also should be boolean, btw
     ship.getPhysics().selectedInputs.indexOf("" + custom[0]) !== -1);
   block.getPhysics().reporter = "" + arg[0].value;
 };
@@ -326,18 +323,20 @@ Logic.execThresholdGate = function (arg, block) {
 };
 /** 822: Numerical Switchbox @type {LExec} */
 Logic.execNumericalSwitchbox = function (arg, block) {
-  arg[1].value = Math.abs(+arg[0].value);
-  console.log("execNumericalSwitchbox", arg[1].value);
-  block.getPhysics().reporter = "" + arg[1].value;
+  arg[3].value = arg[0].value ?
+    +arg[2].value :
+    +arg[1].value;
+  console.log("execNumericalSwitchbox", arg[3].value);
+  block.getPhysics().reporter = "" + arg[3].value;
 };
-/** 822: FUNCTION BLOCK @type {LExec} */
+/** 823: FUNCTION BLOCK @type {LExec} */
 Logic.execFunctionExpensive = function (arg, block) {
   // It's the FUNCTION BLOCK time! :D
-  if (!ncalc)
+  if (!ncalcjs)
     return console.error("No NCalcJS :( " +
       (block.getPhysics().reporter = ":("));
   var custom = block.properties.customParameter || [],
-    e = new ncalc.Expression("" + custom[0]);
+    e = new ncalcjs.Expression("" + custom[0]);
   e.CacheEnabled = false;
   e.Parameters.Pi = Math.PI;
   e.Parameters.E = Math.E;
@@ -351,14 +350,36 @@ Logic.execFunctionExpensive = function (arg, block) {
 eboi: Counqest?");
     arg[3].value = +result;
   } catch (err) {
-    console.error(err instanceof ncalc.EvaluationException ?
+    console.error(err instanceof ncalcjs.EvaluationException ?
       "NCalcJS evaluation error: " + err.message :
       err);
   }
   console.log("execFunctionExpensive", arg[3].value);
   block.getPhysics().reporter = "" + arg[3].value;
 };
-/** Unimplemented LogicBloc
+/** 824: Memory Register @type {LExec} */
+Logic.execMemoryRegister = function (arg, block) {
+  arg[3].value = arg[1].value ?
+    0 :
+    arg[0].value ?
+      arg[2].value :
+      arg[3].value;
+  console.log("execMemoryRegister", arg[3].value);
+  block.getPhysics().reporter = "" + arg[3].value;
+};
+/** 825: Gauge, 826: Dial, 827: Digital Display @type {LExec} */
+Logic.execDisplays = function (arg, block) {
+  block.getPhysics().reporter = "" + arg[0].value;
+};
+Logic.execPushToToggle = 
+  /** 828: Push To Toggle @type {LExec&{toggled?:boolean}} */
+  (function (arg, block) {
+    if (arg[0].value !== Logic.execPushToToggle.toggled)
+      arg[1].value = !arg[1].value;
+    block.getPhysics().reporter = "" + arg[1].value;
+  });
+Logic.execPushToToggle.toggled = false;
+
 /** @TODO later improve logic comments briefness+clarity (in progress) */
 /** Older instances of Logics comments/documenting for comparsion:
  * v.0.1.20.3 @see https://github.com/KaaBEL/.d1r.dbv/blob/1ed349b2230ddd8f3b64a6cd082d10fe7eeaeedc/assets/code.js
