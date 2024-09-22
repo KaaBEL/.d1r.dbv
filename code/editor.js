@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.js" types="./editor.js" />
 "use strict";
-// v.0.1.56
+// v.0.1.57
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -2518,6 +2518,34 @@ DefaultUI.createFolder = function (type, tiles) {
   folder.type = DefaultUI.createTile(type);
   return folder;
 };
+DefaultUI.actionArea = function (x, y) {
+  var atToolbar = x < 277, atBar = y > canvas.height - 103;
+  if (atToolbar) {
+    var row = (canvas.height - y - 13) / 87 | 0,
+      column = (x - 10) / 87 | 0;
+    if (y > canvas.height - 277)
+      DefaultUI.selectedTile = (row > 2 ? 2 : row) * 3 +
+        (column > 2 ? 2 : column) << 2;
+    else
+      return false;
+  } else if (atBar) {
+    if (DefaultUI.inventoryTile && x > canvas.width - 103)
+      DefaultUI.selectedTile = 2;
+    else if (x - 277 < (DefaultUI.blockBars[DefaultUI.selectedFolder] ||
+      []).length * 87)
+      DefaultUI.selectedTile = (x - 283) / 87 << 2 | 1;
+  } else if (x - 277 < DefaultUI.blockBars.length * 57 &&
+    y > canvas.height - 170) {
+    var selected = (x - 277) / 57 | 0;
+    if ((DefaultUI.selectedTile & 3) === 1 && selected !==
+      DefaultUI.selectedFolder)
+      DefaultUI.selectedTile = -1;
+    DefaultUI.selectedFolder = selected;
+  } else
+    return false;
+  render();
+  return true;
+}
 DefaultUI.TILE = {};
 DefaultUI.rend = F;
 /** @type {(TileType[]&{type:TileType})[]} */
@@ -2532,11 +2560,11 @@ DefaultUI.blockBars = [
 ];
 DefaultUI.selectedFolder = DefaultUI.blockBars.length - 1;
 /** value & 3: 0 = selected in toolBar, 1 = selected in BlockBar,
- * 2 = selected inventoryIcon, 3 = reserved for selected in inventory
+ * 2 = selected inventoryTile, 3 = reserved for selected in inventory
  * value >> 2: index of selected tile
  * value === -1: no tile selected */
 DefaultUI.selectedTile = -1;
-DefaultUI.inventoryIcon = !0;
+DefaultUI.inventoryTile = !0;
 /** @type {TileType[]} */
 DefaultUI.toolBar = [
   DefaultUI.createTile("Tune"),
@@ -2566,125 +2594,7 @@ function enableShipEditing() {
   DefaultUI.rend = F;
   render();
 };
-function enableLogicEditing() {
-  var oX = 0, oY = 0, mode = ship.getMode();
-  if (mode.mode === "Logic")
-    return;
-  /** @type {Block[]} */
-  var blocks = [], last = blocks[0];
-  for (var i = 0, old = mode.getShip().blocks; i < old.length; i++) {
-    if (!Logic.VALUE[Block.ID[old[i].internalName]])
-      continue;
-    var logicBlock = old[i];
-    if (logicBlock instanceof LogicBlock) {
-      logicBlock.logicBlockIndex = i;
-      var temp = logicBlock.logicPosition;
-      logicBlock.logicPosition = logicBlock.position;
-      logicBlock.position = temp;
-    } else
-      old[i] = logicBlock = new LogicBlock(logicBlock, i, ship);
-    blocks.push(logicBlock);
-    if (last && last.position[1] <= logicBlock.position[1])
-      logicBlock.position[1] = Math.floor(last.position[1] - 2);
-    last = logicBlock;
-  }
-  mode = Ship.Mode.NONE;
-  old = [];
-  // updating the global ship to Logic mode, original is included
-  ship = new Ship(
-    ship.name,
-    ship.gameVersion,
-    ship.dateTime,
-    blocks,
-    ship.prop,
-    Ship.Mode.useParser("Logic", ship, function (global) {
-      old = ship.blocks.sort(function (a, b) {
-        return b.position[1] - a.position[1];
-      });
-      for (var i = 0, indexes = [0]; i < old.length; i++) {
-        var block = old[i], temp = block.position;
-        if (!(block instanceof LogicBlock)) {
-          console.error("Block imposter within Logic mode ship!");
-          var logicBlock = new LogicBlock(block, -1, global);
-        } else
-          logicBlock = block;
-        logicBlock.position = logicBlock.logicPosition;
-        logicBlock.logicPosition = temp;
-        indexes[i] = logicBlock.logicBlockIndex;
-      }
-      indexes.sort(function (a, b) {
-        return a === -1 || b === -1 ? +(a === -1) - +(b === -1) : a - b;
-      });
-      for (i = old.length; i-- > 0;)
-        indexes[i] === -1 ?
-          global.blocks.push(old[i]) :
-          global.blocks[indexes[i]] = old[i];
-      return global;
-    }
-  ));
-  /** @type {Block.Selected|null} */
-  var found = null, movingId = -1;
-  DefaultUI.press = press = edit_logic;
-  DefaultUI.move = move = edit_logicmove = function (x, y, e) {
-    if (e.type === "mousedown") {
-      if (!(found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc)))
-        return !1;
-      // offsets
-      oX = (vX - x) / sc - found.block.position[1];
-      oY = (y - vY) / sc - found.block.position[2];
-      //-console.log("oX:", oX, "oY:", oY);
-      blocks = ship.blocks;
-      blocks[movingId = blocks.length] = blocks[found.id];
-      blocks[found.id] = new Block("__NULL__", [0, 0, 0], [0, !1, 0]);
-      render();
-      return !0;
-    } else if (e.type === "mousemove") {
-      if (!found)
-        return !1;
-      found.block.position[1] = (vX - x) / sc - oX;
-      found.block.position[2] = (y - vY) / sc - oY;
-      render();
-    } else if (e.type === "mouseup") {
-      if (!found)
-        return !1;
-      if ((blocks[movingId] === found.block ?
-        movingId :
-        movingId = blocks.indexOf(found.block)) === -1)
-        throw new Error("Block found not found, at edit_logicmove.");
-      if ((blocks[found.id] || {}).internalName === "__NULL__") {
-        blocks[found.id] = found.block;
-        del.call(blocks, movingId);
-      } else
-        throw new Error("Block __NULL__ not found, at edit_logicmove.");
-      /** unsuccessful attempt for block insert without sorting all at once
-    @see https://github.com/KaaBEL/.d1r.dbv/blob/61fec271ff39/editor.js#L2631
-       * v.0.1.49, might get usefull once... maybe */
-      blocks.sort(function (a, b) {
-        return b.position[1] - a.position[1];
-      });
-      render();
-    } else
-      console.error("edit_logicmove unhandled event type: " +
-        e.type + " add it!");
-    return !1;
-  };
-  var oldWidth = 0, oldHeight = 0;
-  DefaultUI.rend = function () {
-    if (found) {
-      ctx.lineWidth = defaults.highlightWidth;
-      ctx.strokeStyle = defaults.highlightColor;
-      var dx = found.x * sc + vX, dy = found.y * sc + vY;
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.strokeRect(dx, dy, found.w * sc, found.h * sc);
-    }
-    var w = canvas.width, h = canvas.height;
-    if (oldWidth !== w || oldHeight !== h) {
-      // TODO: reflow for blockbar items
-    }
-    test_juhus(w, h);
-  };
-  render();
-};
+
 function test_juhus(w, h) {
   /** @param {Block|LogicBlock} block */
   function blockIcon(block) {
@@ -2789,12 +2699,12 @@ function test_juhus(w, h) {
   for (var i = 0, sw = 279, th = h; i < bars.length; i++) {
     if (!bars[i])
       continue;
-    var b = i === DefaultUI.selectedFolder, tw = b ? 168 : 153;
+    var b = i === DefaultUI.selectedFolder, ty = b ? 168 : 153;
     ctx.globalAlpha = b ? .9 : .8;
     ctx.beginPath();
     ctx.moveTo(sw, h - 101);
-    ctx.arcTo(sw, h - tw, sw + 12, h - tw, 5);
-    ctx.arcTo(sw + 54, h - tw, sw += 54, h - 146, 5);
+    ctx.arcTo(sw, h - ty, sw + 12, h - ty, 5);
+    ctx.arcTo(sw + 54, h - ty, sw += 54, h - 146, 5);
     ctx.lineTo(sw, h - 101);
     ctx.closePath();
     ctx.fillStyle = b ? "#0c243c" : "#000c1c";
@@ -2803,8 +2713,7 @@ function test_juhus(w, h) {
     ctx.globalAlpha = 1;
     ctx.drawImage(helpCanvas, sw - 47, h - (b ? 161 : 146), 40, 40);
     sw += 3;
-    tw = 200;
-    for (var j = 0; b && j < bars[i].length; j++)
+    for (var j = 0, tw = 200; b && j < bars[i].length; j++)
       doTheItem(bars[i][j],
         DefaultUI.selectedTile === (j << 2) + 1);
   }
@@ -2815,21 +2724,142 @@ function test_juhus(w, h) {
       tw = -72;
     }
   }
-  if (DefaultUI.inventoryIcon) {
+  if (DefaultUI.inventoryTile) {
     th = h;
     tw = w - 94 - 87;
     doTheItem(DefaultUI.createTile("Inventory"),
       (DefaultUI.selectedTile & 3) === 2);
   }
 };
+function enableLogicEditing() {
+  var oX = 0, oY = 0, mode = ship.getMode();
+  if (mode.mode === "Logic")
+    return;
+  /** @type {Block[]} */
+  var blocks = [], last = blocks[0];
+  for (var i = 0, old = mode.getShip().blocks; i < old.length; i++) {
+    if (!Logic.VALUE[Block.ID[old[i].internalName]])
+      continue;
+    var logicBlock = old[i];
+    if (logicBlock instanceof LogicBlock) {
+      logicBlock.logicBlockIndex = i;
+      var temp = logicBlock.logicPosition;
+      logicBlock.logicPosition = logicBlock.position;
+      logicBlock.position = temp;
+    } else
+      old[i] = logicBlock = new LogicBlock(logicBlock, i, ship);
+    blocks.push(logicBlock);
+    if (last && last.position[1] <= logicBlock.position[1])
+      logicBlock.position[1] = Math.floor(last.position[1] - 2);
+    last = logicBlock;
+  }
+  mode = Ship.Mode.NONE;
+  old = [];
+  // updating the global ship to Logic mode, original is included
+  ship = new Ship(
+    ship.name,
+    ship.gameVersion,
+    ship.dateTime,
+    blocks,
+    ship.prop,
+    Ship.Mode.useParser("Logic", ship, function (global) {
+      old = ship.blocks.sort(function (a, b) {
+        return b.position[1] - a.position[1];
+      });
+      for (var i = 0, indexes = [0]; i < old.length; i++) {
+        var block = old[i], temp = block.position;
+        if (!(block instanceof LogicBlock)) {
+          console.error("Block imposter within Logic mode ship!");
+          var logicBlock = new LogicBlock(block, -1, global);
+        } else
+          logicBlock = block;
+        logicBlock.position = logicBlock.logicPosition;
+        logicBlock.logicPosition = temp;
+        indexes[i] = logicBlock.logicBlockIndex;
+      }
+      indexes.sort(function (a, b) {
+        return a === -1 || b === -1 ? +(a === -1) - +(b === -1) : a - b;
+      });
+      for (i = old.length; i-- > 0;)
+        indexes[i] === -1 ?
+          global.blocks.push(old[i]) :
+          global.blocks[indexes[i]] = old[i];
+      return global;
+    }
+  ));
+  /** @type {Block.Selected|null} */
+  var found = null, movingId = -1;
+  DefaultUI.press = press = edit_logic;
+  DefaultUI.move = move = edit_logicmove = function (x, y, e) {
+    if (e.type === "mousedown") {
+      if (DefaultUI.actionArea(x, y))
+        return !(found = null);
+      if (!(found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc)))
+        return !1;
+      // offsets
+      oX = (vX - x) / sc - found.block.position[1];
+      oY = (y - vY) / sc - found.block.position[2];
+      //-console.log("oX:", oX, "oY:", oY);
+      blocks = ship.blocks;
+      blocks[movingId = blocks.length] = blocks[found.id];
+      blocks[found.id] = new Block("__NULL__", [0, 0, 0], [0, !1, 0]);
+      render();
+      return !0;
+    } else if (e.type === "mousemove") {
+      if (!found)
+        return !1;
+      found.block.position[1] = (vX - x) / sc - oX;
+      found.block.position[2] = (y - vY) / sc - oY;
+      render();
+    } else if (e.type === "mouseup") {
+      if (!found)
+        return !1;
+      if ((blocks[movingId] === found.block ?
+        movingId :
+        movingId = blocks.indexOf(found.block)) === -1)
+        throw new Error("Block found not found, at edit_logicmove.");
+      if ((blocks[found.id] || {}).internalName === "__NULL__") {
+        blocks[found.id] = found.block;
+        del.call(blocks, movingId);
+      } else
+        throw new Error("Block __NULL__ not found, at edit_logicmove.");
+      /** unsuccessful attempt for block insert without sorting all at once
+    @see https://github.com/KaaBEL/.d1r.dbv/blob/61fec271ff39/editor.js#L2631
+       * v.0.1.49, might get usefull once... maybe */
+      blocks.sort(function (a, b) {
+        return b.position[1] - a.position[1];
+      });
+      render();
+    } else
+      console.error("edit_logicmove unhandled event type: " +
+        e.type + " add it!");
+    return !1;
+  };
+  var oldWidth = 0, oldHeight = 0;
+  DefaultUI.rend = function () {
+    if (found) {
+      ctx.lineWidth = defaults.highlightWidth;
+      ctx.strokeStyle = defaults.highlightColor;
+      var dx = found.x * sc + vX, dy = found.y * sc + vY;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.strokeRect(dx, dy, found.w * sc, found.h * sc);
+    }
+    var w = canvas.width, h = canvas.height;
+    if (oldWidth !== w || oldHeight !== h) {
+      // TODO: reflow for blockbar items
+    }
+    test_juhus(w, h);
+  };
+  render();
+};
 
 /** @param {number} x @param {number} y */
 function edit_logic(x, y) {
-  ;
+  return DefaultUI.actionArea(x, y);
 }
 /** @param {number} x @param {number} y @param {MouseEvent} e */
 var edit_logicmove = function (x, y, e) {
-  return !1;
+  return e.type === "mousedown" ? DefaultUI.actionArea(x, y) : false;
 };
 
 /** renderedShip moved to @see {ship} */
@@ -3308,4 +3338,3 @@ function onlyConsole(m,s,l,c,e) {
     return "" + m + "\n" + e.stack;
   return "" + m + "\n\t" + s + ":" + l + ":" + c;
 };
-
