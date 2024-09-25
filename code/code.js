@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.d.ts" types="./code.js" />
 "use strict";
-// v.0.1.56
+// v.0.1.58
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -805,7 +805,7 @@ Object.freeze(Physics.Ship);
  * @param {XYZPosition} pos [-: 0, x: p[0] * 2, y: p[1] * 2]
  * @param {Rotation} rot [-: 0, f: f, r: Math.floor(r / 90)]
  * @param {{[key:string]:unknown}|0} [prop={color:""}]
- * @param {keyof typeof Color.ID|null} [color=""] */
+ * @param {keyof typeof Color.ID|""|null} [color=""] */
 function Block(name, pos, rot, prop, color) {
   this.internalName = name;
   /** [not-used, x, y] */

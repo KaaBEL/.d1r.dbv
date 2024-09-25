@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.js" types="./editor.js" />
 "use strict";
-// v.0.1.57
+// v.0.1.58
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -2498,9 +2498,11 @@ DefaultUI.createTile = function () {
   /** @param {unknown} val */
   return function (val) {
     if (typeof val == "number" && typeof Block.NAME[val] == "string")
-      return new Block(Block.NAME[val], pos, rot);
+      return new Block(Block.NAME[val], pos, rot, {
+        color: Color.default(Block.NAME[val])
+      });
     if (typeof Block.ID["" + val] == "number")
-      return new Block("" + val, pos, rot);
+      return new Block("" + val, pos, rot, 0, Color.default("" + val));
     if (val instanceof Tool)
       return val;
     for (var i = Tool.list.length; i-- > 0;)
@@ -2518,9 +2520,12 @@ DefaultUI.createFolder = function (type, tiles) {
   folder.type = DefaultUI.createTile(type);
   return folder;
 };
+/** @TODO @SOCKS */
+/** selctively finds which UI area was interacted with
+ * @param {number} x @param {number} y @returns {boolean} touches GUI */
 DefaultUI.actionArea = function (x, y) {
-  var atToolbar = x < 277, atBar = y > canvas.height - 103;
-  if (atToolbar) {
+  if (x < 277) {
+    // toolBar side of canvas: static tile slots
     var row = (canvas.height - y - 13) / 87 | 0,
       column = (x - 10) / 87 | 0;
     if (y > canvas.height - 277)
@@ -2528,7 +2533,8 @@ DefaultUI.actionArea = function (x, y) {
         (column > 2 ? 2 : column) << 2;
     else
       return false;
-  } else if (atBar) {
+  } else if (y > canvas.height - 103) {
+    // rect part of canvas where BlockBar is: dynamic resizing to canvas
     if (DefaultUI.inventoryTile && x > canvas.width - 103)
       DefaultUI.selectedTile = 2;
     else if (x - 277 < (DefaultUI.blockBars[DefaultUI.selectedFolder] ||
@@ -2536,12 +2542,15 @@ DefaultUI.actionArea = function (x, y) {
       DefaultUI.selectedTile = (x - 283) / 87 << 2 | 1;
   } else if (x - 277 < DefaultUI.blockBars.length * 57 &&
     y > canvas.height - 170) {
+    // folders for blockBar rect part of canvas:
+    // resizes with folders amount changed
     var selected = (x - 277) / 57 | 0;
     if ((DefaultUI.selectedTile & 3) === 1 && selected !==
       DefaultUI.selectedFolder)
       DefaultUI.selectedTile = -1;
     DefaultUI.selectedFolder = selected;
   } else
+    // the rest of canvas area is handled for building area
     return false;
   render();
   return true;
@@ -2550,15 +2559,28 @@ DefaultUI.TILE = {};
 DefaultUI.rend = F;
 /** @type {(TileType[]&{type:TileType})[]} */
 DefaultUI.blockBars = [
-  DefaultUI.createFolder("Tune", [690, "Tune"]),
-  DefaultUI.createFolder("Rotate", ["Rotate", 802]),
-  DefaultUI.createFolder("Skin", ["Skin", 832]),
-  DefaultUI.createFolder("Inventory", ["Inventory", 815]),
-  DefaultUI.createFolder("Clone"),
-  DefaultUI.createFolder("Redo"),
-  DefaultUI.createFolder("Flip", ["Flip", 822, "Undo"])
+  DefaultUI.createFolder("Core", [690, 691, 692, 739, 746, 754, 757]),
+  DefaultUI.createFolder("Wedge", [703, 692, 693, 694, 695, 696, 697]),
+  DefaultUI.createFolder("Wedge", [698, 699, 700, 701, 702]),
+  DefaultUI.createFolder(739, [738, 739, 740, 741, 742, 743]),
+  DefaultUI.createFolder("Small Hydrogen Thruster", [744, 745, 746]),
+  DefaultUI.createFolder(754, [754, 755, 756, 757, 758, 759]),
+  DefaultUI.createFolder("Small Hydrogen Tank", [760, 761, 762]),
+  DefaultUI.createFolder("Cannon", [771, 772, 773, 774, 755, 776]),
+  DefaultUI.createFolder("Small Hydraulic Drill", [770]),
+  DefaultUI.createFolder(791, [796, 786, 787, 788, 789, 791]),
+  DefaultUI.createFolder("Separator", [790, 792, 793, 794, 795]),
+  DefaultUI.createFolder(804, [802, 803, 804, 805, 804, 807, 808]),
+  DefaultUI.createFolder(804, [809, 810, 811, 812, 828, 813, 814]),
+  DefaultUI.createFolder(804, [815, 816, 817, null, 818, 819, 820]),
+  DefaultUI.createFolder(804, [821, 822, 823, 824, 825, 826, 827]),
+  DefaultUI.createFolder(853, [834, 835, 836, 837, 838, 839, 840]),
+  DefaultUI.createFolder(853, [841, 842, 843, 844, 845, 846, 847]),
+  DefaultUI.createFolder(853, [848, 849, 850, 851, 852, 853, 854]),
+  DefaultUI.createFolder(853, [855, 856, 857]),
+  DefaultUI.createFolder("Afterburner", [1035, 1037, 1043, 1060])
 ];
-DefaultUI.selectedFolder = DefaultUI.blockBars.length - 1;
+DefaultUI.selectedFolder = 0;
 /** value & 3: 0 = selected in toolBar, 1 = selected in BlockBar,
  * 2 = selected inventoryTile, 3 = reserved for selected in inventory
  * value >> 2: index of selected tile
@@ -2595,20 +2617,37 @@ function enableShipEditing() {
   render();
 };
 
+/** @param {number} w @param {number} h */
 function test_juhus(w, h) {
   /** @param {Block|LogicBlock} block */
-  function blockIcon(block) {
-    helpCanvas.width = helpCanvas.height = 32;
-    rc.fillStyle = "#fff";
-    rc.fillRect(0, 0, 32, 32);
+  function drawBlockRc(block) {
     var size = Block.Size.VALUE[Block.ID[block.internalName]];
-    rc.drawImage(imgOverlay, -size.x, -size.y);
+    if (!size)
+      console.warn("No Block.Size definition for: " +
+        block.internalName);
+    if (size.h <= 0 || size.w <= 0)
+      return void (rc.canvas.width = rc.canvas.width);
+    /** detection of tiny block case, smallest texsture is 16x16 px */
+    var w = (size.w & 16) + size.w,
+      h = (size.h & 16) + size.h,
+      /** side of square sized canvas, larger one of width & height */
+      a = w > h ? w : h,
+      x = (a - w) / 2,
+      y = (a - h) / 2;
+    helpCanvas.width = helpCanvas.height = a;
+    rc.fillStyle = rend_colors[Color.ID[block.properties.color]];
+    block.internalName !== "Ghost Block" && rc.fillRect(x, y, w, h);
+    rc.globalCompositeOperation = "destination-in";
+    rc.drawImage(imgMask, x - size.x, y - size.y);
+    rc.globalCompositeOperation = "source-over";
+    rc.drawImage(imgOverlay, size.x, size.y, w, h, x, y, w, h);
   }
+  /** used by @see {drawPathRc} @param {string} s */
   function parseParam(s) {
     return (s[0] === "-" ? -("0x" + s.slice(1)) : +("0x" + s)) / 1024;
   }
   /** @param {Tool} tool @param {number} size */
-  function toolIcon(tool, size) {
+  function drawPathRc(tool, size) {
     rc.canvas.width = rc.canvas.height = size;
     rc.scale(size / 256, size / 256);
     rc.beginPath();
@@ -2650,14 +2689,14 @@ function test_juhus(w, h) {
     rc.fill();
   }
   /** @param {TileType} type @param {number} size */
-  function doAnIcon(type, size) {
+  function drawIconFn(type, size) {
     if (type instanceof Tool)
-      toolIcon(type, size);
+      drawPathRc(type, size);
     if (type instanceof Block)
-      blockIcon(type);
+      drawBlockRc(type);
   }
   /** @param {TileType} tile @param {unknown} selected boolean */
-  function doTheItem(tile, selected) {
+  function drawItemCtx(tile, selected) {
     tw += 87;
     if (!tile)
       return;
@@ -2673,7 +2712,7 @@ function test_juhus(w, h) {
       ctx.fillStyle = ctx.strokeStyle;
       ctx.fill();
     }
-    doAnIcon(tile, 60);
+    drawIconFn(tile, 60);
     ctx.drawImage(helpCanvas, tw + 9, th - 84, 60, 60);
   }
   ctx.globalAlpha = .9;
@@ -2709,16 +2748,21 @@ function test_juhus(w, h) {
     ctx.closePath();
     ctx.fillStyle = b ? "#0c243c" : "#000c1c";
     ctx.fill();
-    doAnIcon(bars[i].type || [][0], 40);
+    drawIconFn(bars[i].type || [][0], 40);
     ctx.globalAlpha = 1;
     ctx.drawImage(helpCanvas, sw - 47, h - (b ? 161 : 146), 40, 40);
     sw += 3;
     for (var j = 0, tw = 200; b && j < bars[i].length; j++)
-      doTheItem(bars[i][j],
-        DefaultUI.selectedTile === (j << 2) + 1);
+      drawItemCtx(
+        bars[i][j],
+        DefaultUI.selectedTile === (j << 2) + 1
+      );
   }
   for (var j = 0, tw = -72; j < DefaultUI.toolBar.length; j++) {
-    doTheItem(DefaultUI.toolBar[j], DefaultUI.selectedTile === (j << 2));
+    drawItemCtx(
+      DefaultUI.toolBar[j],
+      DefaultUI.selectedTile === (j << 2
+    ));
     if (tw > 123) {
       th -= 87;
       tw = -72;
@@ -2727,8 +2771,10 @@ function test_juhus(w, h) {
   if (DefaultUI.inventoryTile) {
     th = h;
     tw = w - 94 - 87;
-    doTheItem(DefaultUI.createTile("Inventory"),
-      (DefaultUI.selectedTile & 3) === 2);
+    drawItemCtx(
+      DefaultUI.createTile("Inventory"),
+      (DefaultUI.selectedTile & 3) === 2
+    );
   }
 };
 function enableLogicEditing() {
