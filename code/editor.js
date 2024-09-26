@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.js" types="./editor.js" />
 "use strict";
-// v.0.1.58
+// v.0.1.59
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -1894,7 +1894,7 @@ ut nodes.\nRemove action:\nRemoves all blocks inside selection\nAxis X, Axis\
 ed blocks by specified x and y distance.\nRotate action:\nRotates selected b\
 locks by amount in either Axis x or Axis y input around center of editor spa\
 ce [0, 0].\nSize action:\nNot implemented yet.\nMirror action:\nMirrors bloc\
-ks from left to right and from right to left around center of editor space.\
+ks from left to right and from right to left around center of editor space. \
 \nPaint action:\nUses the selected \"Color:\" above to paint selected blocks\
  with it. Custom color option is texture that uses custom hex color. The cus\
 tom hex color can be set in \"Select Color\" Command.");
@@ -2148,7 +2148,25 @@ rs, drills, weapons... visually at their original positions in vehicle to he\
 lp indetify them.");
 Command.groupName = "";
 Command.push("Set camera view", function (items, collapsed) {
-  // TODO: one input with code like vX<vX>vY<vY>sc<sc> so can save a view
+  function setCode() {
+    code.value = "vX" + vX + "vY" + vY + "sc" + sc;
+  }
+  /** @param {string} s @param {number} def default */
+  function execRegEx(s, def) {
+    var res = new RegExp(s + "[ \\t]*(?:([+\-]?(?:\\.\\d|\\d+\\.|\\d)\\d*(?:\
+[Ee][+\\-]?\\d+)?)|(0x[0-9A-Fa-f]+))(?:[yYvVsScC \\t]|$)").exec(code.value);
+    return res ? isNaN(+res[1]) ? +res[2] / 1024 : +res[1] : def;
+  }
+  var code = EL("input"), get = EL("button"), set = EL("button");
+  (get.onclick = setCode)();
+  get.appendChild(tN("Retreive key"));
+  set.onclick = function () {
+    vX = execRegEx("[vV]?[Xx]", 99);
+    vY = execRegEx("[vV]?[Yy]", 99);
+    sc = execRegEx("[sScC][cC]?", 1) * 16;
+  };
+  set.appendChild(tN("Apply key"));
+  items.push({name: "View key", inp: code}, set, get)
   var viewX = EL("input"), viewY = EL("input"), zoom = EL("input");
   var elBtn = EL("button");
   items.push({name: "View x", inp: viewX},
@@ -2171,9 +2189,10 @@ Command.push("Set camera view", function (items, collapsed) {
   elBtn.appendChild(tN("Set"));
   items.push(elBtn);
 }, "Let's you to set zoom and camera position to desired values. It is usefu\
-ll for reseting to intial view by pressing set while inputs are empty. Usual\
-ly moving mouse with left mouse button pressed or zooming with scrolling is \
-used. For touchscreen devides use two fingers to move and zoom.");
+ll for reseting to intial view by pressing set while inputs are empty. The n\
+ewer Retreive/Apply variant with key allows you to save your build location.\
+ Usually moving mouse with left mouse button pressed or zooming with scrolli\
+ng is used. For touchscreen devices use two fingers to move and zoom.");
 Command.push("Change editor background", function (items, collapsed) {
   var backgImg = EL("input"), backgClr = EL("input");
   backgImg.type = "checkbox";
@@ -2411,17 +2430,17 @@ e7,65c,-1048,a45,-1a9c,a45 c-ab5,0,-1464,-433,-1b5c,-afc c-520,-4fd,-454c,-4\
 b,0,-7d25,-382c,-7d25,-7d78 c0,-26dd,11ca,-499a,2d89,-609e ca03,-84e,edd5,-9\
 d74,f33b,-a153 c10e2,-c1b,1be2,-1fe5,1be2,-3642 c0,-1388,-864,-251b,-15c5,-3\
 14e c-572,-4f7,-44e4,-449f,-475f,-46c5 c-7cd,-6c0,-cb5,-1088,-cb5,-1b69 c0,-\
-9a5,3da,-126d,a2a,-1900 c183,-193,4f49,-4f2a,4f49,-4f2a z M7edc,3b238 c1b9d\
-,0,314d,-145e,314d,-2ffb c0,-1b9d,-1662,-3200,-3200,-3200 c-1b9d,0,-2ffb,15e\
-1,-2ffb,317e c0,1b9d,1511,307c,30ae,307c z M2e440,29ff9 c0,0,111b3,-1140f,11\
-267,-114ca c54f,-583,88e,-ce3,88e,-14fe c0,-7fb,-326,-f41,-851,-14be c-34e,-\
-382,-3563,-3816,-39d6,-3b78 c-57e,-42d,-c70,-6ab,-13fd,-6ab c-660,0,-c51,1c6\
-,-1151,4d8 c-233,159,-712d,4dd6,-712d,4dd6 c0,0,4b83,-6f75,4e90,-7539 c3fc,-\
-668,5e2,-185b,-4d7,-2330 c-354,-35c,-70d9,-715b,-744c,-74a9 c-5d4,-594,-de0,\
--8b5,-16c0,-906 c-c44,-70,-26d5,f20,-26d5,f20 c0,0,1181,-18e9,11f2,-2556 c3e\
-,-6e8,-21b,-d30,-627,-123c c-1dc,-251,-2951,-2a0d,-2954,-2a10 c-5dd,-5de,-e1\
-d,-95f,-1741,-95f c-969,0,-11e1,3b9,-17c5,9e6 c-1ec,203,-112c8,11207,-112c8,\
-11207 z"));
+9a5,3da,-126d,a2a,-1900 c183,-193,4f49,-4f2a,4f49,-4f2a z M7edc,3b238 c1b9d,\
+0,314d,-145e,314d,-2ffb c0,-1b9d,-1662,-3200,-3200,-3200 c-1b9d,0,-2ffb,15e1\
+,-2ffb,317e c0,1b9d,1511,307c,30ae,307c z M2e440,29ff9 c0,0,111b3,-1140f,112\
+67,-114ca c54f,-583,88e,-ce3,88e,-14fe c0,-7fb,-326,-f41,-851,-14be c-34e,-3\
+82,-3563,-3816,-39d6,-3b78 c-57e,-42d,-c70,-6ab,-13fd,-6ab c-660,0,-c51,1c6,\
+-1151,4d8 c-233,159,-712d,4dd6,-712d,4dd6 c0,0,4b83,-6f75,4e90,-7539 c3fc,-6\
+68,5e2,-185b,-4d7,-2330 c-354,-35c,-70d9,-715b,-744c,-74a9 c-5d4,-594,-de0,-\
+8b5,-16c0,-906 c-c44,-70,-26d5,f20,-26d5,f20 c0,0,1181,-18e9,11f2,-2556 c3e,\
+-6e8,-21b,-d30,-627,-123c c-1dc,-251,-2951,-2a0d,-2954,-2a10 c-5dd,-5de,-e1d\
+,-95f,-1741,-95f c-969,0,-11e1,3b9,-17c5,9e6 c-1ec,203,-112c8,11207,-112c8,1\
+1207 z"));
 Tool.list.push(new Tool("Inventory", "M2400,0 c-12d2,0,-2400,112d,-2400,23ff\
  vda22 c0,12d2,112d,2400,23ff,2400 hda22 c12d2,0,2400,-112d,2400,-2400 v-da2\
 2 c0,-12d2,-112d,-2400,-2400,-2400 z M2400,16666 c-12d2,0,-2400,112d,-2400,2\
@@ -2477,6 +2496,9 @@ Tool.list.push(new Tool("Redo", "Mb37,16889 c12184,-12b4a,26761,-bb8b,2f024,\
 9df c-61a,-109,-bf4,-3e9,-10aa,-89f c-c15,-c15,-c15,-1fad,0,-2bc2 c10d,-10d,\
 307e,-307e,732f,-732f c0,0,-686c,-7ae9,-12d5f,-89d9 c-86f2,-c4d,-ba42,2670,-\
 ba42,2670 c-c15,c15,-1fad,c15,-2bc2,0 c-c15,-c15,-c15,-1fad,0,-2bc2 z"));
+Tool.list.push(new Tool("Next", "M10200,0 L10200,40000 L40000,20000 z"));
+Tool.list.push(new Tool("Previous", "M2fc00,0 L0,20000 L2fc00,40000 z"));
+/** May throw error, use asynchronously! @throws {TypeError} */
 function check_contentScript() {
   var contentScript = GE("contentScript"), data = "";
   if (contentScript && (data = contentScript.innerText)) {
@@ -2559,6 +2581,7 @@ DefaultUI.TILE = {};
 DefaultUI.rend = F;
 /** @type {(TileType[]&{type:TileType})[]} */
 DefaultUI.blockBars = [
+  DefaultUI.createFolder("Previous"),
   DefaultUI.createFolder("Core", [690, 691, 692, 739, 746, 754, 757]),
   DefaultUI.createFolder("Wedge", [703, 692, 693, 694, 695, 696, 697]),
   DefaultUI.createFolder("Wedge", [698, 699, 700, 701, 702]),
@@ -2568,6 +2591,7 @@ DefaultUI.blockBars = [
   DefaultUI.createFolder("Small Hydrogen Tank", [760, 761, 762]),
   DefaultUI.createFolder("Cannon", [771, 772, 773, 774, 755, 776]),
   DefaultUI.createFolder("Small Hydraulic Drill", [770]),
+  DefaultUI.createFolder("Next"),
   DefaultUI.createFolder(791, [796, 786, 787, 788, 789, 791]),
   DefaultUI.createFolder("Separator", [790, 792, 793, 794, 795]),
   DefaultUI.createFolder(804, [802, 803, 804, 805, 804, 807, 808]),
@@ -3375,8 +3399,8 @@ var rend_speeeeed = {}, rend_logs = 69;
 
 init = function () {
   rend_checkColors();
-  check_contentScript();
   init_funMode();
+  check_contentScript();
 };
 
 function onlyConsole(m,s,l,c,e) {
