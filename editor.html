@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<!-- v.0.1.56 -->
+<!-- v.0.1.60 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Check out the early state of Droneboi opensource online Vehicle editor." />
+  <meta name="description" content="Check out the early state of opensource Droneboi Vehicles editor." />
   <link rel="icon" href="https://kaabel.github.io/.d1r.dbv/favicon.png" type="image/png" />
   <link rel="icon shortcut" href="https://kaabel.github.io/.d1r.dbv/favicon.svg" type="image/svg+xml" />
   <title>Droneboi Vehicles editor</title>
@@ -22,7 +22,6 @@
       width: 100%;
       width: 100vw;
       height: 100%;
-      height: 100vh;
     }
     #info a {
       color: #77b;
@@ -87,6 +86,8 @@
     focuses on gameplay, this webapp is planned to provide rich spaceship
     editor with many building functions, more powerfull and customizable
     tools for advanced drone designs. It is currently in development.
+    First thanks to Beau for Droneboi series and its visual graphics,
+    to the DBVE contributors and for feedback from also others.
     <h2>How to use it?</h2>
     <span style="color: #ff3333;">Disclaimer: Vehicles buildead in a way
     that it cannot be replicated by using only unmodified vanilla in-game
@@ -103,12 +104,15 @@
     they are opened. Click on Welcome message to close it, rightclicking
     around to open commands tab also closes Welcome message.
     <h2>What's new?</h2>
-    Well... not much yet, recently added commands are "Editing Mode" and
-    "Debug Logic circuit", I am attempting to reach the goal of dbve being
-    useful and find motivation for continuation of the huge codebase, so
-    decided to do it by alternative editing based on concept for final
-    look, instead being stuck on fixing and adding complexity to code lul.
-    <div id="auth" itemprop="dateModified" content="2024-08-29" datetime="2024-08-29">Made by:
+    Well... not much yet, works on proper UI slowly continue, you can see
+    the propgress by using
+    <a href="http://kaabel.github.io/.d1r.dbv/editor.html?logic">
+      ?logic
+    </a> fun mode. You can find the sourcecode at:
+    <a href="https://github.com/KaaBEL/.d1r.dbv">
+      https://github.com/KaaBEL/.d1r.dbv
+    </a>.
+    <div id="auth" itemprop="dateModified" content="2024-10-04" datetime="2024-10-04">Made by:
       <!-- link is unproperly displayed when whitespace is outside svg and pre -->
       <a href="https://github.com/KaaBEL"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="16" height="16" viewBox="0,0,16,16">
           <g data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill-rule="nonzero" stroke="none" style="mix-blend-mode: normal">
@@ -116,16 +120,16 @@
             <path d="M3,2h5v4h4v-4h1v5h-2l2,7h-1.3l-2,-7h-1.7v7h-5z" fill="#000" />
           </g>
       </svg><pre>KaaBEL</pre></a>
-      <time itemprop="dateModified" content="2024-08-29" datetime="2024-08-29">Last updated, August 29, 2024</time>
+      <time itemprop="dateModified" content="2024-10-04" datetime="2024-10-04">Last updated, October 4, 2024</time>
     </div>
   </footer>
-  <!-- v.0.0.21 -->
+  <!-- v.0.0.22 -->
   <script>
     "use strict";
-    var _ge;
-    function GE(v) {return document.getElementById(typeof v=="number"&&v==v?
-      (_ge=v+1)-1:v==void 0?v=_ge++:v)}
-    var canvas = GE(0), ctx = canvas.getContext("2d");
+    function GE(v){return document.getElementById(+v===v?(GE.i=v+1)-1:v===
+      void 0?v=GE.i++:v)}GE.i=0;
+    // 7th generation GE (Get Element) starts with id 0
+    var canvas = GE(), ctx = canvas.getContext("2d");
 
     // press is touch or click
 

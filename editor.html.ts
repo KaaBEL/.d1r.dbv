@@ -1,7 +1,6 @@
-// v.0.1.56
-var _ge: any;
-function GE(v: any) {return document.getElementById(typeof v=="number"&&v==v?
-  (_ge=v+1)-1:v==void 0?v=_ge++:v)}
+// v.0.1.60
+function GE(v){return document.getElementById(+v===v?(GE.i=v+1)-1:v===
+  void 0?v=GE.i++:v)}GE.i=0;
 
 var vX = 0;
 var vY = 0,

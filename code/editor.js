@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.js" types="./editor.js" />
 "use strict";
-// v.0.1.59
+// v.0.1.60
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -63,16 +63,16 @@ else if (/https?/.test(location.protocol) && navigator.serviceWorker)
     console.log(e, "sw_js");
   }
 if (/^http:\/\/(?:\d+\.\d+\.\d+\.\d+|localhost:\d+)/.exec(location.href))
-  window.WebSocket =
-    /** @type {any} disables VS code live server live reload */
-    (function () {
-      this.juhus = "yes";
-      var e = window.onerror;
-      window.onerror = function () {
-        window.onerror = e;
-      };
-      throw ":P";
-    });
+  +function (globalWebSocket) {
+    try {
+      sessionStorage = window.WebSocket =
+        /** @type {any} disables VS code live server live reload */
+        (function WebSocket() {
+          this.onmessage = function juhus() {};
+          window.WebSocket = globalWebSocket;
+        });
+    } catch (e) {}
+  }(WebSocket);
 
 canvas.addEventListener("contextlost", function () {
   console.warn("CONTEXT LOST!");
@@ -828,7 +828,7 @@ function utilities(tag) {
   return [btn, el];
 }
 utilities.rend_UI = F;
-/**
+/** class is sealed
  * @typedef {{name:string,type:string,fn:(ev:Event)=>any}} CommandItem
  * @param {string} name
  * @param {string} description
@@ -865,6 +865,7 @@ Command.add = function add(name, items, desc) {
     var o = new Command(name, "", items, !0);
   else
     o = new Command(name, desc, items, !1);
+  Command.initItem(o);
   return this.list.push(o);
 };
 /**
@@ -898,9 +899,15 @@ Command.push = function (name, initialize, description, settings) {
         el.appendChild(EL("br"));
       }
   }
-  return this.list.push(new Command(name, description, itemsInit,
-    settings.group));
+  return this.list.push(Command.initItem(new Command(name, description,
+    itemsInit, settings.group)));
 };
+/** after Commands Tab was initialized new commands are added live
+ * @param {Command} cmd */
+Command.initItem = function (cmd) {
+  return cmd;
+};
+Object.seal(Command);
 
 Command.push("Select Block", function (items, collapsed) {
   var bcks = {
@@ -1668,13 +1675,13 @@ lemented blocks like TNT, station blocks and more. Be aware that the key lim\
 its vehicle in and will refuse to compress too big vehicle. There are also b\
 ugs since I wasn't going down the rabbit hole of debugging every last one.");
 
-var test_selct = ship.selectRect(.1, 0, 0, .1, 0, 0),
-  test_selctLocked = ship.selectRect();
 Command.push("Transfrom tool", function (items, collapsed) {
+  var blockSelect = ship.selectRect(.1, 0, 0, .1, 0, 0),
+    lockedSelect = ship.selectRect();
   var selectX0 = EL("input"), selectY0 = EL("input");
   var selectX1 = EL("input"), selectY1 = EL("input");
   var select = EL("button"), inpX = EL("input"), inpY = EL("input");
-  /** for copied in test_select selection */
+  /** for copied in blockSelect selection */
   var offset = [0, 0];
   select.appendChild(tN("Select rectangle"));
   var xy = [0, 0, 0, 0], locked = EL("input");
@@ -1694,7 +1701,7 @@ Command.push("Transfrom tool", function (items, collapsed) {
   /** SELECT @param {boolean} [getLock] */
   function getSelected(getLock) {
     if (!getLock && locked.checked)
-      return test_selctLocked;
+      return lockedSelect;
     return selecting ?
       ship.selectRect() :
       ship.selectRect(0, xy[0], xy[1], 0, xy[2], xy[3]);
@@ -1743,7 +1750,7 @@ Command.push("Transfrom tool", function (items, collapsed) {
   locked.type = "checkbox";
   locked.oninput = function () {
     if (locked.checked)
-      test_selctLocked = getSelected(!0);
+      lockedSelect = getSelected(!0);
   };
   items.push(
     {name: "Selection X0", inp: selectX0},
@@ -1785,10 +1792,10 @@ Command.push("Transfrom tool", function (items, collapsed) {
   /** COPY SELECTION */
   function updateCopied() {
     offset = [Math.max(xy[0], xy[2]), Math.min(xy[1], xy[3])];
-    return "Copied: " + test_selct.length + " blocks: " +
-      test_selct.slice(0, 21).map(function (e) {
+    return "Copied: " + blockSelect.length + " blocks: " +
+      blockSelect.slice(0, 21).map(function (e) {
         return e.internalName;
-      }) + (test_selct.length > 21 ? ", ..." : "");
+      }) + (blockSelect.length > 21 ? ", ..." : "");
   }
   var copied = tN(updateCopied()), coloring = EL("select");
   var arr = ["defaults"];
@@ -1802,7 +1809,7 @@ Command.push("Transfrom tool", function (items, collapsed) {
   copy.onclick = function () {
     if (selecting)
       return;
-    test_selct = ship.selectRect(0, xy[0], xy[1], 0, xy[2], xy[3]);
+    blockSelect = ship.selectRect(0, xy[0], xy[1], 0, xy[2], xy[3]);
     copied.data = updateCopied();
     // also deselect the selection
     selecting = 2;
@@ -1815,7 +1822,7 @@ Command.push("Transfrom tool", function (items, collapsed) {
     if (selecting > 1)
       return;
     //var x = Math.min(x, xy[2]), y = Math.max(, xy[3]);
-    ship.paste(0, xy[0] - offset[0], xy[1] - offset[1], test_selct);
+    ship.paste(0, xy[0] - offset[0], xy[1] - offset[1], blockSelect);
     // also deselect the selection
     selecting = 2;
     selectX0.value = selectY0.value = "";
@@ -1846,7 +1853,7 @@ Command.push("Transfrom tool", function (items, collapsed) {
     if (selecting)
       return;
     defaults.buildReplace = !0;
-    ship.fillRect(0, xy[0], xy[1], 0, xy[2], xy[3], test_selct);
+    ship.fillRect(0, xy[0], xy[1], 0, xy[2], xy[3], blockSelect);
     defaults.buildReplace = !1;
     render();
   };
@@ -2081,10 +2088,17 @@ Command.push("Editing Mode", function (items) {
   var button1 = EL("button");
   button1.appendChild(tN("Enable Ship Editing"));
   button1.onclick = enableShipEditing;
-  items.push(button0, button1);
+  var checkbox = EL("input");
+  checkbox.type = "checkbox";
+  checkbox.checked = DefaultUI.inventoryTile;
+  checkbox.oninput = function () {
+    DefaultUI.inventoryTile = checkbox.checked;
+    render();
+  };
+  items.push(button0, button1, checkbox, tN("inventoryTile"));
 }, "Editing modes is the newest feature that is Work In Progress. Be aware t\
 hat non of the older commands were designed to be compatible with other mode\
-s in my.");
+s in there. You can use inventoryTile to enable inventory icon item.");
 Command.push("Debug Logic circuit", function (items, collapsed) {
   /** @param {Block|LogicBlock} block @returns {LogicBlock|undefined} */
   function checkEndComponent(block) {
@@ -2342,8 +2356,7 @@ var cmdsHeader = EL(), cmds = (function () {
     }
   }
   var group = utilities("");
-  for (var i = 0, groupName = ""; i < Command.list.length; i++) {
-    var item = Command.list[i];
+  Command.initItem = function (item) {
     if (item.group && item.group !== groupName) {
       group = utilities(groupName = item.group);
       content.appendChild(group[0]);
@@ -2353,7 +2366,10 @@ var cmdsHeader = EL(), cmds = (function () {
     e0.appendChild(tN(item.name));
     e0.onclick = initItems(item);
     e0.appendChild(EL()).appendChild(tN(">"));
+    return item;
   };
+  for (var i = 0, groupName = ""; i < Command.list.length; i++)
+    Command.initItem(Command.list[i]);
   window.onerror = function (m,s,l,c,e) {
     var pre = content.appendChild(EL("div"));
     pre.style.overflowWrap = "break-word";
@@ -2508,6 +2524,7 @@ function check_contentScript() {
   }
 }
 
+var devt_debugger = false;
 function DefaultUI() {
   throw new TypeError("Illegal constructor");
   this.mode = "any";
@@ -2542,6 +2559,61 @@ DefaultUI.createFolder = function (type, tiles) {
   folder.type = DefaultUI.createTile(type);
   return folder;
 };
+DefaultUI.TILE = {};
+DefaultUI.rend = F;
+/** @type {(TileType[]&{type:TileType})[]} */
+DefaultUI.blockBars = [
+  DefaultUI.createFolder("Core", [690, 691, 692, 739, 746, 754, 757]),
+  DefaultUI.createFolder("Wedge", [703, 692, 693, 694, 695, 696, 697]),
+  DefaultUI.createFolder("Wedge", [698, 699, 700, 701, 702]),
+  DefaultUI.createFolder(739, [738, 739, 740, 741, 742, 743]),
+  DefaultUI.createFolder("Small Hydrogen Thruster", [744, 745, 746]),
+  DefaultUI.createFolder(754, [754, 755, 756, 757, 758, 759]),
+  DefaultUI.createFolder("Small Hydrogen Tank", [760, 761, 762]),
+  DefaultUI.createFolder("Cannon", [771, 772, 773, 774, 775, 776]),
+  DefaultUI.createFolder("Small Hydraulic Drill", [770]),
+  DefaultUI.createFolder(791, [796, 786, 787, 788, 789, 791]),
+  DefaultUI.createFolder("Separator", [790, 792, 793, 794, 795]),
+  DefaultUI.createFolder(804, [802, 803, 804, 805, 804, 807, 808]),
+  DefaultUI.createFolder(804, [809, 810, 811, 812, 828, 813, 814]),
+  DefaultUI.createFolder(804, [815, 816, 817, null, 818, 819, 820]),
+  DefaultUI.createFolder(804, [821, 822, 823, 824, 825, 826, 827]),
+  DefaultUI.createFolder(853, [834, 835, 836, 837, 838, 839, 840]),
+  DefaultUI.createFolder(853, [841, 842, 843, 844, 845, 846, 847]),
+  DefaultUI.createFolder(853, [848, 849, 850, 851, 852, 853, 854]),
+  DefaultUI.createFolder(853, [855, 856, 857]),
+  DefaultUI.createFolder("Afterburner", [1035, 1037, 1043, 1060])
+];
+DefaultUI.selectedFolder = 2;
+/** value & 3: 0 = selected in toolBar, 1 = selected in BlockBar,
+ * 2 = selected inventoryTile, 3 = reserved for selected in inventory
+ * value >> 2: index of selected tile
+ * value === -1: no tile selected */
+DefaultUI.selectedTile = -1;
+DefaultUI.inventoryTile = false;
+/** @type {TileType[]} */
+DefaultUI.toolBar = [
+  DefaultUI.createTile("Tune"),
+  DefaultUI.createTile("Rotate"),
+  DefaultUI.createTile("Skin"),
+  DefaultUI.createTile("Clone"),
+  DefaultUI.createTile("Flip"),
+  null,
+  DefaultUI.createTile("Undo"),
+  DefaultUI.createTile("Redo")
+];
+/** used at @typedef {"@see"} SeeRenderingFolders */
+DefaultUI.offsetsFolders = 0;
+DefaultUI.previousFolders = false;
+DefaultUI.nextFolders = true;
+/** DefaultUI.press, .move, .contextmenu, .over are memory for
+ * 'default' action bind 'callback' for current Ship.Mode,
+ * for example used in Command.stop() */
+DefaultUI.press = press;
+DefaultUI.move = move;
+DefaultUI.contextmenu = contextmenu;
+DefaultUI.over = over;
+/** @see {DefaultUI.createTile} @see {DefaultUI.createFolder} */
 /** @TODO @SOCKS */
 /** selctively finds which UI area was interacted with
  * @param {number} x @param {number} y @returns {boolean} touches GUI */
@@ -2556,79 +2628,158 @@ DefaultUI.actionArea = function (x, y) {
     else
       return false;
   } else if (y > canvas.height - 103) {
-    // rect part of canvas where BlockBar is: dynamic resizing to canvas
+    // items for blockBar rect part of canvas: dynamic resizing to canvas
     if (DefaultUI.inventoryTile && x > canvas.width - 103)
       DefaultUI.selectedTile = 2;
     else if (x - 277 < (DefaultUI.blockBars[DefaultUI.selectedFolder] ||
       []).length * 87)
       DefaultUI.selectedTile = (x - 283) / 87 << 2 | 1;
-  } else if (x - 277 < DefaultUI.blockBars.length * 57 &&
-    y > canvas.height - 170) {
+  } else if (x - 277 + DefaultUI.offsetsFolders <
+    DefaultUI.blockBars.length * 57 && y > canvas.height - 170) {
     // folders for blockBar rect part of canvas:
     // resizes with folders amount changed
-    var selected = (x - 277) / 57 | 0;
-    if ((DefaultUI.selectedTile & 3) === 1 && selected !==
-      DefaultUI.selectedFolder)
+    var selected = (x - 277 + DefaultUI.offsetsFolders) / 57 | 0;
+    if (DefaultUI.previousFolders && x < 333)
+      DefaultUI.offsetsFolders -= 57;
+    else if (DefaultUI.nextFolders && x > canvas.width - 61)
+      DefaultUI.offsetsFolders += 57;
+    else if ((DefaultUI.selectedTile & 3) === 1 && selected !==
+      DefaultUI.selectedFolder) {
+      DefaultUI.selectedFolder = selected;
       DefaultUI.selectedTile = -1;
-    DefaultUI.selectedFolder = selected;
+    } else
+      DefaultUI.selectedFolder = selected;
   } else
     // the rest of canvas area is handled for building area
     return false;
   render();
   return true;
 }
-DefaultUI.TILE = {};
-DefaultUI.rend = F;
-/** @type {(TileType[]&{type:TileType})[]} */
-DefaultUI.blockBars = [
-  DefaultUI.createFolder("Previous"),
-  DefaultUI.createFolder("Core", [690, 691, 692, 739, 746, 754, 757]),
-  DefaultUI.createFolder("Wedge", [703, 692, 693, 694, 695, 696, 697]),
-  DefaultUI.createFolder("Wedge", [698, 699, 700, 701, 702]),
-  DefaultUI.createFolder(739, [738, 739, 740, 741, 742, 743]),
-  DefaultUI.createFolder("Small Hydrogen Thruster", [744, 745, 746]),
-  DefaultUI.createFolder(754, [754, 755, 756, 757, 758, 759]),
-  DefaultUI.createFolder("Small Hydrogen Tank", [760, 761, 762]),
-  DefaultUI.createFolder("Cannon", [771, 772, 773, 774, 755, 776]),
-  DefaultUI.createFolder("Small Hydraulic Drill", [770]),
-  DefaultUI.createFolder("Next"),
-  DefaultUI.createFolder(791, [796, 786, 787, 788, 789, 791]),
-  DefaultUI.createFolder("Separator", [790, 792, 793, 794, 795]),
-  DefaultUI.createFolder(804, [802, 803, 804, 805, 804, 807, 808]),
-  DefaultUI.createFolder(804, [809, 810, 811, 812, 828, 813, 814]),
-  DefaultUI.createFolder(804, [815, 816, 817, null, 818, 819, 820]),
-  DefaultUI.createFolder(804, [821, 822, 823, 824, 825, 826, 827]),
-  DefaultUI.createFolder(853, [834, 835, 836, 837, 838, 839, 840]),
-  DefaultUI.createFolder(853, [841, 842, 843, 844, 845, 846, 847]),
-  DefaultUI.createFolder(853, [848, 849, 850, 851, 852, 853, 854]),
-  DefaultUI.createFolder(853, [855, 856, 857]),
-  DefaultUI.createFolder("Afterburner", [1035, 1037, 1043, 1060])
-];
-DefaultUI.selectedFolder = 0;
-/** value & 3: 0 = selected in toolBar, 1 = selected in BlockBar,
- * 2 = selected inventoryTile, 3 = reserved for selected in inventory
- * value >> 2: index of selected tile
- * value === -1: no tile selected */
-DefaultUI.selectedTile = -1;
-DefaultUI.inventoryTile = !0;
-/** @type {TileType[]} */
-DefaultUI.toolBar = [
-  DefaultUI.createTile("Tune"),
-  DefaultUI.createTile("Rotate"),
-  DefaultUI.createTile("Skin"),
-  DefaultUI.createTile("Clone"),
-  DefaultUI.createTile("Flip"),
-  null,
-  DefaultUI.createTile("Undo"),
-  DefaultUI.createTile("Redo")
-];
-/** DefaultUI.press, .move, .contextmenu, .over are memory for
- * 'default' action bind 'callback' for current Ship.Mode,
- * for example used in Command.stop() */
-DefaultUI.press = press;
-DefaultUI.move = move;
-DefaultUI.contextmenu = contextmenu;
-DefaultUI.over = over;
+/** @param {TileType} tile */
+DefaultUI.getCode = function tileCode(tile) {
+  return tile instanceof Tool ?
+    tile.name :
+    tile instanceof Block ?
+      tile.internalName :
+      NaN;
+};
+/** @param {number} w */
+DefaultUI.reflowBlockBars = function (w) {
+  function pushToSame() {
+    sameTypes = sameTypes.concat(bars[i] || []);
+  }
+  /** plus = also adds bars[i] to sameTypes afterwards */
+  var checkAndPush = (DefaultUI.selectedTile & 3) === 1 ? function () {
+    if (i === DefaultUI.selectedFolder)
+      selectCode = sameTypes.length + (DefaultUI.selectedTile >> 2);
+      // TODO: remove in version 0.1.61
+      //-selectCode = sameTypes.length + (DefaultUI.selectedTile >> 2) + 1;
+    pushToSame();
+  } : pushToSame;
+  /** 380 = distance to the end of first tile + distance */
+  var i = 0,
+    maxItems = ((w - 380) / 87 | 0) - +DefaultUI.inventoryTile + 1,
+    selectCode = -1,
+    bars = DefaultUI.blockBars,
+    prevType = (bars[0] || {}).type || null,
+    /** @type {TileType[]} */
+    sameTypes = [],
+    /** @type {(TileType[]&{type:TileType})[]} */
+    updated = DefaultUI.blockBars = [];
+  // TODO: remove in version 0.1.61
+  //-if (selectCode === -1 && DefaultUI.selectedFolder === 0) {
+  //-  selectCode = sameTypes.length + (DefaultUI.selectedTile >> 2);
+  //-  debugger;
+  //-}
+  //-sameTypes = bars[0] || sameTypes;
+  checkAndPush();
+  maxItems < 1 && (maxItems = 1);
+  for (i++; i <= bars.length; i++) {
+    var tiles = bars[i] || {}, nowCode = DefaultUI.getCode(tiles.type);
+    if (nowCode === DefaultUI.getCode(prevType) && i < bars.length)
+      //-if (selectCode === -1 && i === DefaultUI.selectedFolder) {
+      //-  selectCode = sameTypes.length + (DefaultUI.selectedTile >> 2);
+      //-  debugger;
+      //-}
+      //-sameTypes = sameTypes.concat(bars[i]);
+      checkAndPush();
+    else {
+      for (var j = 0; j < sameTypes.length; j += maxItems) {
+        if (selectCode !== -1 && j + maxItems > selectCode) {
+        //-if (selectCode > 0 && j + maxItems > selectCode) {
+          DefaultUI.selectedTile = selectCode % maxItems << 2 | 1;
+          //-DefaultUI.selectedTile = selectCode % maxItems - 1 << 2 | 1;
+          DefaultUI.selectedFolder = updated.length;
+          if (devt_debugger)
+            debugger;
+          checkAndPush = pushToSame;
+          selectCode = -1;
+        }
+        var folder =
+          /** @type {TileType[]&{type:TileType}} */ 
+          (sameTypes.slice(j, j + maxItems));
+        folder.type = prevType;
+        updated.push(folder);
+      }
+      sameTypes = [];
+      checkAndPush();
+      //-if (selectCode === -1 && i === DefaultUI.selectedFolder) {
+      //-  selectCode = sameTypes.length + (DefaultUI.selectedTile >> 2);
+      //-  debugger;
+      //-}
+      //-sameTypes = bars[i];
+    }
+    prevType = tiles.type;
+    // TODO: remove in version 0.1.61
+    //-if (areSame && tiles.length * 87 > maxWidth) {
+    //-  (bars[i + 1] =
+    //-    /** @type {TileType[]&{type:TileType}} */
+    //-    (bars[i].slice(j).concat(bars[i + 1]))).type = tiles.type;
+    //-  (bars[i] =
+    //-    /** @type {TileType[]&{type:TileType}} */
+    //-    (bars[i].slice(0, j))).type = tiles.type;
+    //-  break;
+    //-} else if (areSame && tiles.length * 87 + 87 < maxWidth &&
+    //-  bars[i + 1]) {
+    //-  bars[i].push(bars[i + 1][0]);
+    //-  (bars[i + 1] =
+    //-    /** @type {TileType[]&{type:TileType}} */
+    //-    (bars[i + 1].slice(1))).type = tiles.type;
+    //-}
+  }
+  //-if(0)DefaultUI.blockBars = temp_blockBars.slice();
+  //-var maxFolders = (w - 297 - 54 + 1) / 54 | 0;
+  //-?WHAT? test_folders > 0;
+  //-ran out of imagination for simple temporary implementation
+  if (DefaultUI.offsetsFolders > (i = updated.length * 57))
+    DefaultUI.offsetsFolders = 0;
+  DefaultUI.previousFolders = DefaultUI.offsetsFolders > 0;
+  DefaultUI.nextFolders = 277 + i - DefaultUI.offsetsFolders > w - 8;
+  
+};
+// // live expression used for debugging:
+// {tile: DefaultUI.getCode(((DefaultUI.blockBars[DefaultUI.selectedFolder]) ||
+// {})[DefaultUI.selectedTile >> 2]), folderIndex: DefaultUI.selectedFolder,
+// tileIndex: DefaultUI.selectedTile >> 2, "canvas.width":canvas.width};
+// // some testable edgecases:
+// canvas.width = 1232;expensiveRenderer();DefaultUI.selectedFolder = 1;
+// DefaultUI.selectedTile = 9 << 2 | 1;expensiveRenderer();DefaultUI.blockBars;
+// canvas.width = 800;expensiveRenderer();
+// canvas.width = 300;expensiveRenderer();
+// canvas.width = 100;expensiveRenderer();
+// canvas.width = 1900;expensiveRenderer();
+// canvas.width = 2900;expensiveRenderer();
+// // fix^: selectCode = 0
+// // here another edgecase... fukc!:
+// canvas.width = 1232;expensiveRenderer();DefaultUI.selectedFolder = 15;
+// DefaultUI.selectedTile = 0 << 2 | 1;expensiveRenderer();DefaultUI.blockBars;
+// canvas.width = 800;expensiveRenderer();
+// canvas.width = 3000;expensiveRenderer();
+// // fix^: selectCode = ... + 1, ... selectCode & maxItems - 1 ...
+// // still not woth what the uck?!:
+// // notfix^: created checkAndPush and pushToSame
+// // fix^: replacing selectCode = -1 wasn't a good idea, put back
+// WORKS SO FAR... THERE IS A HOPE AGAIN (that the debugging is over)
 
 function enableShipEditing() {
   var mode = ship.getMode();
@@ -2708,7 +2859,6 @@ function test_juhus(w, h) {
       rX = x;
       rY = y;
     });
-    rc.imageSmoothingQuality 
     rc.fillStyle = "#dbecfe";
     rc.fill();
   }
@@ -2721,15 +2871,15 @@ function test_juhus(w, h) {
   }
   /** @param {TileType} tile @param {unknown} selected boolean */
   function drawItemCtx(tile, selected) {
-    tw += 87;
+    tx += 87;
     if (!tile)
       return;
     ctx.beginPath();
-    ctx.moveTo(tw, th - 25);
-    ctx.arcTo(tw, th - 15, tw + 78, th - 15, 5);
-    ctx.arcTo(tw + 78, th - 15, tw + 78, th - 93, 5);
-    ctx.arcTo(tw + 78, th - 93, tw, th - 93, 5);
-    ctx.arcTo(tw, th - 93, tw, th, 5);
+    ctx.moveTo(tx, ty - 25);
+    ctx.arcTo(tx, ty - 15, tx + 78, ty - 15, 5);
+    ctx.arcTo(tx + 78, ty - 15, tx + 78, ty - 93, 5);
+    ctx.arcTo(tx + 78, ty - 93, tx, ty - 93, 5);
+    ctx.arcTo(tx, ty - 93, tx, ty, 5);
     ctx.closePath();
     ctx.stroke();
     if (selected) {
@@ -2737,7 +2887,22 @@ function test_juhus(w, h) {
       ctx.fill();
     }
     drawIconFn(tile, 60);
-    ctx.drawImage(helpCanvas, tw + 9, th - 84, 60, 60);
+    ctx.drawImage(helpCanvas, tx + 9, ty - 84, 60, 60);
+  }
+  /** is drawn relatively to local var tfx and tfy @param {TileType} type */
+  function drawFolderCtx(type) {
+    ctx.globalAlpha = b ? .9 : .8;
+    ctx.beginPath();
+    ctx.moveTo(tfx, h - 101);
+    ctx.arcTo(tfx, h - tfy, tfx + 12, h - tfy, 5);
+    ctx.arcTo(tfx += 54, h - tfy, tfx, h - 146, 5);
+    ctx.lineTo(tfx, h - 101);
+    ctx.closePath();
+    ctx.fillStyle = b ? "#0c243c" : "#000c1c";
+    ctx.fill();
+    drawIconFn(type || [][0], 40);
+    ctx.globalAlpha = 1;
+    ctx.drawImage(helpCanvas, tfx - 47, h - (b ? 161 : 146), 40, 40);
   }
   ctx.globalAlpha = .9;
   ctx.lineJoin = "round";
@@ -2751,50 +2916,58 @@ function test_juhus(w, h) {
   ctx.moveTo(279, h - 19);
   ctx.arcTo(279, h - 7, 291, h - 7, 5);
   ctx.arcTo(w - 7, h - 7, w - 7, h - 19, 5);
-  ctx.arcTo(w - 7, h - 101, w - 19, h - 101, 5);
+  DefaultUI.nextFolders ?
+    ctx.lineTo(w - 7, h - 101) :
+    ctx.arcTo(w - 7, h - 101, w - 19, h - 101, 5);
   ctx.lineTo(279, h - 101);
   ctx.closePath();
   ctx.fillStyle = "#0c243c";
   ctx.fill();
+  /** @type {(TileType[]&{type:TileType})[]} */
   var bars = DefaultUI.blockBars;
   ctx.lineWidth = 2;
   ctx.strokeStyle = "#5577aa";
-  for (var i = 0, sw = 279, th = h; i < bars.length; i++) {
+  //-Is there a reason for why sw and th weren't named sx, ty?
+  //-Renaming done, we'll see, so far needed to not mix up their uses
+  // boolean: b contains fix for reselected item after reflow
+  var i = DefaultUI.selectedFolder, b = i !== -1 && i < bars.length;
+  for (var j = 0, tx = 200, ty = h; b && j < bars[i].length; j++)
+    drawItemCtx(bars[i][j], DefaultUI.selectedTile === (j << 2) + 1);
+  /** here @see {SeeRenderingFolders} */
+  // tfx + tfy = position reference for folders, tx + ty = ... for items
+  var n = DefaultUI.offsetsFolders, tfx = 279 + 56 - (n + 56) % 57;
+  for (var i = Math.ceil(n / 57), tfy = 0; i <= bars.length; i++) {
+    if (tfx + 7 + 54 > w)
+      break;
     if (!bars[i])
       continue;
-    var b = i === DefaultUI.selectedFolder, ty = b ? 168 : 153;
-    ctx.globalAlpha = b ? .9 : .8;
-    ctx.beginPath();
-    ctx.moveTo(sw, h - 101);
-    ctx.arcTo(sw, h - ty, sw + 12, h - ty, 5);
-    ctx.arcTo(sw + 54, h - ty, sw += 54, h - 146, 5);
-    ctx.lineTo(sw, h - 101);
-    ctx.closePath();
-    ctx.fillStyle = b ? "#0c243c" : "#000c1c";
-    ctx.fill();
-    drawIconFn(bars[i].type || [][0], 40);
-    ctx.globalAlpha = 1;
-    ctx.drawImage(helpCanvas, sw - 47, h - (b ? 161 : 146), 40, 40);
-    sw += 3;
-    for (var j = 0, tw = 200; b && j < bars[i].length; j++)
-      drawItemCtx(
-        bars[i][j],
-        DefaultUI.selectedTile === (j << 2) + 1
-      );
+    tfy = (b = i === DefaultUI.selectedFolder) ? 168 : 153;
+    drawFolderCtx(bars[i].type);
+    tfx += 3;
   }
-  for (var j = 0, tw = -72; j < DefaultUI.toolBar.length; j++) {
+  b = !1;
+  tfy = 153;
+  if (DefaultUI.previousFolders) {
+    tfx = 279;
+    drawFolderCtx(DefaultUI.createTile("Previous"));
+  }
+  if (DefaultUI.nextFolders) {
+    tfx = w - 7 - 54;
+    drawFolderCtx(DefaultUI.createTile("Next"));
+  }
+  for (var j = 0, tx = -72; j < DefaultUI.toolBar.length; j++) {
     drawItemCtx(
       DefaultUI.toolBar[j],
       DefaultUI.selectedTile === (j << 2
     ));
-    if (tw > 123) {
-      th -= 87;
-      tw = -72;
+    if (tx > 123) {
+      ty -= 87;
+      tx = -72;
     }
   }
   if (DefaultUI.inventoryTile) {
-    th = h;
-    tw = w - 94 - 87;
+    ty = h;
+    tx = w - 94 - 87;
     drawItemCtx(
       DefaultUI.createTile("Inventory"),
       (DefaultUI.selectedTile & 3) === 2
@@ -2905,7 +3078,6 @@ function enableLogicEditing() {
         e.type + " add it!");
     return !1;
   };
-  var oldWidth = 0, oldHeight = 0;
   DefaultUI.rend = function () {
     if (found) {
       ctx.lineWidth = defaults.highlightWidth;
@@ -2914,11 +3086,8 @@ function enableLogicEditing() {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.strokeRect(dx, dy, found.w * sc, found.h * sc);
     }
-    var w = canvas.width, h = canvas.height;
-    if (oldWidth !== w || oldHeight !== h) {
-      // TODO: reflow for blockbar items
-    }
-    test_juhus(w, h);
+    DefaultUI.reflowBlockBars(canvas.width);
+    test_juhus(canvas.width, canvas.height);
   };
   render();
 };
@@ -2931,8 +3100,6 @@ function edit_logic(x, y) {
 var edit_logicmove = function (x, y, e) {
   return e.type === "mousedown" ? DefaultUI.actionArea(x, y) : false;
 };
-
-/** renderedShip moved to @see {ship} */
 
 function rend_backgPattern() {
   try {
@@ -3168,7 +3335,7 @@ function commands(x, y, e) {
     }
   st.display = "none";
 }
-function devt_share(inp) {
+function devt__share(inp) {
   var el = GE("commandsTab");
   if (el)
     (el.lastChild instanceof HTMLTextAreaElement ?
@@ -3328,6 +3495,7 @@ var rend_speeeeed = {}, rend_logs = 69;
     ctx.drawImage(helpCanvas, dx, dy, sw * sc / 16, sh * sc / 16);
     if (Physics.rend.reporter && objs[i] instanceof LogicBlock) {
       var str = objs[i].getPhysics().reporter;
+      ctx.save();
       ctx.font = "24px sans-serif";
       ctx.globalAlpha = defaults.logicPreviewAlpha;
       ctx.fillStyle = "#000000";
@@ -3335,6 +3503,7 @@ var rend_speeeeed = {}, rend_logs = 69;
       ctx.globalAlpha = 1;
       ctx.fillStyle = "#ffffff";
       ctx.fillText(str, dx + 4, dy + 25);
+      ctx.restore();
     }
     // await new Promise(function (res) {
     //   var tfn = expensiveRenderer;//@ts-ignore
