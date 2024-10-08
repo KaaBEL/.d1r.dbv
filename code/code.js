@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.d.ts" types="./code.js" />
 "use strict";
-// v.0.1.58
+// v.0.1.61
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -1964,7 +1964,7 @@ Block.Selected = function (block, id, x, y, w, h) {
  * @param {Ship} ship */
 function LogicBlock(block, index, ship) {
   this.internalName = block.internalName;
-  this.position = 
+  this.position =
     /** @type {XYZPosition} */
     (block.position.slice());
   this.rotation = block.rotation;
@@ -1976,18 +1976,18 @@ function LogicBlock(block, index, ship) {
         prop.nodeIndex :
         prop.nodeIndex = [];
       if (ni.length !== logic.length)
-        console.warn("Why does block id: " + index + "has " +
+        console.warn("Why does block id: " + index + " have " +
           (ni.length > logic.length ? "more" : "less") +
           " nodeIdentifier (nodeIndex property) slots?", block);
       /** @type {Logic<any>|undefined} */
       var node, nodeList = ship.prop && ship.prop.nodeList || [];
-      for (var l = logic.length; l-- > ni.length;) {
-        node = new Logic(logic[l].type, 0, 0);
-        ni[l] = nodeList.push(node) - 1;
+      for (var j = logic.length, l = ni.length; j-- > l;) {
+        node = new Logic(logic[j].type, 0, 0);
+        ni[j] = nodeList.push(node) - 1;
         node.owner = logicBlock;
       }
-      for (l++; l-- > 0;)
-        if (!(node = nodeList[ni[l]]) || !node.owner)
+      for (j++; j-- > 0;)
+        if (!(node = nodeList[ni[j]]) || !node.owner)
           console.error("LogicBlock: node or node.owner is missing.");
         else if (node.owner !== block)
           console.error("LogicBlock: wrong owner:", node.owner, block);
@@ -2034,8 +2034,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @constant @type {21} significantVersion: 21 (integer) */
-Ship.VERSION = 21;
+/** @constant @type {22} significantVersion: 22 (integer) */
+Ship.VERSION = 22;
 Ship.prototype.selectRect = (
   /**
    * @overload @returns {Block[]&{parentShip:Ship}}
@@ -2359,6 +2359,40 @@ Ship.prototype.withPositionAdjustment = function (operation) {
     adjusted[i].position[1] -= adjustment[i] & 1;
     adjusted[i].position[2] -= adjustment[i] >>> 1;
   }
+};
+/**
+ * @param {number} x @param {number} y @param {number} z
+ * @param {ShipBlock} ref template Block for the new one */
+Ship.prototype.placeBlock = function (x, y, z, ref) {
+  // improved old_UI from editor.js
+  var logics = this.prop && this.prop.nodeList || [];
+  var block = new Block(
+    ref.internalName, 
+    [x, y, z],
+    /** @type {Rotation} */
+    (ref.rotation.slice()),
+    Block.Properties.addProperty(ref.internalName, Logic.addLogic(
+      ref.internalName,
+      JSON.parse(JSON.stringify(ref.properties)),
+      logics,
+      this.blocks
+    ))
+  );
+  if (logics.length)
+    (Logic.nodes =
+      /** @type {(Logic<any>|undefined)[]&{ownerShip:Ship;}} */
+      (((this.prop || (this.prop = OC())).nodeList = logics)
+      .concat([]))).ownerShip = this;
+  (block.properties.nodeIndex || []).forEach(function (e) {
+    var node = logics[e];
+    node ? node.owner = block : console.error("no node in temp code");
+  });
+  this.blocks.push(this.getMode().mode === "Logic" ?
+    // block added to ship.blocks is LogicBlock for Logic editing mode
+    new LogicBlock(block, -1, this) :
+    block);
+  Edit.eventFire();
+  return block;
 };
 /** @param {object} object */
 Ship.fromObject = function fromObject(object) {

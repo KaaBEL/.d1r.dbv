@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.js" types="./editor.js" />
 "use strict";
-// v.0.1.60
+// v.0.1.61
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -2563,28 +2563,20 @@ DefaultUI.TILE = {};
 DefaultUI.rend = F;
 /** @type {(TileType[]&{type:TileType})[]} */
 DefaultUI.blockBars = [
-  DefaultUI.createFolder("Core", [690, 691, 692, 739, 746, 754, 757]),
-  DefaultUI.createFolder("Wedge", [703, 692, 693, 694, 695, 696, 697]),
-  DefaultUI.createFolder("Wedge", [698, 699, 700, 701, 702]),
+  DefaultUI.createFolder("Core", [739, 746, 757]),
   DefaultUI.createFolder(739, [738, 739, 740, 741, 742, 743]),
   DefaultUI.createFolder("Small Hydrogen Thruster", [744, 745, 746]),
-  DefaultUI.createFolder(754, [754, 755, 756, 757, 758, 759]),
-  DefaultUI.createFolder("Small Hydrogen Tank", [760, 761, 762]),
-  DefaultUI.createFolder("Cannon", [771, 772, 773, 774, 775, 776]),
+  DefaultUI.createFolder("Small Hydrogen Tank", [757, 758, 759]),
+  DefaultUI.createFolder("Cannon", [771, 772, 773, 774, 775]),
   DefaultUI.createFolder("Small Hydraulic Drill", [770]),
-  DefaultUI.createFolder(791, [796, 786, 787, 788, 789, 791]),
-  DefaultUI.createFolder("Separator", [790, 792, 793, 794, 795]),
+  DefaultUI.createFolder(791, [789, 791]),
+  DefaultUI.createFolder("Separator", [790, 792, 795]),
   DefaultUI.createFolder(804, [802, 803, 804, 805, 804, 807, 808]),
   DefaultUI.createFolder(804, [809, 810, 811, 812, 828, 813, 814]),
   DefaultUI.createFolder(804, [815, 816, 817, null, 818, 819, 820]),
-  DefaultUI.createFolder(804, [821, 822, 823, 824, 825, 826, 827]),
-  DefaultUI.createFolder(853, [834, 835, 836, 837, 838, 839, 840]),
-  DefaultUI.createFolder(853, [841, 842, 843, 844, 845, 846, 847]),
-  DefaultUI.createFolder(853, [848, 849, 850, 851, 852, 853, 854]),
-  DefaultUI.createFolder(853, [855, 856, 857]),
-  DefaultUI.createFolder("Afterburner", [1035, 1037, 1043, 1060])
+  DefaultUI.createFolder(804, [821, 822, 823, 824, 825, 826, 827])
 ];
-DefaultUI.selectedFolder = 2;
+DefaultUI.selectedFolder = 0;
 /** value & 3: 0 = selected in toolBar, 1 = selected in BlockBar,
  * 2 = selected inventoryTile, 3 = reserved for selected in inventory
  * value >> 2: index of selected tile
@@ -2592,16 +2584,7 @@ DefaultUI.selectedFolder = 2;
 DefaultUI.selectedTile = -1;
 DefaultUI.inventoryTile = false;
 /** @type {TileType[]} */
-DefaultUI.toolBar = [
-  DefaultUI.createTile("Tune"),
-  DefaultUI.createTile("Rotate"),
-  DefaultUI.createTile("Skin"),
-  DefaultUI.createTile("Clone"),
-  DefaultUI.createTile("Flip"),
-  null,
-  DefaultUI.createTile("Undo"),
-  DefaultUI.createTile("Redo")
-];
+DefaultUI.toolBar = [];
 /** used at @typedef {"@see"} SeeRenderingFolders */
 DefaultUI.offsetsFolders = 0;
 DefaultUI.previousFolders = false;
@@ -2616,7 +2599,7 @@ DefaultUI.over = over;
 /** @see {DefaultUI.createTile} @see {DefaultUI.createFolder} */
 /** @TODO @SOCKS */
 /** selctively finds which UI area was interacted with
- * @param {number} x @param {number} y @returns {boolean} touches GUI */
+ * @param {number} x @param {number} y @returns {boolean} over GUI area */
 DefaultUI.actionArea = function (x, y) {
   if (x < 277) {
     // toolBar side of canvas: static tile slots
@@ -2672,8 +2655,6 @@ DefaultUI.reflowBlockBars = function (w) {
   var checkAndPush = (DefaultUI.selectedTile & 3) === 1 ? function () {
     if (i === DefaultUI.selectedFolder)
       selectCode = sameTypes.length + (DefaultUI.selectedTile >> 2);
-      // TODO: remove in version 0.1.61
-      //-selectCode = sameTypes.length + (DefaultUI.selectedTile >> 2) + 1;
     pushToSame();
   } : pushToSame;
   /** 380 = distance to the end of first tile + distance */
@@ -2686,22 +2667,11 @@ DefaultUI.reflowBlockBars = function (w) {
     sameTypes = [],
     /** @type {(TileType[]&{type:TileType})[]} */
     updated = DefaultUI.blockBars = [];
-  // TODO: remove in version 0.1.61
-  //-if (selectCode === -1 && DefaultUI.selectedFolder === 0) {
-  //-  selectCode = sameTypes.length + (DefaultUI.selectedTile >> 2);
-  //-  debugger;
-  //-}
-  //-sameTypes = bars[0] || sameTypes;
   checkAndPush();
   maxItems < 1 && (maxItems = 1);
   for (i++; i <= bars.length; i++) {
     var tiles = bars[i] || {}, nowCode = DefaultUI.getCode(tiles.type);
     if (nowCode === DefaultUI.getCode(prevType) && i < bars.length)
-      //-if (selectCode === -1 && i === DefaultUI.selectedFolder) {
-      //-  selectCode = sameTypes.length + (DefaultUI.selectedTile >> 2);
-      //-  debugger;
-      //-}
-      //-sameTypes = sameTypes.concat(bars[i]);
       checkAndPush();
     else {
       for (var j = 0; j < sameTypes.length; j += maxItems) {
@@ -2723,34 +2693,9 @@ DefaultUI.reflowBlockBars = function (w) {
       }
       sameTypes = [];
       checkAndPush();
-      //-if (selectCode === -1 && i === DefaultUI.selectedFolder) {
-      //-  selectCode = sameTypes.length + (DefaultUI.selectedTile >> 2);
-      //-  debugger;
-      //-}
-      //-sameTypes = bars[i];
     }
     prevType = tiles.type;
-    // TODO: remove in version 0.1.61
-    //-if (areSame && tiles.length * 87 > maxWidth) {
-    //-  (bars[i + 1] =
-    //-    /** @type {TileType[]&{type:TileType}} */
-    //-    (bars[i].slice(j).concat(bars[i + 1]))).type = tiles.type;
-    //-  (bars[i] =
-    //-    /** @type {TileType[]&{type:TileType}} */
-    //-    (bars[i].slice(0, j))).type = tiles.type;
-    //-  break;
-    //-} else if (areSame && tiles.length * 87 + 87 < maxWidth &&
-    //-  bars[i + 1]) {
-    //-  bars[i].push(bars[i + 1][0]);
-    //-  (bars[i + 1] =
-    //-    /** @type {TileType[]&{type:TileType}} */
-    //-    (bars[i + 1].slice(1))).type = tiles.type;
-    //-}
   }
-  //-if(0)DefaultUI.blockBars = temp_blockBars.slice();
-  //-var maxFolders = (w - 297 - 54 + 1) / 54 | 0;
-  //-?WHAT? test_folders > 0;
-  //-ran out of imagination for simple temporary implementation
   if (DefaultUI.offsetsFolders > (i = updated.length * 57))
     DefaultUI.offsetsFolders = 0;
   DefaultUI.previousFolders = DefaultUI.offsetsFolders > 0;
@@ -2779,7 +2724,6 @@ DefaultUI.reflowBlockBars = function (w) {
 // // still not woth what the uck?!:
 // // notfix^: created checkAndPush and pushToSame
 // // fix^: replacing selectCode = -1 wasn't a good idea, put back
-// WORKS SO FAR... THERE IS A HOPE AGAIN (that the debugging is over)
 
 function enableShipEditing() {
   var mode = ship.getMode();
@@ -3094,7 +3038,17 @@ function enableLogicEditing() {
 
 /** @param {number} x @param {number} y */
 function edit_logic(x, y) {
-  return DefaultUI.actionArea(x, y);
+  if (DefaultUI.actionArea(x, y))
+    return true;
+  var select = DefaultUI.selectedTile, tile = (select & 3) === 1 ?
+    (DefaultUI.blockBars[DefaultUI.selectedFolder] || [])[select >> 2] :
+    (select & 3) === 0 ? DefaultUI.toolBar[select >> 2] : null;
+  if (tile instanceof Block) {
+    ship.placeBlock(0, Math.floor((vX - x) / sc + 2),
+      Math.floor((y - vY) / sc), tile);
+    render();
+  }
+  return false;
 }
 /** @param {number} x @param {number} y @param {MouseEvent} e */
 var edit_logicmove = function (x, y, e) {
