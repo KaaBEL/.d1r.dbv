@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.js" types="./editor.js" />
 "use strict";
-// v.0.1.61
+// v.0.1.62
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -1575,17 +1575,11 @@ Command.push("Import/Export DBV", function (items, collapsed) {
   };
   items.push(elBtn, error, file.upload);
   var json = EL("input"), download = EL("a"), div = EL();
-  items.push({name: ".JSON save fle", inp: json});
+  items.push({name: ".JSON save file", inp: json});
   (elBtn = EL("button")).onclick = function () {
     error.innerText = "";
     try {
-      if (ship.prop) {
-        var logics = ship.prop.nodeList;
-        ship.prop.nodeList = UDF;
-      }
       var s = JSON.stringify(ship);
-      if (ship.prop && typeof logics != "undefined")
-        ship.prop.nodeList = logics;
       download.href = URL.createObjectURL(
         new Blob([s], {type: "application/json"})
       );
@@ -1623,8 +1617,10 @@ Command.push("Import/Export DBV", function (items, collapsed) {
 rting creates JSON key of ship and puts it in text input, the key doesn't in\
 clude nonexistent or blocks unavailable in game.\nImporting displays vehicle\
  of JSON key from text input.\nUpload from file/files button is used to load\
- file content into text input.\nJSON key is the content of .dbv savefile. It\
- contains textual data and can be opened using text editor.");
+ file content into text input.\nNotice that there is nothing mentioned about\
+ JSON save file input, it's mostly meant for stations.\nJSON key is the cont\
+ent of .dbv savefile. It contains textual data and can be opened using text \
+editor.");
 Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
   var inp = EL("input"), elBtn = EL("button"), error = EL();
   items.push({name: "Base64 key", inp: inp});
@@ -2379,10 +2375,12 @@ var cmdsHeader = EL(), cmds = (function () {
   return (bd || EL()).appendChild(nav);
 })();
 
-/** instance is sealed @param {string} name @param {string} icon */
-function Tool(name, icon) {
+/** instance is sealed
+ * @param {string} name @param {string} icon @param {()=>void} [exec] */
+function Tool(name, icon, exec) {
   this.name = name;
   this.icon = icon;
+  this.exec = exec || F;
   Object.seal(this);
 }
 /** @type {Tool[]} */
@@ -2438,7 +2436,18 @@ c7,7,1dd5,-1e1c,1e42,-1e7e c523,-49e,c05,-771,1395,-771 cdae,0,1922,93d,1c14\
 9b,-2445 c-459b,-3fc8,-a25d,-66b4,-10837,-66b4 c-d80e,0,-18734,af26,-18734,1\
 8734 c0,3ea,e,7d2,2c,bb6 c86,11ce,1c4,2841,1c4,290a c0,f6c,-ce6,1bed,-1cd0,1\
 bed c-1df,0,-3b4,-2c,-57a,-81 c-624,-125,-3fa5,-d93,-41df,-e1c c-c8e,-303,-1\
-5dd,-e02,-15dd,-1b1c c0,-4b0,-a0,-102a,-a0,-26cc z"));
+5dd,-e02,-15dd,-1b1c c0,-4b0,-a0,-102a,-a0,-26cc z", function () {
+  DefaultUI.tilesRotation[2] = DefaultUI.tilesRotation[2] =
+    /** @type {0|1|2|3} */
+    (DefaultUI.tilesRotation[2] + 1 & 3);
+  setTimeout(function () {
+    var tile = DefaultUI.getSelectedTile();
+    if (tile instanceof Tool && tile.name === "Rotate") {
+      DefaultUI.selectedTile = -1;
+      render();
+    }
+  }, 75);
+}));
 Tool.list.push(new Tool("Skin", "M2b144,2d362 c0,0,-4d72,4e17,-4d7d,4e21 c-6\
 e7,65c,-1048,a45,-1a9c,a45 c-ab5,0,-1464,-433,-1b5c,-afc c-520,-4fd,-454c,-4\
 679,-4a44,-4b4c c-c03,-ba9,-1c66,-12d7,-2e77,-12d7 c-173c,0,-2bb3,be1,-37a5,\
@@ -2529,19 +2538,25 @@ function DefaultUI() {
   throw new TypeError("Illegal constructor");
   this.mode = "any";
 }
+/** used in DefaultUI.createTile for rotatable blocks */
+DefaultUI.tilesRotation =
+  /** @type {Rotation} */
+  ([0, !1, 0]);
+DefaultUI.tilesFlippableRotation = DefaultUI.tilesRotation;
 DefaultUI.createTile = function () {
   /** @type {XYZPosition} */
-  var pos = [0, 0, 0],
-    /** @type {Rotation} */
-    rot = [0, !1, 0];
+  var pos = [0, 0, 0], id = 0;
   /** @param {unknown} val */
   return function (val) {
     if (typeof val == "number" && typeof Block.NAME[val] == "string")
-      return new Block(Block.NAME[val], pos, rot, {
-        color: Color.default(Block.NAME[val])
-      });
-    if (typeof Block.ID["" + val] == "number")
-      return new Block("" + val, pos, rot, 0, Color.default("" + val));
+      var name = Block.NAME[id = val];
+    else if (typeof (id = Block.ID["" + val]) == "number")
+      name = "" + val;
+    if (typeof name == "string")
+      return new Block(name, pos, Block.isFlippable(id) ?
+          DefaultUI.tilesFlippableRotation :
+          DefaultUI.tilesRotation,
+        0, Color.default(name));
     if (val instanceof Tool)
       return val;
     for (var i = Tool.list.length; i-- > 0;)
@@ -2584,7 +2599,7 @@ DefaultUI.selectedFolder = 0;
 DefaultUI.selectedTile = -1;
 DefaultUI.inventoryTile = false;
 /** @type {TileType[]} */
-DefaultUI.toolBar = [];
+DefaultUI.toolBar = [null, null, DefaultUI.createTile("Rotate")];
 /** used at @typedef {"@see"} SeeRenderingFolders */
 DefaultUI.offsetsFolders = 0;
 DefaultUI.previousFolders = false;
@@ -2676,9 +2691,7 @@ DefaultUI.reflowBlockBars = function (w) {
     else {
       for (var j = 0; j < sameTypes.length; j += maxItems) {
         if (selectCode !== -1 && j + maxItems > selectCode) {
-        //-if (selectCode > 0 && j + maxItems > selectCode) {
           DefaultUI.selectedTile = selectCode % maxItems << 2 | 1;
-          //-DefaultUI.selectedTile = selectCode % maxItems - 1 << 2 | 1;
           DefaultUI.selectedFolder = updated.length;
           if (devt_debugger)
             debugger;
@@ -2700,30 +2713,16 @@ DefaultUI.reflowBlockBars = function (w) {
     DefaultUI.offsetsFolders = 0;
   DefaultUI.previousFolders = DefaultUI.offsetsFolders > 0;
   DefaultUI.nextFolders = 277 + i - DefaultUI.offsetsFolders > w - 8;
-  
 };
-// // live expression used for debugging:
-// {tile: DefaultUI.getCode(((DefaultUI.blockBars[DefaultUI.selectedFolder]) ||
-// {})[DefaultUI.selectedTile >> 2]), folderIndex: DefaultUI.selectedFolder,
-// tileIndex: DefaultUI.selectedTile >> 2, "canvas.width":canvas.width};
-// // some testable edgecases:
-// canvas.width = 1232;expensiveRenderer();DefaultUI.selectedFolder = 1;
-// DefaultUI.selectedTile = 9 << 2 | 1;expensiveRenderer();DefaultUI.blockBars;
-// canvas.width = 800;expensiveRenderer();
-// canvas.width = 300;expensiveRenderer();
-// canvas.width = 100;expensiveRenderer();
-// canvas.width = 1900;expensiveRenderer();
-// canvas.width = 2900;expensiveRenderer();
-// // fix^: selectCode = 0
-// // here another edgecase... fukc!:
-// canvas.width = 1232;expensiveRenderer();DefaultUI.selectedFolder = 15;
-// DefaultUI.selectedTile = 0 << 2 | 1;expensiveRenderer();DefaultUI.blockBars;
-// canvas.width = 800;expensiveRenderer();
-// canvas.width = 3000;expensiveRenderer();
-// // fix^: selectCode = ... + 1, ... selectCode & maxItems - 1 ...
-// // still not woth what the uck?!:
-// // notfix^: created checkAndPush and pushToSame
-// // fix^: replacing selectCode = -1 wasn't a good idea, put back
+// live expression used for debugging:
+// https://github.com/KaaBEL/.d1r.dbv/blob/fb90bf5/code/editor.js#L2706-L2726
+// (fb90bf5e0ce42dd2bcbcb00f8a6e64b4a2242da7)
+DefaultUI.getSelectedTile = function () {
+  var select = DefaultUI.selectedTile;
+  return (select & 3) === 1 ?
+    (DefaultUI.blockBars[DefaultUI.selectedFolder] || [])[select >> 2] :
+    (select & 3) === 0 ? DefaultUI.toolBar[select >> 2] : null;
+};
 
 function enableShipEditing() {
   var mode = ship.getMode();
@@ -2754,6 +2753,9 @@ function test_juhus(w, h) {
       x = (a - w) / 2,
       y = (a - h) / 2;
     helpCanvas.width = helpCanvas.height = a;
+    var rot = 4 - block.rotation[2] & 3;
+    rc.rotate(rot * Math.PI / 2);
+    rc.translate(rot > 1 ? -a : 0, rot && rot < 3 ? -a : 0);
     rc.fillStyle = rend_colors[Color.ID[block.properties.color]];
     block.internalName !== "Ghost Block" && rc.fillRect(x, y, w, h);
     rc.globalCompositeOperation = "destination-in";
@@ -2979,8 +2981,12 @@ function enableLogicEditing() {
   DefaultUI.press = press = edit_logic;
   DefaultUI.move = move = edit_logicmove = function (x, y, e) {
     if (e.type === "mousedown") {
-      if (DefaultUI.actionArea(x, y))
+      if (DefaultUI.actionArea(x, y)) {
+        var tile = DefaultUI.getSelectedTile();
+        if (tile instanceof Tool)
+          tile.exec();
         return !(found = null);
+      }
       if (!(found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc)))
         return !1;
       // offsets
@@ -3038,11 +3044,13 @@ function enableLogicEditing() {
 
 /** @param {number} x @param {number} y */
 function edit_logic(x, y) {
-  if (DefaultUI.actionArea(x, y))
+  if (DefaultUI.actionArea(x, y)) {
+    var tile = DefaultUI.getSelectedTile();
+    if (tile instanceof Tool)
+      tile.exec();
     return true;
-  var select = DefaultUI.selectedTile, tile = (select & 3) === 1 ?
-    (DefaultUI.blockBars[DefaultUI.selectedFolder] || [])[select >> 2] :
-    (select & 3) === 0 ? DefaultUI.toolBar[select >> 2] : null;
+  }
+  tile = DefaultUI.getSelectedTile();
   if (tile instanceof Block) {
     ship.placeBlock(0, Math.floor((vX - x) / sc + 2),
       Math.floor((y - vY) / sc), tile);

@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.d.ts" types="./code.js" />
 "use strict";
-// v.0.1.61
+// v.0.1.62
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -609,12 +609,13 @@ Logic.removeLogic = function (block, logics) {
 Logic.expensiveExec = function (ship) {
   var nodeList = ship.prop && ship.prop.nodeList || [];
   for (var i = 0, blocks = ship.blocks; i < blocks.length; i++) {
-    var o = blocks[i], logic = Logic.VALUE[Block.ID[o.internalName]]; 
+    var o = blocks[i], logic = Logic.VALUE[Block.ID[o.internalName]];
     if (!logic)
       continue;
     /** @type {Logic<2|3>[]} */
     var arg = [], block = o instanceof LogicBlock && o ||
-      (blocks[i] = o = new LogicBlock(o, i, ship));
+      // #MessingWithWorkingLogics
+      (blocks[i] = o = new LogicBlock(o, i, nodeList));
     // Get corresponding inputs/outputs for the operation
     for (var j = logic.length; j-- > 0;) {
       var node = nodeList[block.properties.nodeIndex[j]];
@@ -1480,8 +1481,10 @@ Block.arrayFromObjects = function arrayFromObjects(blocks, logics$) {
         indexes[i] = ncProperty[indexes[i]];
     return indexes;
   }
-  var propertyNames = new RegExp("^(internalName|name|n|position|pos|p|rotat\
-ion|rot|r|properties|prop|f|flipped|wg|weld|color|s|c|ni|invalidName)$");
+  /**  @type {XYZPosition[]} */
+  var logicBlockPositions = [], propertyNames = new RegExp("^(internalName|n\
+ame|n|position|pos|p|rotation|rot|r|properties|prop|f|flipped|wg|weld|color|\
+s|c|ni|invalidName|getPhysics|logicPosition|logicBlockIndex)$");
   for (var i = 0, r = []; i < bs.length; i++) {
     var block = bs[i], o = {
       name: block.internalName || block.name || block.n,
@@ -1489,7 +1492,8 @@ ion|rot|r|properties|prop|f|flipped|wg|weld|color|s|c|ni|invalidName)$");
       rot: block.rotation || block.rot || block.r || 0,
       prop: block.properties || block.prop || {color: ""},
       flip: block.f || block.flipped,
-      weld: block.wg || block.weld
+      weld: block.wg || block.weld,
+      lpos: block.logicPosition
     };
     o.prop.color = block.color || block.s || o.prop.color || "";
     for (var p in block)
@@ -1551,11 +1555,19 @@ ion|rot|r|properties|prop|f|flipped|wg|weld|color|s|c|ni|invalidName)$");
     }
     if (Block.ID[name] > 689 && Block.ID[name] < 947)
       o.prop.weldGroup = o.weld || 0;
-    r[i] = new Block(name, [pos[0], pos[1], pos[2]], rot, o.prop);
+    block = new Block(name, [pos[0], pos[1], pos[2]], rot, o.prop);
+    if (o.lpos && o.lpos instanceof Array)
+      logicBlockPositions[i] =
+        [+o.lpos[0] || 0, +o.lpos[1] || 0, +o.lpos[2] || 0];
+    r[i] = block;
   }
   // optionally correct loading if logic nodes will require
   // to finish references after all blocks are loaded
-  return Logic.reassemble(r, logics);
+  Logic.reassemble(r, logics);
+  logicBlockPositions.forEach(function (e, i) {
+    (r[i] = new LogicBlock(block, i, logics)).logicPosition = e;
+  });
+  return r;
 };
 /** @param {number} n @param {Logic<any>[]} [logics] */
 Block.generateArray = function generateArray(n, logics) {
@@ -1588,9 +1600,9 @@ Block.generateArray = function generateArray(n, logics) {
   blocks.length--;
   return blocks;
 };
-/** @param {number} id */
-Block.isWedge = function (id) {
-  return id < 697 ? id > 691 && id < 695 : id < 700;
+/** for DBV blocks @param {number} id */
+Block.isFlippable = function (id) {
+  return id < 697 ? id > 691 && id < 695 : id < 700 || id === 703;
 };
 /** @typedef {0|1|2|3|number} RA Rotation Axis */
 // not tested or debugged at all
@@ -1959,9 +1971,10 @@ Block.Selected = function (block, id, x, y, w, h) {
   Object.freeze(this);
 };
 
-/**
+/** neccesary ln Logic editing mode because of logicPosition and
+ * logicBlockIndex properties, useless to be used for not logic blocks
  * @param {Block} block @param {number} index -1 for no index
- * @param {Ship} ship */
+ * @param {Ship|(Logic<any>|undefined)[]} ship used to get nodeList */
 function LogicBlock(block, index, ship) {
   this.internalName = block.internalName;
   this.position =
@@ -1969,7 +1982,8 @@ function LogicBlock(block, index, ship) {
     (block.position.slice());
   this.rotation = block.rotation;
   this.properties =
-    /** @type {typeof block.properties&{nodeIndex:number[]}} */
+    /** more strict block.properties makes editing logic nodes easier
+     * @type {typeof block.properties&{nodeIndex:number[]}} */
     (function (prop, logicBlock) {
       var logic = Logic.VALUE[Block.ID[block.internalName]] || [];
       var ni = prop.nodeIndex instanceof Array ?
@@ -1980,7 +1994,10 @@ function LogicBlock(block, index, ship) {
           (ni.length > logic.length ? "more" : "less") +
           " nodeIdentifier (nodeIndex property) slots?", block);
       /** @type {Logic<any>|undefined} */
-      var node, nodeList = ship.prop && ship.prop.nodeList || [];
+      // #MessingWithWorkingLogics
+      var node, nodeList = ship instanceof Array ?
+        ship :
+        ship.prop && ship.prop.nodeList || [];
       for (var j = logic.length, l = ni.length; j-- > l;) {
         node = new Logic(logic[j].type, 0, 0);
         ni[j] = nodeList.push(node) - 1;
@@ -1997,9 +2014,8 @@ function LogicBlock(block, index, ship) {
     }(block.properties, this));
   this.getPhysics = block.getPhysics;
   this.logicPosition = block.position;
+  /** while in Logic mode it stores index of the block in Ship Ship.Mode */
   this.logicBlockIndex = index;
-  /** @type {number[]} */
-  this.logicValues = [];
 }
 __extends(LogicBlock, Block);
 
@@ -2034,8 +2050,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @constant @type {22} significantVersion: 22 (integer) */
-Ship.VERSION = 22;
+/** @constant @type {23} significantVersion: 23 (integer) */
+Ship.VERSION = 23;
 Ship.prototype.selectRect = (
   /**
    * @overload @returns {Block[]&{parentShip:Ship}}
@@ -2271,7 +2287,8 @@ Ship.prototype.mirror2d = (
             -(size.w - 32 >> 4)) - pos[1] :
           -pos[1];
       // Wedges and Smoooofth Coorners
-      Block.isWedge(id) && (block.rotation[1] = !block.rotation[1]);
+      if (Block.isFlippable(id))
+        block.rotation[1] = !block.rotation[1];
     }
     var x = x0, y = y0, z = z0;
     /** @type {XYZPosition} */
@@ -2379,17 +2396,15 @@ Ship.prototype.placeBlock = function (x, y, z, ref) {
     ))
   );
   if (logics.length)
-    (Logic.nodes =
-      /** @type {(Logic<any>|undefined)[]&{ownerShip:Ship;}} */
-      (((this.prop || (this.prop = OC())).nodeList = logics)
-      .concat([]))).ownerShip = this;
+    (this.prop || (this.prop = OC())).nodeList = logics;
   (block.properties.nodeIndex || []).forEach(function (e) {
     var node = logics[e];
     node ? node.owner = block : console.error("no node in temp code");
   });
   this.blocks.push(this.getMode().mode === "Logic" ?
     // block added to ship.blocks is LogicBlock for Logic editing mode
-    new LogicBlock(block, -1, this) :
+    // #MessingWithWorkingLogics
+    new LogicBlock(block, -1, logics) :
     block);
   Edit.eventFire();
   return block;
