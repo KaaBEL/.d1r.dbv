@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.js" types="./editor.js" />
 "use strict";
-// v.0.1.62
+var version_editor_js = "v.0.1.63";
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -290,7 +290,7 @@ anel","p":[2,1],"r":270,"f":false,"s":"White","c":[],"ni":[22],"wg":0},{"n":\
 ":14,"Item2":3},{"Item1":8,"Item2":15},{"Item1":7,"Item2":15},{"Item1":6,"It\
 em2":1},{"Item1":5,"Item2":15}],"ci":[],"significantVersion":20}'));
   }
-})(/\/[0-9a-zA-Z._+\-]+\/editor\.html(?:#[^?]*)?($|\?[^=]*)/);
+})(/\/[0-9a-zA-Z._+\-:]+\/editor(?:\.html)?(?:#[^?]*)?($|\?[^=]*)/);
 
 var imgOverlay = document.body.appendChild(document.createElement("img"));
 imgOverlay.style.display = "none";
@@ -2267,6 +2267,33 @@ Command.push("Change editor background", function (items, collapsed) {
 }, "When \"Image pattern\" checkbox is checked, Droneboi: Conquest backgroun\
 d is used. Else color from \"Background color\" input is used. If it is in h\
 exadecimal format #111133 for example, the setting will update.");
+Command.push("Current version", function(items, collapsed) {
+  var version_sw = tN(""), s = "data";
+  items.push(
+    tN("[editor.html]: " + (document.childNodes[1][s] || "")),
+    EL("br"),
+    tN("[code.js]: " + version_code_js),
+    EL("br"),
+    tN("[editor.js]: " + version_editor_js),
+    EL("br"),
+    version_sw
+  );
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET",
+    "/.d1r.dbv/service-worker.js");
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState !== 4)
+      return;
+    try {
+      var res =
+        / v(?:\.[0-9a-zA-Z]+)+/.exec(xhr.responseText.slice(0,1024));
+      version_sw.data = res ? "[service-worker.js]:" + res[0] : "";
+    } catch (e) {
+      console.error(xhr.responseText ? e : "xhr empty response");
+    }
+  };
+  xhr.send();
+}, "");
 Command.push("About Commands tab", function (items) {}, "OPENING AND MOVIGN \
 AROUND\nCommands tab is opened or moved by activating contextmenu, the optio\
 ns usually from right click or long press on touch screen, not on already op\
@@ -2980,7 +3007,7 @@ function enableLogicEditing() {
   var found = null, movingId = -1;
   DefaultUI.press = press = edit_logic;
   DefaultUI.move = move = edit_logicmove = function (x, y, e) {
-    if (e.type === "mousedown") {
+    if (e.type === "mousedown" || e.type === "touchstart") {
       if (DefaultUI.actionArea(x, y)) {
         var tile = DefaultUI.getSelectedTile();
         if (tile instanceof Tool)
@@ -2998,13 +3025,13 @@ function enableLogicEditing() {
       blocks[found.id] = new Block("__NULL__", [0, 0, 0], [0, !1, 0]);
       render();
       return !0;
-    } else if (e.type === "mousemove") {
+    } else if (e.type === "mousemove" || e.type === "touchmove") {
       if (!found)
         return !1;
       found.block.position[1] = (vX - x) / sc - oX;
       found.block.position[2] = (y - vY) / sc - oY;
       render();
-    } else if (e.type === "mouseup") {
+    } else if (e.type === "mouseup" || e.type === "touchend") {
       if (!found)
         return !1;
       if ((blocks[movingId] === found.block ?
@@ -3058,7 +3085,7 @@ function edit_logic(x, y) {
   }
   return false;
 }
-/** @param {number} x @param {number} y @param {MouseEvent} e */
+/** @param {number} x @param {number} y @param {TemporaryEventParam} e */
 var edit_logicmove = function (x, y, e) {
   return e.type === "mousedown" ? DefaultUI.actionArea(x, y) : false;
 };

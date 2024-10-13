@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.1.60 -->
+<!-- v.0.1.63 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -123,7 +123,7 @@
       <time itemprop="dateModified" content="2024-10-04" datetime="2024-10-04">Last updated, October 4, 2024</time>
     </div>
   </footer>
-  <!-- v.0.0.22 -->
+  <!-- v.0.0.23 -->
   <script>
     "use strict";
     function GE(v){return document.getElementById(+v===v?(GE.i=v+1)-1:v===
@@ -141,6 +141,7 @@
     var vX = 0, vY = 0, fX, fY, gX, gY, sc = 16, bd = GE(8);
     // . mouseStamp = 0, tStart = 0, touch = null, touch_2 = null;
 
+    /** @typedef {MouseEvent|TouchEvent|TchD} TemporaryEventParam */
     /** signals UI API click on canvas */
     var press = function press(x, y) {
       return console.log(x, y);
@@ -175,24 +176,24 @@
       TCH = {};
     }
 
-    /** @typedef {Array<TchD|null>} tchsDat */
-    /** @typedef {(TchD|null)[] & {count: number}} touches */
+    /** @typedef {(TouchDat|null)[]} TchDArr */
+    /** @typedef {(TouchDat|null)[] & {count: number}} AllTchD */
     /** fires when action of event doesn't correspond with touches array
      * @callback errorH
-     * @param {touches} touches @param {Touch} faulty @param {TouchEvent}
+     * @param {AllTchD} touches @param {Touch} faulty @param {TouchEvent}
      * @returns {boolean} ? keep current touches : reset to the new action
      */// ^ swaped result by boolean (should reset on default: void functions)
     /** fires when event is fired, may give all or portion of changed touches
      * @callback softH
-     * @param {touches} touches
-     * @param {tchsDat} changed
+     * @param {AllTchD} touches (all) same as changed but with count property
+     * @param {TchDArr} changed TchD|null array with touches at their indexes
      * @param {TouchEvent} ev
      * @returns {void} */
     /** fires when all events were collected, possibly one cycle
      * @callback hardH
-     * @param {touches} touches
-     * @param {tchsDat} added
-     * @param {tchsDat} removed
+     * @param {AllTchD} touches
+     * @param {TchDArr} added
+     * @param {TchDArr} removed
      * @returns {void} */
     /** @typedef {(e:TouchEvent)=>void} handler */
 
@@ -200,7 +201,7 @@
      * @param {HTMLElement} src
      * @param {Touch} touch
      * @param {TouchEvent} touchEvent */
-    function TchD(src, touch, touchEvent) {
+    function TouchDat(src, touch, touchEvent) {
       var source = src || document.createElement("div");
       if (!arguments.length)
         try {
@@ -256,7 +257,7 @@
       this.sTime = this.time;
       /** @type {EventTarget} source target */
       this.srcTarget = this.target;
-      /** @method update @this {TchD} */
+      /** @method update @this {TouchDat} */
       this.update = function (touch, touchEvent) {
         if (!(touch instanceof Touch))
           throw new TypeError("1. arg: touch is not type of Touch");
@@ -289,6 +290,7 @@
       };
       return Object.seal(this);
     }
+    /** @typedef {TouchDat} TchD */
     
     /** aditional/optional js logging of touch events */
     function test_touches(targ, calls, globalArr, customLog) {
@@ -384,13 +386,13 @@
       var o = {},
         /** @type {boolean} */
         events = [],
-        /** @type {tchsDat} */
+        /** @type {TchDArr} */
         temp = [],
-        /** @type {tchsDat} */
+        /** @type {TchDArr} */
         added = [],
-        /** @type {tchsDat} */
+        /** @type {TchDArr} */
         removed = [],
-        /** @type {touches} */
+        /** @type {AllTchD} */
         touches = function () {
           var arr = [];
           arr.count = 0;
@@ -430,7 +432,7 @@
           i++;
         events[i] = !0;
         identifiers[i] = tch.identifier;
-        touches[i] = added[i] = temp[i] = new TchD(src, tch, ev);
+        touches[i] = added[i] = temp[i] = new TouchDat(src, tch, ev);
       }
       function updateTouch(tch, ev, i) {
         if (i === UDF) {
@@ -460,7 +462,8 @@
         for (i = touches.count = 0; i < touches.length;)
           touches.count += +!!touches[i++];
         softHandlers[evId](touches, temp, ev);
-        temp = [];
+        for (i = temp.length = touches.length; i-- > 0;)
+          temp[i] = null;
       }
       function inputTouches(evId, evStr, ev, method) {
         for (var i = touches.count = 0; i < touches.length;)
@@ -549,7 +552,7 @@
         mouseStamp = e.buttons === 1 ? Date.now() : 0;
         pX = gX = e.pageX - canvas.offsetLeft;
         pY = gY = e.pageY - canvas.offsetTop;
-      }
+      };
       bd.onmousemove = function (e) {
         if (foreign)
           return over(e);
@@ -602,6 +605,8 @@
 
     var actionType = 0, moveScore = 0, moveCount = 0;
     function touchGrab(all, ev) {
+      if (!all[0] || !all[1])
+        return console.error("");
       ev.cancelable && ev.preventDefault();
       var x0 = all[0].movX,
         y0 = all[0].movY,
@@ -635,11 +640,16 @@
               Math.abs(x0 - x1 + y0 - y1) * 2 :
           0;
       }
+      used = !1;
       render();
     }
-    var foreign1 = !1, touchStamp = 0, prevCount = 0;
-    /** @type {(all:touches,changed:TchD[],ev:TouchEvent)=>void} */
-    function thetouchstart(all, changed, ev) {
+    /** equivalent of foreign for touches */
+    var other = !1, touchStamp = 0, prevCount = 0;
+    /** equivalent of moving and taken for touches */
+    var swiping = !1, used = !1;    
+    /** @TODO In future do firing contextmenu on canvas by this TchDAPI */
+    /** @type {(all:AllTchD,changed:TchDArr,ev:TouchEvent)=>void} */
+    function oldtouchstart(all, changed, ev) {
       if (prevCount === 0)
         touchStamp = Date.now();
       if (changed[0] && changed[0].srcTarget !== canvas)
@@ -651,15 +661,60 @@
       }
       prevCount = all.count;
     }
-    /** @type {(all:touches,changed:TchD[],ev:TouchEvent)=>void} */
-    function thetouchmove(all, changed, ev) {
+    /** @type {typeof oldtouchstart} */
+    function thetouchstart(all, changed, ev) {
+      // at ontouchstart it's decided what action is active
+      if (prevCount === 0)
+        touchStamp = Date.now();
+      if (all.count === 1 && changed[0]) {
+        if (other = changed[0].srcTarget !== canvas)
+          over(changed[0]);
+        else
+          (used = move(changed[0].posX, changed[0].posY, ev));
+          // && ev.cancelable && ev.preventDefault();
+      // @see {bd.onmousedown} for teleporting in between
+      } else if (all.length > 1 && !actionType && all[0] && all[1] &&
+        Date.now() < touchStamp + touchesInit.time) {
+        moveScore = moveCount = 0;
+        actionType = 4;
+      }
+      prevCount = all.count;
+    }
+    /** @type {(all:touches,changed:TchDArr,ev:TouchEvent)=>void} */
+    function oldtouchmove(all, changed, ev) {
       if (changed[0] && changed[0].srcTarget !== canvas)
         over(changed[0]);
       else if (actionType > 1 && all[0] && all[1])
         touchGrab(all, ev);
     }
-    /** @type {(all:touches,changed:TchD[],ev:TouchEvent)=>void} */
-    function thetouchend(all, changed, ev) {
+    /** @see {bd.onmousemove} for teleporting in between
+     * @type {typeof oldtouchmove} */
+    function thetouchmove(all, changed, ev) {
+      // at ontouchmove active actions are executed
+      if (other)
+        return changed[0] && over(changed[0]);
+      if (actionType > 1)
+        return all[0] && all[1] && touchGrab(all, ev);
+      if (!changed[0])
+        return;
+      var x = Math.abs(changed[0].sX - changed[0].posX),
+        y = Math.abs(changed[0].sY - changed[0].posY),
+        long = Date.now() < touchStamp + touchesInit.time,
+        far = Math.sqrt(x * x + y * y) > touchesInit.move;
+      far && ev.cancelable && ev.preventDefault();
+      if (used)
+        move(changed[0].posX, changed[0].posY, ev);
+      else if (swiping) {
+        vX += changed[0].movX;
+        vY += changed[0].movY;
+        render();
+      } else {
+        swiping = !used &&
+          Date.now() > touchStamp + touchesInit.time || far;
+      }
+    }
+    /** @type {(all:AllTchD,changed:TchDArr,ev:TouchEvent)=>void} */
+    function oldtouchend(all, changed, ev) {
       if (all.count === 0)
         actionType = 0;
       if (changed[0] && changed[0].srcTarget !== canvas)
@@ -669,11 +724,53 @@
       prevCount = all.count;
       //ev.cancelable && ev.preventDefault();
     }
-    /** @type {(all:touches,changed:TchD[],ev:TouchEvent)=>void} */
-    function thetouchcancel(all, changed, ev) {
+    /** @see {bd.onmouseup} for teleporting in between
+     * @type {typeof oldtouchend} */
+    function thetouchend(all, changed, ev) {
+      // at ontouchend actions may finish, deactivate or activate
+      if (other && changed[0]) {
+        over(changed[0]);
+      // if (other) {
+      //   changed[0] && over(changed[0]);
+        other = !1;
+      } else if (actionType > 1) {
+        var tch0 = changed[0] || all[0], tch1 = changed[1] || all[1];
+        tch0 && tch1 && touchGrab([tch0, tch1], ev);
+      } else if (changed[0]) {
+        var x = Math.abs(changed[0].sX - changed[0].posX),
+          y = Math.abs(changed[0].sY - changed[0].posY),
+          long = Date.now() > touchStamp + touchesInit.time,
+          far = Math.sqrt(x * x + y * y) > touchesInit.move;
+        (!long || far) && ev.cancelable && ev.preventDefault();
+        if (used)
+          move(changed[0].posX, changed[0].posY, ev);
+        else if (swiping) {
+          vX += changed[0].movX;
+          vY += changed[0].movY;
+          render();
+        } else if (!(long || far)) {
+            ev.cancelable && ev.preventDefault();
+            press(changed[0].posX, changed[0].posY);
+        }
+      }
+      if (all.count === 0) {
+        actionType = 0;
+        swiping = used = other = !1;
+      }
+      prevCount = all.count;
+    }
+    /** @type {(all:AllTchD,changed:TchDArr,ev:TouchEvent)=>void} */
+    function oldtouchcancel(all, changed, ev) {
       console.error("Touches canceled");
       prevCount = touchStamp = actionType = 0;
       //ev.cancelable && ev.preventDefault();
+    }
+    /** @type {typeof oldtouchcancel} */
+    function thetouchcancel(all, changed, ev) {
+      console.error("Touches canceled");
+      prevCount = touchStamp = actionType = 0;
+      used = swiping = other = !1;
+      // used = swiping = !1;
     }
 
     document.body.onload = function initDoc() {
