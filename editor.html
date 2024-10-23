@@ -860,18 +860,6 @@
       resizeWindow();
     };
   </script>
-  <script>
-    "use strict";
-    var ncalcjs = null;
-    try {
-      if (!/^file|^content/.test(location.protocol))
-        import("./code/ncalc.web.js").then(function (module) {
-          ncalcjs = module;
-        }).catch(console.error);
-    } catch (e) {
-      console.error(e);
-    }
-  </script>
   <script type="text/javascript" src="./code/code.js"></script>
   <script type="text/javascript" src="./code/editor.js"></script>
 </body>
