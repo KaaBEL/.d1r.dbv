@@ -1,12 +1,12 @@
 {
   "compilerOptions": {
-    "module": "none",
+    "module": "ES6",
     "noImplicitAny": false,
     "removeComments": true,
     "preserveConstEnums": true,
     "strictNullChecks": true,
     "sourceMap": true,
-    "outDir": "./output/",
+    "outDir": "./dist/",
     "allowJs": true,
     "checkJs": true
   },
