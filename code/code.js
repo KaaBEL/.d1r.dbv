@@ -27,10 +27,6 @@ function __private(val) {
 }
 /** @type {typeof defaults|null} */
 var settings = null;
-// @ts-ignore
-if (typeof ncalcjs == "undefined")
-  /** @type {NCalcJS|null} */
-  var ncalcjs = null;
 
 /** timeToString @param {number} [t=Date.now()] @param {number} [f=1] ?1 */
 function dateTime(t, f) {
@@ -331,31 +327,7 @@ Logic.execNumericalSwitchbox = function (arg, block) {
 };
 /** 823: FUNCTION BLOCK @type {LExec} */
 Logic.execFunctionExpensive = function (arg, block) {
-  // It's the FUNCTION BLOCK time! :D
-  if (!ncalcjs)
-    return console.error("No NCalcJS :( " +
-      (block.getPhysics().reporter = ":("));
-  var custom = block.properties.customParameter || [],
-    e = new ncalcjs.Expression("" + custom[0]);
-  e.CacheEnabled = false;
-  e.Parameters.Pi = Math.PI;
-  e.Parameters.E = Math.E;
-  e.Parameters.x = +arg[0].value;
-  e.Parameters.y = +arg[1].value;
-  e.Parameters.z = +arg[2].value;
-  try {
-    var result = e.Evaluate();
-    if (typeof result == "string")
-      console.error("Result of Function Expression can't be a string in Dron\
-eboi: Counqest?");
-    arg[3].value = +result;
-  } catch (err) {
-    console.error(err instanceof ncalcjs.EvaluationException ?
-      "NCalcJS evaluation error: " + err.message :
-      err);
-  }
-  console.log("execFunctionExpensive", arg[3].value);
-  block.getPhysics().reporter = "" + arg[3].value;
+  console.error("Screw you NCalcJS (for now)!");
 };
 /** 824: Memory Register @type {LExec} */
 Logic.execMemoryRegister = function (arg, block) {
