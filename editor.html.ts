@@ -643,19 +643,3 @@ document.body.onload = function initDoc() {
   vY = 64;
   resizeWindow();
 };
-
-// Here because of tsconfig.json, bruh
-declare var Promise: any;
-
-type NCalcJS = typeof import("c:/Users/Ja/Jaaa_0/deltarealm/.d1r.dbv/code/\
-ncalc.web");
-var ncalcjs: NCalcJS | null = null;
-try {
-  //@ts-ignore
-  if (!/^file|^content/.test(location.protocol))
-    import("./code/ncalc.web.js").then(function (module) {
-      ncalcjs = module;
-    }).catch(console.error);
-} catch (e) {
-  console.error(e);
-}
