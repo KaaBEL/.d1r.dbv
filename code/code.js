@@ -1,7 +1,8 @@
 //@ts-check
 /// <reference path="./code.d.ts" types="./code.js" />
 "use strict";
-var version_code_js = "v.0.1.63";
+/** @TODO Finish block collisions detection */
+var version_code_js = "v.0.1.64";
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -27,10 +28,6 @@ function __private(val) {
 }
 /** @type {typeof defaults|null} */
 var settings = null;
-// @ts-ignore
-if (typeof ncalcjs == "undefined")
-  /** @type {NCalcJS|null} */
-  var ncalcjs = null;
 
 /** timeToString @param {number} [t=Date.now()] @param {number} [f=1] ?1 */
 function dateTime(t, f) {
@@ -194,10 +191,10 @@ Logic.generateLogic = function () {
       defs[Number(arg)] :
       defs[defs.length] = arg,
       nodes = [];
-      (o[l++] = nodes =
-        /** @type {Logic[]&{exec:LExec|LExec&safe}} */
-        (nodes)
-      ).exec = func;
+    (o[l++] = nodes =
+      /** @type {Logic[]&{exec:LExec|LExec&safe}} */
+      (nodes)
+    ).exec = func;
     for (var i = 0; i < nodesDef.length;) {
       var def = nodesDef[i++];
       nodes.push(Object.freeze(new Logic(def.k, def.x / 2, def.y / -2)));
@@ -331,31 +328,7 @@ Logic.execNumericalSwitchbox = function (arg, block) {
 };
 /** 823: FUNCTION BLOCK @type {LExec} */
 Logic.execFunctionExpensive = function (arg, block) {
-  // It's the FUNCTION BLOCK time! :D
-  if (!ncalcjs)
-    return console.error("No NCalcJS :( " +
-      (block.getPhysics().reporter = ":("));
-  var custom = block.properties.customParameter || [],
-    e = new ncalcjs.Expression("" + custom[0]);
-  e.CacheEnabled = false;
-  e.Parameters.Pi = Math.PI;
-  e.Parameters.E = Math.E;
-  e.Parameters.x = +arg[0].value;
-  e.Parameters.y = +arg[1].value;
-  e.Parameters.z = +arg[2].value;
-  try {
-    var result = e.Evaluate();
-    if (typeof result == "string")
-      console.error("Result of Function Expression can't be a string in Dron\
-eboi: Counqest?");
-    arg[3].value = +result;
-  } catch (err) {
-    console.error(err instanceof ncalcjs.EvaluationException ?
-      "NCalcJS evaluation error: " + err.message :
-      err);
-  }
-  console.log("execFunctionExpensive", arg[3].value);
-  block.getPhysics().reporter = "" + arg[3].value;
+  console.error("Screw you NCalcJS (for now)!");
 };
 /** 824: Memory Register @type {LExec} */
 Logic.execMemoryRegister = function (arg, block) {
@@ -1343,7 +1316,7 @@ Block.CARGO_STORE = {
   762: 250
 };
 /** positive = buy price of block, -1 = block isn't purchasable
- * @type {{[key:number]:number|undefined}} (Price?) */
+ * @type {{[key:number]:number|undefined}} (MarketValue) */
 Block.COST = {
   690: -1,
   691: 100,
@@ -1642,6 +1615,7 @@ Block.rotate = function (rot, x, y, z) {
       turn =
         /** @type {0|1|2|3} */
         (turn + n & 3);
+    //@ts-ignore
     } else if ('I have no idea')
       throw new Error("Not implemented.")
   }
@@ -1970,6 +1944,375 @@ Block.Selected = function (block, id, x, y, w, h) {
   this.h = h;
   Object.freeze(this);
 };
+// Block.COLLIDER_TYPES, Block.COLLIDER will be deleted and
+// Block.Box2d.VALUE will be used instead @TODO remove in v.0.1.65
+/** data is frost
+ * 0 = block, 1 = slab, 2 = qarter, 3 = 2x2, 4 = weapon, 5 = 1x2 */
+Block.COLLIDER_TYPES = [
+  [{x: 0, y: 0}, {x: 0, y: -2}, {x: 2, y: -2}, {x: 2, y: 0}],
+  [{x: 0, y: -1}, {x: 0, y: -2}, {x: 2, y: -2}, {x: 2, y: -1}],
+  [{x: 1, y: -1}, {x: 1, y: -2}, {x: 2, y: -2}, {x: 2, y: -1}],
+  [{x: 0, y: 0}, {x: 0, y: -4}, {x: 4, y: -4}, {x: 4, y: 0}],
+  [
+    {x: 0, y: -1.125},
+    {x: 0, y: -2},
+    {x: 2, y: -2},
+    {x: 2, y: -1.125},
+    {x: 1.25, y: -1.125},
+    {x: 1.25, y: 0},
+    {x: .75, y: 0},
+    {x: .75, y: -1.125}
+  ],
+  [{x: 0, y: 0}, {x: 0, y: -4}, {x: 2, y: -4}, {x: 2, y: 0}]
+];
+Object.freeze(Block.COLLIDER_TYPES).map(function (path) {
+  Object.freeze(path).map(function (point) {
+    Object.freeze(point);
+  });
+});
+Block.COLLIDER = {
+  690: Block.COLLIDER_TYPES[0],
+  691: Block.COLLIDER_TYPES[0],
+  692: [{x: 0, y: 0}, {x: 0, y: -2}, {x: 2, y: -2}],
+  693: [{x: 0, y: 0}, {x: 0, y: -4}, {x: 2, y: -4}],
+  694: [{x: 0, y: 0}, {x: 0, y: -8}, {x: 2, y: -8}],
+  695: [{x: 1, y: 0}, {x: 0, y: -2}, {x: 2, y: -2}],
+  696: Block.COLLIDER_TYPES[1],
+  700: Block.COLLIDER_TYPES[0],
+  701: Block.COLLIDER_TYPES[0],
+  702: [{x: 0, y: 0}, {x: 0, y: -2}, {x: 2, y: -2}],
+  703: [{x: 0, y: 1}, {x: 0, y: -2}, {x: 2, y: -2}],
+  738: Block.COLLIDER_TYPES[2],
+  739: Block.COLLIDER_TYPES[0],
+  740: Block.COLLIDER_TYPES[3],
+  731: [{x: 0, y: 0}, {x: 0, y: -8}, {x: 6, y: -8}, {x: 6, y: 0}],
+  742: Block.COLLIDER_TYPES[2],
+  743: Block.COLLIDER_TYPES[0],
+  744: Block.COLLIDER_TYPES[5],
+  745: [{x: 0, y: 0}, {x: 0, y: -6}, {x: 4, y: -6}, {x: 4, y: 0}],
+  746: Block.COLLIDER_TYPES[0],
+  754: Block.COLLIDER_TYPES[0],
+  755: Block.COLLIDER_TYPES[3],
+  756: [{x: 0, y: 0}, {x: 0, y: -6}, {x: 6, y: -6}, {x: 6, y: 0}],
+  757: Block.COLLIDER_TYPES[0],
+  758: Block.COLLIDER_TYPES[3],
+  759: [{x: 0, y: 0}, {x: 0, y: -6}, {x: 4, y: -6}, {x: 4, y: 0}],
+  760: Block.COLLIDER_TYPES[0],
+  761: Block.COLLIDER_TYPES[3],
+  762: [{x: 0, y: 0}, {x: 0, y: -6}, {x: 6, y: -6}, {x: 6, y: 0}],
+  770: [
+    {x: 1, y: 0},
+    {x: .7, y: -.8},
+    {x: 0, y: -1.5},
+    {x: 0, y: -2},
+    {x: 2, y: -2},
+    {x: 2, y: -1.5},
+    {x: 1.3, y: -.8}
+  ],
+  771: Block.COLLIDER_TYPES[4],
+  772: Block.COLLIDER_TYPES[4],
+  773: Block.COLLIDER_TYPES[4],
+  774: Block.COLLIDER_TYPES[4],
+  775: Block.COLLIDER_TYPES[4],
+  776: Block.COLLIDER_TYPES[0],
+  786: Block.COLLIDER_TYPES[0],
+  787: Block.COLLIDER_TYPES[0],
+  788: Block.COLLIDER_TYPES[0],
+  789: [{x: 0, y: 0}, {x: 0, y: -4}, {x: 2, y: -4}, {x: 2, y: 0}],
+  790: Block.COLLIDER_TYPES[0],
+  791: Block.COLLIDER_TYPES[0],
+  // [
+  //   {x: 0, y: -.4},
+  //   {x: 0, y: -1.6},
+  //   {x: .4, y: -.1.6},
+  //   {x: .4, y: -2},
+  //   {x: 1.6, y: -2},
+  //   {x: 1.6, y: -1.6},
+  //   {x: .4, y: -2}
+  // ]
+  792: Block.COLLIDER_TYPES[0],
+  793: Block.COLLIDER_TYPES[0],
+  794: Block.COLLIDER_TYPES[1],
+  796: Block.COLLIDER_TYPES[0],
+  798: Block.COLLIDER_TYPES[1],
+  799: Block.COLLIDER_TYPES[1],
+  802: Block.COLLIDER_TYPES[2],
+  803: Block.COLLIDER_TYPES[0],
+  804: Block.COLLIDER_TYPES[0],
+  805: Block.COLLIDER_TYPES[0],
+  806: Block.COLLIDER_TYPES[0],
+  807: Block.COLLIDER_TYPES[0],
+  808: Block.COLLIDER_TYPES[0],
+  809: Block.COLLIDER_TYPES[0],
+  810: Block.COLLIDER_TYPES[1],
+  811: Block.COLLIDER_TYPES[2],
+  812: Block.COLLIDER_TYPES[1],
+  813: Block.COLLIDER_TYPES[2],
+  814: Block.COLLIDER_TYPES[0],
+  815: Block.COLLIDER_TYPES[0],
+  816: Block.COLLIDER_TYPES[0],
+  817: Block.COLLIDER_TYPES[0],
+  818: Block.COLLIDER_TYPES[0],
+  819: Block.COLLIDER_TYPES[1],
+  820: Block.COLLIDER_TYPES[1],
+  821: Block.COLLIDER_TYPES[1],
+  822: Block.COLLIDER_TYPES[0],
+  823: Block.COLLIDER_TYPES[0],
+  824: Block.COLLIDER_TYPES[0],
+  825: [{x: 0, y: 0}, {x: 0, y: -2}, {x: 1, y: -2}, {x: 1, y: 0}],
+  826: Block.COLLIDER_TYPES[2],
+  827: Block.COLLIDER_TYPES[1],
+  828: Block.COLLIDER_TYPES[1]
+};
+/** class is sealed instance is frost @param {number} x @param {number} y */
+Block.Box2d = function Point(x, y) {
+  this.x = x;
+  this.y = y;
+  Object.freeze(this);
+};
+/** @typedef {{x:number,y:number}|[number,number]} PathArg */
+/** @param {...PathArg[]|string|number} args */
+Block.Box2d.generateBuildBox = function () {
+  /** @type {{[key:number]:Block.Box2d[]&{range:number}|undefined}} */
+  var o = {},
+    /** @type {(Block.Box2d[]&{range:number})[]} */
+    defs = [],
+    /** @constant */
+    AT = " at Block.Box2d.generateBuildBox.";
+  /** @param {PathArg[]|string} arg */
+  function setBuildBox(arg) {
+    if (typeof arg == "undefined")
+      return console.warn("Found \"undefined\" type" + AT);
+    var path = typeof arg == "object" ? arg.map(function (e) {
+      return e instanceof Array ?
+        new Block.Box2d(e[0], e[0]) :
+        new Block.Box2d(e.x, e.y);
+    }) : null;
+    if (path)
+      var j = path.length;
+    else
+      return o[l++] = defs[+arg];
+    for (var n = 0, max = 1; j-- > 0; n > max ? max = n : 0)
+      var x = path[j].x, y = path[j].y, n = Math.sqrt(x * x + y * y);
+    (o[l++] = defs[defs.length] =
+      /** @type {Block.Box2d[]&{range:number}} */
+      (path)
+    ).range = max;
+  }
+  for (var i = 0, l = 690, a = arguments; i < a.length; i++)
+    typeof a[i] == "number" ?
+      l = a[i] :
+      OP.call(o, l) ?
+        console.error("Property ", l++, "already exists" + AT) :
+        setBuildBox(a[i]);
+  return o;
+};
+Block.Box2d.VALUE = Block.Box2d.generateBuildBox(
+  690,
+  // def<definition index>: <dimensoins> <shape> "<representative block>"
+  // def0: 1x1 block "Block"
+  [{x: 0, y: 0}, {x: 0, y: -2}, {x: 2, y: -2}, {x: 2, y: 0}],
+  "0",
+  // def1: 1x1 wedge "Wedge"
+  [
+    {x: 0, y: 0},
+    {x: 0, y: -2},
+    {x: 2, y: -2},
+    {x: 2, y: -1.75},
+    {x: 0.25, y: 0}
+  ],
+  // def2: 1x2 wedge "Wedge 1x2"
+  [
+    {x: 0, y: 0},
+    {x: 0, y: -4},
+    {x: 2, y: -4},
+    {x: 2, y: -3.625},
+    {x: 0.25, y: 0}
+  ],
+  // def3: 1x4 wedge "Wedge 1x4"
+  [
+    {x: 0, y: 0},
+    {x: 0, y: -8},
+    {x: 2, y: -8},
+    {x: 2, y: -7.5},
+    {x: 0.125, y: 0}
+  ],
+  // def4: 1x1 pyramid "Pyramid"
+  [
+    {x: 0.875, y: 0},
+    {x: 0, y: -1.75},
+    {x: 0, y: -2},
+    {x: 2, y: -2},
+    {x: 2, y: -1.75},
+    {x: 1.125, y: 0}
+  ],
+  // def5: 1x.5 block "Slab"
+  [{x: 0, y: -1}, {x: 0, y: -2}, {x: 2, y: -2}, {x: 2, y: -1}],
+  700, "0", "0", "1",
+  // def6: 1x.5 wedge "Slab Wedge"
+  /** @TODO update Slab Wedge to its collision from Slab as placeholder */
+  [{x: 0, y: -1}, {x: 0, y: -2}, {x: 2, y: -2}, {x: 2, y: -1}],
+  738,
+  // def7: .5x.5 block "LED"
+  [{x: 1, y: -1}, {x: 1, y: -2}, {x: 2, y: -2}, {x: 2, y: -1}],
+  "0",
+  // def8: 2x2 block "Medium Hydrogen Tank"
+  [{x: 0, y: 0}, {x: 0, y: -4}, {x: 4, y: -4}, {x: 4, y: 0}],
+  // def9: 3x4 block "Large Hydrogen Thruster"
+  [{x: 0, y: 0}, {x: 0, y: -8}, {x: 6, y: -8}, {x: 6, y: 0}],
+  "7", "0",
+  // def10: 1x2 block "Medium Ion Thruster"
+  [{x: 0, y: 0}, {x: 0, y: -4}, {x: 2, y: -4}, {x: 2, y: 0}],
+  // def11: 2x3 block "Large Battery"
+  [{x: 0, y: 0}, {x: 0, y: -6}, {x: 4, y: -6}, {x: 4, y: 0}],
+  "0",
+  754, "0", "8",
+  // def12: 3x3 block "Large Hydrogen Tank"
+  [{x: 0, y: 0}, {x: 0, y: -6}, {x: 6, y: -6}, {x: 6, y: 0}],
+  "0", "8", "11", "0", "8", "12",
+  770,
+  // def13: 1x1 drill "Small Hydraulic Drill"
+  [
+    {x: 0, y: -2},
+    {x: 2, y: -2},
+    {x: 2, y: -1.375},
+    {x: 1.125, y: 0},
+    {x: 0.875, y: 0},
+    {x: 0, y: -1.375}
+  ],
+  // def14: 1x1 weapon "Cannon"
+  [
+    {x: 0.75, y: 0},
+    {x: 0.75, y: -1.125},
+    {x: 0, y: -1.125},
+    {x: 0, y: -2},
+    {x: 2, y: -2},
+    {x: 2, y: -1.125},
+    {x: 1.25, y: -1.125},
+    {x: 1.25, y: 0}
+  ],
+  // def15: 1x1 weapon_thicc "Rotary Cannon"
+  [
+    {x: 0.5, y: 0},
+    {x: 0.5, y: -1.125},
+    {x: 0, y: -1.125},
+    {x: 0, y: -2},
+    {x: 2, y: -2},
+    {x: 2, y: -1.125},
+    {x: 1.5, y: -1.125},
+    {x: 1.5, y: 0}
+  ],
+  "14", "14", "14", "0",
+  786,
+  "0", "0", "0", "10", "0", "0", "0", "0", "0", "5", "0", "5", "5",
+  802,
+  "7", "0", "0", "0", "0", "0", "0", "0", "5", "7", "5", "7", "0",
+  "0", "0", "0", "0", "5", "5", "5", "0", "0", "0",
+  // def16: .5x1 block "Gauge"
+  [{x: 0, y: 0}, {x: 0, y: -2}, {x: 1, y: -2}, {x: 1, y: 0}],
+  "7", "5", "5",
+  697,
+  // def17: 1x1 smooth_corner "Smooth Corner"
+  [
+    {x: 0, y: 0},
+    {x: 0, y: -2},
+    {x: 2, y: -2},
+    {x: 2, y: -1.625},
+    {x: 1.625, y: -0.75},
+    {x: 1.25, y: -0.375},
+    {x: 0.375, y: 0}
+  ],
+  // def18: 1x2 smooth_corner "Smooth Corner 1x2"
+  [
+    {x: 0, y: 0},
+    {x: 0, y: -4},
+    {x: 2, y: -4},
+    {x: 2, y: -3.25},
+    {x: 1.5, y: -1.25},
+    {x: 0.875, y: -0.25},
+    {x: 0.375, y: 0}
+  ],
+  // def19: 1x4 smooth_corner "Smooth Corner 1x4"
+  [
+    {x: 0, y: 0},
+    {x: 0, y: -8},
+    {x: 2, y: -8},
+    {x: 2, y: -6.75},
+    {x: 1.375, y: -2},
+    {x: 0.875, y: -0.5},
+    {x: 0.25, y: 0}
+  ]
+)
+
+/** @typedef {{ax:number,by:number,c:number}} VRP */
+// global test functions so it can be tested separately from its local scope
+/** @param {Block.Box2d} pointA @param {Block.Box2d} pointB */
+function test_someVRPshetFromSchoolMathNotes(pointA, pointB) {
+  // nominal vector of A->B (a, b)
+  var a = pointA.y - pointB.y, b = pointB.x - pointA.x;
+  /** @see {VRP}: a*x + b*y + c = 0 */
+  return {ax: a, by: b, c: -(a * pointA.x + b * pointA.y)};
+  // (basically check formula for points on that line)
+}
+// JSON.stringify(someVRPshetFromSchoolMathNotes({x: 3, y: 7}, {x:-2, y: 1}));
+// Should return {ax: 6, by: -5, c: 17}
+/** @param {VRP} vrp1 @param {VRP} vrp2 */
+function test_collisionOfVRPshets(vrp1, vrp2) {
+  // coercion
+  var n = vrp2.ax === 0 ?
+    // the line is horizontal, I have no idea what to do with it
+    function () {
+      debugger;
+      throw new Error("Debug this.");
+    }() :
+    vrp1.ax / -vrp2.ax;
+  return vrp1.ax + vrp2.ax * n + vrp1.by + vrp2.by * n +
+    vrp1.c + vrp2.c * n;
+}
+/** @param {ShipBlock} ofBlock @param {ShipBlock[]} within */
+Block.Box2d.collisions = function (ofBlock, within) {
+  function combineLines() {
+    for (var j = path.length, point = path[j - 1]; j-- > 0;) {
+      for (var n = ofPath.length, ofPoint = path[n - 1]; n-- > 0;) {
+        var a1x = path[j].x, a1y = path[j].y
+        // if (straightLineCollision(path[j], point, ofPath[n], ofPoint))
+        //   return colliding.push(within[i]);
+      }
+    }
+  }
+  /** @param {ShipBlock} block @param {Block.Box2d[]} path */
+  function transformPath(block, path) {
+    if (!block.rotation[1] && block.rotation[2] === 0)
+      throw new Error("Flipped and rotated collisions not yet implemented");
+    return path;
+    var rot = block.rotation[2];
+    return path.map(function (e) {
+      return new Block.Box2d(e.x * -1, e.y * 1);
+    });
+  }
+  var temporary = Block.Box2d.VALUE[Block.ID[ofBlock.internalName]];
+  if (!temporary) {
+    console.warn("Uhm, trying to collide block without collisions?");
+    return [];
+  }
+  /** @type {ShipBlock[]} */
+  var colliding = [], ofRange = temporary.range;
+  var ofPath = transformPath(ofBlock, temporary);
+  var ofX = ofBlock.position[1], ofY = ofBlock.position[2];
+  for (var i = within.length; i-- > 0 && within[i] !== ofBlock;) {
+    temporary = Block.Box2d.VALUE[Block.ID[within[i].internalName]];
+    if (!temporary)
+      continue;
+    var path = transformPath(within[i], temporary);
+    var pos = within[i].position,
+      x = Math.abs(ofX - pos[1]),
+      y = Math.abs(ofY - pos[2]);
+    if (Math.sqrt(x * x + y * y) >= ofRange + temporary.range)
+      continue;
+    colliding.push(within[i]);
+  }
+  return colliding;
+};
 
 /** neccesary ln Logic editing mode because of logicPosition and
  * logicBlockIndex properties, useless to be used for not logic blocks
@@ -2191,7 +2534,6 @@ Ship.prototype.paste = function (x, y, z, select) {
         /** @type {Logic<any>|safe} node from nodeList of selection */
         var oldNode = oldLogics[idx] || OC();
         if (logicDef[j].type > 1) {
-          //-newNode.pairs = [];
           // only add nodeIndex references for actual output
           (oldNode.pairs instanceof Array ?
             outputs :
@@ -2816,7 +3158,7 @@ function er(s) {
 }
 // the initial source used can be found here:
 // https://github.com/KaaBEL/Deltarealm-b64-keys/blob/main/index.html#LC827
-/** @param {[number, number, number]} r  @returns {Rotation} */
+/** @param {[number,number,number]} r @returns {Rotation} */
 function rotateBlock(r) {
   /** @type {0|1|2|3} rotation, (angle → of axis) */
   var rot = 0, i = 3, angle = 0, tmp = [];

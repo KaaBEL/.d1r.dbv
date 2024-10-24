@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.js" types="./editor.js" />
 "use strict";
-var version_editor_js = "v.0.1.63";
+var version_editor_js = "v.0.1.64";
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -540,7 +540,9 @@ var defaults = {
   highlightWidth: 2,
   logicPreviewAlpha: .5,
   buildReplace: !1,
-  editorBackgroundStage: 1
+  editorBackgroundStage: 1,
+  fullscreenInitialized: false,
+  fullscreenDisabled: false
 },
   /** @type {typeof defaults|null} alternative to original */
   settings = defaults;
@@ -553,6 +555,8 @@ function saveSettings() {
   arr[1] = n >> 15 & 0xffff;
   arr[1] += defaults.editorBackgroundImage << 15 & 1 << 15;
   arr[2] = defaults.editorBackgroundImage >> 1 & 31;
+  arr[2] += +defaults.fullscreenInitialized << 5
+  arr[2] += +defaults.fullscreenDisabled << 6;
   storage.setItem("D1R_DBV_editor", String.fromCharCode.apply(String, arr));
 }
 function loadSettings() {
@@ -569,6 +573,8 @@ function loadSettings() {
   defaults.editorBackgroundColor = "#" + "000000".slice(s.length) + s;
   n = arr[1] >> 15;
   defaults.editorBackgroundImage = ((arr[2] & 31) << 1) + n;
+  defaults.fullscreenInitialized = !!(arr[2] >> 5 & 1);
+  defaults.fullscreenDisabled = !!(arr[2] >> (5 + 1) & 1);
 }
 loadSettings();
 canvas.style.backgroundColor = document.body.style.backgroundColor =
@@ -2078,23 +2084,37 @@ se stats, because it doesn't update after this command have been opened, onl\
 y changing amount of RC recalculates distance.\nThanks to catcat9999 for sha\
 ring block capacity/use stats from source code in Discord.");
 Command.push("Editing Mode", function (items) {
-  var button0 = EL("button");
+  var button0 = EL("button"), button1 = EL("button");
   button0.appendChild(tN("Enable Logic Editing"));
   button0.onclick = enableLogicEditing;
-  var button1 = EL("button");
   button1.appendChild(tN("Enable Ship Editing"));
   button1.onclick = enableShipEditing;
-  var checkbox = EL("input");
-  checkbox.type = "checkbox";
-  checkbox.checked = DefaultUI.inventoryTile;
-  checkbox.oninput = function () {
-    DefaultUI.inventoryTile = checkbox.checked;
+  var inventory = EL("input"), fullscreen = EL("input");
+  inventory.type = "checkbox";
+  inventory.checked = DefaultUI.inventoryTile;
+  inventory.oninput = function () {
+    DefaultUI.inventoryTile = inventory.checked;
     render();
   };
-  items.push(button0, button1, checkbox, tN("inventoryTile"));
+  items.push(button0, button1, inventory);
+  items.push({name: "Show inventory tile", inp: inventory});
+  fullscreen.type = "checkbox";
+  fullscreen.checked = defaults.fullscreenDisabled;
+  fullscreen.oninput = function () {
+    defaults.fullscreenDisabled = fullscreen.checked;
+  };
+  items.push({name: "Disable fullscreen", inp: fullscreen});
+  var touchScreen = EL("button");
+  touchScreen.appendChild(tN("Disable touch screen resolution"));
+  touchScreen.onclick = function () {
+    defaults.fullscreenInitialized = false;
+  };
+  items.push(touchScreen);
 }, "Editing modes is the newest feature that is Work In Progress. Be aware t\
 hat non of the older commands were designed to be compatible with other mode\
-s in there. You can use inventoryTile to enable inventory icon item.");
+s in there. You can use inventoryTile to enable inventory icon item. By enab\
+ling disabled fullscreen you will have browser experience of when it wasn't \
+implemented.");
 Command.push("Debug Logic circuit", function (items, collapsed) {
   /** @param {Block|LogicBlock} block @returns {LogicBlock|undefined} */
   function checkEndComponent(block) {
@@ -2202,7 +2222,7 @@ Command.push("Set camera view", function (items, collapsed) {
 ll for reseting to intial view by pressing set while inputs are empty. The n\
 ewer Retreive/Apply variant with key allows you to save your build location.\
  Usually moving mouse with left mouse button pressed or zooming with scrolli\
-ng is used. For touchscreen devices use two fingers to move and zoom.");
+ng is used. For touch screen devices use two fingers to move and zoom.");
 Command.push("Change editor background", function (items, collapsed) {
   var backgImg = EL("input"), backgClr = EL("input");
   backgImg.type = "checkbox";
@@ -2313,6 +2333,15 @@ e Commands tab.\n\nCOMMAND\nWhen Command is opened its name displays in 'top\
  part', there's also < sign to return back to menu, X sign won't do that. Ea\
 ch command has some inputs/buttons, their purpouse is explained in descripti\
 on.");
+// DBVE contributors:
+// Thanks to Beau for Deltarealm and Droneboi: Conquest that DBVE is made
+// for.
+// Thanks to contributors:
+//   KKJKJH for blocks texture source
+//   Brothernova for being the alpha tester
+// Also thank to cacat9999 for sharing block capacity/use stats from source
+// code in Discord, you all for using DBVE, your feedback, and db
+// suggestions to take inspiration from.
 
 var cmdsHeader = EL(), cmds = (function () {
   /** for #commandsTab styles @see {addingStyles} */
@@ -2446,24 +2475,24 @@ b0,37fa c-aa,2277,294,3088,486,4273 z M2fd6e,297fb c0,0,-80e5,-8034,-80e5,-8\
 2ed8,-4a8,43c8,-d1d l8497,8218 c-2dcd,1d59,-6443,2e5d,-9eb3,2e5d c-a2ac,0,-1\
 268b,-83df,-1268b,-1268b c0,-a2ac,83df,-1268b,1268b,-1268b ca2ac,0,1268b,83d\
 f,1268b,1268b c0,36c5,-ef3,6a0d,-28fe,95fc z"));
-Tool.list.push(new Tool("Rotate", "M3ffec,1ffd8 c0,11abb,-e532,1ffee,-1ffee,\
-1ffee c-86ef,0,-101ad,-3434,-15d21,-8984 c-7,-7,-1dd5,1e1c,-1e42,1e7e c-523,\
-49e,-c05,771,-1395,771 c-dae,0,-1922,-93d,-1c14,-15a2 c-2c,-bc,-2b38,-d613,-\
-2b9c,-d7c9 c-72,-1f3,-ae,-3fa,-ae,-60f c0,-f6c,ce6,-1bed,1cd0,-1bed c3ac,0,7\
-30,aa,a6b,1e1 c64a,25d,bcde,3da5,bf45,3e46 cc42,335,1548,e10,1548,1af6 c0,80\
-2,-37a,f3b,-90d,1453 c-112,fa,-239b,2445,-239b,2445 c459b,3fc8,a25d,66b4,108\
-37,66b4 cd80e,0,18734,-af26,18734,-18734 c0,-3ea,-e,-7d2,-2c,-bb6 c-86,-11ce\
-,-1c4,-2841,-1c4,-290a c0,-f6c,ce6,-1bed,1cd0,-1bed c1df,0,3b4,2c,57a,81 c62\
-4,125,3fa5,d93,41df,e1c cc8e,303,15dd,e02,15dd,1b1c c0,4b0,a0,102a,a0,26cc z\
- M13,20027 c0,-11abb,e532,-1ffee,1ffee,-1ffee c86ef,0,101ad,3434,15d21,8984 \
-c7,7,1dd5,-1e1c,1e42,-1e7e c523,-49e,c05,-771,1395,-771 cdae,0,1922,93d,1c14\
-,15a2 c2c,bc,2b38,d613,2b9c,d7c9 c72,1f3,ae,3fa,ae,60f c0,f6c,-ce6,1bed,-1cd\
-0,1bed c-3ac,0,-730,-aa,-a6b,-1e1 c-64a,-25d,-bcde,-3da5,-bf45,-3e46 c-c42,-\
-335,-1548,-e10,-1548,-1af6 c0,-802,37a,-f3b,90d,-1453 c112,-fa,239b,-2445,23\
-9b,-2445 c-459b,-3fc8,-a25d,-66b4,-10837,-66b4 c-d80e,0,-18734,af26,-18734,1\
-8734 c0,3ea,e,7d2,2c,bb6 c86,11ce,1c4,2841,1c4,290a c0,f6c,-ce6,1bed,-1cd0,1\
-bed c-1df,0,-3b4,-2c,-57a,-81 c-624,-125,-3fa5,-d93,-41df,-e1c c-c8e,-303,-1\
-5dd,-e02,-15dd,-1b1c c0,-4b0,-a0,-102a,-a0,-26cc z", function () {
+Tool.list.push(new Tool("Rotate", "M13,1ffd8 c0,-16a2,a0,-221b,a0,-26cc c0,-\
+d1a,94f,-1818,15dd,-1b1c c239,-88,3bbb,-cf6,41df,-e1c c1c6,-54,39b,-81,57a,-\
+81 cfe9,0,1cd0,c80,1cd0,1bed c0,c8,-13e,173b,-1c4,290a c-1d,3e3,-2c,7cb,-2c,\
+bb6 c0,d80e,af26,18734,18734,18734 c65d9,0,c29c,-26ec,10837,-66b4 c0,0,-2288\
+,-234b,-239b,-2445 c-592,-517,-90d,-c50,-90d,-1453 c0,-ce5,905,-17c1,1548,-1\
+af6 c266,-a0,b8fb,-3be8,bf45,-3e46 c33b,-137,6bf,-1e1,a6b,-1e1 cfe9,0,1cd0,c\
+80,1cd0,1bed c0,214,-3c,41c,-ae,60f c-64,1b6,-2b6f,d70d,-2b9c,d7c9 c-2f1,c64\
+,-e66,15a2,-1c14,15a2 c-78f,0,-e71,-2d2,-1395,-771 c-6c,-61,-1e3a,-1e85,-1e4\
+2,-1e7e c-5b73,5550,-d631,8984,-15d21,8984 c-11abb,0,-1ffee,-e532,-1ffee,-1f\
+fee z M3ffec,20027 c0,16a2,-a0,221b,-a0,26cc c0,d1a,-94f,1818,-15dd,1b1c c-2\
+39,88,-3bbb,cf6,-41df,e1c c-1c6,54,-39b,81,-57a,81 c-fe9,0,-1cd0,-c80,-1cd0,\
+-1bed c0,-c8,13e,-173b,1c4,-290a c1d,-3e3,2c,-7cb,2c,-bb6 c0,-d80e,-af26,-18\
+734,-18734,-18734 c-65d9,0,-c29c,26ec,-10837,66b4 c0,0,2288,234b,239b,2445 c\
+592,517,90d,c50,90d,1453 c0,ce5,-905,17c1,-1548,1af6 c-266,a0,-b8fb,3be8,-bf\
+45,3e46 c-33b,137,-6bf,1e1,-a6b,1e1 c-fe9,0,-1cd0,-c80,-1cd0,-1bed c0,-214,3\
+c,-41c,ae,-60f c64,-1b6,2b6f,-d70d,2b9c,-d7c9 c2f1,-c64,e66,-15a2,1c14,-15a2\
+ c78f,0,e71,2d2,1395,771 c6c,61,1e3a,1e85,1e42,1e7e c5b73,-5550,d631,-8984,1\
+5d21,-8984 c11abb,0,1ffee,e532,1ffee,1ffee z", function () {
   DefaultUI.tilesRotation[2] = DefaultUI.tilesRotation[2] =
     /** @type {0|1|2|3} */
     (DefaultUI.tilesRotation[2] + 1 & 3);
@@ -2750,6 +2779,14 @@ DefaultUI.getSelectedTile = function () {
     (DefaultUI.blockBars[DefaultUI.selectedFolder] || [])[select >> 2] :
     (select & 3) === 0 ? DefaultUI.toolBar[select >> 2] : null;
 };
+DefaultUI.setPixelRatio = function () {
+  var n = window.devicePixelRatio;
+  if (defaults.fullscreenInitialized && n > 1) {
+    pR = n;
+    /** @type {()=>void} */
+    (onresize || F)();
+  }
+};
 
 function enableShipEditing() {
   var mode = ship.getMode();
@@ -2780,7 +2817,7 @@ function test_juhus(w, h) {
       x = (a - w) / 2,
       y = (a - h) / 2;
     helpCanvas.width = helpCanvas.height = a;
-    var rot = 4 - block.rotation[2] & 3;
+    var rot = 10 - block.rotation[2] & 3;
     rc.rotate(rot * Math.PI / 2);
     rc.translate(rot > 1 ? -a : 0, rot && rot < 3 ? -a : 0);
     rc.fillStyle = rend_colors[Color.ID[block.properties.color]];
@@ -2900,8 +2937,6 @@ function test_juhus(w, h) {
   var bars = DefaultUI.blockBars;
   ctx.lineWidth = 2;
   ctx.strokeStyle = "#5577aa";
-  //-Is there a reason for why sw and th weren't named sx, ty?
-  //-Renaming done, we'll see, so far needed to not mix up their uses
   // boolean: b contains fix for reselected item after reflow
   var i = DefaultUI.selectedFolder, b = i !== -1 && i < bars.length;
   for (var j = 0, tx = 200, ty = h; b && j < bars[i].length; j++)
@@ -3019,7 +3054,6 @@ function enableLogicEditing() {
       // offsets
       oX = (vX - x) / sc - found.block.position[1];
       oY = (y - vY) / sc - found.block.position[2];
-      //-console.log("oX:", oX, "oY:", oY);
       blocks = ship.blocks;
       blocks[movingId = blocks.length] = blocks[found.id];
       blocks[found.id] = new Block("__NULL__", [0, 0, 0], [0, !1, 0]);
@@ -3079,8 +3113,7 @@ function edit_logic(x, y) {
   }
   tile = DefaultUI.getSelectedTile();
   if (tile instanceof Block) {
-    ship.placeBlock(0, Math.floor((vX - x) / sc + 2),
-      Math.floor((y - vY) / sc), tile);
+    ship.placeBlock(0, (vX - x) / sc + 2, (y - vY) / sc, tile);
     render();
   }
   return false;
@@ -3092,10 +3125,9 @@ var edit_logicmove = function (x, y, e) {
 
 function rend_backgPattern() {
   try {
-    helpCanvas.width = imgBackg.naturalWidth || imgBackg.offsetWidth;
-    helpCanvas.height = imgBackg.naturalHeight || imgBackg.offsetHeight;
+    var width = imgBackg.naturalWidth || imgBackg.offsetWidth;
     ctx.fillStyle = ctx.createPattern(imgBackg, "repeat") || "";
-    if (helpCanvas.width === 64) {
+    if (width === 64) {
       var n = sc / 32, sx = vX - sc, sy = vY - sc, idk = 32;
       canvas.style.backgroundColor = defaults.editorBackgroundColor;
     } else
@@ -3229,6 +3261,26 @@ var rend_colors = rend_initColors();
 /** @type {Block[]} */
 var foundBlocks = [];
 
+DefaultUI.setPixelRatio();
+function init_touchScreen() {
+  //-I'll keep it without confirm message
+  //-if (!bd)
+  //-  return console.error("No bd to show confirm message.");
+  //-var background = EL(),
+  //-bd.appendChild()
+  if (typeof document.body.requestFullscreen == "function" &&
+    !defaults.fullscreenDisabled)
+    document.body.requestFullscreen().then(render).catch(function () {
+      setTimeout(function () {
+        document.body.requestFullscreen().then(render).catch(alert);
+      }, 169);
+    });
+  defaults.fullscreenInitialized = true;
+  saveSettings();
+  DefaultUI.setPixelRatio();
+};
+touchdevice = init_touchScreen;
+
 var old_UI = DefaultUI.press = press = function (x, y) {
   x = Math.floor((vX - x) / 2 / sc + 1);
   y = Math.floor((y - vY) / 2 / sc);
@@ -3302,7 +3354,7 @@ var old_UI = DefaultUI.press = press = function (x, y) {
   render();
 };
 
-/** @type {(x:number,y:number,e:MouseEvent)=>void} */
+/** @type {(x:number,y:number,e:TemporaryEventParam)=>void} */
 function commands(x, y, e) {
   /** also problem initial low resolution on touchscreen devices...
    * @TODO since I've just found out it's not a bug, but a matter
@@ -3319,7 +3371,8 @@ function commands(x, y, e) {
     if (el === dest)
       break;
     else if (!(el = el.parentNode)) {
-      e.button !== -1 && e.cancelable && e.preventDefault();
+      (e instanceof MouseEvent) && e.button !== -1 && e.cancelable &&
+        e.preventDefault();
       return;
     }
   st.display = "none";
