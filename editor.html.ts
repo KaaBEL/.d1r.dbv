@@ -1,32 +1,47 @@
-// v.0.1.60
+// v.0.1.64
 function GE(v){return document.getElementById(+v===v?(GE.i=v+1)-1:v===
   void 0?v=GE.i++:v)}GE.i=0;
 
+/** view x (position) */
 var vX = 0;
+/** view y (position) */
 var vY = 0,
+  /** from x (start view position) */
   fX: number,
+  /** from y (start view position) */
   fY: number,
+  /** grab x (start press posistion) */
   gX: number,
+  /** grab y (start press posistion) */
   gY: number;
+/** scale */
 var sc = 16;
+/** pixel ratio (computed) */
+var pR = 1;
 var canvas: HTMLCanvasElement;
 var ctx: CanvasRenderingContext2D;
+
+type TemporaryEventParam = MouseEvent | TouchEvent | TouchDat;
+var touchdevice: (()=>void)|null = null;
 
 /** signals UI API click on canvas */
 var press = function press(x: number, y: number) {
   return console.log(x, y);
 };
 
+var touchdevice: (() => void) | null = null;
+
 /** return true if move is used outside UI API */
-var move = function move(x: number, y: number, e: MouseEvent) {
+var move = function move(x: number, y: number, e: TemporaryEventParam) {
   return Boolean(console.log(x, y));
 };
 
-var contextmenu = function contextmenu(x: number, y: number, e: MouseEvent) {
+var contextmenu = function contextmenu(x: number, y: number,
+  e: TemporaryEventParam) {
   return console.log(x, y);
 };
 
-var over = function over(e: MouseEvent | TouchEvent | TchD) {
+var over = function over(e: TemporaryEventParam) {
   return console.log(e);
 };
 
@@ -43,30 +58,30 @@ var bd: HTMLElement & {onmousewheel?: (
   ev: WheelEvent & {wheelDelta?: number}
 ) => any} | null;
 
-var UDF: undefined, F: () => void, TCH: Touch;
+var UDF: undefined, F: () => void, TCH: TouchEvent;
 
 /** @TODO check the definitions for new changes at some point */
-type tchsDat = (TchD|null)[];
-type touches = (TchD|null)[] & {count: number};
+type TchDArr = (TouchDat|null)[];
+/** same as TchDArr but also has count variable for non-null items amount */
+type AllTchD = (TouchDat|null)[] & {count: number};
 /** fires when action of event doesn't correspond with touches array
  * @returns {boolean} ? keep current touches : reset to the new action
- */// ^ swaped result by boolean (should reset on default: void functions) */
+ * ^ swapped result by boolean (should reset on default: void functions) */
 interface errorH {
-  (touches: touches, faulty: Touch, ev: TouchEvent): boolean;
+  (touches: AllTchD, faulty: Touch, ev: TouchEvent): boolean;
 }
 /** fires when event is fired, may give all or portion of changed touches */
 interface softH {
-  (touches: touches, changed: (TchD|null)[], ev: TouchEvent): void;
+  (touches: AllTchD, changed: TchDArr, ev: TouchEvent): void;
 }
 /** fires when all events were collected, possibly one cycle */
 interface hardH {
-  (touches: touches, added: tchsDat, removed: tchsDat): void;
+  (touches: AllTchD, added: TchDArr, removed: TchDArr): void;
 }
 type handler = (e: TouchEvent) => void;
 
-/** tested object for touch data
- */
-class TchD {
+/** tested object for touch data */
+class TouchDat {
   event: TouchEvent;
   identifier: number;
   target: EventTarget;
@@ -84,13 +99,13 @@ class TchD {
   posX: number;
   /** position within element */
   posY: number;
-  /** starting position */
+  /** starting position within element */
   sX: number;
-  /** starting position */
+  /** starting position within element */
   sY: number;
-  /** movement */
+  /** movement within element */
   movX: number;
-  /** movement */
+  /** movement within element */
   movY: number;
   /** timestamp */
   time: number;
@@ -100,7 +115,9 @@ class TchD {
   sTime: number;
   /** source target */
   srcTarget: EventTarget;
-  update: (touch: Touch, touchEvent: TouchEvent) => TchD;
+  /** source target */
+  srcElement: EventTarget | null;
+  update: (touch: Touch, touchEvent: TouchEvent) => TouchDat;
   
   constructor ()
   constructor (src: HTMLElement, touch: Touch, touchEvent: TouchEvent)
@@ -127,8 +144,8 @@ class TchD {
     this.force = touch.force;
     this.radiusX = touch.radiusX;
     this.radiusY = touch.radiusY;
-    this.posX = touch.pageX - source.offsetLeft;
-    this.posY = touch.pageY - source.offsetTop;
+    this.posX = (touch.pageX - source.offsetLeft) * pR;
+    this.posY =  (touch.pageY - source.offsetTop) * pR;
     this.sX = this.posX;
     this.sY = this.posY;
     this.movX = 0;
@@ -137,6 +154,7 @@ class TchD {
     this.pTime = 0;
     this.sTime = this.time;
     this.srcTarget = this.target;
+    this.srcElement = touchEvent.target;
     this.update = function (touch, touchEvent) {
       if (!(touch instanceof Touch))
         throw new TypeError("1. arg: touch is not type of Touch");
@@ -156,10 +174,10 @@ class TchD {
       this.radiusX = touch.radiusX;
       this.radiusY = touch.radiusY;
       this.type = touchEvent.type;
-      var tmp = touch.pageX - source.offsetLeft;
+      var tmp = (touch.pageX - source.offsetLeft) * pR;
       this.movX = tmp - this.posX;
       this.posX = tmp;
-      tmp = touch.pageY - source.offsetTop;
+      tmp = (touch.pageY - source.offsetTop) * pR;
       this.movY = tmp - this.posY;
       this.posY = tmp;
       tmp = Date.now()
@@ -170,18 +188,19 @@ class TchD {
     return Object.seal(this);
   }
 }
+type TchD = TouchDat;
 
 /** aditional/optional js logging of touch events */
 function test_touches(targ: HTMLElement, calls: handler[],
   globalArr: any, customLog?: Function | any[] | any) {
-  var a: any[] = [], t: {ch: Touch, cs?: TouchList} = {ch: TCH},
+  var a: any[] = [], t: {ch: TouchEvent, cs?: TouchList} = {ch: TCH},
     custLog: () => any[] = typeof customLog == "function" ?
     customLog : customLog === UDF ? function (): [] { return [] } :
     function () {
         return customLog instanceof Array ? customLog : [customLog];
       };
   var map = Array.prototype.map;
-  function tchLog(s, e, ef, n?, l?, p?) {
+  function tchLog(s, e: TouchEvent, ef, n?, l?, p?) {
     n = (t.ch = e).timeStamp % 1E7 | 0;
     // countermeausre in offset left in console logs by array indexes
     l = 7 - ((n) + "").length;
@@ -212,7 +231,7 @@ function test_touches(targ: HTMLElement, calls: handler[],
           return t.cs = e.touches;
         } :
       function (e: TouchEvent) {return t.cs = e.changedTouches};
-    function prcs(e) {
+    function prcs(e: TouchEvent) {
       e.cancelable && e.preventDefault();
       if (a.push(tchLog(s, e, prpt)) > 109) {
         console.log([a]);
@@ -266,15 +285,13 @@ function touchesInit(src: HTMLElement,
     softHandlers = softHandl || [F, F, F, F],
     errorHandlers = errorHandl || [F, F, F];
   type touchlog = [number,string,number][];
-  /** placeholder of "new TchD()" *///@ts-ignore
-  const newTchD = new TchD();
-  var o: {a?: touchlog, tch?: {ch: Touch, cs?: TouchList}} = {},
+  var o: {a?: touchlog, tch?: {ch: TouchEvent, cs?: TouchList}} = {},
     events: boolean[] = [],
-    temp: tchsDat = [],
-    added: tchsDat = [],
-    removed: tchsDat = [],
-    touches: touches = function () {
-      var arr: touches;
+    temp: TchDArr = [],
+    added: TchDArr = [],
+    removed: TchDArr = [],
+    touches: AllTchD = function () {
+      var arr: AllTchD;
       (arr = [] as any).count = 0;
       return arr;
     }(),
@@ -315,7 +332,7 @@ function touchesInit(src: HTMLElement,
       i++;
     events[i] = !0;
     identifiers[i] = tch.identifier;
-    touches[i] = added[i] = temp[i] = new TchD(src, tch, ev);
+    touches[i] = added[i] = temp[i] = new TouchDat(src, tch, ev);
   }
   function updateTouch(tch: Touch, ev: TouchEvent, i: number) {
     if (i === UDF) {
@@ -325,7 +342,7 @@ function touchesInit(src: HTMLElement,
           !!+console.error("Adding Touch", createTouch(tch, ev, i));
     }
     events[i] = !0;
-    temp[i] = (touches[i] || newTchD).update(tch, ev);
+    temp[i] = (touches[i] || new TouchDat()).update(tch, ev);
   }
   function removeTouch(tch: Touch, ev: TouchEvent, i: number) {
     var j = identifiers.indexOf(tch.identifier);
@@ -333,7 +350,7 @@ function touchesInit(src: HTMLElement,
       return console.error("Can't remove unexisting Touch");
     events[j] = !0;
     identifiers[j] = -1;
-    removed[j] = temp[j] = (touches[j] || newTchD).update(tch, ev);
+    removed[j] = temp[j] = (touches[j] || new TouchDat()).update(tch, ev);
     touches[j] = null;
     for (j = touches.length - 1; j > 0 && touches[j] === null;)
       touches.length--;
@@ -345,7 +362,8 @@ function touchesInit(src: HTMLElement,
     for (i = touches.count = 0; i < touches.length;)
       touches.count += +!!touches[i++];
     softHandlers[evId](touches, temp, ev);
-    temp = [];
+    for (i = temp.length = touches.length; i-- > 0;)
+      temp[i] = null;
   }
   function inputTouches(evId: number, evStr: string, ev: TouchEvent,
     method: typeof updateTouch | typeof createTouch | typeof removeTouch) {
@@ -399,6 +417,11 @@ function touchesInit(src: HTMLElement,
 touchesInit.time = 350;
 /** allowed press precision, @see {mouseInit.move} */
 touchesInit.move = 13;
+touchesInit.interacted = 4;
+document.onvisibilitychange = function () {
+  if (document.visibilityState === "visible")
+    touchesInit.interacted = 8;
+};
 
 var mouseStamp = 0, test_debug = !1;
 var WheelSroll = typeof WheelEvent == "undefined" ? Object : WheelEvent;
@@ -422,21 +445,23 @@ function mouseInit() {
   var foreign = !1, pX = 0, pY = 0, moving = !1, taken = !1;
   bd.onmousedown = function (e) {
     moving = taken = !1;
-    var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop;
+    var x = (e.pageX - canvas.offsetLeft) * pR,
+      y = (e.pageY - canvas.offsetTop) * pR;
     if (foreign = e.target !== canvas)
       over(e);
     else
       taken = e.buttons === 1 && move(x, y, e);
     mouseStamp = e.buttons === 1 ? Date.now() : 0;
-    pX = gX = e.pageX - canvas.offsetLeft;
-    pY = gY = e.pageY - canvas.offsetTop;
-  }
+    pX = gX = x;
+    pY = gY = y;
+  };
   bd.onmousemove = function (e) {
     if (foreign)
       return over(e);
     if (!(e.buttons & 5))
       return;
-    var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop;
+      var x = (e.pageX - canvas.offsetLeft) * pR,
+        y = (e.pageY - canvas.offsetTop) * pR;
     if (!moving && (Date.now() < mouseStamp + mouseInit.time &&
       Math.abs(gX - x) < mouseInit.move &&
       Math.abs(gY - y) < mouseInit.move || taken))
@@ -452,15 +477,14 @@ function mouseInit() {
   bd.onmouseup = function (e) {
     if (foreign)
       return over(e);
-    var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop;
+      var x = (e.pageX - canvas.offsetLeft) * pR,
+        y = (e.pageY - canvas.offsetTop) * pR;
     if (Date.now() < mouseStamp + mouseInit.time &&
       Math.abs(gX - x) < mouseInit.move &&
       Math.abs(gY - y) < mouseInit.move && !taken && !moving)
       return press(x, y);
-      // || console.log("press: x, y", gX - x, gY - y, "(moving)", moving, "!taken", !taken);
     else if (taken || !moving)
       return taken && move(x, y, e);
-    // console.log("moving: x, y", gX - x, gY - y, "moving", moving, "(taken)", taken);
     vX += x - pX || 0;
     vY += y - pY || 0;
     pX = x;
@@ -472,7 +496,8 @@ function mouseInit() {
         return;
       else if (el === bd)
         break;
-    var x = e.pageX - canvas.offsetLeft, y = e.pageY - canvas.offsetTop;
+    var x = (e.pageX - canvas.offsetLeft) * pR,
+      y = (e.pageY - canvas.offsetTop) * pR;
     contextmenu(x, y, e);
   };
 }
@@ -482,7 +507,7 @@ mouseInit.time = 350;
 mouseInit.move = 4;
 
 var actionType = 0, moveScore = 0, moveCount = 0;
-function touchGrab(all: touches, ev: Event) {
+function touchGrab(all: TchDArr, ev: Event) {
   if (!all[0] || !all[1])
     return console.error("");
   ev.cancelable && ev.preventDefault();
@@ -518,41 +543,93 @@ function touchGrab(all: touches, ev: Event) {
           Math.abs(x0 - x1 + y0 - y1) * 2 :
       0;
   }
+  used = !1;
   render();
 }
-var foreign1 = !1, touchStamp = 0, prevCount = 0;
-function thetouchstart(all: touches, changed: TchD[], ev: TouchEvent) {
+/** equivalent of foreign for touches */
+var other = !1, touchStamp = 0, prevCount = 0;
+/** equivalent of moving and taken for touches */
+var swiping = !1, used = !1;    
+function thetouchstart(all: AllTchD, changed: TchDArr, ev: TouchEvent) {
+  // at ontouchstart it's decided what action is active
   if (prevCount === 0)
     touchStamp = Date.now();
-  if (changed[0] && changed[0].srcTarget !== canvas)
-    over(changed[0]);
-  else if (all.length > 1 && !actionType && all[0] && all[1] &&
+  if (all.count === 1 && changed[0]) {
+    if (other = changed[0].srcTarget !== canvas)
+      over(changed[0]);
+    else
+      (used = move(changed[0].posX, changed[0].posY, ev));
+      // && ev.cancelable && ev.preventDefault();
+  // @see {bd.onmousedown} for teleporting in between
+  } else if (all.length > 1 && !actionType && all[0] && all[1] &&
     Date.now() < touchStamp + touchesInit.time) {
     moveScore = moveCount = 0;
     actionType = 4;
   }
   prevCount = all.count;
 }
-function thetouchmove(all: touches, changed: TchD[], ev: TouchEvent) {
-  if (changed[0] && changed[0].srcTarget !== canvas)
-    over(changed[0]);
-  else if (actionType > 1 && all[0] && all[1])
-    touchGrab(all, ev);
+function thetouchmove(all: AllTchD, changed: TchDArr, ev: TouchEvent) {
+  // at ontouchmove active actions are executed
+  if (other)
+    return changed[0] && over(changed[0]);
+  if (actionType > 1)
+    return all[0] && all[1] && touchGrab(all, ev);
+  if (!changed[0])
+    return;
+  var x = Math.abs(changed[0].sX - changed[0].posX),
+    y = Math.abs(changed[0].sY - changed[0].posY),
+    long = Date.now() < touchStamp + touchesInit.time,
+    far = Math.sqrt(x * x + y * y) > touchesInit.move;
+  far && ev.cancelable && ev.preventDefault();
+  if (used)
+    move(changed[0].posX, changed[0].posY, ev);
+  else if (swiping) {
+    vX += changed[0].movX;
+    vY += changed[0].movY;
+    render();
+  } else {
+    swiping = !used &&
+      Date.now() > touchStamp + touchesInit.time || far;
+  }
 }
-function thetouchend(all: touches, changed: TchD[], ev: TouchEvent) {
-  if (all.count === 0)
+function thetouchend(all: AllTchD, changed: TchDArr, ev: TouchEvent) {
+  // at ontouchend actions may finish, deactivate or activate
+  if (other && changed[0]) {
+    over(changed[0]);
+  // if (other) {
+  //   changed[0] && over(changed[0]);
+    other = !1;
+  } else if (actionType > 1) {
+    var tch0 = changed[0] || all[0], tch1 = changed[1] || all[1];
+    tch0 && tch1 && touchGrab([tch0, tch1], ev);
+  } else if (changed[0]) {
+    ev.cancelable && ev.preventDefault();
+    var x = Math.abs(changed[0].sX - changed[0].posX),
+      y = Math.abs(changed[0].sY - changed[0].posY),
+      long = Date.now() > touchStamp + touchesInit.time,
+      far = Math.sqrt(x * x + y * y) > touchesInit.move;
+    (!long || far) && ev.cancelable && ev.preventDefault();
+    if (used)
+      move(changed[0].posX, changed[0].posY, ev);
+    else if (swiping) {
+      vX += changed[0].movX;
+      vY += changed[0].movY;
+      render();
+    } else if (!far)
+      long ?
+        contextmenu(changed[0].posX, changed[0].posY, ev) :
+        press(changed[0].posX, changed[0].posY);
+  }
+  if (all.count === 0) {
     actionType = 0;
-  if (changed[0] && changed[0].srcTarget !== canvas)
-    over(changed[0]);
-  else if (actionType > 1 && changed[0] && changed[1])
-    touchGrab(all, ev);
+    swiping = used = other = !1;
+  }
   prevCount = all.count;
-  //ev.cancelable && ev.preventDefault();
 }
-function thetouchcancel(all: touches, changed: TchD[], ev: TouchEvent) {
+function thetouchcancel(all: AllTchD, changed: TchDArr, ev: TouchEvent) {
   console.error("Touches canceled");
   prevCount = touchStamp = actionType = 0;
-  //ev.cancelable && ev.preventDefault();
+  used = swiping = other = !1;
 }
 
 declare interface Navigator {
@@ -585,55 +662,13 @@ document.body.onload = function initDoc() {
     touchesInit(bd, UDF, [thetouchstart, thetouchmove, thetouchend,
       thetouchcancel]);
 
-  /** touch logs
-   * @namespace init
-   * @typedef {string} color
-   */
-  var logIdx = 0,
-  prevClr = 0,
-  /** @type {Array<color>} */
-  clr = ["#ffffff", "#447c55", "#d11943"],
-  /** @type {HTMLDivElement} */
-  logSrc,
-  touchErrors = false;
-  (function () {
-    // that's actualy very funny trick (overwriting existing function)
-    // :D
-    var error = console.error;
-    return function () {
-      for (var i = arguments.length, arr = [] as any[],
-      el = document.createElement("span"); i-- > 0;)
-        arr[i] = arguments[i];
-      el.style.color = "#d11943";
-      el.innerText = arr.join("");
-      (GE(85) || GE(8) || el).appendChild(el);
-      error.apply(console, arr);
-    };
-  });
-  function spanLog(clrId, s) {
-    if (logIdx && prevClr === clrId)
-      return logSrc.childNodes[logIdx - 1].innerText += s;
-    var el = document.createElement("span");
-    el.style.color = clr[prevClr = clrId];
-    el.innerText = s;
-    if (logSrc.childNodes[logIdx])
-      logSrc.replaceChild(el, logSrc.childNodes[logIdx]);
-    else
-      logSrc.appendChild(el);
-    logIdx++;
-  }
-  function completeSpanLog() {
-    while (logIdx < logSrc.childNodes.length)
-      logSrc.removeChild(logSrc.childNodes[logIdx]);
-  }
-
   (GE("info") || document.createElement("br")).onclick = function (e) {
     document.body.classList.remove("scroll");
     this instanceof Node && document.body.removeChild(this);
   };
   document.head.appendChild(document.createComment(navigator.userAgent +
     JSON.stringify(navigator.userAgentData || {})));
-  for (var i = 0, ch = document.head.childNodes; i < ch.length; i++) {}
+  for (var i = 0, ch = document.head.childNodes; i < ch.length; i++)
     if (ch[i].nodeName === "TITLE")
       (ch[i] as HTMLTitleElement).text = "D1R DBV editor";
 
@@ -643,19 +678,3 @@ document.body.onload = function initDoc() {
   vY = 64;
   resizeWindow();
 };
-
-// Here because of tsconfig.json, bruh
-declare var Promise: any;
-
-type NCalcJS = typeof import("c:/Users/Ja/Jaaa_0/deltarealm/.d1r.dbv/code/\
-ncalc.web");
-var ncalcjs: NCalcJS | null = null;
-try {
-  //@ts-ignore
-  if (!/^file|^content/.test(location.protocol))
-    import("./code/ncalc.web.js").then(function (module) {
-      ncalcjs = module;
-    }).catch(console.error);
-} catch (e) {
-  console.error(e);
-}
