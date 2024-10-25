@@ -1,4 +1,4 @@
-import BlockData from "./blocks.json";
+import BlockData from "../assets/blocks.json";
 
 /**
  * Object that holds mappings between block values for speedy data access
