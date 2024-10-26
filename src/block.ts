@@ -30,3 +30,35 @@ export default class BlockHash {
         this.IDToCost;
     }
 }
+
+export enum Rotation {
+    Up,
+    Down,
+    left,
+    Right,
+} 
+
+/**
+ * Class which represents a in game block
+ */
+export class Block {
+    id: number;
+    texture: number | null;
+
+    position: [number, number];
+
+    // Orientation
+    rotation: Rotation;
+    flipped: boolean;
+
+    weld_group: number;
+}
+
+/**
+ * An in game craft
+ */
+class Craft {
+    position: [number, number];
+    rotation: number;
+    blocks: Block[];
+}
