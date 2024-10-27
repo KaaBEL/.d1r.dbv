@@ -994,7 +994,7 @@ Command.push("Select Block", function (items, collapsed) {
       if (!/__(?:placeholder\d+|NULL)__/.test(s)) {
         btn = EL("button");
         btn.appendChild(tN(s));
-        btn.onclick = blockBind(Block.NAME[i], !1);
+        btn.onclick = blockBind("" + Block.NAME[i], !1);
         groups[tags[i - 690 >> 4]][1].appendChild(btn);
       }
   /** @type {(...args:HTMLElement[][])=>void} */
@@ -1024,7 +1024,7 @@ Command.add("Select Color", function () {
   /** @type {CommandItem[]} */
   var items = [];
   for (var i = 0, s = ""; i < Color.NAME.length; i++)
-    if (s = Color.NAME[i])
+    if (s = Color.NAME[i] || "White")
       items.push({name: s, type: "button", fn: blockBind(s, !0)});
   items.push({name: "[custom color]", type: "input", fn: function () {
     if (!(this instanceof HTMLInputElement))
@@ -2829,7 +2829,7 @@ function test_juhus(w, h) {
     var rot = 10 - block.rotation[2] & 3;
     rc.rotate(rot * Math.PI / 2);
     rc.translate(rot > 1 ? -a : 0, rot && rot < 3 ? -a : 0);
-    rc.fillStyle = rend_colors[Color.ID[block.properties.color]];
+    rc.fillStyle = rend_colors[Color.ID[block.properties.color || ""]];
     block.internalName !== "Ghost Block" && rc.fillRect(x, y, w, h);
     rc.globalCompositeOperation = "destination-in";
     rc.drawImage(imgMask, x - size.x, y - size.y);
@@ -3537,7 +3537,7 @@ var rend_speeeeed = {}, rend_logs = 69;
     rc.rotate(rot * Math.PI / 2);
     rc.translate(rot > 1 ? -w : 0, rot && rot < 3 ? -h : 0);
     // apply textures
-    rc.fillStyle = rend_colors[Color.ID[objs[i].properties.color]];
+    rc.fillStyle = rend_colors[Color.ID[objs[i].properties.color || ""]];
     id !== 794 && rc.fillRect(0, 0, w, h);
     rc.globalCompositeOperation = "destination-in";
     rc.drawImage(imgMask, size.x, size.y, w, h, 0, 0, w, h);
