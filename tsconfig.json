@@ -100,10 +100,10 @@
     "skipLibCheck": false /* Skip type checking all .d.ts files. */
   },
   "files": [
-    "editor.html.ts",
-    "code/code.d.ts",
-    "code/code.js",
-    "code/editor.d.ts",
-    "code/editor.js"
+    "pages/code/editor.html.ts",
+    "pages/code/code.d.ts",
+    "pages/code/code.js",
+    "pages/code/editor.d.ts",
+    "pages/code/editor.js"
   ]
 }
