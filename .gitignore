@@ -1,14 +1,14 @@
-### v.0.1.64 ###
+### v.0.1.64T3 ###
 ### you can find some of the ignored files at old commit: https://github.com/KaaBEL/.d1r.dbv/tree/06ac3ab1837c3971cd943cbe9ae87cf958859a53
 assets/numericals_tutrial.md
 # .gitignore
-code/unit_tests.js
-texture_colors_preview_db2.png
+pages/code/unit_tests.js
+pages/code/texture_colors_preview_db2.png
 node_modules
 node_modules/**
 node_modules/**.**
 package-lock.json
 package.json
-manifest.json
-screenshare.html
+pages/manifest.json
+pages/screenshare.html
 dist

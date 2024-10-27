@@ -1,0 +1,23 @@
+{
+    "block": {
+        "ID": 0
+    },
+    "wedge": {
+        "ID": 1
+    },
+    "wedge_1x2": {
+        "ID": 2
+    },
+    "pyramid": {
+        "ID": 3
+    },
+    "Weight Block": {
+        "ID": 786,
+        "Weight": 10,
+        "Strength": 20,
+        "Cost": 100
+    },
+    "": {
+        
+    }
+}
