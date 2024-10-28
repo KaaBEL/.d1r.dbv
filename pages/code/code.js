@@ -1,9 +1,10 @@
 //@ts-check
 /// <reference path="./code.d.ts" types="./code.js" />
 "use strict";
-/** @TODO discord server link
- * @TODO Finish block collisions detection */
-var version_code_js = "v.0.1.64T5";
+/**
+ * @TODO setup webapp manifest.json @TODO discord server link
+ * @TODO Finish block collisions detection @TODO unit_test for Ship */
+var version_code_js = "v.0.1.64T9";
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -35,7 +36,6 @@ function er(s) {
   return s;
 }
 
-// will replace @see {dictionaryDefs}
 function Data() {
   throw new TypeError("Illegal constructor");
   this.data = null;
@@ -48,6 +48,12 @@ Data.colors = {"White": 0, "Light Gray": 1, "Dark Gray": 2, "Black": 3,
   "Festive Red": 19, "Festive Green": 20, "BREAD": 21,
   "[custom color]": 22, "Station Floor 0": 23, "Station Floor 1": 24,
   "Station Floor 2": 25, "Wood": 26, "Festive Duck": 27, "Gonb": 28};
+/**
+ * @typedef {number|[number,number]} UseData
+ * @typedef {{id:number,weight?:number,strength?:number,cost?:number,
+ * energy_use?:UseData,energy_store?:number,fuel_use?:UseData,
+ * fuel_store?:number,cargo_use?:UseData,cargo_store?:number}} BlockData
+ */
 Data.blocks = {block: {id: 0}, wedge: {id: 1}, wedge_1x2: {id: 2},
   pyramid: {id: 3}, pyramid_1x2: {id: 4}, inverse_pyramid: {id: 5},
   inverse_pyramid_1x2: {id: 6}, hydrogen_tank_small: {id: 7},
@@ -66,7 +72,7 @@ Data.blocks = {block: {id: 0}, wedge: {id: 1}, wedge_1x2: {id: 2},
   "Glass Block": {id: 701, weight: 1, strength: 1, cost: 100},
   "Glass Wedge": {id: 702, weight: 0.5, strength: 0.5, cost: 100},
   "Slab Wedge": {id: 703, cost: 100}, "Tiny Hydrogen Thruster": {id: 738,
-  weight: 0.5, strength: 2.5, cost: 100, fuel_use: 175}, 
+  weight: 0.5, strength: 2.5, cost: 100, fuel_use: 175},
   "Small Hydrogen Thruster": {id: 739, weight: 2, strength: 10, cost: 100,
   fuel_use: 150}, "Medium Hydrogen Thruster": {id: 740, weight: 8,
   strength: 40, cost: 400, fuel_use: 125}, "Large Hydrogen Thruster":
@@ -142,14 +148,11 @@ Data.blocks = {block: {id: 0}, wedge: {id: 1}, wedge_1x2: {id: 2},
   __placeholder850__: {id: 850}, __placeholder851__: {id: 851},
   __placeholder852__: {id: 852}, __placeholder853__: {id: 853},
   __placeholder854__: {id: 854}, __placeholder855__: {id: 855},
-  __placeholder856__: {id: 856}, __placeholder857__: {id: 857}, 
+  __placeholder856__: {id: 856}, __placeholder857__: {id: 857},
   __NULL__: {id: 1023}, Afterburner: {id: 1035, weight: 2, strength: 10,
   cost: 70}, "Dynamo Thruster": {id: 1037, weight: 3, strength: 15,
   cost: 90}, "T1 Rammer": {id: 1043, weight: 1, strength: 20, cost: 70},
   "T1 Nano Healer": {id: 1060, weight: 1, strength: 10, cost: 130}};
-// JSON.stringify(Data.titles).replace(/, *"|: *[^]/g, function (e) {
-//   return e[0] + " " + e.slice(-1);}).replace(/"([^ "]*)" *:/g,
-//   function (e, s0) {return s0 + ":";});
 Data.titles = {
   0: "block",
   1: "wedge",
@@ -306,30 +309,6 @@ Data.titles = {
   1059: "Camera Block,",
   1060: "T1 Nano Healer"
 };
-// Color.ID;
-//
-// [].slice.call(Block.NAME).forEach(function (e, i) {
-//   function help_data(source, name) {
-//     if (source[name][i])
-//       data[name.toLocaleLowerCase()] = source[name][i];
-//   }
-//   /** @type {{id:number,weight?:number,strenght?:number,cost?:numer,
-//     energy_use?:number|[number,number],energy_store?:number,
-//     fuel_use?:number|[number,number],fuel_store?:number,
-//     cargo_use?:number|[number,number],cargo_store?:}} */
-//   var data = {id: i};
-//   help_data(Block, "WEIGHT");
-//   help_data(Block, "STRENGTH");
-//   help_data(Block, "COST");
-//   help_data(Block, "ENERGY_USE");
-//   help_data(Block, "ENERGY_STORE");
-//   help_data(Block, "FUEL_USE");
-//   help_data(Block, "FUEL_STORE");
-//   help_data(Block, "CARGO_USE");
-//   help_data(Block, "CARGO_STORE");
-//   Data.blocks[e] = data;
-//   Data.titles[i] = e;
-// });
 /** @param {"colors"|"blocks"|"titles"} src */
 Data.generateNames = function (src) {
   /** @type {{[key:number]:string|undefined,length:number}} Names by ID */
@@ -351,28 +330,21 @@ Data.generateIDs = function (src) {
     ids[p] = typeof data[p] == "number" ? data[p] : data[p].id;
   return ids;
 };
-// /**
-//  * @template {"id"|"weight"|
-//  * "strenght"|"cost"|"energy_use"|"energy_store"|"fuel_use"|"fuel_store"|
-//  * "cargo_use"|"cargo_store"} T @param {T} type
-//  */
-// Data.generateValues = function (type) {
-//   /** @type {{[key:string]:number|undefined}} Values by Name */
-//   var values = {length: 0}, data = Data.blocks;
-//   /** @type {keyof Data.blocks} */
-//   var p;
-//   for (p in data) {
-//     /** @type {} */
-//     var stuff = data[p];
-//     if ()
-//       values[data[p].id] = type in stuff ? stuff[type] : ;
-//     values[p] = typeof data[p] == "number" ? data[p] : data[p].id;
-//   }
-//   return values;
-// };
+/** @template {keyof BlockData} T @param {T} type */
+Data.generateValues = function (type) {
+  /** @type {{[key:string]:BlockData[T]|undefined}} Values by Name */
+  var values = {}, data = Data.blocks;
+  for (var p in data) {
+    /** @type {BlockData} */
+    var stuff = data[p];
+    if (stuff[type])
+      values[data[p].id] = stuff[type];
+  }
+  return values;
+};
 
 /** @typedef {Block|LogicBlock} ShipBlock */
-/** instance is sealed
+/**
  * @template {0|1|2|3} T
  * @param {T} type @param {number} x @param {number} y as definition
  * x, y is position relative to middle, else used by rendering method,
@@ -579,7 +551,7 @@ Logic.execMemoryRegister = function (arg, block) {
 Logic.execDisplays = function (arg, block) {
   block.getPhysics().reporter = "" + arg[0].value;
 };
-Logic.execPushToToggle = 
+Logic.execPushToToggle =
   /** 828: Push To Toggle @type {LExec&{toggled?:boolean}} */
   (function (arg, block) {
     if (arg[0].value !== Logic.execPushToToggle.toggled)
@@ -903,7 +875,7 @@ function Physics() {
   Object.seal(this);
 }
 // Only the Physics class initially, better classification system
-// should be decided after 
+// should be decided after
 // /** class is frost Block Physics */
 // Physics.Block = PShip function () {
 //   this.enabled = false;
@@ -939,7 +911,7 @@ Object.freeze(Physics.Ship);
 
 /** letter case of block names doesn't matter when loaded by game,
  * Block name definitions require strict letter cases here */
-/** instance is sealed
+/**
  * @typedef {[number,number,number]} XYZPosition
  * @typedef {[0|1|2,boolean,0|1|2|3]} Rotation
  * @typedef {keyof typeof Color.ID|""|null} Colors
@@ -972,314 +944,43 @@ function Block(name, pos, rot, prop, color) {
 Block.NAME = Object.freeze(Data.generateNames("blocks"));
 /** object is frost */
 Block.ID = Object.freeze(Data.generateIDs("blocks"));
+/** object is frost */
+Block.TITLE = Object.freeze(Data.titles);
 /** @type {{[key:number]:number|undefined}} (Mass) */
-Block.WEIGHT = {
-  690: 2,
-  691: 1,
-  692: .5,
-  693: 1,
-  694: 2,
-  695: .5,
-  696: .5,
-  697: .5,
-  698: 1,
-  699: 2,
-  700: .5,
-  701: 1,
-  702: .5,
-  738: .5,
-  739: 2,
-  740: 8,
-  741: 24,
-  742: .75,
-  743: 3,
-  744: 6,
-  745: 18,
-  746: 2,
-  754: 2,
-  755: 8,
-  756: 18,
-  757: 3,
-  758: 12,
-  759: 18,
-  760: 3,
-  761: 12,
-  762: 27,
-  770: 3,
-  771: 2,
-  772: 2,
-  773: 2,
-  774: 2,
-  775: 2,
-  786: 10,
-  787: 5,
-  788: 1,
-  789: 1,
-  790: 5,
-  791: 1,
-  792: 5,
-  793: 1,
-  794: 1,
-  795: 1,
-  796: 5,
-  // 799: 1, Inversed Dock?
-  802: .25,
-  803: 1,
-  804: 1,
-  805: 1,
-  806: 1,
-  807: 1,
-  808: 1,
-  809: 1,
-  810: .5,
-  811: .25,
-  812: .5,
-  813: .25,
-  814: 1,
-  815: 1,
-  816: 1,
-  817: 1,
-  818: .5,
-  819: .5,
-  820: .5,
-  821: .5,
-  822: 1,
-  823: 1,
-  824: 1,
-  825: .5,
-  826: .25,
-  827: .5,
-  828: .5,
-  1035: 2,
-  1037: 3,
-  1043: 1,
-  1060: 1
-};
+// 799: 1, Inversed Dock?
+Block.WEIGHT = Data.generateValues("weight");
 /** @type {{[key:number]:number|undefined}} (Integrity) */
-Block.STRENGTH = {
-  690: 10,
-  691: 10,
-  692: 5,
-  693: 10,
-  694: 20,
-  695: 5,
-  696: 5,
-  697: 10,
-  698: 10,
-  699: 20,
-  700: 5,
-  701: 1,
-  702: .5,
-  738: 2.5,
-  739: 10,
-  740: 40,
-  741: 120,
-  742: 2.5,
-  743: 10,
-  744: 20,
-  745: 60,
-  746: 10,
-  754: 10,
-  755: 40,
-  756: 90,
-  757: 10,
-  758: 40,
-  759: 60,
-  760: 10,
-  761: 40,
-  762: 90,
-  770: 10,
-  771: 10,
-  772: 10,
-  773: 10,
-  774: 10,
-  775: 10,
-  786: 10,
-  787: 50,
-  788: 2,
-  789: .5,
-  790: 10,
-  791: 1,
-  792: 10,
-  793: 10,
-  794: 10,
-  795: 10,
-  796: 10,
-  802: 2.5,
-  803: 10,
-  804: 10,
-  805: 10,
-  806: 10,
-  807: 10,
-  808: 10,
-  809: 10,
-  810: 5,
-  811: 2.5,
-  812: 5,
-  813: 2.5,
-  814: 10,
-  815: 10,
-  816: 10,
-  817: 10,
-  818: 5,
-  819: 5,
-  820: 5,
-  821: 5,
-  822: 10,
-  823: 10,
-  824: 10,
-  825: 5,
-  826: 2.5,
-  827: 5,
-  828: 5,
-  1035: 10,
-  1037: 15,
-  1043: 20,
-  1060: 10
-};
+Block.STRENGTH = Data.generateValues("strength");
 /** number = Electricity Units per second
  * and in case of thruster when they are set to 1 000 000 (1M) force,
  * [number,number] = [Electricity Units, amout of seconds per use]
  * second @type {{[key:number]:number|[number,number]|undefined}}
  * (Electricity) */
-Block.ENERGY_USE = {
-  742: 275,
-  743: 250,
-  744: 225,
-  745: 200,
-  746: 100,
-  770: 1,
-  773: [10, 1.02],
-  774: [2, .52],
-  775: 4,
-  788: -.25,
-  789: -.75
-};
+Block.ENERGY_USE = Data.generateValues("energy_use");
 /** number = contained units
  * @type {{[key:number]:number|undefined}} (Electricity) */
-Block.ENERGY_STORE = {
-  757: 20,
-  758: 100,
-  759: 175
-};
+Block.ENERGY_STORE = Data.generateValues("energy_store");
 /** number = Liters of Fuel per second
  * and in case of thruster when they are set to 1 000 000 (1M) force,
  * [number,number] = [Liters of fuel, amout of seconds per use]
  * @type {{[key:number]:number|[number,number]|undefined}} (Fuel) */
-Block.FUEL_USE = {
-  738: 175,
-  739: 150,
-  740: 125,
-  741: 100
-};
+Block.FUEL_USE = Data.generateValues("fuel_use");
 /** number = contained liters
  * @type {{[key:number]:number|undefined}} (Fuel) */
-Block.FUEL_STORE = {
-  // was 20 before fuel buff
-  754: 30,
-  // was 100 before fuel buff
-  755: 150,
-  // was 250 before fuel buff
-  756: 375
-};
+// 754: was 20 before fuel buff
+// 755: was 100 before fuel buff
+// 375: was 250 before fuel buff
+Block.FUEL_STORE = Data.generateValues("fuel_store");
 /** number = items per second,
  * [number,number] = [Items, amout of seconds per use]
  * @type {{[key:number]:number|[number,number]|undefined}} (Cargo) */
-Block.CARGO_USE = {
-  770: [-1, 1.02]
-};
+Block.CARGO_USE = Data.generateValues("cargo_use");
 /** number = items capacity
  * @type {{[key:number]:number|undefined}} (Cargo) */
-Block.CARGO_STORE = {
-  690: 5, 
-  760: 20,
-  761: 100,
-  762: 250
-};
+Block.CARGO_STORE = Data.generateValues("cargo_store");
 /** positive = buy price of block, -1 = block isn't purchasable
  * @type {{[key:number]:number|undefined}} (MarketValue) */
-Block.COST = {
-  690: -1,
-  691: 100,
-  692: 100,
-  693: 100,
-  694: 100,
-  695: 100,
-  696: 100,
-  697: 100,
-  698: 100,
-  699: 100,
-  700: 100,
-  701: 100,
-  702: 100,
-  703: 100,
-  738: 100,
-  739: 100,
-  740: 400,
-  741: 800,
-  742: 100, 
-  743: 100,
-  744: 400,
-  745: 800,
-  746: 100, 
-  754: 100,
-  755: 400,
-  756: 900,
-  757: 100,
-  758: 400,
-  759: 600,
-  760: 100,
-  761: 400,
-  762: 900,
-  770: 100,
-  771: 100,
-  772: 200,
-  773: 200,
-  774: 200,
-  775: 200,
-  786: 100,
-  787: 100,
-  788: 100,
-  789: 100,
-  790: 100,
-  791: 100,
-  792: 100,
-  793: 100,
-  794: 100,
-  795: 100,
-  796: 500,
-  802: 100,
-  803: 100,
-  804: 100,
-  805: 100,
-  806: 100,
-  807: 100,
-  808: 100,
-  809: 100,
-  810: 100,
-  811: 100,
-  812: 100,
-  813: 100,
-  814: 100,
-  815: 100,
-  816: 100,
-  817: 100,
-  818: 100,
-  819: 100,
-  820: 100,
-  821: 100,
-  822: 100,
-  823: 100,
-  824: 100,
-  825: 100,
-  826: 100,
-  827: 100,
-  828: 100,
-  1035: 70,
-  1037: 90,
-  1043: 70,
-  1060: 130
-};
+Block.COST = Data.generateValues("cost");
 /** @TODO handling ls (DBV property?) */
 /**
  * @param {object[]|object} blocks
@@ -1539,7 +1240,7 @@ Block.Size.genterateSizes = function () {
         y = +(v[0] + " ").split(" ")[1] >>> 5 << 5;
         v[0] = (x >>> 5) + (y >>> 5) * this.width;
       }
-      if (typeof nw == "object") { 
+      if (typeof nw == "object") {
         var vup = v[0] / this.width << 0;
         console.log(Block.NAME[l], v[0] % this.width, vup, v);
         // Block.Size must be change as well for resing to work
@@ -1825,7 +1526,7 @@ Block.Selected = function (block, id, x, y, w, h) {
   this.h = h;
   Object.freeze(this);
 };
-/** class is sealed instance is frost @param {number} x @param {number} y */
+/** instance is frost @param {number} x @param {number} y */
 Block.Box2d = function Point(x, y) {
   this.x = x;
   this.y = y;
@@ -2003,7 +1704,8 @@ Block.Box2d.VALUE = Block.Box2d.generateBuildBox(
     {x: 0.875, y: -0.5},
     {x: 0.25, y: 0}
   ]
-)
+);
+Object.freeze(Block);
 
 /** @typedef {{ax:number,by:number,c:number}} VRP */
 // global test functions so it can be tested separately from its local scope
@@ -2132,7 +1834,7 @@ __extends(LogicBlock, Block);
  * customInputs?:Ship.CustomInput[],[key:string]:unknown}} ShipProperties
  * @see {Logic} @see {Ship.CustomInput}
  * @typedef {"Ship"|"Logic"} EditMode */
-/** instance is sealed
+/** class is frost
  * @param {string} name
  * @param {number[]} version
  * @param {string} time
@@ -2154,8 +1856,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @constant @type {24} significantVersion: 24 (integer) */
-Ship.VERSION = 24;
+/** @constant @type {25} significantVersion: 25 (integer) */
+Ship.VERSION = 25;
 Ship.prototype.selectRect = (
   /**
    * @overload @returns {Block[]&{parentShip:Ship}}
@@ -2345,7 +2047,8 @@ Ship.prototype.mirror = (
    * @param {number} y1 @param {number} z0 @param {number} z1
    * @returns {void} */
   function (x0, y0, z0, x1, y1, z1) {
-    // what was selected and all 
+    throw new Error("Unimplemented");
+    // what was selected and all
     var x = x0, y = y0, z = z0, selected = [];
     if (typeof x == "number") {
       var all = this.blocks;
@@ -2442,7 +2145,7 @@ Ship.prototype.blockAtPonit2d = function (x, y) {
 /** used to revert position adjustment from vehicles 'infected' by it:
  * https://github.com/KaaBEL/.d1r.dbv/commit/0b8156e155383059cf1aeeb4a997818
 3c92b92f8#diff-fa9a713c17c685348118b8d29bd55f10491e651ccafaf45d1044ed01ffe6e
-80bL1414 
+80bL1414
  * @param {boolean} [fixSlab] if true it also fixes wrong Slab size */
 Ship.prototype.fixPositionAdjustment = function (fixSlab) {
   var slabsFix = fixSlab ? Block.Size.VALUE[696] : null;
@@ -2450,13 +2153,13 @@ Ship.prototype.fixPositionAdjustment = function (fixSlab) {
   if (this.getMode().mode !== "Ship")
     console.warn("Fixing ship in not default Ship.Mode!");
   for (var i = 0; i < this.blocks.length; i++) {
-    var e = this.blocks[i], rot = e.rotation[2],
-      size = Block.Size.VALUE[Block.ID[e.internalName]];
+    var block = this.blocks[i], rot = block.rotation[2],
+      size = Block.Size.VALUE[Block.ID[block.internalName]];
     if (size === slabsFix)
       continue;
     if (size && ((size.w | size.h) & 16)) {
-      rot > 1 ? e.position[2] -= 1 : 0;
-      (rot + 1 & 3) > 1 ? e.position[1] -= 1 : 0;
+      rot > 1 ? block.position[2] -= 1 : 0;
+      (rot + 1 & 3) > 1 ? block.position[1] -= 1 : 0;
     }
   }
 };
@@ -2487,7 +2190,7 @@ Ship.prototype.placeBlock = function (x, y, z, ref) {
   // improved old_UI from editor.js
   var logics = this.prop && this.prop.nodeList || [];
   var block = new Block(
-    ref.internalName, 
+    ref.internalName,
     [x, y, z],
     /** @type {Rotation} */
     (ref.rotation.slice()),
@@ -2587,9 +2290,9 @@ Ship.toDBV = function toDBV(ship) {
     var node = logics[i] || {pairs: []}, n = node.pairs;
     typeof n == "number" && logics[n] &&
       connections.push({
-        // node index, input type
+        // node identifier, input type
         Item1: i,
-        // referenced node 
+        // referenced node
         Item2: node.pairs
       });
   }
@@ -2617,7 +2320,7 @@ Ship.toDBV = function toDBV(ship) {
 /** @param {string} key */
 Ship.fromDBKey = function (key) {
   var blocks = [], arr = key.split("|").slice(-1)[0].split(":");
-  var conN = {
+  var convertName = {
     "T1 Block": "Block",
     "T1 Wedge": "Wedge",
     "T2 Wedge": "Wedge",
@@ -2644,7 +2347,7 @@ Ship.fromDBKey = function (key) {
     Connector: "Dock",
     Explosive: "__placeholder776__",
     "Station Block": "__placeholder846__"
-  }, conC = [
+  }, convertColor = [
     "White",
     "Dark Gray",
     "Light Blue",
@@ -2668,13 +2371,13 @@ Ship.fromDBKey = function (key) {
     "Festive Duck"
   ];
   for (var i = arr.length - 1, logics = []; i-- > 0;) {
-    var o = arr[i].split(";"), name = conN[o[0]] || o[0];
+    var o = arr[i].split(";"), name = convertName[o[0]] || o[0];
     // o[1] position, used below to replace contents of array o
     var rot = +(o[2] + "").replace(",", ".") / 90 || 0 & 3;
     // o[4] controll groups not used
     var ctrl = [+o[3] || 0],
       color = +o[5] === +o[5] ?
-        conC[+o[5]] :
+        convertColor[+o[5]] :
         Color.default(name) || "White",
     // o[6] [Use rotation, Up, Down, Left, Right]
       flip = !!+o[7];
@@ -2719,7 +2422,7 @@ Ship.dateTime = function (t, f) {
   t += 1 + +(n % 1461 === 789);
   return (t > 9 ? "" : "0") + t + s;
 }
-/** instance is sealed @param {string} name @param {number} type */
+/** @param {string} name @param {number} type */
 Ship.CustomInput = function CustomInput(name, type) {
   this.name = name;
   /** type: -1 = unknown, 0 = Button, 1 = Switch. */
@@ -2794,7 +2497,7 @@ Ship.Mode.useParser = function (mode, globalShip, parse) {
     return globalShip;
   });
 };
-Object.freeze(Ship.Mode);
+Object.freeze(Object.freeze(Ship).Mode);
 
 // generating Droneboi
 /** global ship that's being rendered and editng */
@@ -2899,8 +2602,16 @@ Edit.randSFC32 = function (seed) {
 };
 // end of taken
 
+/** class for old Deltarealm base64 prototype keys code */
+function B64Key() {
+  throw new TypeError("Illegal constructor");
+  this.value = null;
+}
+B64Key.i = 0;
+B64Key.j = 0;
+B64Key.buffer = new Uint8Array(0);
 /** @function base64ToUint8array */
-function base64ToUint8array(base64) {
+B64Key.b64ToU8arr = function base64ToUint8array(base64) {
   var uint8array = [], buffer = 0, i = 0, p = 0, c;
   for (; i < base64.length; i++) {
     c = base64.charCodeAt(i);
@@ -2933,8 +2644,9 @@ function base64ToUint8array(base64) {
       p = 6;
   }
   return new Uint8Array(uint8array);
-}
-function uint8arrayToBase64(uint8array) {
+};
+/** @function uint8arrayToBase64 */
+B64Key.u8arrToB64 = function uint8arrayToBase64(uint8array) {
   var string = "", buffer = 0, i = 0, p = 0, c;
   function codeChar() {
     return c < 52 ? c < 26 ? 65 : 71 : c < 62 ? -4 : c < 63 ? -19 : -16;
@@ -2958,12 +2670,12 @@ function uint8arrayToBase64(uint8array) {
     string += String.fromCharCode(c) + (p & 4 ? "=" : "==");
   }
   return string;
-}
+};
 
 // the initial source used can be found here:
 // https://github.com/KaaBEL/Deltarealm-b64-keys/blob/main/index.html#LC827
 /** @param {[number,number,number]} r @returns {Rotation} */
-function rotateBlock(r) {
+B64Key.rotateBlock = function (r) {
   /** @type {0|1|2|3} rotation, (angle → of axis) */
   var rot = 0, i = 3, angle = 0, tmp = [];
   /** @type {0|1|2} other/mirored side */
@@ -3013,10 +2725,9 @@ function rotateBlock(r) {
       }
     }
   return [face, o_side, rot];
-}
-var i, j, buffer = new Uint8Array(0);
+};
 // sorts blocks by position x than y than z
-function sortShip() {
+B64Key.sortShip = function () {
   var i, l, n = 0, vals, refs, b = ship.blocks, _b = [];
   if ((l = ship.blocks.length) > 0x7fffffff)
     return er("too much blocks");
@@ -3052,66 +2763,67 @@ function sortShip() {
     _b[i] = b[refs[i]];
   ship.blocks = _b;
   return ship;
-}
-function wBit(b) {
+};
+B64Key.wBit = function (b) {
   if (b)
-    buffer[i] |= 1 << j;
+    B64Key.buffer[B64Key.i] |= 1 << B64Key.j;
   else
-    buffer[i] &= 255 - (1 << j);
-  if (++j > 7) {
-    i++;
-    j = 0;
+    B64Key.buffer[B64Key.i] &= 255 - (1 << B64Key.j);
+  if (++B64Key.j > 7) {
+    B64Key.i++;
+    B64Key.j = 0;
   }
-}
-function wBitsMSBfFast(l, n) {
-  buffer[i] |= n << j;
-  n >>= 8 - j;
-  if (l + j > 8) {
-    l -= 8 - j;
-    j = 0;
-    i++;
+};
+B64Key.wBitsMSBfFast = function (l, n) {
+  var buffer = B64Key.buffer;
+  buffer[B64Key.i] |= n << B64Key.j;
+  n >>= 8 - B64Key.j;
+  if (l + B64Key.j > 8) {
+    l -= 8 - B64Key.j;
+    B64Key.j = 0;
+    B64Key.i++;
     while (l > 7) {
-      buffer[i++] |= n;
+      buffer[B64Key.i++] |= n;
       n >>= 8;
       l -= 8;
     }
-    buffer[i] |= n;
+    buffer[B64Key.i] |= n;
     n >>= l;
   }
-  j += l;
-  buffer[i] &= 255 >> 8 - j;
-  if (j > 7) {
-    i++;
-    j = 0;
+  B64Key.j += l;
+  buffer[B64Key.i] &= 255 >> 8 - B64Key.j;
+  if (B64Key.j > 7) {
+    B64Key.i++;
+    B64Key.j = 0;
   }
   // value of spare bits
   return n;
-}
-function wMSBfirst(l, n) {
-  for (var i1 = i += l; l-- > 0; n >>= 8)
+};
+B64Key.wMSBfirst = function (l, n) {
+  for (var i1 = B64Key.i += l, buffer = B64Key.buffer; l-- > 0; n >>= 8)
     buffer[--i1] = n & 255;
   return n;
-}
-function wVersion(arr) {
-  for (var l = 0, m = 0, n = 64; !0;) {
+};
+B64Key.wVersion = function (arr) {
+  for (var l = 0, m = 0, n = 64, buffer = B64Key.buffer; !0;) {
     while (arr[l] >= n--)
       n = 64 << (m += 6);
-    buffer[i++] = arr[l] >> m;
+    buffer[B64Key.i++] = arr[l] >> m;
     while (m) {
-      buffer[i - 1] |= 64;
+      buffer[B64Key.i - 1] |= 64;
       m -= 6;
       n >>= 6;
-      buffer[i++] = (arr[l] & n) >> m;
+      buffer[B64Key.i++] = (arr[l] & n) >> m;
     }
     if (++l < arr.length)
-      buffer[i - 1] |= 128;
+      buffer[B64Key.i - 1] |= 128;
     else
       break;
   }
-}
+};
 
 /** @param {Ship} ship base64 key prototype */
-function encodeCmprsShip(ship) {
+B64Key.encode = function encodeCmprsShip(ship) {
   // version 0.0.significantVersion
   // versions 16 and further will significantVersion of Db Vehicle editor
   if (ship.getMode().mode !== "Ship")
@@ -3121,46 +2833,46 @@ function encodeCmprsShip(ship) {
   // id length
   // changed to 10 from 4
   var IDLEN = 10;
-  i = j = 0;
-  buffer = new Uint8Array(1040);
+  B64Key.i = B64Key.j = 0;
+  var buffer = B64Key.buffer = new Uint8Array(1040);
   // array of pointers to arrays with kBs of file (1024 + buffer of 16 bytes)
   /** @type {number[]} */
   var rotations = [], kB = [buffer];
   // data block: compression version
-  wVersion([0, 0, Ship.VERSION]);
+  B64Key.wVersion([0, 0, Ship.VERSION]);
   // data block: name
-  buffer[i++] = l = ship.name.length;
+  buffer[B64Key.i++] = l = ship.name.length;
   if (l > 255)
     console.warn("too long name (" + l + ") set to: " + (l = 255));
   for (n = 0; n < l;) {
     s = ship.name.charCodeAt(n++);
-    buffer[i++] = s > 31 && s < 127 || s > 8 && s < 11 ? s : 63;
+    buffer[B64Key.i++] = s > 31 && s < 127 || s > 8 && s < 11 ? s : 63;
   }
   // data block: game version
   arr = ship.gameVersion;
-  wVersion(arr);
+  B64Key.wVersion(arr);
   for (l = 0; l < 3 && arr.length; l++)
     if (arr[l] > [0, 1, 2][l])
       console.warn("unknown game version");
   // data block: date and time (seconds from  26.1.2022 16:48 UTC)
-  wMSBfirst(4, Date.now() / 1e3 - 1643215695);
+  B64Key.wMSBfirst(4, Date.now() / 1e3 - 1643215695);
   // data block: blocks
-  sortShip();
+  B64Key.sortShip();
   b = ship.blocks;
   // blocks length
-  wBit(n = (l = b.length) > 8191);
-  wBitsMSBfFast(n ? 21 : 13, l);
+  B64Key.wBit(n = (l = b.length) > 8191);
+  B64Key.wBitsMSBfFast(n ? 21 : 13, l);
   if (!l) {
     console.log("empty ship (no blocks)");
-    if (j)
-      i++;
-    arr = new Uint8Array(i);
-    while (i-- > 0)
-      arr[i] = buffer[i];
+    if (B64Key.j)
+      B64Key.i++;
+    arr = new Uint8Array(B64Key.i);
+    while (B64Key.i-- > 0)
+      arr[B64Key.i] = buffer[B64Key.i];
     return arr;
   }
   // ID bit length (3 bits) + 4 (IDLEN)
-  wBitsMSBfFast(3, IDLEN - 4);
+  B64Key.wBitsMSBfFast(3, IDLEN - 4);
   arr = b[--l].position;
   min = [arr[0], arr[1], arr[2]];
   max = [arr[0], arr[1], arr[2]];
@@ -3174,60 +2886,60 @@ function encodeCmprsShip(ship) {
   }
   // pairs min and max blocks positions in each axis - xyz
   for (n = 0, l = 6; n < 3; ++n > 1 ? l = 8 : 0) {
-    if (wBitsMSBfFast(l, min[n] + (1 << l - 1) - 1))
+    if (B64Key.wBitsMSBfFast(l, min[n] + (1 << l - 1) - 1))
       return er("ship too far in axis: " + "xyz"[n]);
-    if (wBitsMSBfFast(l, max[n] + (1 << l - 1) - 1))
+    if (B64Key.wBitsMSBfFast(l, max[n] + (1 << l - 1) - 1))
       return er("ship too far in axis: " + "xyz"[n]);
   }
   /** @param {Block} block */
   function fixedBlock(block) {
     // ID
-    wBitsMSBfFast(IDLEN, id = Block.ID[block.internalName]);
+    B64Key.wBitsMSBfFast(IDLEN, id = Block.ID[block.internalName]);
     // position
-    wBitsMSBfFast(8, block.position[2] + 127);
-    wBitsMSBfFast(6, block.position[1] + 31);
-    wBitsMSBfFast(6, block.position[0] + 31);
+    B64Key.wBitsMSBfFast(8, block.position[2] + 127);
+    B64Key.wBitsMSBfFast(6, block.position[1] + 31);
+    B64Key.wBitsMSBfFast(6, block.position[0] + 31);
     /** rotation @type {number|Rotation} */
     var r = block.rotation;
-    wBitsMSBfFast(5, r = r[2] | +r[1] << 2 | r[0] << 3);
+    B64Key.wBitsMSBfFast(5, r = r[2] | +r[1] << 2 | r[0] << 3);
     // are properties?
     checkProperties(block.properties);
     rotations[id] = r;
-    if (j) {
-      i++;
-      j = 0;
+    if (B64Key.j) {
+      B64Key.i++;
+      B64Key.j = 0;
     }
   }
   function endings() {
     // handles chunk endings, kB borders or both
-    if (i > chunkEnd) {
-      prev = [i, j, 0];
-      n = i = chunkEnd + 8;
-      j = 0;
+    if (B64Key.i > chunkEnd) {
+      prev = [B64Key.i, B64Key.j, 0];
+      n = B64Key.i = chunkEnd + 8;
+      B64Key.j = 0;
       // six bits after chunkending
-      wBitsMSBfFast(6, (chunkEnd << 3) + 7 - p_i);
+      B64Key.wBitsMSBfFast(6, (chunkEnd << 3) + 7 - p_i);
       fixedBlock(b[l]);
-      n = i - n;
-      i = chunkEnd + 1;
-      j = i + n;
+      n = B64Key.i - n;
+      B64Key.i = chunkEnd + 1;
+      B64Key.j = B64Key.i + n;
       chunkEnd += n + 512;
-      while(i < j) {
-        buffer[i + n] = buffer[i];
-        buffer[i] = buffer[i + 7];
-        buffer[i + 7] = 0;
-        i++;
+      while(B64Key.i < B64Key.j) {
+        buffer[B64Key.i + n] = buffer[B64Key.i];
+        buffer[B64Key.i] = buffer[B64Key.i + 7];
+        buffer[B64Key.i + 7] = 0;
+        B64Key.i++;
       }
-      i = prev[0] + n;
-      j = prev[1];
+      B64Key.i = prev[0] + n;
+      B64Key.j = prev[1];
       for (n = 1 << IDLEN; n-- > 0;)
         rotations[n] = 8;
     }
-    if (i > 1023) {
+    if (B64Key.i > 1023) {
       prev = buffer;
       buffer = new Uint8Array(1040);
       p_i -= 1024;
       chunkEnd -= 1024;
-      i -= 1024;
+      B64Key.i -= 1024;
       for (n = 0; n < 16; n++)
         buffer[n] = prev[n | 1024];
       kB.push(buffer);
@@ -3236,7 +2948,7 @@ function encodeCmprsShip(ship) {
   function checkProperties(prpt) {
     var p, s = JSON.stringify(prpt);
     // Has properties
-    wBit(s !== "{}");
+    B64Key.wBit(s !== "{}");
     if (s !== "{}")
       if (p = propertiesStr.indexOf(s) + 1)
         // stores properties for later
@@ -3258,13 +2970,13 @@ function encodeCmprsShip(ship) {
   // first block (fixed)
   fixedBlock(b[0]);
   // previous i
-  p_i = i << 3;
-  chunkEnd = i + 511;
+  p_i = B64Key.i << 3;
+  chunkEnd = B64Key.i + 511;
   // relative blocks string
   for (l = 1, arr = b[0].position; l < b.length; l++) {
-    p_i = (i << 3) + j;
+    p_i = (B64Key.i << 3) + B64Key.j;
     // ID
-    wBitsMSBfFast(IDLEN, id = Block.ID[b[l].internalName]);
+    B64Key.wBitsMSBfFast(IDLEN, id = Block.ID[b[l].internalName]);
     // relative position
     prev = [arr[0], arr[1], arr[2]];
     arr = b[l].position;
@@ -3274,9 +2986,9 @@ function encodeCmprsShip(ship) {
       s += size[n];
       prev[1]++;
     }
-    wBit(s);
+    B64Key.wBit(s);
     if (s)
-      wBitsMSBfFast(sizeB[n], s - 1);
+      B64Key.wBitsMSBfFast(sizeB[n], s - 1);
     while (n-- > 0) {
       // relative y and x position
       if (arr[n] < prev[n]) {
@@ -3287,23 +2999,23 @@ function encodeCmprsShip(ship) {
         prev[0]++;
       } else
         s = arr[n] - prev[n];
-      wBit(s);
+      B64Key.wBit(s);
       if (s)
-        wBitsMSBfFast(sizeB[n], s - 1);
+        B64Key.wBitsMSBfFast(sizeB[n], s - 1);
     }
     // optionaly relative rotation
     var rot = b[l].rotation;
     n = rot[2] | +rot[1] << 2 | rot[0] << 3;
-    wBit(s = rotations[id] !== n);
+    B64Key.wBit(s = rotations[id] !== n);
     if (s)
-      wBitsMSBfFast(5, n);
+      B64Key.wBitsMSBfFast(5, n);
     rotations[id] = n;
     checkProperties(b[l].properties);
     endings();
   }
-  if (j)
-    i++;
-  chunkEnd = i - 1;
+  if (B64Key.j)
+    B64Key.i++;
+  chunkEnd = B64Key.i - 1;
   // last/ending chunk
   // only if proceeding relative chunk??! unsure
   --l && endings();
@@ -3312,75 +3024,76 @@ function encodeCmprsShip(ship) {
     // just indexes and lengths of JSON strings
     s = JSON.stringify([propertiesRef, propertiesStr]);
     for (n = 0; n < s.length;) {
-      buffer[i++] = s.charCodeAt(n++);
-      if (i > 1023) {
-        kB.push(buffer = new Uint8Array(1040));
-        i = 0;
+      buffer[B64Key.i++] = s.charCodeAt(n++);
+      if (B64Key.i > 1023) {
+        kB.push(B64Key.buffer = buffer = new Uint8Array(1040));
+        B64Key.i = 0;
       }
     }
   }
   // joins binary data of required length to one file
-  buffer = new Uint8Array((kB.length - 1 << 10) + i);
+  B64Key.buffer = buffer =
+    new Uint8Array((kB.length - 1 << 10) + B64Key.i);
   // How did it with new Uint8Array(), zero length Uint8Array?
-  for (j = l = 0; l < buffer.length; kB[j++] = new Uint8Array(1040)) {
+  B64Key.j = l = 0;
+  for (; l < buffer.length; kB[B64Key.j++] = new Uint8Array(1040)) {
     (n = buffer.length - l) > 1023 ? n = 1024 : 0;
-    arr = kB[j];
-    for (i = 0; i < n;)
-      buffer[l++] = arr[i++];
+    arr = kB[B64Key.j];
+    for (B64Key.i = 0; B64Key.i < n;)
+      buffer[l++] = arr[B64Key.i++];
   }
   return buffer;
-}
-
-function gBit() {
-  var b_int = (buffer[i] & 1 << j) >> j;
-  if (++j > 7) {
-    j = 0;
-    i++;
+};
+B64Key.gBit = function gBit() {
+  var b_int = (B64Key.buffer[B64Key.i] & 1 << B64Key.j) >> B64Key.j;
+  if (++B64Key.j > 7) {
+    B64Key.j = 0;
+    B64Key.i++;
   }
   return b_int;
-}
-function gMSBfirst(l) {
-  var n = 0;
+};
+B64Key.gMSBfirst = function (l) {
+  var n = 0, buffer = B64Key.buffer;
   while (l-- > 0)
-    n = n * 256 + buffer[i++];
+    n = n * 256 + buffer[B64Key.i++];
   return n;
-}
-function gBitsMSBfFast(l) {
-  var mj = j, b_int = 0;
-  if (l + j > 8) {
-    b_int = buffer[i++] & 255 << j;
-    l -= 8 - j;
-    j = 8;
+};
+B64Key.gBitsMSBfFast = function (l) {
+  var mj = B64Key.j, b_int = 0, buffer = B64Key.buffer;
+  if (l + B64Key.j > 8) {
+    b_int = buffer[B64Key.i++] & 255 << B64Key.j;
+    l -= 8 - B64Key.j;
+    B64Key.j = 8;
     while (l > 8) {
-      b_int += (buffer[i++] << j);
+      b_int += (buffer[B64Key.i++] << B64Key.j);
       l -= 8;
-      j += 8;
+      B64Key.j += 8;
     }
-    b_int += (buffer[i] & 255 >> (8 - l)) << j;
+    b_int += (buffer[B64Key.i] & 255 >> (8 - l)) << B64Key.j;
   } else
-    b_int += buffer[i] & 255 >> (8 - l) << j;
+    b_int += buffer[B64Key.i] & 255 >> (8 - l) << B64Key.j;
   b_int >>= mj;
-  if ((j = (j & 7) + l) > 7) {
-    i++;
-    j = 0;
+  if ((B64Key.j = (B64Key.j & 7) + l) > 7) {
+    B64Key.i++;
+    B64Key.j = 0;
   }
   return b_int;
-}
-function gVersion() {
-  var version = [], n = 0;
-  i--;
+};
+B64Key.gVersion = function gVersion() {
+  var version = [], n = 0, buffer = B64Key.buffer;
+  B64Key.i--;
   do {
     version.push(0);
     do {
-      version[n] = (version[n] << 6) + (buffer[++i] & 63);
-    } while (buffer[i] & 64);
+      version[n] = (version[n] << 6) + (buffer[++B64Key.i] & 63);
+    } while (buffer[B64Key.i] & 64);
     n++;
-  } while (buffer[i] & 128);
-  i++;
+  } while (buffer[B64Key.i] & 128);
+  B64Key.i++;
   return version;
-}
+};
 /** @param {number} n rotation by 5 bit index @returns dr rotation */
-function gBlockRotation(n) {
+B64Key.gBlockRotation = function (n) {
   if (n > 23)
     return er("invalid input");
   var arr = [0, 0, 0];
@@ -3391,97 +3104,99 @@ function gBlockRotation(n) {
       n & 3
   ) * 90;
   return arr;
-}
-function decodeCmprsShip(cmprsShip) {
+};
+/** @param {Uint8Array|undefined} [cmprsShip] */
+B64Key.decode = function decodeCmprsShip(cmprsShip) {
   // version 0.0.1! the existing prototype specification is for v.0.0
   var n = 0, l, pl, chunkEnd, id, IDLEN, BLEN, s = "", arr = [];
   var prev = [], b = [], min = [],  max = [], size = [], sizeB = [];
   var rot = [], properties = [], obj, ship = {}, p_i, num = 0;
-  i = j = 0;
+  B64Key.i = B64Key.j = 0;
+  var buffer = B64Key.buffer;
   if (cmprsShip !== UDF)
-    buffer = cmprsShip;
+    B64Key.buffer = buffer = cmprsShip;
   // data block: compression version (and check)
-  arr = gVersion();
+  arr = B64Key.gVersion();
   while (n < 2)
     if (arr[n++] > 0)
       return er("unknown file vesrion");
   if (arr.length > 2 && arr[2] > 15)
     ship.significantVersion = arr[2];
   // data block: name
-  l = buffer[i++];
+  l = buffer[B64Key.i++];
   while (l-- > 0)
-    s += String.fromCharCode(buffer[i++]);
+    s += String.fromCharCode(buffer[B64Key.i++]);
   ship.name = s;
   // data block: game version
-  ship.gameVersion = gVersion().join(".");
+  ship.gameVersion = B64Key.gVersion().join(".");
   // data block: date and time
   // ...of compression as I don't have date and time parse
-  s = Ship.dateTime(gMSBfirst(4) + 1643215695);
+  s = Ship.dateTime(B64Key.gMSBfirst(4) + 1643215695);
   ship.dateTime = "compressed: " + s + " UTC";
   // data block: blocks
   // blocks length
-  BLEN = gBitsMSBfFast(gBit() ? 21 : 13);
+  BLEN = B64Key.gBitsMSBfFast(B64Key.gBit() ? 21 : 13);
   ship.blocks = b;
   if (!BLEN) {
-    if (i > buffer.length)
+    if (B64Key.i > buffer.length)
       return er("unexpected end of data");
     console.log("read empty ship (no blocks)");
     return ship;
   }
   // ID bit length
-  IDLEN = gBitsMSBfFast(3) + 4;
+  IDLEN = B64Key.gBitsMSBfFast(3) + 4;
   // min max positions
   for (n = 0, l = 6; n < 3; ++n > 1 ? l = 8 : 0) {
-    min[n] = gBitsMSBfFast(l);
-    max[n] = gBitsMSBfFast(l);
+    min[n] = B64Key.gBitsMSBfFast(l);
+    max[n] = B64Key.gBitsMSBfFast(l);
     min[n] -= (1 << l - 1) - 1;
     max[n] -= (1 << l - 1) - 1;
   }
   /** @param {boolean} [b=!0] first block */
   function fixedBlock(b) {
-    if (typeof b === "undefined")
+    if (b === UDF)
       b = !0;
     var obj = {}, num = 0;
     // ID
-    obj.internalName = Block.NAME[id = gBitsMSBfFast(IDLEN)];
+    obj.internalName = Block.NAME[id = B64Key.gBitsMSBfFast(IDLEN)];
     // position
     obj.position = arr = [];
-    arr[2] = gBitsMSBfFast(8) - 127;
-    arr[1] = gBitsMSBfFast(6) - 31;
-    arr[0] = gBitsMSBfFast(6) - 31;
+    arr[2] = B64Key.gBitsMSBfFast(8) - 127;
+    arr[1] = B64Key.gBitsMSBfFast(6) - 31;
+    arr[0] = B64Key.gBitsMSBfFast(6) - 31;
     // rotation
-    num = gBitsMSBfFast(5);
+    num = B64Key.gBitsMSBfFast(5);
     // !!!not tested rotation index to Rotation type
     obj.rotation = [num >> 3, (num & 4) > 0, num & 3];
     obj.properties = {};
     // has properties
-    if (gBit() && b)
+    if (B64Key.gBit() && b)
       properties.push(0);
     if (b) {
       prev = arr;
       rot[id] = num;
     }
-    if (j) {
-      i++;
-      j = 0;
+    if (B64Key.j) {
+      B64Key.i++;
+      B64Key.j = 0;
     }
     return obj;
   }
   function relativeBlock() {
-    p_i = (i << 3) + j;
+    p_i = (B64Key.i << 3) + B64Key.j;
     var obj = {}, num = 0;
     // ID
-    obj.internalName = Block.NAME[id = gBitsMSBfFast(IDLEN)];
+    obj.internalName = Block.NAME[id = B64Key.gBitsMSBfFast(IDLEN)];
     // relative x position
     obj.position = arr = [prev[0], prev[1], prev[2]];
-    arr[2] += gBit() ? gBitsMSBfFast(sizeB[2]) + 2 : 1;
+    arr[2] += B64Key.gBit() ? B64Key.gBitsMSBfFast(sizeB[2]) + 2 : 1;
     if (arr[n = 2] > max[2]) {
       arr[2] -= size[2];
       arr[1]++;
     }
     while (n-- > 0) {
       // relative y and z positions
-      arr[n] += gBit() ? gBitsMSBfFast(sizeB[n]) + 1 : 0;
+      arr[n] += B64Key.gBit() ? B64Key.gBitsMSBfFast(sizeB[n]) + 1 : 0;
       if (arr[n] > max[n]) {
         if (n < 1)
           return er("blocks doesn't fit in box");
@@ -3490,14 +3205,14 @@ function decodeCmprsShip(cmprsShip) {
       }
     }
     // optionaly relative rotation
-    num = gBit() ? gBitsMSBfFast(5) : rot[id];
+    num = B64Key.gBit() ? B64Key.gBitsMSBfFast(5) : rot[id];
     // !!!not tested rotation index to Rotation type
     obj.rotation = [num >> 3, (num & 4) > 0, num & 3];
     obj.properties = {};
     // has properties
-    if (gBit() && i < chunkEnd)
+    if (B64Key.gBit() && B64Key.i < chunkEnd)
       properties.push(l);
-    if (i + !!j > chunkEnd)
+    if (B64Key.i + +!!B64Key.j > chunkEnd)
       return "";
     prev = arr;
     rot[id] = num;
@@ -3507,33 +3222,32 @@ function decodeCmprsShip(cmprsShip) {
   function chunkEnding() {
   // handles chunk ends
     var n_0, n_1, buf_0;
-    if (n_0 = i + !!j > chunkEnd) {
-      i = chunkEnd;
-      j = 0;
+    if (n_0 = B64Key.i + +!!B64Key.j > chunkEnd) {
+      B64Key.i = chunkEnd;
+      B64Key.j = 0;
     }
-    if ((--chunkEnd << 3) + 7 - p_i !== gBitsMSBfFast(6)) {
+    if ((--chunkEnd << 3) + 7 - p_i !== B64Key.gBitsMSBfFast(6)) {
       b[l = b.length = ++pl] = obj = fixedBlock();
       console.warn("corrupted chunk: " + (p_i >> 13));
     } else
       obj = fixedBlock(!1);
-    // is that back and forth conversion necessary?
-    var r = obj.rotation;//@ts-ignore rotateBlock(obj.rotation);
-    //obj.rotation = 
-    gBlockRotation(r[2] | +r[1] << 2 | r[0] << 3);
-    n_1 = i;
+    var r = obj.rotation;
+    //@ts-ignore
+    B64Key.gBlockRotation(r[2] | +r[1] << 2 | r[0] << 3);
+    n_1 = B64Key.i;
     if (n_0) {
       buf_0 = buffer;
-      buffer = new Uint8Array(16);
-      i = n_0 = p_i >> 3;
-      j = p_i & 7;
-      for (n = 0; i <= chunkEnd;)
-        buffer[n++] = buf_0[i++];
-      for (i = n_1; n < 8;)
-        buffer[n++] = buf_0[i++];
-      i = 0;
+      B64Key.buffer = buffer = new Uint8Array(16);
+      B64Key.i = n_0 = p_i >> 3;
+      B64Key.j = p_i & 7;
+      for (n = 0; B64Key.i <= chunkEnd;)
+        buffer[n++] = buf_0[B64Key.i++];
+      for (B64Key.i = n_1; n < 8;)
+        buffer[n++] = buf_0[B64Key.i++];
+      B64Key.i = 0;
       relativeBlock();
-      i += n_0 + n_1 - chunkEnd - 1;
-      buffer = buf_0;
+      B64Key.i += n_0 + n_1 - chunkEnd - 1;
+      B64Key.buffer = buffer = buf_0;
     }
     chunkEnd = n_1 + 512;
     if (JSON.stringify(obj) !== JSON.stringify(b[l])) {
@@ -3555,20 +3269,20 @@ function decodeCmprsShip(cmprsShip) {
     rot[n] = 8;
   // first block
   b[pl = l = 0] = fixedBlock();
-  p_i = i << 3;
-  chunkEnd = i + 512;
+  p_i = B64Key.i << 3;
+  chunkEnd = B64Key.i + 512;
   var v;
   while (++l < BLEN) {
-    if (+(v = relativeBlock()) && i < chunkEnd)
+    if (+(v = relativeBlock()) && B64Key.i < chunkEnd)
       return v;
-    if (i >= chunkEnd)
+    if (B64Key.i >= chunkEnd)
       chunkEnding();
   }
-  if (j) {
-    i++;
-    j = 0;
+  if (B64Key.j) {
+    B64Key.i++;
+    B64Key.j = 0;
   }
-  chunkEnd = i;
+  chunkEnd = B64Key.i;
   l--;
   // last/ending chunk
   chunkEnding();
@@ -3576,8 +3290,8 @@ function decodeCmprsShip(cmprsShip) {
   if (l = properties.length) {
     if (buffer[buffer.length - 1] !== 93)
       return er("unexpected end of data");
-    for (s = ""; i < buffer.length;)
-      s += String.fromCharCode(buffer[i++]);
+    for (s = ""; B64Key.i < buffer.length;)
+      s += String.fromCharCode(buffer[B64Key.i++]);
     try {
       arr = JSON.parse(s);
     } catch (err) {
@@ -3590,8 +3304,9 @@ function decodeCmprsShip(cmprsShip) {
       "Parse the compressed properties.";
     s = arr[1];
     arr = arr[0];
-    for (i = l - 1 << 1; l-- > 0; i -= 2) {
-      obj = JSON.parse(s.slice(arr[i], arr[i] + arr[i | 1]));
+    for (B64Key.i = l - 1 << 1; l-- > 0; B64Key.i -= 2) {
+      obj = JSON.parse(s.slice(arr[B64Key.i],
+        arr[B64Key.i] + arr[B64Key.i | 1]));
       b[properties[l]].properties = obj;
       // (v.0.1.55) compatibility with old keys for control property
       if ("control" in obj && !("customParameter" in obj))
@@ -3602,7 +3317,7 @@ function decodeCmprsShip(cmprsShip) {
 }
 /** function used for debugging encode/decode */
 // just converts Uint8Array to string with binary numbers in DevTools
-function binaryData($help) {
+B64Key.binaryData = function ($help) {
   if (typeof $help === "boolean")
     return "args: ArrayBuffer | Array (data), ?[?from, to] (slice), ?b\
 ytesize, ?isMSBF=false :displays data in bits(for viewing data)";
@@ -3640,10 +3355,10 @@ ytesize, ?isMSBF=false :displays data in bits(for viewing data)";
 }
 /** function for manual use to check rotations or/and rotation index
  * @param {[number, number, number]} arr */
-function rotationIndex(arr) {
-  var rot = rotateBlock(arr);
+B64Key.rotationIndex = function (arr) {
+  var rot = B64Key.rotateBlock(arr);
   var num = rot[2] | +rot[1] << 2 | rot[0] << 3;
-  var r = gBlockRotation(num);
+  var r = B64Key.gBlockRotation(num);
   if (typeof r == "string")
     throw new Error(r);
   return [r[0], r[1], r[2], num];

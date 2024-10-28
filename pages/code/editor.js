@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.js" types="./editor.js" />
 "use strict";
-var version_editor_js = "v.0.1.64T5";
+var version_editor_js = "v.0.1.64T9";
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -179,7 +179,7 @@ var init_funMode = F;
     case "91c5cddf":
     case "aebec1df":
       console.log("Fun mode 5");
-      ship = Ship.fromObject(decodeCmprsShip(base64ToUint8array("gIAEEFN0YXJ\
+      ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr("gIAEEFN0YXJ\
 0ZXIgRHJvbmVib2kABD9TDSCAv6/65vbGnas+ELMGgvIGgrKuIChrYKhuICjrCoKyBpQ34LgncNa\
 A6gak9QRBWQPKGnDcFQjauHnfBwJbWzAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTY\
 sMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNl0sIntcImN\
@@ -197,7 +197,7 @@ vbG9yXCI6XCJMaW1lXCJ9Il0=")));
     case "b6f47340":
       console.log("Fun mode 9");
       init_funMode = function () {
-        ship = Ship.fromObject(decodeCmprsShip(base64ToUint8array("gIAEDEFOT\
+        ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr("gIAEDEFOT\
 05fU2h1dHRsZQAEXVy0aoC/TzvnFnWt0z4R4pYUZx2CorwBRXLToKjrQJPehCK9CdKboLhB4MUPQ\
 VwDhrgGiGuAuAaIa4C1XkER14AjrgFBjHHEFUWbA4oxBxTVDSjWu1FsOeBYccQw3YRiywPBlnFsG\
 cGWcTR3YGgxji0HODKK5gYEzYXmQnOhrhXKGhDENSCIa0DR5oKjywFFigOOFQcczw0obnxxxDXgq\
@@ -523,7 +523,7 @@ var helpCanvas = document.createElement("canvas"),
   rc = function (rc) {
     return rc instanceof CanvasRenderingContext2D ?
        rc : new CanvasRenderingContext2D();
-  }(helpCanvas.getContext("2d", 
+  }(helpCanvas.getContext("2d",
     // shut up chromium browsers
     {willReadFrequently: true}));
 
@@ -901,7 +901,7 @@ Command.push = function (name, initialize, description, settings) {
   function itemsInit(el) {
     /** @type {(Node|{name:string,inp:HTMLInputElement})[]} */
     var items = [];
-    initialize(items, utilities); 
+    initialize(items, utilities);
     for (var i = 0, itm; i < items.length; i++)
       if ((itm = items[i]) instanceof Node)
         el.appendChild(itm);
@@ -1071,8 +1071,8 @@ Command.push("Setup Properties", function (items, collapsed) {
     function initWeldGroup(ref) {
       // onchange event handler has live reference to the value
       // kept in its own scope and assigned from properties.customParameter
-      var node = 
-      /** @type {HTMLSelectElement} */
+      var node =
+        /** @type {HTMLSelectElement} */
         (weldGroup.cloneNode(!0));
       node.selectedIndex = +ref.ref[ref.p] || 0;
       node.onchange = function () {
@@ -1460,8 +1460,8 @@ Command.push("Display Logic", function (items, collapsed) {
     }
     /** @type {Block} */
     var block, options = Block.Properties.getInputOptions(ship.prop);
-    for (i = ship.blocks.length; i-- > 0;)
-      if ((block = ship.blocks[i]).internalName === "Control Block")
+    for (B64Key.i = ship.blocks.length; B64Key.i-- > 0;)
+      if ((block = ship.blocks[B64Key.i]).internalName === "Control Block")
         checkControlBlock(block.properties.customParameter);
   }
   var customInputs = EL(), template = EL("button");
@@ -1644,7 +1644,7 @@ Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
     var bs = ship.blocks;
     try {
       ship.withPositionAdjustment(function (temp) {
-        inp.value = uint8arrayToBase64(encodeCmprsShip(temp));
+        inp.value = B64Key.u8arrToB64(B64Key.encode(temp));
       });
       render();
     } catch (err) {
@@ -1660,7 +1660,7 @@ Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
     var old = ship, s = inp.value;
     try {
       if (!/^(:?UGxheWVy)?VmVoaWNsZT/.test(s.slice(0, 18))) {
-        var obj = decodeCmprsShip(base64ToUint8array(s));
+        var obj = B64Key.decode(B64Key.b64ToU8arr(s));
         ship = Ship.fromObject(obj);
         if (typeof obj != "string")
           ship.fixPositionAdjustment(!(obj.significantVersion > 15));
@@ -2105,7 +2105,7 @@ Command.push("Editing Mode", function (items) {
     DefaultUI.inventoryTile = inventory.checked;
     render();
   };
-  items.push(button0, button1, inventory);
+  items.push(button1, button0, inventory);
   items.push({name: "Show inventory tile", inp: inventory});
   fullscreen.type = "checkbox";
   fullscreen.checked = defaults.fullscreenDisabled;
@@ -2764,7 +2764,7 @@ DefaultUI.reflowBlockBars = function (w) {
           selectCode = -1;
         }
         var folder =
-          /** @type {TileType[]&{type:TileType}} */ 
+          /** @type {TileType[]&{type:TileType}} */
           (sameTypes.slice(j, j + maxItems));
         folder.type = prevType;
         updated.push(folder);
@@ -3459,7 +3459,7 @@ var rend_speeeeed = {}, rend_logs = 69;
   if (
     Logic.rend &&
       (Logic.nodes = function (current) {
-        var logics = 
+        var logics =
           /** @type {(Logic|undefined)[]&{ownerShip:Ship}} */
           (current || [UDF]);
         logics.ownerShip = ship;
