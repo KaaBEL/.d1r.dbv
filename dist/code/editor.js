@@ -116,6 +116,60 @@ canvas.addEventListener("contextrestored", function () {
   "{background-color: #000;color: #bbb;border: 1px solid #888;}"
 );
 
+/** original settings variable, defines type for settings */
+var defaults = {
+  /** (default) true: image pattern, false: color */
+  editorBackground: typeof DOMMatrix != "undefined",
+  /** mumst be in #xxxxxx hex color format */
+  editorBackgroundColor: "#111111",
+  /** (default) 0: dbc, 1: db, ... */
+  editorBackgroundImage: 0,
+  /** mumst be in #xxxxxx hex color format */
+  highlightColor: "#ff0000",
+  highlightWidth: 2,
+  logicPreviewAlpha: .5,
+  buildReplace: !1,
+  editorBackgroundStage: 1,
+  /** (default) false: PC, true: touchscreen device detected */
+  fullscreenInitialized: false,
+  /** (default) false: enabled, true: disabled */
+  fullscreenDisabled: false,
+  /** (default) false */
+  renderSharp: false
+},
+  /** @type {typeof defaults|null} alternative to original */
+  settings = defaults;
+// naming may change? + meaningless comment
+function saveSettings() {
+  var n = 0, arr = [+defaults.editorBackground];
+  if (isNaN(n = Number("0x" + defaults.editorBackgroundColor.slice(1))))
+    throw new Error("Wrong format of editorBackgroundColor setting");
+  arr[0] += (n & 0x7fff) << 1;
+  arr[1] = n >> 15 & 0xffff;
+  arr[1] += defaults.editorBackgroundImage << 15 & 1 << 15;
+  arr[2] = defaults.editorBackgroundImage >> 1 & 31;
+  arr[2] += +defaults.fullscreenInitialized << 5
+  arr[2] += +defaults.fullscreenDisabled << 6;
+  storage.setItem("D1R_DBV_editor", String.fromCharCode.apply(String, arr));
+}
+function loadSettings() {
+  var s = storage.getItem("D1R_DBV_editor") || "";
+  if (!s.length)
+    return;
+  if (s.length > 3)
+    return console.error("Unsupported length of localStorage item");
+  var n = 0, arr = s.split("").map(function (e) {
+    return e.charCodeAt(0);
+  });
+  defaults.editorBackground = !!(arr[0] & 1);
+  s = ((arr[0] & 0x7fff) + ((arr[1] & 0x01ff) << 16) >> 1).toString(16);
+  defaults.editorBackgroundColor = "#" + "000000".slice(s.length) + s;
+  n = arr[1] >> 15;
+  defaults.editorBackgroundImage = ((arr[2] & 31) << 1) + n;
+  defaults.fullscreenInitialized = !!(arr[2] >> 5 & 1);
+  defaults.fullscreenDisabled = !!(arr[2] >> (5 + 1) & 1);
+}
+
 /** to be able to include some fun when editor is initialized */
 var init_funMode = F;
 (function (reg) {
@@ -173,17 +227,28 @@ var init_funMode = F;
         placingBlock = function () {return "__unknown__";};
       });
       break;
+    case "47f76cb8":
+      console.log("Fun mode 4");
+      ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr("gAALU3RhcnRlcl\
+NoaXCAAQBnyR+wATjRE/MIg+/jGIhC4AC4AAgsIpEBBBAEDoFSLDKADKAEIFCSGTKAEQAAABClwm\
+uwSAQAIUQIkAEAGAEAACghWoXSoJToICaAFiADAHBCYCgRSlIIIQC0ABkAgBMCWIQEEZlkABkAAA\
+AnAAAAEQAACi9AC5ABAAAA4AQAQBVKgBYAQAYAAMAJAIA4VBApQAqQAQA4AQAgKwDIAACcAAAARA\
+AAABBoATIAAAAAnAAA2AAQKAFaAAAZAAAAJwAA4lABtAAZAAAAJwAAJAUAGQAAACcAAAARAAAKDU\
+ALkAEAAADgBABAFU6AFgBABgAAwAkAgDiAAJACZAAATgAAyAsARgAAAECMCo1BIxEAhBAhQAYAYA\
+QAAGCFWBVOg1Oig7gALoAMAMAJsTCcCCcphBAXwAWQAQA4IRawCAkiYWQQhUABUAAQaEQiAwBBoB\
+AoxSIDyABKAAIlTviFogQ=")));
+      break;
     case "17a472d":
     case "25f75d93":
     case "9e808430":
     case "91c5cddf":
     case "aebec1df":
       console.log("Fun mode 5");
-      ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr("gIAEEFN0YXJ\
-0ZXIgRHJvbmVib2kABD9TDSCAv6/65vbGnas+ELMGgvIGgrKuIChrYKhuICjrCoKyBpQ34LgncNa\
-A6gak9QRBWQPKGnDcFQjauHnfBwJbWzAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTY\
-sMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNl0sIntcImN\
-vbG9yXCI6XCJMaW1lXCJ9Il0=")));
+      ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr("gIAEEFN0YXJ0ZX\
+IgRHJvbmVib2kABD9TDSCAv6/65vbGnas+ELMGgvIGgrKuIChrYKhuICjrCoKyBpQ34LgncNaA6g\
+ak9QRBWQPKGnDcFQjauHnfBwJbWzAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMC\
+wxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNl0sIntcImNvbG\
+9yXCI6XCJMaW1lXCJ9Il0=")));
     case "8bb3bad8":
       console.log("Fun mode 7");
       setTimeout(function () {
@@ -197,65 +262,66 @@ vbG9yXCI6XCJMaW1lXCJ9Il0=")));
     case "b6f47340":
       console.log("Fun mode 9");
       init_funMode = function () {
-        ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr("gIAEDEFOT\
-05fU2h1dHRsZQAEXVy0aoC/TzvnFnWt0z4R4pYUZx2CorwBRXLToKjrQJPehCK9CdKboLhB4MUPQ\
-VwDhrgGiGuAuAaIa4C1XkER14AjrgFBjHHEFUWbA4oxBxTVDSjWu1FsOeBYccQw3YRiywPBlnFsG\
-cGWcTR3YGgxji0HODKK5gYEzYXmQnOhrhXKGhDENSCIa0DR5oKjywFFigOOFQcczw0obnxxxDXgq\
-GsSmGvBE1uuied3AltbMCw0NSw0NSw2OCwwLDQ1LDAsNDUsMTEzLDcxLDAsNDUsMCw0NSwwLDQ1L\
-DAsNDUsMTg0LDY4LDI1Miw2OSwzMjEsNDQsMzIxLDQ0LDMyMSw0NCwzMjEsNDQsMzIxLDQ0LDMyM\
-Sw0NCwzMjEsNDQsMzIxLDQ0LDM2NSw1OSwzMjEsNDQsNDI0LDcwLDQ5NCw2NCw1NTgsNzAsNjI4L\
-DQ5LDY3Nyw2Miw3MzksNTYsNzk1LDY3LDg2Miw2Miw5MjQsNjIsOTg2LDYyLDEwNDgsNjIsMTExM\
-Cw2NSwxMTc1LDU5LDEyMzQsNjIsMTI5Niw2MiwxMzU4LDY1LDE0MjMsNjUsMTQ4OCw2NSwxNTUzL\
-DY1LDE2MTgsNDQsMzIxLDQ0LDMyMSw0NCwzMjEsNDQsMTY2Miw3MCwxNzMyLDYyLDE3OTQsMzksM\
-TgzMyw1NiwxODg5LDY2LDE5NTUsNjEsMzIxLDQ0LDMyMSw0NCwzMjEsNDQsMzIxLDQ0XSwie1wiY\
-29sb3JcIjpcIk9yYW5nZVwiLFwiY29udHJvbFwiOltdLFwid2VsZEdyb3VwXCI6MH17XCJjb2xvc\
-lwiOlwiRGFyayBHcmF5XCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzNdLFwid\
-2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiRGFyayBHcmF5XCIsXCJjb250cm9sXCI6WzE4MDAwX\
-SxcIm5vZGVJbmRleFwiOlsyLDFdLFwid2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiRGFyayBHc\
-mF5XCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzRdLFwid2VsZEdyb3VwXCI6M\
-H17XCJjb2xvclwiOlwiV2hpdGVcIixcImNvbnRyb2xcIjpbWzAsMCwwLDBdXSxcIm5vZGVJbmRle\
-FwiOls1XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6W\
-10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJcIixcImNvbnRyb2xcIjpbMSwwXSxcIm5vZ\
-GVJbmRleFwiOlszNF0sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJXaGl0ZVwiLFwiY29ud\
-HJvbFwiOltdLFwibm9kZUluZGV4XCI6WzIzLDIyLDIxLDIwXSxcIndlbGRHcm91cFwiOjB9e1wiY\
-29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMTksMThdLFwid\
-2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiTGlnaHQgR3JheVwiLFwiY29udHJvbFwiOls3NTAwX\
-SxcIm5vZGVJbmRleFwiOlsyNF0sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJMaWdodCBHc\
-mF5XCIsXCJjb250cm9sXCI6W10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJXaGl0ZVwiL\
-FwiY29udHJvbFwiOlswXSxcIm5vZGVJbmRleFwiOlsxN10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvb\
-G9yXCI6XCJcIixcImNvbnRyb2xcIjpbXSxcIm5vZGVJbmRleFwiOlsxMV0sXCJ3ZWxkR3JvdXBcI\
-jowfXtcImNvbG9yXCI6XCJXaGl0ZVwiLFwiY29udHJvbFwiOlsyNzAwMF0sXCJub2RlSW5kZXhcI\
-jpbNyw2XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIkJsYWNrXCIsXCJjb250cm9sXCI6W\
-zBdLFwibm9kZUluZGV4XCI6WzM3XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIkJsYWNrX\
-CIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzM2XSxcIndlbGRHcm91cFwiOjB9e1wiY\
-29sb3JcIjpcIkJsYWNrXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzM4XSxcIndlb\
-GRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZ\
-GV4XCI6WzM1XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sX\
-CI6WzExMjVdLFwibm9kZUluZGV4XCI6WzMxXSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcI\
-lwiLFwiY29udHJvbFwiOlsxLDBdLFwibm9kZUluZGV4XCI6WzMzXSxcIndlbGRHcm91cFwiOjB9e\
-1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzMyXSxcI\
-ndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZ\
-UluZGV4XCI6WzI1XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250c\
-m9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzI3XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcI\
-jpcIldoaXRlXCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzMwXSxcIndlbGRHc\
-m91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZ\
-GV4XCI6WzI4XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sX\
-CI6WzExMjVdLFwibm9kZUluZGV4XCI6WzI5XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcI\
-kJsYWNrXCIsXCJjb250cm9sXCI6W10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJXaGl0Z\
-VwiLFwiY29udHJvbFwiOltdLFwibm9kZUluZGV4XCI6WzE2LDE1LDE0LDEzXSxcIndlbGRHcm91c\
-FwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6W\
-zEyXSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIlwiLFwiY29udHJvbFwiOltdLFwid2VsZ\
-Edyb3VwXCI6MH17XCJjb2xvclwiOlwiXCIsXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbM\
-TBdLFwid2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiV2hpdGVcIixcImNvbnRyb2xcIjpbNDUwM\
-F0sXCJub2RlSW5kZXhcIjpbOSw4XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlX\
-CIsXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMjZdLFwid2VsZEdyb3VwXCI6MH0iXQ=="
-        .replace(/ /g, ""))));
+        ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr(("gIAEDEFOT05\
+fU2h1dHRsZQAEXVy0aoC/TzvnFnWt0z4R4pYUZx2CorwBRXLToKjrQJPehCK9CdKboLhB4MUPQVw\
+DhrgGiGuAuAaIa4C1XkER14AjrgFBjHHEFUWbA4oxBxTVDSjWu1FsOeBYccQw3YRiywPBlnFsGcG\
+WcTR3YGgxji0HODKK5gYEzYXmQnOhrhXKGhDENSCIa0DR5oKjywFFigOOFQcczw0obnxxxDXgqGs\
+SmGvBE1uuied3AltbMCw0NSw0NSw2OCwwLDQ1LDAsNDUsMTEzLDcxLDAsNDUsMCw0NSwwLDQ1LDA\
+sNDUsMTg0LDY4LDI1Miw2OSwzMjEsNDQsMzIxLDQ0LDMyMSw0NCwzMjEsNDQsMzIxLDQ0LDMyMSw\
+0NCwzMjEsNDQsMzIxLDQ0LDM2NSw1OSwzMjEsNDQsNDI0LDcwLDQ5NCw2NCw1NTgsNzAsNjI4LDQ\
+5LDY3Nyw2Miw3MzksNTYsNzk1LDY3LDg2Miw2Miw5MjQsNjIsOTg2LDYyLDEwNDgsNjIsMTExMCw\
+2NSwxMTc1LDU5LDEyMzQsNjIsMTI5Niw2MiwxMzU4LDY1LDE0MjMsNjUsMTQ4OCw2NSwxNTUzLDY\
+1LDE2MTgsNDQsMzIxLDQ0LDMyMSw0NCwzMjEsNDQsMTY2Miw3MCwxNzMyLDYyLDE3OTQsMzksMTg\
+zMyw1NiwxODg5LDY2LDE5NTUsNjEsMzIxLDQ0LDMyMSw0NCwzMjEsNDQsMzIxLDQ0XSwie1wiY29\
+sb3JcIjpcIk9yYW5nZVwiLFwiY29udHJvbFwiOltdLFwid2VsZEdyb3VwXCI6MH17XCJjb2xvclw\
+iOlwiRGFyayBHcmF5XCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzNdLFwid2V\
+sZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiRGFyayBHcmF5XCIsXCJjb250cm9sXCI6WzE4MDAwXSx\
+cIm5vZGVJbmRleFwiOlsyLDFdLFwid2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiRGFyayBHcmF\
+5XCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzRdLFwid2VsZEdyb3VwXCI6MH1\
+7XCJjb2xvclwiOlwiV2hpdGVcIixcImNvbnRyb2xcIjpbWzAsMCwwLDBdXSxcIm5vZGVJbmRleFw\
+iOls1XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6W10\
+sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJcIixcImNvbnRyb2xcIjpbMSwwXSxcIm5vZGV\
+JbmRleFwiOlszNF0sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJXaGl0ZVwiLFwiY29udHJ\
+vbFwiOltdLFwibm9kZUluZGV4XCI6WzIzLDIyLDIxLDIwXSxcIndlbGRHcm91cFwiOjB9e1wiY29\
+sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMTksMThdLFwid2V\
+sZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiTGlnaHQgR3JheVwiLFwiY29udHJvbFwiOls3NTAwXSx\
+cIm5vZGVJbmRleFwiOlsyNF0sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJMaWdodCBHcmF\
+5XCIsXCJjb250cm9sXCI6W10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJXaGl0ZVwiLFw\
+iY29udHJvbFwiOlswXSxcIm5vZGVJbmRleFwiOlsxN10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9\
+yXCI6XCJcIixcImNvbnRyb2xcIjpbXSxcIm5vZGVJbmRleFwiOlsxMV0sXCJ3ZWxkR3JvdXBcIjo\
+wfXtcImNvbG9yXCI6XCJXaGl0ZVwiLFwiY29udHJvbFwiOlsyNzAwMF0sXCJub2RlSW5kZXhcIjp\
+bNyw2XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIkJsYWNrXCIsXCJjb250cm9sXCI6WzB\
+dLFwibm9kZUluZGV4XCI6WzM3XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIkJsYWNrXCI\
+sXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzM2XSxcIndlbGRHcm91cFwiOjB9e1wiY29\
+sb3JcIjpcIkJsYWNrXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzM4XSxcIndlbGR\
+Hcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV\
+4XCI6WzM1XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI\
+6WzExMjVdLFwibm9kZUluZGV4XCI6WzMxXSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIlw\
+iLFwiY29udHJvbFwiOlsxLDBdLFwibm9kZUluZGV4XCI6WzMzXSxcIndlbGRHcm91cFwiOjB9e1w\
+iY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzMyXSxcInd\
+lbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUl\
+uZGV4XCI6WzI1XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9\
+sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzI3XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjp\
+cIldoaXRlXCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzMwXSxcIndlbGRHcm9\
+1cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV\
+4XCI6WzI4XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI\
+6WzExMjVdLFwibm9kZUluZGV4XCI6WzI5XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIkJ\
+sYWNrXCIsXCJjb250cm9sXCI6W10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJXaGl0ZVw\
+iLFwiY29udHJvbFwiOltdLFwibm9kZUluZGV4XCI6WzE2LDE1LDE0LDEzXSxcIndlbGRHcm91cFw\
+iOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzE\
+yXSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIlwiLFwiY29udHJvbFwiOltdLFwid2VsZEd\
+yb3VwXCI6MH17XCJjb2xvclwiOlwiXCIsXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMTB\
+dLFwid2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiV2hpdGVcIixcImNvbnRyb2xcIjpbNDUwMF0\
+sXCJub2RlSW5kZXhcIjpbOSw4XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCI\
+sXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMjZdLFwid2VsZEdyb3VwXCI6MH0" +
+        "iXQ==").replace(/ /g, ""))));
         ship.fixPositionAdjustment(!0);
         enableLogicEditing();
       };
       break;
     case "bad106e2":
     case "ebbbcdda":
+      console.log("Fun mode 10");
       ship = Ship.fromObject(JSON.parse('{"n":"Ingame logic prev iew","gv":"\
 ","dt":"15.09.2024 11:29:59","ls":0,"b":[{"n":"Core","p":[0,0],"r":180,"f":f\
 alse,"s":"White","c":[],"ni":[],"wg":0},{"n":"Small Battery","p":[1,0.5],"r"\
@@ -289,6 +355,20 @@ anel","p":[2,1],"r":270,"f":false,"s":"White","c":[],"ni":[22],"wg":0},{"n":\
 {"Item1":22,"Item2":4},{"Item1":19,"Item2":4},{"Item1":16,"Item2":2},{"Item1\
 ":14,"Item2":3},{"Item1":8,"Item2":15},{"Item1":7,"Item2":15},{"Item1":6,"It\
 em2":1},{"Item1":5,"Item2":15}],"ci":[],"significantVersion":20}'));
+      break;
+    case "d4d00d64":
+    case "c058adcc":
+      console.log("Fun mode 11");
+      defaults =
+        /** @type {typeof defaults} */
+        ({});
+      loadSettings();
+      defaults.renderSharp = true;
+      saveSettings();
+      (GE("style") || EL()).appendChild(tN("#commandsTab,#info,#commandsTab \
+*,#info *{border-radius: 0;filter: contrast(7) brightness(0.7);font-weight: \
+bolder;}#commandsTab button:hover,#commandsTab button:focus{font-weight: nor\
+mal;}"));
   }
 })(/\/[0-9a-zA-Z._+\-:]+\/editor(?:\.html)?(?:#[^?]*)?($|\?[^=]*)/);
 
@@ -527,55 +607,6 @@ var helpCanvas = document.createElement("canvas"),
     // shut up chromium browsers
     {willReadFrequently: true}));
 
-/** original settings variable, defines type for settings */
-var defaults = {
-  /** (default) true: image pattern, false: color */
-  editorBackground: typeof DOMMatrix != "undefined",
-  /** mumst be in #xxxxxx hex color format */
-  editorBackgroundColor: "#111111",
-  /** (default) 0: dbc, 1: db, ... */
-  editorBackgroundImage: 0,
-  /** mumst be in #xxxxxx hex color format */
-  highlightColor: "#ff0000",
-  highlightWidth: 2,
-  logicPreviewAlpha: .5,
-  buildReplace: !1,
-  editorBackgroundStage: 1,
-  fullscreenInitialized: false,
-  fullscreenDisabled: false
-},
-  /** @type {typeof defaults|null} alternative to original */
-  settings = defaults;
-// naming may change? + meaningless comment
-function saveSettings() {
-  var n = 0, arr = [+defaults.editorBackground];
-  if (isNaN(n = Number("0x" + defaults.editorBackgroundColor.slice(1))))
-    throw new Error("Wrong format of editorBackgroundColor setting");
-  arr[0] += (n & 0x7fff) << 1;
-  arr[1] = n >> 15 & 0xffff;
-  arr[1] += defaults.editorBackgroundImage << 15 & 1 << 15;
-  arr[2] = defaults.editorBackgroundImage >> 1 & 31;
-  arr[2] += +defaults.fullscreenInitialized << 5
-  arr[2] += +defaults.fullscreenDisabled << 6;
-  storage.setItem("D1R_DBV_editor", String.fromCharCode.apply(String, arr));
-}
-function loadSettings() {
-  var s = storage.getItem("D1R_DBV_editor") || "";
-  if (!s.length)
-    return;
-  if (s.length > 3)
-    return console.error("Unsupported length of localStorage item");
-  var n = 0, arr = s.split("").map(function (e) {
-    return e.charCodeAt(0);
-  });
-  defaults.editorBackground = !!(arr[0] & 1);
-  s = ((arr[0] & 0x7fff) + ((arr[1] & 0x01ff) << 16) >> 1).toString(16);
-  defaults.editorBackgroundColor = "#" + "000000".slice(s.length) + s;
-  n = arr[1] >> 15;
-  defaults.editorBackgroundImage = ((arr[2] & 31) << 1) + n;
-  defaults.fullscreenInitialized = !!(arr[2] >> 5 & 1);
-  defaults.fullscreenDisabled = !!(arr[2] >> (5 + 1) & 1);
-}
 loadSettings();
 canvas.style.backgroundColor = document.body.style.backgroundColor =
   defaults.editorBackground ? "#132122" : defaults.editorBackgroundColor;
@@ -2810,6 +2841,7 @@ function enableShipEditing() {
 
 /** @param {number} w @param {number} h */
 function test_juhus(w, h) {
+  var radius = defaults.renderSharp ? 0 : 5;
   /** @param {Block|LogicBlock} block */
   function drawBlockRc(block) {
     var size = Block.Size.VALUE[Block.ID[block.internalName]];
@@ -2842,6 +2874,7 @@ function test_juhus(w, h) {
   }
   /** @param {Tool} tool @param {number} size */
   function drawPathRc(tool, size) {
+    defaults.renderSharp ? size *= 8 : 1;
     rc.canvas.width = rc.canvas.height = size;
     rc.scale(size / 256, size / 256);
     rc.beginPath();
@@ -2895,10 +2928,10 @@ function test_juhus(w, h) {
       return;
     ctx.beginPath();
     ctx.moveTo(tx, ty - 25);
-    ctx.arcTo(tx, ty - 15, tx + 78, ty - 15, 5);
-    ctx.arcTo(tx + 78, ty - 15, tx + 78, ty - 93, 5);
-    ctx.arcTo(tx + 78, ty - 93, tx, ty - 93, 5);
-    ctx.arcTo(tx, ty - 93, tx, ty, 5);
+    ctx.arcTo(tx, ty - 15, tx + 78, ty - 15, radius);
+    ctx.arcTo(tx + 78, ty - 15, tx + 78, ty - 93, radius);
+    ctx.arcTo(tx + 78, ty - 93, tx, ty - 93, radius);
+    ctx.arcTo(tx, ty - 93, tx, ty, radius);
     ctx.closePath();
     ctx.stroke();
     if (selected) {
@@ -2913,8 +2946,8 @@ function test_juhus(w, h) {
     ctx.globalAlpha = b ? .9 : .8;
     ctx.beginPath();
     ctx.moveTo(tfx, h - 101);
-    ctx.arcTo(tfx, h - tfy, tfx + 12, h - tfy, 5);
-    ctx.arcTo(tfx += 54, h - tfy, tfx, h - 146, 5);
+    ctx.arcTo(tfx, h - tfy, tfx + 12, h - tfy, radius);
+    ctx.arcTo(tfx += 54, h - tfy, tfx, h - 146, radius);
     ctx.lineTo(tfx, h - 101);
     ctx.closePath();
     ctx.fillStyle = b ? "#0c243c" : "#000c1c";
@@ -2927,17 +2960,17 @@ function test_juhus(w, h) {
   ctx.lineJoin = "round";
   ctx.beginPath();
   ctx.moveTo(7, h - 19);
-  ctx.arcTo(7, h - 7, 19, h - 7, 5);
-  ctx.arcTo(275, h - 7, 275, h - 19, 5);
-  ctx.arcTo(275, h - 275, 263, h - 275, 5);
-  ctx.arcTo(7, h - 275, 7, h - 263, 5);
+  ctx.arcTo(7, h - 7, 19, h - 7, radius);
+  ctx.arcTo(275, h - 7, 275, h - 19, radius);
+  ctx.arcTo(275, h - 275, 263, h - 275, radius);
+  ctx.arcTo(7, h - 275, 7, h - 263, radius);
   ctx.closePath();
   ctx.moveTo(279, h - 19);
-  ctx.arcTo(279, h - 7, 291, h - 7, 5);
-  ctx.arcTo(w - 7, h - 7, w - 7, h - 19, 5);
+  ctx.arcTo(279, h - 7, 291, h - 7, radius);
+  ctx.arcTo(w - 7, h - 7, w - 7, h - 19, radius);
   DefaultUI.nextFolders ?
     ctx.lineTo(w - 7, h - 101) :
-    ctx.arcTo(w - 7, h - 101, w - 19, h - 101, 5);
+    ctx.arcTo(w - 7, h - 101, w - 19, h - 101, radius);
   ctx.lineTo(279, h - 101);
   ctx.closePath();
   ctx.fillStyle = "#0c243c";
@@ -3200,6 +3233,8 @@ function backgHangarInit() {
   ship = oship;
   function backgSecondary() {
     backgPrimary();
+    if (sc > 13 || defaults.renderSharp)
+      ctx.imageSmoothingEnabled = ctx.msImageSmoothingEnabled = !1;
     ctx.drawImage(
       hangarImg || hangarCanv,
       sc * -33 + vX,

@@ -1,6 +1,6 @@
-// v.0.1.64
-function GE(v){return document.getElementById(+v===v?(GE.i=v+1)-1:v===
-  void 0?v=GE.i++:v)}GE.i=0;
+// v.0.1.64T11
+function GE(v:any){return document.getElementById(+v===v?(GE.i=v+1)-1:
+  v===void 0?v=GE.i++:v)}GE.i=0;
 
 /** view x (position) */
 var vX = 0;
@@ -200,7 +200,7 @@ function test_touches(targ: HTMLElement, calls: handler[],
         return customLog instanceof Array ? customLog : [customLog];
       };
   var map = Array.prototype.map;
-  function tchLog(s, e: TouchEvent, ef, n?, l?, p?) {
+  function tchLog(s: any, e: TouchEvent, ef: any, n?: any, l?: any, p?: any) {
     n = (t.ch = e).timeStamp % 1E7 | 0;
     // countermeausre in offset left in console logs by array indexes
     l = 7 - ((n) + "").length;
@@ -223,7 +223,7 @@ function test_touches(targ: HTMLElement, calls: handler[],
   function fn(s: string, f?: handler) {
     // ef in tchLog
     var prpt = s !== "cancel:" ?
-      function (e: TouchEvent, arr) {
+      function (e: TouchEvent, arr: any) {
           // p in touch log preservers the identifiesrs of changedTouches
           arr.push(map.call(e.changedTouches, function (e: any) {
             return e.identifier;
@@ -247,7 +247,7 @@ function test_touches(targ: HTMLElement, calls: handler[],
         f && f(e);
       }
     function withLog(e: TouchEvent) {
-      delete a[a.push(tchLog(s, e, function (e) {
+      delete a[a.push(tchLog(s, e, function (e: any) {
         return e.targetTouches;
       })) - 64];
       f && f(e);
@@ -258,7 +258,7 @@ function test_touches(targ: HTMLElement, calls: handler[],
     //@ts-ignore
     (globalArr = typeof arr === "undefined" && (a.length = 10) &&
       Object.defineProperty(window, "tchs", {
-        get: function (p?) {
+        get: function (p?: any) {
           p = a;
           (a = []).length = 10;
           return {a: p};
@@ -321,12 +321,12 @@ function touchesInit(src: HTMLElement,
   src.ontouchend = onend;
   src.ontouchcancel = oncancel;
   // ontouches events handling
-  function createTouch(tch: Touch, ev: TouchEvent, i: number) {
+  function createTouch(tch: Touch, ev: TouchEvent, i: number): void {
     if (i === UDF) {
       if ((i = identifiers.indexOf(tch.identifier)) >= 0)
         return errorHandlers[0](touches, tch, ev) ?
-          !!+console.error("Can't add existing Touch") :
-          !!+console.error("Assigning Touch", updateTouch(tch, ev, i));
+          console.error("Can't add existing Touch") :
+          console.error("Assigning Touch", updateTouch(tch, ev, i));
     }
     for (i = 0; touches[i] !== null && i < touches.length;)
       i++;
@@ -334,17 +334,17 @@ function touchesInit(src: HTMLElement,
     identifiers[i] = tch.identifier;
     touches[i] = added[i] = temp[i] = new TouchDat(src, tch, ev);
   }
-  function updateTouch(tch: Touch, ev: TouchEvent, i: number) {
+  function updateTouch(tch: Touch, ev: TouchEvent, i: number): void {
     if (i === UDF) {
       if ((i = identifiers.indexOf(tch.identifier)) < 0)
         return errorHandlers[1](touches, tch, ev) ?
-          !!+console.error("Can't update unexisting Touch") :
-          !!+console.error("Adding Touch", createTouch(tch, ev, i));
+          console.error("Can't update unexisting Touch") :
+          console.error("Adding Touch", createTouch(tch, ev, i));
     }
     events[i] = !0;
     temp[i] = (touches[i] || new TouchDat()).update(tch, ev);
   }
-  function removeTouch(tch: Touch, ev: TouchEvent, i: number) {
+  function removeTouch(tch: Touch, ev: TouchEvent, i: number): void {
     var j = identifiers.indexOf(tch.identifier);
     if (j < 0 && errorHandlers[2](touches, tch, ev))
       return console.error("Can't remove unexisting Touch");

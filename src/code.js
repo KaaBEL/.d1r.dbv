@@ -1,10 +1,9 @@
-//@ts-check
+//@ts-no-check
 /// <reference path="./code.d.ts" types="./code.js" />
 "use strict";
-/**
- * @TODO setup webapp manifest.json @TODO discord server link
- * @TODO Finish block collisions detection @TODO unit_test for Ship */
-var version_code_js = "v.0.1.64T9";
+/** @TODO discord server link
+ * @TODO Finish block collisions detection */
+var version_code_js = "v.0.1.64T1";
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -30,321 +29,120 @@ function __private(val) {
 }
 /** @type {typeof defaults|null} */
 var settings = null;
-/** @param {string} s best function ever, I should use this */
+
+/** timeToString @param {number} [t=Date.now()] @param {number} [f=1] ?1 */
+function dateTime(t, f) {
+  // uses unix timestamp input
+  if (typeof t !== "number")
+    t = Math.floor(Date.now() / 1000);
+  var i = 0, n, s, months = [30, 27, 30, 29, 30, 29, 30, 30, 29, 30, 29, 30];
+  n = ((t % 60) * (f || 1) | 0) / (f || 1);
+  s = ":" + (n < 10 ? "0" + n : n);
+  n = (t = Math.floor(t / 60)) % 60;
+  s = ":" + (n > 9 ? n : "0" + n) + s;
+  s = " " + (t = Math.floor(t / 60)) % 24 + s;
+  n = Math.floor(t / 24);
+  t = Math.ceil(n % 365.25);
+  if (t === 365 && !(n / 365.25 & 2))
+    return "01.01." + Math.floor(n / 365.25 + 1971) + s;
+  s = "." + (n / 365.25 + 1970 | 0) + s;
+  if (n % 1461 > 788)
+    t--;
+  while (t > months[i])
+    t -= months[i++] + 1;
+  s = "." + (++i > 9 ? i : "0" + i) + s;
+  t += 1 + +(n % 1461 === 789);
+  return (t > 9 ? "" : "0") + t + s;
+}
+// for (var i = 1, seed = 35589; i < 0xfff; i++)
+//   (seed = seedRand(seed));
+// var matcher = seed, i = 0;
+// for (seed = seedRand(seed); seed !== matcher && i < 0xffffff; i++)
+//   seed = seedRand(seed);
+// taken from: https://stackoverflow.com/a/47593316
+function rand_sfc32(seed) {
+  var a = seed, b = seed, c = seed, d = seed;
+  return function() {
+    a |= 0; b |= 0; c |= 0; d |= 0;
+    var t = (a + b | 0) + d | 0;
+    d = d + 1 | 0;
+    a = b ^ b >>> 9;
+    b = c + (c << 3) | 0;
+    c = (c << 21 | c >>> 11);
+    c = c + t | 0;
+    return (t >>> 0) / 4294967296;
+  }
+}
+// end of taken
+/** @returns {string} best function ever, I should use this */
 function er(s) {
   throw new Error(s);
-  return s;
 }
 
-function Data() {
-  throw new TypeError("Illegal constructor");
-  this.data = null;
+/** check dictionary definitions
+ * @overload
+ * @param {{[x: number]: string, length: number}} dicNum
+ * @param {{[x: string]: number}} dicVal
+ * @param {string} AT place of error message/dictonary name
+ * @overload
+ * @param {{[x: number]: string, length: number}} dicNum
+ * @param {string} dicVal
+ * @returns {void} */
+function dictionaryDefs(dicNum, dicVal, closure) {
+  if (location.origin.slice(0, 4) === "http" && location.port !== "5500")
+    return;
+  console.time(closure);
+  var AT = ". At " + (closure || dicVal) + ".";
+  if (typeof dicNum != "object")
+    throw new Error("Numbered dictionary isn't object" + AT);
+  if (typeof dicNum.length != "number")
+    throw new Error("Numbered dictionary misses length property" + AT);
+  var l = dicNum.length, max = 0, ar = [], val;
+  // should be detected by max id property if (dicNum[l - 1] === UDF)
+  //   throw new Error("Length property doesn't indicate last one" + AT);
+  if (typeof dicVal != "object") {
+    for (var p in dicNum)
+      OP.call(dicNum, p) && !isNaN(Number(p)) && ar.push(Number(p));
+    l = ar.sort(function (a, b) {
+      return a - b;
+    }).slice(-1)[0] + 1;
+    if (l !== dicNum.length)
+      console.error("Length property shoud be: " + l + AT);
+    l = 0;
+    for (p = "{"; l < ar.length; l++)
+      p += "\n  " + JSON.stringify(dicNum[ar[l]]) + ": " + ar[l] + ",";
+    console.log(p = p.slice(0, -1) + "\n}");
+    return console.error("Generation used" + AT);
+  }
+  if (typeof dicVal != "object")
+    throw new Error("Dictionary (number by value keys) isn't object" + AT);
+  for (var p in dicNum)
+    if (OP.call(dicNum, p))
+      if (isNaN(l = Number(p)))
+        p !== "length" && console.error("Property: \"" + p + "\" foun" +
+          "d in numbered dictionary else than \"length\" or number" + AT);
+      else if (!OP.call(dicVal, val = dicNum[p]))
+        throw new Error("Dictonaries mismatch at numbered: \"" + p +
+          "\" and (number by value keys): " + dicVal[val] + AT);
+      else if (dicVal[val] !== l)
+        throw new Error(dicVal[val] === UDF ?
+          "Dictionary (number by value keys) misses key: " + val + AT :
+          "Dictionary (number by value keys) at: \"" + val +
+            "\" doesn't contain: " + l + AT);
+      else if (l > max)
+        max = l;
+  for (p in dicVal)
+    if (OP.call(dicVal, p) && !OP.call(dicNum, dicVal[p]))
+      throw new Error("Property: \"" + dicVal[p] + "\", value: " +
+        JSON.stringify(p) + " is not present in numbered directory" + AT);
+  if (++max !== dicNum.length)
+    throw new Error("Length property of numbered dictionary should be: " +
+      max + AT);
+  console.timeEnd(closure);
 }
-Data.colors = {"White": 0, "Light Gray": 1, "Dark Gray": 2, "Black": 3,
-  "Yellow": 4, "Orange": 5, "Red": 6, "Wine": 7, "Pink": 8, "Purple": 9,
-  "Light Blue": 10, "Dark Blue": 11, "Navy": 12, "Lime": 13,
-  "Green": 14, "Fuel": 15, "Yellow Hazard Stripes": 16,
-  "Red Hazard Stripes": 17, "White Hazard Stripes": 18,
-  "Festive Red": 19, "Festive Green": 20, "BREAD": 21,
-  "[custom color]": 22, "Station Floor 0": 23, "Station Floor 1": 24,
-  "Station Floor 2": 25, "Wood": 26, "Festive Duck": 27, "Gonb": 28};
-/**
- * @typedef {number|[number,number]} UseData
- * @typedef {{id:number,weight?:number,strength?:number,cost?:number,
- * energy_use?:UseData,energy_store?:number,fuel_use?:UseData,
- * fuel_store?:number,cargo_use?:UseData,cargo_store?:number}} BlockData
- */
-Data.blocks = {block: {id: 0}, wedge: {id: 1}, wedge_1x2: {id: 2},
-  pyramid: {id: 3}, pyramid_1x2: {id: 4}, inverse_pyramid: {id: 5},
-  inverse_pyramid_1x2: {id: 6}, hydrogen_tank_small: {id: 7},
-  rcs_rocket_thruster_small: {id: 8}, rocket_thruster_small: {id: 9},
-  cockpit_fighter: {id: 10}, cockpit_cruiser: {id: 11}, __unknown__: {
-  id: 511}, Core: {id: 690, weight: 2, strength: 10, cost: -1,
-  cargo_store: 5}, Block: {id: 691, weight: 1, strength: 10, cost: 100},
-  Wedge: {id: 692, weight: 0.5, strength: 5, cost: 100}, "Wedge 1x2": {
-  id: 693, weight: 1, strength: 10, cost: 100}, "Wedge 1x4": {id: 694,
-  weight: 2, strength: 20, cost: 100}, Pyramid: {id: 695, weight: 0.5,
-  strength: 5, cost: 100}, Slab: {id: 696, weight: 0.5, strength: 5,
-  cost: 100}, "Smooth Corner": {id: 697, weight: 0.5, strength: 10,
-  cost: 100}, "Smooth Corner 1x2": {id: 698, weight: 1, strength: 10,
-  cost: 100}, "Smooth Corner 1x4": {id: 699, weight: 2, strength: 20,
-  cost: 100}, Struct: {id: 700, weight: 0.5, strength: 5, cost: 100},
-  "Glass Block": {id: 701, weight: 1, strength: 1, cost: 100},
-  "Glass Wedge": {id: 702, weight: 0.5, strength: 0.5, cost: 100},
-  "Slab Wedge": {id: 703, cost: 100}, "Tiny Hydrogen Thruster": {id: 738,
-  weight: 0.5, strength: 2.5, cost: 100, fuel_use: 175},
-  "Small Hydrogen Thruster": {id: 739, weight: 2, strength: 10, cost: 100,
-  fuel_use: 150}, "Medium Hydrogen Thruster": {id: 740, weight: 8,
-  strength: 40, cost: 400, fuel_use: 125}, "Large Hydrogen Thruster":
-  {id: 741, weight: 24, strength: 120, cost: 800, fuel_use: 100},
-  "Tiny Ion Thruster": {id: 742, weight: 0.75, strength: 2.5, cost: 100,
-  energy_use: 275}, "Small Ion Thruster": {id: 743, weight: 3, strength: 10,
-  cost: 100, energy_use: 250}, "Medium Ion Thruster": {id: 744, weight: 6,
-  strength: 20, cost: 400, energy_use: 225}, "Large Ion Thruster": {id: 745,
-  weight: 18, strength: 60, cost: 800, energy_use: 200}, "Reaction Wheel": {
-  id: 746, weight: 2, strength: 10, cost: 100, energy_use: 100},
-  "Small Hydrogen Tank": {id: 754, weight: 2, strength: 10, cost: 100,
-  fuel_store: 30}, "Medium Hydrogen Tank": {id: 755, weight: 8, strength: 40,
-  cost: 400, fuel_store: 150}, "Large Hydrogen Tank": {id: 756, weight: 18,
-  strength: 90, cost: 900, fuel_store: 375}, "Small Battery": {id: 757,
-  weight: 3, strength: 10, cost: 100, energy_store: 20}, "Medium Battery": {
-  id: 758, weight: 12, strength: 40, cost: 400, energy_store: 100},
-  "Large Battery": {id: 759, weight: 18, strength: 60, cost: 600,
-  energy_store: 175}, "Small Storage Rack": {id: 760, weight: 3,
-  strength: 10, cost: 100, cargo_store: 20}, "Medium Storage Rack": {id: 761,
-  weight: 12, strength: 40, cost: 400, cargo_store: 100},
-  "Large Storage Rack": {id: 762, weight: 27, strength: 90, cost: 900,
-  cargo_store: 250}, "Small Hydraulic Drill": {id: 770, weight: 3,
-  strength: 10, cost: 100, energy_use: 1, cargo_use: [-1,1.02]}, Cannon: {
-  id: 771, weight: 2, strength: 10, cost: 100}, "Rotary Cannon": {id: 772,
-  weight: 2, strength: 10, cost: 200}, "Plasma Cannon": {id: 773, weight: 2,
-  strength: 10, cost: 200, energy_use: [10,1.02]}, "Pulse Laser": {id: 774,
-  weight: 2, strength: 10, cost: 200, energy_use: [2,0.52]}, "Beam Laser": {
-  id: 775, weight: 2, strength: 10, cost: 200, energy_use: 4},
-  __placeholder776__: {id: 776}, "Weight Block": {id: 786, weight: 10,
-  strength: 10, cost: 100}, "Armor Block": {id: 787, weight: 5, strength: 50,
-  cost: 100}, "Solar Block": {id: 788, weight: 1, strength: 2, cost: 100,
-  energy_use: -0.25}, "Small Solar Panel": {id: 789, weight: 1,
-  strength: 0.5, cost: 100, energy_use: -0.75}, Hinge: {id: 790, weight: 5,
-  strength: 10, cost: 100}, Separator: {id: 791, weight: 1, strength: 1,
-  cost: 100}, Piston: {id: 792, weight: 5, strength: 10, cost: 100},
-  "Camera Block": {id: 793, weight: 1, strength: 10, cost: 100},
-  "Ghost Block": {id: 794, weight: 1, strength: 10, cost: 100},
-  Dock: {id: 795, weight: 1, strength: 10, cost: 100}, "Small Rift Drive": {
-  id: 796, weight: 5, strength: 10, cost: 500}, __placeholder798__: {
-  id: 798}, __placeholder799__: {id: 799}, "Constant On Signal": {id: 802,
-  weight: 0.25, strength: 2.5, cost: 100}, "Control Block": {id: 803,
-  weight: 1, strength: 10, cost: 100}, "AND Gate": {id: 804, weight: 1,
-  strength: 10, cost: 100}, "NAND Gate": {id: 805, weight: 1, strength: 10,
-  cost: 100}, "OR Gate": {id: 806, weight: 1, strength: 10, cost: 100},
-  "NOR Gate": {id: 807, weight: 1, strength: 10, cost: 100}, "XOR Gate": {
-  id: 808, weight: 1, strength: 10, cost: 100}, "XNOR Gate": {id: 809,
-  weight: 1, strength: 10, cost: 100}, "NOT Gate": {id: 810, weight: 0.5,
-  strength: 5, cost: 100}, LED: {id: 811, weight: 0.25, strength: 2.5,
-  cost: 100}, Delay: {id: 812, weight: 0.5, strength: 5, cost: 100},
-  "Constant Number": {id: 813, weight: 0.25, strength: 2.5, cost: 100},
-  "Speed Sensor": {id: 814, weight: 1, strength: 10, cost: 100},
-  "Tilt Sensor": {id: 815, weight: 1, strength: 10, cost: 100},
-  "Distance Sensor": {id: 816, weight: 1, strength: 10, cost: 100},
-  "GPS Sensor": {id: 817, weight: 1, strength: 10, cost: 100},
-  "Numerical Inverter": {id: 818, weight: 0.5, strength: 5, cost: 100},
-  Clamp: {id: 819, weight: 0.5, strength: 5, cost: 100}, Abs: {id: 820,
-  weight: 0.5, strength: 5, cost: 100}, "Threshold Gate": {id: 821,
-  weight: 0.5, strength: 5, cost: 100}, "Numerical Switchbox": {id: 822,
-  weight: 1, strength: 10, cost: 100}, "Function Block": {id: 823, weight: 1,
-  strength: 10, cost: 100}, "Memory Register": {id: 824, weight: 1,
-  strength: 10, cost: 100}, Gauge: {id: 825, weight: 0.5, strength: 5,
-  cost: 100}, Dial: {id: 826, weight: 0.25, strength: 2.5, cost: 100},
-  "Digital Display": {id: 827, weight: 0.5, strength: 5, cost: 100},
-  "Push To Toggle": {id: 828, weight: 0.5, strength: 5, cost: 100},
-  __placeholder834__: {id: 834}, __placeholder835__: {id: 835},
-  __placeholder836__: {id: 836}, __placeholder837__: {id: 837},
-  __placeholder838__: {id: 838}, __placeholder839__: {id: 839},
-  __placeholder840__: {id: 840}, __placeholder841__: {id: 841},
-  __placeholder842__: {id: 842}, __placeholder843__: {id: 843},
-  __placeholder844__: {id: 844}, __placeholder845__: {id: 845},
-  __placeholder846__: {id: 846}, __placeholder847__: {id: 847},
-  __placeholder848__: {id: 848}, __placeholder849__: {id: 849},
-  __placeholder850__: {id: 850}, __placeholder851__: {id: 851},
-  __placeholder852__: {id: 852}, __placeholder853__: {id: 853},
-  __placeholder854__: {id: 854}, __placeholder855__: {id: 855},
-  __placeholder856__: {id: 856}, __placeholder857__: {id: 857},
-  __NULL__: {id: 1023}, Afterburner: {id: 1035, weight: 2, strength: 10,
-  cost: 70}, "Dynamo Thruster": {id: 1037, weight: 3, strength: 15,
-  cost: 90}, "T1 Rammer": {id: 1043, weight: 1, strength: 20, cost: 70},
-  "T1 Nano Healer": {id: 1060, weight: 1, strength: 10, cost: 130}};
-Data.titles = {
-  0: "block",
-  1: "wedge",
-  2: "wedge_1x2",
-  3: "pyramid",
-  4: "pyramid_1x2",
-  5: "inverse_pyramid",
-  6: "inverse_pyramid_1x2",
-  7: "hydrogen_tank_small",
-  8: "rcs_rocket_thruster_small",
-  9: "rocket_thruster_small",
-  10: "cockpit_fighter",
-  11: "cockpit_cruiser",
-  511: "__unknown__",
-  690: "Core",
-  691: "Block",
-  692: "Wedge",
-  693: "Wedge 1x2",
-  694: "Wedge 1x4",
-  695: "Pyramid",
-  696: "Slab",
-  697: "Smooth Corner",
-  698: "Smooth Corner 1x2",
-  699: "Smooth Corner 1x4",
-  700: "Struct",
-  701: "Glass Block",
-  702: "Glass Wedge",
-  703: "Slab Wedge",
-  738: "Tiny Hydrogen Thruster",
-  739: "Small Hydrogen Thruster",
-  740: "Medium Hydrogen Thruster",
-  741: "Large Hydrogen Thruster",
-  742: "Tiny Ion Thruster",
-  743: "Small Ion Thruster",
-  744: "Medium Ion Thruster",
-  745: "Large Ion Thruster",
-  746: "Reaction Wheel",
-  754: "Small Hydrogen Tank",
-  755: "Medium Hydrogen Tank",
-  756: "Large Hydrogen Tank",
-  757: "Small Battery",
-  758: "Medium Battery",
-  759: "Large Battery",
-  760: "Small Storage Rack",
-  761: "Medium Storage Rack",
-  762: "Large Storage Rack",
-  770: "Small Hydraulic Drill",
-  771: "Cannon",
-  772: "Rotary Cannon",
-  773: "Plasma Cannon",
-  774: "Pulse Laser",
-  775: "Beam Laser",
-  776: "TNT",
-  786: "Weight Block",
-  787: "Armor Block",
-  788: "Solar Block",
-  789: "Small Solar Panel",
-  790: "Hinge",
-  791: "Separator",
-  792: "Piston",
-  793: "Camera Block",
-  794: "Ghost Block",
-  795: "Dock",
-  796: "Small Rift Drive",
-  798: "Red Magnet",
-  799: "Inversed Dock",
-  802: "Constant On Signal",
-  803: "Control Block",
-  804: "AND Gate",
-  805: "NAND Gate",
-  806: "OR Gate",
-  807: "NOR Gate",
-  808: "XOR Gate",
-  809: "XNOR Gate",
-  810: "NOT Gate",
-  811: "LED",
-  812: "Delay",
-  813: "Constant Number",
-  814: "Speed Sensor",
-  815: "Tilt Sensor",
-  816: "Distance Sensor",
-  817: "GPS Sensor",
-  818: "Numerical Inverter",
-  819: "Clamp",
-  820: "Abs",
-  821: "Threshold Gate",
-  822: "Numerical Switchbox",
-  823: "Function Block",
-  824: "Memory Register",
-  825: "Gauge",
-  826: "Dial",
-  827: "Digital Display",
-  828: "Push To Toggle",
-  834: "station wall 4 sides LBRU",
-  835: "station wall 2 sides corner LB",
-  836: "station wall 1 side B",
-  837: "station wall 0 sides",
-  838: "station wall 3 sides LBR",
-  839: "station wall 2 sides opposite LR",
-  840: "station solar block",
-  841: "station launchpad door casing",
-  842: "station launchpad door middle",
-  843: "station launchpad door ending",
-  844: "station floor 1 1x1",
-  845: "station floor 1 2x2",
-  846: "station floor 2 2x2",
-  847: "station door casing",
-  848: "station door middle",
-  849: "station door ending",
-  850: "station launch terminal",
-  851: "station bench",
-  852: "station wardrobe",
-  853: "station telescope",
-  854: "station market terminal",
-  855: "station wedge",
-  856: "station foor 2 1x1",
-  857: "station floor 3 1x1",
-  1023: "__NULL__",
-  1024: "Core",
-  1025: "T1 Block",
-  1026: "T2 Block",
-  1027: "T1 Wedge",
-  1028: "T1 Wedge 1x2",
-  1029: "T2 Wedge",
-  1030: "Structure Block",
-  1031: "Glass Block",
-  1032: "Glass Wedge",
-  1033: "Station Block",
-  1034: "Simple Thruster",
-  1035: "Afterburner",
-  1036: "Ion Thruster",
-  1037: "Dynamo Thruster",
-  1038: "Momentum Wheel",
-  1039: "Small Fuel Tank",
-  1040: "Medium Fuel Tank",
-  1041: "Small Battery",
-  1042: "Medium Battery",
-  1043: "T1 Rammer",
-  1044: "T1 Blaster",
-  1045: "T1 Pulse Laser",
-  1046: "T1 Gatling Gun",
-  1047: "T1 Rocket Launcher",
-  1048: "Explosive",
-  1049: "T1 Drill",
-  1050: "T1 Mining Laser",
-  1051: "Small Crate",
-  1052: "Medium Crate",
-  1053: "Connector",
-  1054: "T1 Solar Panel",
-  1055: "T2 Solar Panel",
-  1056: "Solar Block",
-  1057: "Hinge",
-  1058: "Seperator",
-  1059: "Camera Block,",
-  1060: "T1 Nano Healer"
-};
-/** @param {"colors"|"blocks"|"titles"} src */
-Data.generateNames = function (src) {
-  /** @type {{[key:number]:string|undefined,length:number}} Names by ID */
-  var names = {length: 0}, data = Data[src];
-  for (var p in data) {
-    var id = typeof data[p] == "number" ? data[p] : data[p].id;
-    names[id] = p;
-    if (id >= names.length)
-      names.length = id + 1;
-  }
-  return names;
-};
-/** @param {"colors"|"blocks"|"titles"} src */
-Data.generateIDs = function (src) {
-  /** is missing the undefined case, isn't 100% type safe
-   * @type {{[key:string]:number}} IDs by Name */
-  var ids = {length: 0}, data = Data[src];
-  for (var p in data)
-    ids[p] = typeof data[p] == "number" ? data[p] : data[p].id;
-  return ids;
-};
-/** @template {keyof BlockData} T @param {T} type */
-Data.generateValues = function (type) {
-  /** @type {{[key:string]:BlockData[T]|undefined}} Values by Name */
-  var values = {}, data = Data.blocks;
-  for (var p in data) {
-    /** @type {BlockData} */
-    var stuff = data[p];
-    if (stuff[type])
-      values[data[p].id] = stuff[type];
-  }
-  return values;
-};
 
 /** @typedef {Block|LogicBlock} ShipBlock */
-/**
+/** instance is sealed
  * @template {0|1|2|3} T
  * @param {T} type @param {number} x @param {number} y as definition
  * x, y is position relative to middle, else used by rendering method,
@@ -551,7 +349,7 @@ Logic.execMemoryRegister = function (arg, block) {
 Logic.execDisplays = function (arg, block) {
   block.getPhysics().reporter = "" + arg[0].value;
 };
-Logic.execPushToToggle =
+Logic.execPushToToggle = 
   /** 828: Push To Toggle @type {LExec&{toggled?:boolean}} */
   (function (arg, block) {
     if (arg[0].value !== Logic.execPushToToggle.toggled)
@@ -842,9 +640,73 @@ function Color() {
   throw new TypeError("Illegal constructor");
 }
 /** object is frost */
-Color.NAME = Object.freeze(Data.generateNames("colors"));
+Color.NAME = {
+  0: "White",
+  1: "Light Gray",
+  2: "Dark Gray",
+  3: "Black",
+  4: "Yellow",
+  5: "Orange",
+  6: "Red",
+  7: "Wine",
+  8: "Pink",
+  9: "Purple",
+  10: "Light Blue",
+  11: "Dark Blue",
+  12: "Navy",
+  13: "Lime",
+  14: "Green",
+  15: "Fuel",
+  16: "Yellow Hazard Stripes",
+  17: "Red Hazard Stripes",
+  18: "White Hazard Stripes",
+  19: "Festive Red",
+  20: "Festive Green",
+  21: "BREAD",
+  22: "[custom color]",
+  23: "Station Floor 0",
+  24: "Station Floor 1",
+  25: "Station Floor 2",
+  26: "Wood",
+  27: "Festive Duck",
+  28: "Gonb",
+  length: 29
+};
 /** object is frost */
-Color.ID = Object.freeze(Data.colors);
+Color.ID = {
+  "White": 0,
+  "Light Gray": 1,
+  "Dark Gray": 2,
+  "Black": 3,
+  "Yellow": 4,
+  "Orange": 5,
+  "Red": 6,
+  "Wine": 7,
+  "Pink": 8,
+  "Purple": 9,
+  "Light Blue": 10,
+  "Dark Blue": 11,
+  "Navy": 12,
+  "Lime": 13,
+  "Green": 14,
+  "Fuel": 15,
+  "Yellow Hazard Stripes": 16,
+  "Red Hazard Stripes": 17,
+  "White Hazard Stripes": 18,
+  "Festive Red": 19,
+  "Festive Green": 20,
+  "BREAD": 21,
+  "[custom color]": 22,
+  "Station Floor 0": 23,
+  "Station Floor 1": 24,
+  "Station Floor 2": 25,
+  "Wood": 26,
+  "Festive Duck": 27,
+  "Gonb": 28
+};
+Object.freeze(Color.NAME);
+Object.freeze(Color.ID);
+dictionaryDefs(Color.NAME, Color.ID, "Color definitions");
 /** @param {string} name @return {Colors} */
 Color.default = function getColor(name) {
   if (/Hydrogen Thruster/.test(name))
@@ -875,7 +737,7 @@ function Physics() {
   Object.seal(this);
 }
 // Only the Physics class initially, better classification system
-// should be decided after
+// should be decided after 
 // /** class is frost Block Physics */
 // Physics.Block = PShip function () {
 //   this.enabled = false;
@@ -911,7 +773,7 @@ Object.freeze(Physics.Ship);
 
 /** letter case of block names doesn't matter when loaded by game,
  * Block name definitions require strict letter cases here */
-/**
+/** instance is sealed
  * @typedef {[number,number,number]} XYZPosition
  * @typedef {[0|1|2,boolean,0|1|2|3]} Rotation
  * @typedef {keyof typeof Color.ID|""|null} Colors
@@ -941,46 +803,606 @@ function Block(name, pos, rot, prop, color) {
 // NOTE that blocks definitions will be version dependant over time
 // (allows cross version editing) there is just no need to implement it yet
 /** object is frost */
-Block.NAME = Object.freeze(Data.generateNames("blocks"));
+Block.NAME = {
+  0: "block",
+  1: "wedge",
+  2: "wedge_1x2",
+  3: "pyramid",
+  4: "pyramid_1x2",
+  5: "inverse_pyramid",
+  6: "inverse_pyramid_1x2",
+  7: "hydrogen_tank_small",
+  8: "rcs_rocket_thruster_small",
+  9: "rocket_thruster_small",
+  10: "cockpit_fighter",
+  11: "cockpit_cruiser",
+  511: "__unknown__",
+  690: "Core",
+  691: "Block",
+  692: "Wedge",
+  693: "Wedge 1x2",
+  694: "Wedge 1x4",
+  695: "Pyramid",
+  696: "Slab",
+  697: "Smooth Corner",
+  698: "Smooth Corner 1x2",
+  699: "Smooth Corner 1x4",
+  700: "Struct",
+  701: "Glass Block",
+  702: "Glass Wedge",
+  703: "Slab Wedge",
+  738: "Tiny Hydrogen Thruster",
+  739: "Small Hydrogen Thruster",
+  740: "Medium Hydrogen Thruster",
+  741: "Large Hydrogen Thruster",
+  742: "Tiny Ion Thruster",
+  743: "Small Ion Thruster",
+  744: "Medium Ion Thruster",
+  745: "Large Ion Thruster",
+  746: "Reaction Wheel",
+  754: "Small Hydrogen Tank",
+  755: "Medium Hydrogen Tank",
+  756: "Large Hydrogen Tank",
+  757: "Small Battery",
+  758: "Medium Battery",
+  759: "Large Battery",
+  760: "Small Storage Rack",
+  761: "Medium Storage Rack",
+  762: "Large Storage Rack",
+  770: "Small Hydraulic Drill",
+  771: "Cannon",
+  772: "Rotary Cannon",
+  773: "Plasma Cannon",
+  774: "Pulse Laser",
+  775: "Beam Laser",
+  // TNT
+  776: "__placeholder776__",
+  786: "Weight Block",
+  787: "Armor Block",
+  788: "Solar Block",
+  789: "Small Solar Panel",
+  790: "Hinge",
+  791: "Separator",
+  792: "Piston",
+  793: "Camera Block",
+  794: "Ghost Block",
+  795: "Dock",
+  796: "Small Rift Drive",
+  // Red Magnet
+  798: "__placeholder798__",
+  // Inversed Dock
+  799: "__placeholder799__",
+  802: "Constant On Signal",
+  803: "Control Block",
+  804: "AND Gate",
+  805: "NAND Gate",
+  806: "OR Gate",
+  807: "NOR Gate",
+  808: "XOR Gate",
+  809: "XNOR Gate",
+  810: "NOT Gate",
+  811: "LED",
+  812: "Delay",
+  813: "Constant Number",
+  814: "Speed Sensor",
+  815: "Tilt Sensor",
+  816: "Distance Sensor",
+  817: "GPS Sensor",
+  818: "Numerical Inverter",
+  819: "Clamp",
+  820: "Abs",
+  821: "Threshold Gate",
+  822: "Numerical Switchbox",
+  823: "Function Block",
+  824: "Memory Register",
+  825: "Gauge",
+  826: "Dial",
+  827: "Digital Display",
+  828: "Push To Toggle",
+  // station wall 4 sides LBRU
+  834: "__placeholder834__",
+  // station wall 2 sides corner LB
+  835: "__placeholder835__",
+  // station wall 1 side B
+  836: "__placeholder836__",
+  // station wall 0 sides
+  837: "__placeholder837__",
+  // station wall 3 sides LBR
+  838: "__placeholder838__",
+  // station wall 2 sides opposite LR
+  839: "__placeholder839__",
+  // station solar block
+  840: "__placeholder840__",
+  // station launchpad door casing
+  841: "__placeholder841__",
+  // station launchpad door middle
+  842: "__placeholder842__",
+  // station launchpad door ending
+  843: "__placeholder843__",
+  // station floor 1 1x1
+  844: "__placeholder844__",
+  // station floor 1 2x2
+  845: "__placeholder845__",
+  // station floor 2 2x2
+  846: "__placeholder846__",
+  // station door casing
+  847: "__placeholder847__",
+  // station door middle
+  848: "__placeholder848__",
+  // station door ending
+  849: "__placeholder849__",
+  // station launch terminal
+  850: "__placeholder850__",
+  // station bench
+  851: "__placeholder851__",
+  // station wardrobe
+  852: "__placeholder852__",
+  // station telescope
+  853: "__placeholder853__",
+  // station market terminal
+  854: "__placeholder854__",
+  // station wedge
+  855: "__placeholder855__",
+  // station foor 2 1x1
+  856: "__placeholder856__",
+  // station floor 3 1x1
+  857: "__placeholder857__",
+  1023: "__NULL__",
+  // 1024: Core, 1025: T1 Block, 1026: T2 Block, 1027: T1 Wedge,
+  //  1028: T1 Wedge 1x2, 1029: T2 Wedge, 1030: Structure Block,
+  //  1031: Glass Block,
+  // 1032: Glass Wedge, 1033: Station Block, 1034: Simple Thruster,
+  //  1035: Afterburner, 1036: Ion Thruster, 1037: Dynamo Thruster,
+  //  1038: Momentum Wheel, 1039: Small Fuel Tank,
+  // 1040: Medium Fuel Tank, 1041: Small Battery, 1042: Medium Battery,
+  //  1043: T1 Rammer, 1044: T1 Blaster, 1045: T1 Pulse Laser,
+  //  1046: T1 Gatling Gun, 1047: T1 Rocket Launcher,
+  // 1048: Explosive, 1049: T1 Drill, 1050: T1 Mining Laser,
+  //  1051: Small Crate, 1052: Medium Crate, 1053: Connector,
+  //  1054: T1 Solar Panel, 1055: T2 Solar Panel,
+  // 1056: Solar Block, 1057: Hinge, 1058: Seperator,
+  //  1059: Camera Block, 1060: T1 Nano Healer
+  1035: "Afterburner",
+  1037: "Dynamo Thruster",
+  1043: "T1 Rammer",
+  1060: "T1 Nano Healer",
+  length: 1061
+};
 /** object is frost */
-Block.ID = Object.freeze(Data.generateIDs("blocks"));
-/** object is frost */
-Block.TITLE = Object.freeze(Data.titles);
+Block.ID = {
+  "block": 0,
+  "wedge": 1,
+  "wedge_1x2": 2,
+  "pyramid": 3,
+  "pyramid_1x2": 4,
+  "inverse_pyramid": 5,
+  "inverse_pyramid_1x2": 6,
+  "hydrogen_tank_small": 7,
+  "rcs_rocket_thruster_small": 8,
+  "rocket_thruster_small": 9,
+  "cockpit_fighter": 10,
+  "cockpit_cruiser": 11,
+  "__unknown__": 511,
+  "Core": 690,
+  "Block": 691,
+  "Wedge": 692,
+  "Wedge 1x2": 693,
+  "Wedge 1x4": 694,
+  "Pyramid": 695,
+  "Slab": 696,
+  "Smooth Corner": 697,
+  "Smooth Corner 1x2": 698,
+  "Smooth Corner 1x4": 699,
+  "Struct": 700,
+  "Glass Block": 701,
+  "Glass Wedge": 702,
+  "Slab Wedge": 703,
+  "Tiny Hydrogen Thruster": 738,
+  "Small Hydrogen Thruster": 739,
+  "Medium Hydrogen Thruster": 740,
+  "Large Hydrogen Thruster": 741,
+  "Tiny Ion Thruster": 742,
+  "Small Ion Thruster": 743,
+  "Medium Ion Thruster": 744,
+  "Large Ion Thruster": 745,
+  "Reaction Wheel": 746,
+  "Small Hydrogen Tank": 754,
+  "Medium Hydrogen Tank": 755,
+  "Large Hydrogen Tank": 756,
+  "Small Battery": 757,
+  "Medium Battery": 758,
+  "Large Battery": 759,
+  "Small Storage Rack": 760,
+  "Medium Storage Rack": 761,
+  "Large Storage Rack": 762,
+  "Small Hydraulic Drill": 770,
+  "Cannon": 771,
+  "Rotary Cannon": 772,
+  "Plasma Cannon": 773,
+  "Pulse Laser": 774,
+  "Beam Laser": 775,
+  "__placeholder776__": 776,
+  "Weight Block": 786,
+  "Armor Block": 787,
+  "Solar Block": 788,
+  "Small Solar Panel": 789,
+  "Hinge": 790,
+  "Separator": 791,
+  "Piston": 792,
+  "Camera Block": 793,
+  "Ghost Block": 794,
+  "Dock": 795,
+  "Small Rift Drive": 796,
+  "__placeholder798__": 798,
+  "__placeholder799__": 799,
+  "Constant On Signal": 802,
+  "Control Block": 803,
+  "AND Gate": 804,
+  "NAND Gate": 805,
+  "OR Gate": 806,
+  "NOR Gate": 807,
+  "XOR Gate": 808,
+  "XNOR Gate": 809,
+  "NOT Gate": 810,
+  "LED": 811,
+  "Delay": 812,
+  "Constant Number": 813,
+  "Speed Sensor": 814,
+  "Tilt Sensor": 815,
+  "Distance Sensor": 816,
+  "GPS Sensor": 817,
+  "Numerical Inverter": 818,
+  "Clamp": 819,
+  "Abs": 820,
+  "Threshold Gate": 821,
+  "Numerical Switchbox": 822,
+  "Function Block": 823,
+  "Memory Register": 824,
+  "Gauge": 825,
+  "Dial": 826,
+  "Digital Display": 827,
+  "Push To Toggle": 828,
+  "__placeholder834__": 834,
+  "__placeholder835__": 835,
+  "__placeholder836__": 836,
+  "__placeholder837__": 837,
+  "__placeholder838__": 838,
+  "__placeholder839__": 839,
+  "__placeholder840__": 840,
+  "__placeholder841__": 841,
+  "__placeholder842__": 842,
+  "__placeholder843__": 843,
+  "__placeholder844__": 844,
+  "__placeholder845__": 845,
+  "__placeholder846__": 846,
+  "__placeholder847__": 847,
+  "__placeholder848__": 848,
+  "__placeholder849__": 849,
+  "__placeholder850__": 850,
+  "__placeholder851__": 851,
+  "__placeholder852__": 852,
+  "__placeholder853__": 853,
+  "__placeholder854__": 854,
+  "__placeholder855__": 855,
+  "__placeholder856__": 856,
+  "__placeholder857__": 857,
+  "__NULL__": 1023,
+  "Afterburner": 1035,
+  "Dynamo Thruster": 1037,
+  "T1 Rammer": 1043,
+  "T1 Nano Healer": 1060
+};
+Object.freeze(Block.NAME);
+Object.freeze(Block.ID);
+dictionaryDefs(Block.NAME, Block.ID, "Block definitions");
 /** @type {{[key:number]:number|undefined}} (Mass) */
-// 799: 1, Inversed Dock?
-Block.WEIGHT = Data.generateValues("weight");
+Block.WEIGHT = {
+  690: 2,
+  691: 1,
+  692: .5,
+  693: 1,
+  694: 2,
+  695: .5,
+  696: .5,
+  697: .5,
+  698: 1,
+  699: 2,
+  700: .5,
+  701: 1,
+  702: .5,
+  738: .5,
+  739: 2,
+  740: 8,
+  741: 24,
+  742: .75,
+  743: 3,
+  744: 6,
+  745: 18,
+  746: 2,
+  754: 2,
+  755: 8,
+  756: 18,
+  757: 3,
+  758: 12,
+  759: 18,
+  760: 3,
+  761: 12,
+  762: 27,
+  770: 3,
+  771: 2,
+  772: 2,
+  773: 2,
+  774: 2,
+  775: 2,
+  786: 10,
+  787: 5,
+  788: 1,
+  789: 1,
+  790: 5,
+  791: 1,
+  792: 5,
+  793: 1,
+  794: 1,
+  795: 1,
+  796: 5,
+  // 799: 1, Inversed Dock?
+  802: .25,
+  803: 1,
+  804: 1,
+  805: 1,
+  806: 1,
+  807: 1,
+  808: 1,
+  809: 1,
+  810: .5,
+  811: .25,
+  812: .5,
+  813: .25,
+  814: 1,
+  815: 1,
+  816: 1,
+  817: 1,
+  818: .5,
+  819: .5,
+  820: .5,
+  821: .5,
+  822: 1,
+  823: 1,
+  824: 1,
+  825: .5,
+  826: .25,
+  827: .5,
+  828: .5,
+  1035: 2,
+  1037: 3,
+  1043: 1,
+  1060: 1
+};
 /** @type {{[key:number]:number|undefined}} (Integrity) */
-Block.STRENGTH = Data.generateValues("strength");
+Block.STRENGTH = {
+  690: 10,
+  691: 10,
+  692: 5,
+  693: 10,
+  694: 20,
+  695: 5,
+  696: 5,
+  697: 10,
+  698: 10,
+  699: 20,
+  700: 5,
+  701: 1,
+  702: .5,
+  738: 2.5,
+  739: 10,
+  740: 40,
+  741: 120,
+  742: 2.5,
+  743: 10,
+  744: 20,
+  745: 60,
+  746: 10,
+  754: 10,
+  755: 40,
+  756: 90,
+  757: 10,
+  758: 40,
+  759: 60,
+  760: 10,
+  761: 40,
+  762: 90,
+  770: 10,
+  771: 10,
+  772: 10,
+  773: 10,
+  774: 10,
+  775: 10,
+  786: 10,
+  787: 50,
+  788: 2,
+  789: .5,
+  790: 10,
+  791: 1,
+  792: 10,
+  793: 10,
+  794: 10,
+  795: 10,
+  796: 10,
+  802: 2.5,
+  803: 10,
+  804: 10,
+  805: 10,
+  806: 10,
+  807: 10,
+  808: 10,
+  809: 10,
+  810: 5,
+  811: 2.5,
+  812: 5,
+  813: 2.5,
+  814: 10,
+  815: 10,
+  816: 10,
+  817: 10,
+  818: 5,
+  819: 5,
+  820: 5,
+  821: 5,
+  822: 10,
+  823: 10,
+  824: 10,
+  825: 5,
+  826: 2.5,
+  827: 5,
+  828: 5,
+  1035: 10,
+  1037: 15,
+  1043: 20,
+  1060: 10
+};
 /** number = Electricity Units per second
  * and in case of thruster when they are set to 1 000 000 (1M) force,
  * [number,number] = [Electricity Units, amout of seconds per use]
  * second @type {{[key:number]:number|[number,number]|undefined}}
  * (Electricity) */
-Block.ENERGY_USE = Data.generateValues("energy_use");
+Block.ENERGY_USE = {
+  742: 275,
+  743: 250,
+  744: 225,
+  745: 200,
+  746: 100,
+  770: 1,
+  773: [10, 1.02],
+  774: [2, .52],
+  775: 4,
+  788: -.25,
+  789: -.75
+};
 /** number = contained units
  * @type {{[key:number]:number|undefined}} (Electricity) */
-Block.ENERGY_STORE = Data.generateValues("energy_store");
+Block.ENERGY_STORE = {
+  757: 20,
+  758: 100,
+  759: 175
+};
 /** number = Liters of Fuel per second
  * and in case of thruster when they are set to 1 000 000 (1M) force,
  * [number,number] = [Liters of fuel, amout of seconds per use]
  * @type {{[key:number]:number|[number,number]|undefined}} (Fuel) */
-Block.FUEL_USE = Data.generateValues("fuel_use");
+Block.FUEL_USE = {
+  738: 175,
+  739: 150,
+  740: 125,
+  741: 100
+};
 /** number = contained liters
  * @type {{[key:number]:number|undefined}} (Fuel) */
-// 754: was 20 before fuel buff
-// 755: was 100 before fuel buff
-// 375: was 250 before fuel buff
-Block.FUEL_STORE = Data.generateValues("fuel_store");
+Block.FUEL_STORE = {
+  // was 20 before fuel buff
+  754: 30,
+  // was 100 before fuel buff
+  755: 150,
+  // was 250 before fuel buff
+  756: 375
+};
 /** number = items per second,
  * [number,number] = [Items, amout of seconds per use]
  * @type {{[key:number]:number|[number,number]|undefined}} (Cargo) */
-Block.CARGO_USE = Data.generateValues("cargo_use");
+Block.CARGO_USE = {
+  770: [-1, 1.02]
+};
 /** number = items capacity
  * @type {{[key:number]:number|undefined}} (Cargo) */
-Block.CARGO_STORE = Data.generateValues("cargo_store");
+Block.CARGO_STORE = {
+  690: 5, 
+  760: 20,
+  761: 100,
+  762: 250
+};
 /** positive = buy price of block, -1 = block isn't purchasable
  * @type {{[key:number]:number|undefined}} (MarketValue) */
-Block.COST = Data.generateValues("cost");
+Block.COST = {
+  690: -1,
+  691: 100,
+  692: 100,
+  693: 100,
+  694: 100,
+  695: 100,
+  696: 100,
+  697: 100,
+  698: 100,
+  699: 100,
+  700: 100,
+  701: 100,
+  702: 100,
+  703: 100,
+  738: 100,
+  739: 100,
+  740: 400,
+  741: 800,
+  742: 100, 
+  743: 100,
+  744: 400,
+  745: 800,
+  746: 100, 
+  754: 100,
+  755: 400,
+  756: 900,
+  757: 100,
+  758: 400,
+  759: 600,
+  760: 100,
+  761: 400,
+  762: 900,
+  770: 100,
+  771: 100,
+  772: 200,
+  773: 200,
+  774: 200,
+  775: 200,
+  786: 100,
+  787: 100,
+  788: 100,
+  789: 100,
+  790: 100,
+  791: 100,
+  792: 100,
+  793: 100,
+  794: 100,
+  795: 100,
+  796: 500,
+  802: 100,
+  803: 100,
+  804: 100,
+  805: 100,
+  806: 100,
+  807: 100,
+  808: 100,
+  809: 100,
+  810: 100,
+  811: 100,
+  812: 100,
+  813: 100,
+  814: 100,
+  815: 100,
+  816: 100,
+  817: 100,
+  818: 100,
+  819: 100,
+  820: 100,
+  821: 100,
+  822: 100,
+  823: 100,
+  824: 100,
+  825: 100,
+  826: 100,
+  827: 100,
+  828: 100,
+  1035: 70,
+  1037: 90,
+  1043: 70,
+  1060: 130
+};
 /** @TODO handling ls (DBV property?) */
 /**
  * @param {object[]|object} blocks
@@ -1240,7 +1662,7 @@ Block.Size.genterateSizes = function () {
         y = +(v[0] + " ").split(" ")[1] >>> 5 << 5;
         v[0] = (x >>> 5) + (y >>> 5) * this.width;
       }
-      if (typeof nw == "object") {
+      if (typeof nw == "object") { 
         var vup = v[0] / this.width << 0;
         console.log(Block.NAME[l], v[0] % this.width, vup, v);
         // Block.Size must be change as well for resing to work
@@ -1526,7 +1948,7 @@ Block.Selected = function (block, id, x, y, w, h) {
   this.h = h;
   Object.freeze(this);
 };
-/** instance is frost @param {number} x @param {number} y */
+/** class is sealed instance is frost @param {number} x @param {number} y */
 Block.Box2d = function Point(x, y) {
   this.x = x;
   this.y = y;
@@ -1704,8 +2126,7 @@ Block.Box2d.VALUE = Block.Box2d.generateBuildBox(
     {x: 0.875, y: -0.5},
     {x: 0.25, y: 0}
   ]
-);
-Object.freeze(Block);
+)
 
 /** @typedef {{ax:number,by:number,c:number}} VRP */
 // global test functions so it can be tested separately from its local scope
@@ -1834,7 +2255,7 @@ __extends(LogicBlock, Block);
  * customInputs?:Ship.CustomInput[],[key:string]:unknown}} ShipProperties
  * @see {Logic} @see {Ship.CustomInput}
  * @typedef {"Ship"|"Logic"} EditMode */
-/** class is frost
+/** instance is sealed
  * @param {string} name
  * @param {number[]} version
  * @param {string} time
@@ -1856,8 +2277,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @constant @type {25} significantVersion: 25 (integer) */
-Ship.VERSION = 25;
+/** @constant @type {23} significantVersion: 23 (integer) */
+Ship.VERSION = 23;
 Ship.prototype.selectRect = (
   /**
    * @overload @returns {Block[]&{parentShip:Ship}}
@@ -1915,7 +2336,7 @@ Ship.prototype.fillRect = function (x0, y0, z0, x1, y1, z1, select) {
   // https://stackoverflow.com/a/424445 backup random number solution
   if (!select.length)
     return;
-  var x = x0, y = y0, z = z0, blocks = [], rand = Edit.randSFC32(0);
+  var x = x0, y = y0, z = z0, blocks = [], rand = rand_sfc32(0);
   // x becomes x_min and x0 becomes x_max
   x1 > x0 ? x0 = x1 : x = x1;
   y1 > y0 ? y0 = y1 : y = y1;
@@ -2047,8 +2468,7 @@ Ship.prototype.mirror = (
    * @param {number} y1 @param {number} z0 @param {number} z1
    * @returns {void} */
   function (x0, y0, z0, x1, y1, z1) {
-    throw new Error("Unimplemented");
-    // what was selected and all
+    // what was selected and all 
     var x = x0, y = y0, z = z0, selected = [];
     if (typeof x == "number") {
       var all = this.blocks;
@@ -2145,7 +2565,7 @@ Ship.prototype.blockAtPonit2d = function (x, y) {
 /** used to revert position adjustment from vehicles 'infected' by it:
  * https://github.com/KaaBEL/.d1r.dbv/commit/0b8156e155383059cf1aeeb4a997818
 3c92b92f8#diff-fa9a713c17c685348118b8d29bd55f10491e651ccafaf45d1044ed01ffe6e
-80bL1414
+80bL1414 
  * @param {boolean} [fixSlab] if true it also fixes wrong Slab size */
 Ship.prototype.fixPositionAdjustment = function (fixSlab) {
   var slabsFix = fixSlab ? Block.Size.VALUE[696] : null;
@@ -2153,13 +2573,13 @@ Ship.prototype.fixPositionAdjustment = function (fixSlab) {
   if (this.getMode().mode !== "Ship")
     console.warn("Fixing ship in not default Ship.Mode!");
   for (var i = 0; i < this.blocks.length; i++) {
-    var block = this.blocks[i], rot = block.rotation[2],
-      size = Block.Size.VALUE[Block.ID[block.internalName]];
+    var e = this.blocks[i], rot = e.rotation[2],
+      size = Block.Size.VALUE[Block.ID[e.internalName]];
     if (size === slabsFix)
       continue;
     if (size && ((size.w | size.h) & 16)) {
-      rot > 1 ? block.position[2] -= 1 : 0;
-      (rot + 1 & 3) > 1 ? block.position[1] -= 1 : 0;
+      rot > 1 ? e.position[2] -= 1 : 0;
+      (rot + 1 & 3) > 1 ? e.position[1] -= 1 : 0;
     }
   }
 };
@@ -2190,7 +2610,7 @@ Ship.prototype.placeBlock = function (x, y, z, ref) {
   // improved old_UI from editor.js
   var logics = this.prop && this.prop.nodeList || [];
   var block = new Block(
-    ref.internalName,
+    ref.internalName, 
     [x, y, z],
     /** @type {Rotation} */
     (ref.rotation.slice()),
@@ -2235,7 +2655,7 @@ Ship.fromObject = function fromObject(object) {
       o.ver instanceof Array ?
         o.ver:
         []).map(Number),
-    time = typeof o.time == "string" ? o.time : Ship.dateTime(),
+    time = typeof o.time == "string" ? o.time : dateTime(),
     /** @type {Logic<any>[]&{nc:any}} */
     logics = function () {
       /** @type {any} */
@@ -2290,9 +2710,9 @@ Ship.toDBV = function toDBV(ship) {
     var node = logics[i] || {pairs: []}, n = node.pairs;
     typeof n == "number" && logics[n] &&
       connections.push({
-        // node identifier, input type
+        // node index, input type
         Item1: i,
-        // referenced node
+        // referenced node 
         Item2: node.pairs
       });
   }
@@ -2320,7 +2740,7 @@ Ship.toDBV = function toDBV(ship) {
 /** @param {string} key */
 Ship.fromDBKey = function (key) {
   var blocks = [], arr = key.split("|").slice(-1)[0].split(":");
-  var convertName = {
+  var conN = {
     "T1 Block": "Block",
     "T1 Wedge": "Wedge",
     "T2 Wedge": "Wedge",
@@ -2347,7 +2767,7 @@ Ship.fromDBKey = function (key) {
     Connector: "Dock",
     Explosive: "__placeholder776__",
     "Station Block": "__placeholder846__"
-  }, convertColor = [
+  }, conC = [
     "White",
     "Dark Gray",
     "Light Blue",
@@ -2371,13 +2791,13 @@ Ship.fromDBKey = function (key) {
     "Festive Duck"
   ];
   for (var i = arr.length - 1, logics = []; i-- > 0;) {
-    var o = arr[i].split(";"), name = convertName[o[0]] || o[0];
+    var o = arr[i].split(";"), name = conN[o[0]] || o[0];
     // o[1] position, used below to replace contents of array o
     var rot = +(o[2] + "").replace(",", ".") / 90 || 0 & 3;
     // o[4] controll groups not used
     var ctrl = [+o[3] || 0],
       color = +o[5] === +o[5] ?
-        convertColor[+o[5]] :
+        conC[+o[5]] :
         Color.default(name) || "White",
     // o[6] [Use rotation, Up, Down, Left, Right]
       flip = !!+o[7];
@@ -2395,34 +2815,9 @@ Ship.fromDBKey = function (key) {
         }, logics, blocks));
   }
   var obj = {nodeList: logics};
-  return new Ship("[unnamed]", [], Ship.dateTime(1714557750), blocks, obj);
+  return new Ship("[unnamed]", [], dateTime(1714557750), blocks, obj);
 };
-// TODO: appended at the end of methods, might be more logical to be earlier
-/** timeToString @param {number} [t=Date.now()] @param {number} [f=1] ?1 */
-Ship.dateTime = function (t, f) {
-  // uses unix timestamp input
-  if (typeof t !== "number")
-    t = Math.floor(Date.now() / 1000);
-  var i = 0, n, s, months = [30, 27, 30, 29, 30, 29, 30, 30, 29, 30, 29, 30];
-  n = ((t % 60) * (f || 1) | 0) / (f || 1);
-  s = ":" + (n < 10 ? "0" + n : n);
-  n = (t = Math.floor(t / 60)) % 60;
-  s = ":" + (n > 9 ? n : "0" + n) + s;
-  s = " " + (t = Math.floor(t / 60)) % 24 + s;
-  n = Math.floor(t / 24);
-  t = Math.ceil(n % 365.25);
-  if (t === 365 && !(n / 365.25 & 2))
-    return "01.01." + Math.floor(n / 365.25 + 1971) + s;
-  s = "." + (n / 365.25 + 1970 | 0) + s;
-  if (n % 1461 > 788)
-    t--;
-  while (t > months[i])
-    t -= months[i++] + 1;
-  s = "." + (++i > 9 ? i : "0" + i) + s;
-  t += 1 + +(n % 1461 === 789);
-  return (t > 9 ? "" : "0") + t + s;
-}
-/** @param {string} name @param {number} type */
+/** instance is sealed @param {string} name @param {number} type */
 Ship.CustomInput = function CustomInput(name, type) {
   this.name = name;
   /** type: -1 = unknown, 0 = Button, 1 = Switch. */
@@ -2497,7 +2892,7 @@ Ship.Mode.useParser = function (mode, globalShip, parse) {
     return globalShip;
   });
 };
-Object.freeze(Object.freeze(Ship).Mode);
+Object.freeze(Ship.Mode);
 
 // generating Droneboi
 /** global ship that's being rendered and editng */
@@ -2579,39 +2974,9 @@ Edit.eventFire = function (ship) {
   for (var i = this.listeners.length; i-- > 0;)
     (this.listeners[i] || F)(ship);
 };
-// TODO: appended at the end of methods, might be more logical to be earlier
-// for (var i = 1, seed = 35589; i < 0xfff; i++)
-//   (seed = seedRand(seed));
-// var matcher = seed, i = 0;
-// for (seed = seedRand(seed); seed !== matcher && i < 0xffffff; i++)
-//   seed = seedRand(seed);
-// taken from: https://stackoverflow.com/a/47593316
-/** @param {number} seed */
-Edit.randSFC32 = function (seed) {
-  var a = seed, b = seed, c = seed, d = seed;
-  return function() {
-    a |= 0; b |= 0; c |= 0; d |= 0;
-    var t = (a + b | 0) + d | 0;
-    d = d + 1 | 0;
-    a = b ^ b >>> 9;
-    b = c + (c << 3) | 0;
-    c = (c << 21 | c >>> 11);
-    c = c + t | 0;
-    return (t >>> 0) / 4294967296;
-  }
-};
-// end of taken
 
-/** class for old Deltarealm base64 prototype keys code */
-function B64Key() {
-  throw new TypeError("Illegal constructor");
-  this.value = null;
-}
-B64Key.i = 0;
-B64Key.j = 0;
-B64Key.buffer = new Uint8Array(0);
 /** @function base64ToUint8array */
-B64Key.b64ToU8arr = function base64ToUint8array(base64) {
+function base64ToUint8array(base64) {
   var uint8array = [], buffer = 0, i = 0, p = 0, c;
   for (; i < base64.length; i++) {
     c = base64.charCodeAt(i);
@@ -2644,9 +3009,8 @@ B64Key.b64ToU8arr = function base64ToUint8array(base64) {
       p = 6;
   }
   return new Uint8Array(uint8array);
-};
-/** @function uint8arrayToBase64 */
-B64Key.u8arrToB64 = function uint8arrayToBase64(uint8array) {
+}
+function uint8arrayToBase64(uint8array) {
   var string = "", buffer = 0, i = 0, p = 0, c;
   function codeChar() {
     return c < 52 ? c < 26 ? 65 : 71 : c < 62 ? -4 : c < 63 ? -19 : -16;
@@ -2670,12 +3034,12 @@ B64Key.u8arrToB64 = function uint8arrayToBase64(uint8array) {
     string += String.fromCharCode(c) + (p & 4 ? "=" : "==");
   }
   return string;
-};
+}
 
 // the initial source used can be found here:
 // https://github.com/KaaBEL/Deltarealm-b64-keys/blob/main/index.html#LC827
 /** @param {[number,number,number]} r @returns {Rotation} */
-B64Key.rotateBlock = function (r) {
+function rotateBlock(r) {
   /** @type {0|1|2|3} rotation, (angle → of axis) */
   var rot = 0, i = 3, angle = 0, tmp = [];
   /** @type {0|1|2} other/mirored side */
@@ -2725,9 +3089,10 @@ B64Key.rotateBlock = function (r) {
       }
     }
   return [face, o_side, rot];
-};
+}
+var i, j, buffer = new Uint8Array(0);
 // sorts blocks by position x than y than z
-B64Key.sortShip = function () {
+function sortShip() {
   var i, l, n = 0, vals, refs, b = ship.blocks, _b = [];
   if ((l = ship.blocks.length) > 0x7fffffff)
     return er("too much blocks");
@@ -2763,67 +3128,66 @@ B64Key.sortShip = function () {
     _b[i] = b[refs[i]];
   ship.blocks = _b;
   return ship;
-};
-B64Key.wBit = function (b) {
+}
+function wBit(b) {
   if (b)
-    B64Key.buffer[B64Key.i] |= 1 << B64Key.j;
+    buffer[i] |= 1 << j;
   else
-    B64Key.buffer[B64Key.i] &= 255 - (1 << B64Key.j);
-  if (++B64Key.j > 7) {
-    B64Key.i++;
-    B64Key.j = 0;
+    buffer[i] &= 255 - (1 << j);
+  if (++j > 7) {
+    i++;
+    j = 0;
   }
-};
-B64Key.wBitsMSBfFast = function (l, n) {
-  var buffer = B64Key.buffer;
-  buffer[B64Key.i] |= n << B64Key.j;
-  n >>= 8 - B64Key.j;
-  if (l + B64Key.j > 8) {
-    l -= 8 - B64Key.j;
-    B64Key.j = 0;
-    B64Key.i++;
+}
+function wBitsMSBfFast(l, n) {
+  buffer[i] |= n << j;
+  n >>= 8 - j;
+  if (l + j > 8) {
+    l -= 8 - j;
+    j = 0;
+    i++;
     while (l > 7) {
-      buffer[B64Key.i++] |= n;
+      buffer[i++] |= n;
       n >>= 8;
       l -= 8;
     }
-    buffer[B64Key.i] |= n;
+    buffer[i] |= n;
     n >>= l;
   }
-  B64Key.j += l;
-  buffer[B64Key.i] &= 255 >> 8 - B64Key.j;
-  if (B64Key.j > 7) {
-    B64Key.i++;
-    B64Key.j = 0;
+  j += l;
+  buffer[i] &= 255 >> 8 - j;
+  if (j > 7) {
+    i++;
+    j = 0;
   }
   // value of spare bits
   return n;
-};
-B64Key.wMSBfirst = function (l, n) {
-  for (var i1 = B64Key.i += l, buffer = B64Key.buffer; l-- > 0; n >>= 8)
+}
+function wMSBfirst(l, n) {
+  for (var i1 = i += l; l-- > 0; n >>= 8)
     buffer[--i1] = n & 255;
   return n;
-};
-B64Key.wVersion = function (arr) {
-  for (var l = 0, m = 0, n = 64, buffer = B64Key.buffer; !0;) {
+}
+function wVersion(arr) {
+  for (var l = 0, m = 0, n = 64; !0;) {
     while (arr[l] >= n--)
       n = 64 << (m += 6);
-    buffer[B64Key.i++] = arr[l] >> m;
+    buffer[i++] = arr[l] >> m;
     while (m) {
-      buffer[B64Key.i - 1] |= 64;
+      buffer[i - 1] |= 64;
       m -= 6;
       n >>= 6;
-      buffer[B64Key.i++] = (arr[l] & n) >> m;
+      buffer[i++] = (arr[l] & n) >> m;
     }
     if (++l < arr.length)
-      buffer[B64Key.i - 1] |= 128;
+      buffer[i - 1] |= 128;
     else
       break;
   }
-};
+}
 
 /** @param {Ship} ship base64 key prototype */
-B64Key.encode = function encodeCmprsShip(ship) {
+function encodeCmprsShip(ship) {
   // version 0.0.significantVersion
   // versions 16 and further will significantVersion of Db Vehicle editor
   if (ship.getMode().mode !== "Ship")
@@ -2833,46 +3197,46 @@ B64Key.encode = function encodeCmprsShip(ship) {
   // id length
   // changed to 10 from 4
   var IDLEN = 10;
-  B64Key.i = B64Key.j = 0;
-  var buffer = B64Key.buffer = new Uint8Array(1040);
+  i = j = 0;
+  buffer = new Uint8Array(1040);
   // array of pointers to arrays with kBs of file (1024 + buffer of 16 bytes)
   /** @type {number[]} */
   var rotations = [], kB = [buffer];
   // data block: compression version
-  B64Key.wVersion([0, 0, Ship.VERSION]);
+  wVersion([0, 0, Ship.VERSION]);
   // data block: name
-  buffer[B64Key.i++] = l = ship.name.length;
+  buffer[i++] = l = ship.name.length;
   if (l > 255)
     console.warn("too long name (" + l + ") set to: " + (l = 255));
   for (n = 0; n < l;) {
     s = ship.name.charCodeAt(n++);
-    buffer[B64Key.i++] = s > 31 && s < 127 || s > 8 && s < 11 ? s : 63;
+    buffer[i++] = s > 31 && s < 127 || s > 8 && s < 11 ? s : 63;
   }
   // data block: game version
   arr = ship.gameVersion;
-  B64Key.wVersion(arr);
+  wVersion(arr);
   for (l = 0; l < 3 && arr.length; l++)
     if (arr[l] > [0, 1, 2][l])
       console.warn("unknown game version");
   // data block: date and time (seconds from  26.1.2022 16:48 UTC)
-  B64Key.wMSBfirst(4, Date.now() / 1e3 - 1643215695);
+  wMSBfirst(4, Date.now() / 1e3 - 1643215695);
   // data block: blocks
-  B64Key.sortShip();
+  sortShip();
   b = ship.blocks;
   // blocks length
-  B64Key.wBit(n = (l = b.length) > 8191);
-  B64Key.wBitsMSBfFast(n ? 21 : 13, l);
+  wBit(n = (l = b.length) > 8191);
+  wBitsMSBfFast(n ? 21 : 13, l);
   if (!l) {
     console.log("empty ship (no blocks)");
-    if (B64Key.j)
-      B64Key.i++;
-    arr = new Uint8Array(B64Key.i);
-    while (B64Key.i-- > 0)
-      arr[B64Key.i] = buffer[B64Key.i];
+    if (j)
+      i++;
+    arr = new Uint8Array(i);
+    while (i-- > 0)
+      arr[i] = buffer[i];
     return arr;
   }
   // ID bit length (3 bits) + 4 (IDLEN)
-  B64Key.wBitsMSBfFast(3, IDLEN - 4);
+  wBitsMSBfFast(3, IDLEN - 4);
   arr = b[--l].position;
   min = [arr[0], arr[1], arr[2]];
   max = [arr[0], arr[1], arr[2]];
@@ -2886,60 +3250,60 @@ B64Key.encode = function encodeCmprsShip(ship) {
   }
   // pairs min and max blocks positions in each axis - xyz
   for (n = 0, l = 6; n < 3; ++n > 1 ? l = 8 : 0) {
-    if (B64Key.wBitsMSBfFast(l, min[n] + (1 << l - 1) - 1))
+    if (wBitsMSBfFast(l, min[n] + (1 << l - 1) - 1))
       return er("ship too far in axis: " + "xyz"[n]);
-    if (B64Key.wBitsMSBfFast(l, max[n] + (1 << l - 1) - 1))
+    if (wBitsMSBfFast(l, max[n] + (1 << l - 1) - 1))
       return er("ship too far in axis: " + "xyz"[n]);
   }
   /** @param {Block} block */
   function fixedBlock(block) {
     // ID
-    B64Key.wBitsMSBfFast(IDLEN, id = Block.ID[block.internalName]);
+    wBitsMSBfFast(IDLEN, id = Block.ID[block.internalName]);
     // position
-    B64Key.wBitsMSBfFast(8, block.position[2] + 127);
-    B64Key.wBitsMSBfFast(6, block.position[1] + 31);
-    B64Key.wBitsMSBfFast(6, block.position[0] + 31);
+    wBitsMSBfFast(8, block.position[2] + 127);
+    wBitsMSBfFast(6, block.position[1] + 31);
+    wBitsMSBfFast(6, block.position[0] + 31);
     /** rotation @type {number|Rotation} */
     var r = block.rotation;
-    B64Key.wBitsMSBfFast(5, r = r[2] | +r[1] << 2 | r[0] << 3);
+    wBitsMSBfFast(5, r = r[2] | +r[1] << 2 | r[0] << 3);
     // are properties?
     checkProperties(block.properties);
     rotations[id] = r;
-    if (B64Key.j) {
-      B64Key.i++;
-      B64Key.j = 0;
+    if (j) {
+      i++;
+      j = 0;
     }
   }
   function endings() {
     // handles chunk endings, kB borders or both
-    if (B64Key.i > chunkEnd) {
-      prev = [B64Key.i, B64Key.j, 0];
-      n = B64Key.i = chunkEnd + 8;
-      B64Key.j = 0;
+    if (i > chunkEnd) {
+      prev = [i, j, 0];
+      n = i = chunkEnd + 8;
+      j = 0;
       // six bits after chunkending
-      B64Key.wBitsMSBfFast(6, (chunkEnd << 3) + 7 - p_i);
+      wBitsMSBfFast(6, (chunkEnd << 3) + 7 - p_i);
       fixedBlock(b[l]);
-      n = B64Key.i - n;
-      B64Key.i = chunkEnd + 1;
-      B64Key.j = B64Key.i + n;
+      n = i - n;
+      i = chunkEnd + 1;
+      j = i + n;
       chunkEnd += n + 512;
-      while(B64Key.i < B64Key.j) {
-        buffer[B64Key.i + n] = buffer[B64Key.i];
-        buffer[B64Key.i] = buffer[B64Key.i + 7];
-        buffer[B64Key.i + 7] = 0;
-        B64Key.i++;
+      while(i < j) {
+        buffer[i + n] = buffer[i];
+        buffer[i] = buffer[i + 7];
+        buffer[i + 7] = 0;
+        i++;
       }
-      B64Key.i = prev[0] + n;
-      B64Key.j = prev[1];
+      i = prev[0] + n;
+      j = prev[1];
       for (n = 1 << IDLEN; n-- > 0;)
         rotations[n] = 8;
     }
-    if (B64Key.i > 1023) {
+    if (i > 1023) {
       prev = buffer;
       buffer = new Uint8Array(1040);
       p_i -= 1024;
       chunkEnd -= 1024;
-      B64Key.i -= 1024;
+      i -= 1024;
       for (n = 0; n < 16; n++)
         buffer[n] = prev[n | 1024];
       kB.push(buffer);
@@ -2948,7 +3312,7 @@ B64Key.encode = function encodeCmprsShip(ship) {
   function checkProperties(prpt) {
     var p, s = JSON.stringify(prpt);
     // Has properties
-    B64Key.wBit(s !== "{}");
+    wBit(s !== "{}");
     if (s !== "{}")
       if (p = propertiesStr.indexOf(s) + 1)
         // stores properties for later
@@ -2970,13 +3334,13 @@ B64Key.encode = function encodeCmprsShip(ship) {
   // first block (fixed)
   fixedBlock(b[0]);
   // previous i
-  p_i = B64Key.i << 3;
-  chunkEnd = B64Key.i + 511;
+  p_i = i << 3;
+  chunkEnd = i + 511;
   // relative blocks string
   for (l = 1, arr = b[0].position; l < b.length; l++) {
-    p_i = (B64Key.i << 3) + B64Key.j;
+    p_i = (i << 3) + j;
     // ID
-    B64Key.wBitsMSBfFast(IDLEN, id = Block.ID[b[l].internalName]);
+    wBitsMSBfFast(IDLEN, id = Block.ID[b[l].internalName]);
     // relative position
     prev = [arr[0], arr[1], arr[2]];
     arr = b[l].position;
@@ -2986,9 +3350,9 @@ B64Key.encode = function encodeCmprsShip(ship) {
       s += size[n];
       prev[1]++;
     }
-    B64Key.wBit(s);
+    wBit(s);
     if (s)
-      B64Key.wBitsMSBfFast(sizeB[n], s - 1);
+      wBitsMSBfFast(sizeB[n], s - 1);
     while (n-- > 0) {
       // relative y and x position
       if (arr[n] < prev[n]) {
@@ -2999,23 +3363,23 @@ B64Key.encode = function encodeCmprsShip(ship) {
         prev[0]++;
       } else
         s = arr[n] - prev[n];
-      B64Key.wBit(s);
+      wBit(s);
       if (s)
-        B64Key.wBitsMSBfFast(sizeB[n], s - 1);
+        wBitsMSBfFast(sizeB[n], s - 1);
     }
     // optionaly relative rotation
     var rot = b[l].rotation;
     n = rot[2] | +rot[1] << 2 | rot[0] << 3;
-    B64Key.wBit(s = rotations[id] !== n);
+    wBit(s = rotations[id] !== n);
     if (s)
-      B64Key.wBitsMSBfFast(5, n);
+      wBitsMSBfFast(5, n);
     rotations[id] = n;
     checkProperties(b[l].properties);
     endings();
   }
-  if (B64Key.j)
-    B64Key.i++;
-  chunkEnd = B64Key.i - 1;
+  if (j)
+    i++;
+  chunkEnd = i - 1;
   // last/ending chunk
   // only if proceeding relative chunk??! unsure
   --l && endings();
@@ -3024,76 +3388,75 @@ B64Key.encode = function encodeCmprsShip(ship) {
     // just indexes and lengths of JSON strings
     s = JSON.stringify([propertiesRef, propertiesStr]);
     for (n = 0; n < s.length;) {
-      buffer[B64Key.i++] = s.charCodeAt(n++);
-      if (B64Key.i > 1023) {
-        kB.push(B64Key.buffer = buffer = new Uint8Array(1040));
-        B64Key.i = 0;
+      buffer[i++] = s.charCodeAt(n++);
+      if (i > 1023) {
+        kB.push(buffer = new Uint8Array(1040));
+        i = 0;
       }
     }
   }
   // joins binary data of required length to one file
-  B64Key.buffer = buffer =
-    new Uint8Array((kB.length - 1 << 10) + B64Key.i);
+  buffer = new Uint8Array((kB.length - 1 << 10) + i);
   // How did it with new Uint8Array(), zero length Uint8Array?
-  B64Key.j = l = 0;
-  for (; l < buffer.length; kB[B64Key.j++] = new Uint8Array(1040)) {
+  for (j = l = 0; l < buffer.length; kB[j++] = new Uint8Array(1040)) {
     (n = buffer.length - l) > 1023 ? n = 1024 : 0;
-    arr = kB[B64Key.j];
-    for (B64Key.i = 0; B64Key.i < n;)
-      buffer[l++] = arr[B64Key.i++];
+    arr = kB[j];
+    for (i = 0; i < n;)
+      buffer[l++] = arr[i++];
   }
   return buffer;
-};
-B64Key.gBit = function gBit() {
-  var b_int = (B64Key.buffer[B64Key.i] & 1 << B64Key.j) >> B64Key.j;
-  if (++B64Key.j > 7) {
-    B64Key.j = 0;
-    B64Key.i++;
+}
+
+function gBit() {
+  var b_int = (buffer[i] & 1 << j) >> j;
+  if (++j > 7) {
+    j = 0;
+    i++;
   }
   return b_int;
-};
-B64Key.gMSBfirst = function (l) {
-  var n = 0, buffer = B64Key.buffer;
+}
+function gMSBfirst(l) {
+  var n = 0;
   while (l-- > 0)
-    n = n * 256 + buffer[B64Key.i++];
+    n = n * 256 + buffer[i++];
   return n;
-};
-B64Key.gBitsMSBfFast = function (l) {
-  var mj = B64Key.j, b_int = 0, buffer = B64Key.buffer;
-  if (l + B64Key.j > 8) {
-    b_int = buffer[B64Key.i++] & 255 << B64Key.j;
-    l -= 8 - B64Key.j;
-    B64Key.j = 8;
+}
+function gBitsMSBfFast(l) {
+  var mj = j, b_int = 0;
+  if (l + j > 8) {
+    b_int = buffer[i++] & 255 << j;
+    l -= 8 - j;
+    j = 8;
     while (l > 8) {
-      b_int += (buffer[B64Key.i++] << B64Key.j);
+      b_int += (buffer[i++] << j);
       l -= 8;
-      B64Key.j += 8;
+      j += 8;
     }
-    b_int += (buffer[B64Key.i] & 255 >> (8 - l)) << B64Key.j;
+    b_int += (buffer[i] & 255 >> (8 - l)) << j;
   } else
-    b_int += buffer[B64Key.i] & 255 >> (8 - l) << B64Key.j;
+    b_int += buffer[i] & 255 >> (8 - l) << j;
   b_int >>= mj;
-  if ((B64Key.j = (B64Key.j & 7) + l) > 7) {
-    B64Key.i++;
-    B64Key.j = 0;
+  if ((j = (j & 7) + l) > 7) {
+    i++;
+    j = 0;
   }
   return b_int;
-};
-B64Key.gVersion = function gVersion() {
-  var version = [], n = 0, buffer = B64Key.buffer;
-  B64Key.i--;
+}
+function gVersion() {
+  var version = [], n = 0;
+  i--;
   do {
     version.push(0);
     do {
-      version[n] = (version[n] << 6) + (buffer[++B64Key.i] & 63);
-    } while (buffer[B64Key.i] & 64);
+      version[n] = (version[n] << 6) + (buffer[++i] & 63);
+    } while (buffer[i] & 64);
     n++;
-  } while (buffer[B64Key.i] & 128);
-  B64Key.i++;
+  } while (buffer[i] & 128);
+  i++;
   return version;
-};
+}
 /** @param {number} n rotation by 5 bit index @returns dr rotation */
-B64Key.gBlockRotation = function (n) {
+function gBlockRotation(n) {
   if (n > 23)
     return er("invalid input");
   var arr = [0, 0, 0];
@@ -3104,99 +3467,97 @@ B64Key.gBlockRotation = function (n) {
       n & 3
   ) * 90;
   return arr;
-};
-/** @param {Uint8Array|undefined} [cmprsShip] */
-B64Key.decode = function decodeCmprsShip(cmprsShip) {
+}
+function decodeCmprsShip(cmprsShip) {
   // version 0.0.1! the existing prototype specification is for v.0.0
   var n = 0, l, pl, chunkEnd, id, IDLEN, BLEN, s = "", arr = [];
   var prev = [], b = [], min = [],  max = [], size = [], sizeB = [];
   var rot = [], properties = [], obj, ship = {}, p_i, num = 0;
-  B64Key.i = B64Key.j = 0;
-  var buffer = B64Key.buffer;
+  i = j = 0;
   if (cmprsShip !== UDF)
-    B64Key.buffer = buffer = cmprsShip;
+    buffer = cmprsShip;
   // data block: compression version (and check)
-  arr = B64Key.gVersion();
+  arr = gVersion();
   while (n < 2)
     if (arr[n++] > 0)
       return er("unknown file vesrion");
   if (arr.length > 2 && arr[2] > 15)
     ship.significantVersion = arr[2];
   // data block: name
-  l = buffer[B64Key.i++];
+  l = buffer[i++];
   while (l-- > 0)
-    s += String.fromCharCode(buffer[B64Key.i++]);
+    s += String.fromCharCode(buffer[i++]);
   ship.name = s;
   // data block: game version
-  ship.gameVersion = B64Key.gVersion().join(".");
+  ship.gameVersion = gVersion().join(".");
   // data block: date and time
   // ...of compression as I don't have date and time parse
-  s = Ship.dateTime(B64Key.gMSBfirst(4) + 1643215695);
+  s = dateTime(gMSBfirst(4) + 1643215695);
   ship.dateTime = "compressed: " + s + " UTC";
   // data block: blocks
   // blocks length
-  BLEN = B64Key.gBitsMSBfFast(B64Key.gBit() ? 21 : 13);
+  BLEN = gBitsMSBfFast(gBit() ? 21 : 13);
   ship.blocks = b;
   if (!BLEN) {
-    if (B64Key.i > buffer.length)
+    if (i > buffer.length)
       return er("unexpected end of data");
     console.log("read empty ship (no blocks)");
     return ship;
   }
   // ID bit length
-  IDLEN = B64Key.gBitsMSBfFast(3) + 4;
+  IDLEN = gBitsMSBfFast(3) + 4;
   // min max positions
   for (n = 0, l = 6; n < 3; ++n > 1 ? l = 8 : 0) {
-    min[n] = B64Key.gBitsMSBfFast(l);
-    max[n] = B64Key.gBitsMSBfFast(l);
+    min[n] = gBitsMSBfFast(l);
+    max[n] = gBitsMSBfFast(l);
     min[n] -= (1 << l - 1) - 1;
     max[n] -= (1 << l - 1) - 1;
   }
   /** @param {boolean} [b=!0] first block */
   function fixedBlock(b) {
-    if (b === UDF)
+    if (typeof b === "undefined")
       b = !0;
     var obj = {}, num = 0;
     // ID
-    obj.internalName = Block.NAME[id = B64Key.gBitsMSBfFast(IDLEN)];
+    obj.internalName = Block.NAME[id = gBitsMSBfFast(IDLEN)];
     // position
     obj.position = arr = [];
-    arr[2] = B64Key.gBitsMSBfFast(8) - 127;
-    arr[1] = B64Key.gBitsMSBfFast(6) - 31;
-    arr[0] = B64Key.gBitsMSBfFast(6) - 31;
+    arr[2] = gBitsMSBfFast(8) - 127;
+    arr[1] = gBitsMSBfFast(6) - 31;
+    arr[0] = gBitsMSBfFast(6) - 31;
     // rotation
-    num = B64Key.gBitsMSBfFast(5);
+    num = gBitsMSBfFast(5);
     // !!!not tested rotation index to Rotation type
     obj.rotation = [num >> 3, (num & 4) > 0, num & 3];
     obj.properties = {};
     // has properties
-    if (B64Key.gBit() && b)
+    if (gBit() && b)
       properties.push(0);
     if (b) {
       prev = arr;
       rot[id] = num;
     }
-    if (B64Key.j) {
-      B64Key.i++;
-      B64Key.j = 0;
+    if (j) {
+      i++;
+      j = 0;
     }
     return obj;
   }
   function relativeBlock() {
-    p_i = (B64Key.i << 3) + B64Key.j;
+    p_i = (i << 3) + j;
     var obj = {}, num = 0;
     // ID
-    obj.internalName = Block.NAME[id = B64Key.gBitsMSBfFast(IDLEN)];
+    obj.internalName = Block.NAME[id = gBitsMSBfFast(IDLEN)];
     // relative x position
     obj.position = arr = [prev[0], prev[1], prev[2]];
-    arr[2] += B64Key.gBit() ? B64Key.gBitsMSBfFast(sizeB[2]) + 2 : 1;
+    arr[2] += gBit() ? gBitsMSBfFast(sizeB[2]) + 2 : 1;
     if (arr[n = 2] > max[2]) {
       arr[2] -= size[2];
       arr[1]++;
     }
     while (n-- > 0) {
       // relative y and z positions
-      arr[n] += B64Key.gBit() ? B64Key.gBitsMSBfFast(sizeB[n]) + 1 : 0;
+      arr[n] += gBit() ? gBitsMSBfFast(sizeB[n]) + 1 : 0;
       if (arr[n] > max[n]) {
         if (n < 1)
           return er("blocks doesn't fit in box");
@@ -3205,49 +3566,49 @@ B64Key.decode = function decodeCmprsShip(cmprsShip) {
       }
     }
     // optionaly relative rotation
-    num = B64Key.gBit() ? B64Key.gBitsMSBfFast(5) : rot[id];
+    num = gBit() ? gBitsMSBfFast(5) : rot[id];
     // !!!not tested rotation index to Rotation type
     obj.rotation = [num >> 3, (num & 4) > 0, num & 3];
     obj.properties = {};
     // has properties
-    if (B64Key.gBit() && B64Key.i < chunkEnd)
+    if (gBit() && i < chunkEnd)
       properties.push(l);
-    if (B64Key.i + +!!B64Key.j > chunkEnd)
-      return "";
+    if (i + !!j > chunkEnd)
+      return;
     prev = arr;
     rot[id] = num;
     b[l] = obj;
-    return "";
   }
   function chunkEnding() {
   // handles chunk ends
     var n_0, n_1, buf_0;
-    if (n_0 = B64Key.i + +!!B64Key.j > chunkEnd) {
-      B64Key.i = chunkEnd;
-      B64Key.j = 0;
+    if (n_0 = i + !!j > chunkEnd) {
+      i = chunkEnd;
+      j = 0;
     }
-    if ((--chunkEnd << 3) + 7 - p_i !== B64Key.gBitsMSBfFast(6)) {
+    if ((--chunkEnd << 3) + 7 - p_i !== gBitsMSBfFast(6)) {
       b[l = b.length = ++pl] = obj = fixedBlock();
       console.warn("corrupted chunk: " + (p_i >> 13));
     } else
       obj = fixedBlock(!1);
-    var r = obj.rotation;
-    //@ts-ignore
-    B64Key.gBlockRotation(r[2] | +r[1] << 2 | r[0] << 3);
-    n_1 = B64Key.i;
+    // is that back and forth conversion necessary?
+    var r = obj.rotation;//@ts-ignore rotateBlock(obj.rotation);
+    //obj.rotation = 
+    gBlockRotation(r[2] | +r[1] << 2 | r[0] << 3);
+    n_1 = i;
     if (n_0) {
       buf_0 = buffer;
-      B64Key.buffer = buffer = new Uint8Array(16);
-      B64Key.i = n_0 = p_i >> 3;
-      B64Key.j = p_i & 7;
-      for (n = 0; B64Key.i <= chunkEnd;)
-        buffer[n++] = buf_0[B64Key.i++];
-      for (B64Key.i = n_1; n < 8;)
-        buffer[n++] = buf_0[B64Key.i++];
-      B64Key.i = 0;
+      buffer = new Uint8Array(16);
+      i = n_0 = p_i >> 3;
+      j = p_i & 7;
+      for (n = 0; i <= chunkEnd;)
+        buffer[n++] = buf_0[i++];
+      for (i = n_1; n < 8;)
+        buffer[n++] = buf_0[i++];
+      i = 0;
       relativeBlock();
-      B64Key.i += n_0 + n_1 - chunkEnd - 1;
-      B64Key.buffer = buffer = buf_0;
+      i += n_0 + n_1 - chunkEnd - 1;
+      buffer = buf_0;
     }
     chunkEnd = n_1 + 512;
     if (JSON.stringify(obj) !== JSON.stringify(b[l])) {
@@ -3269,20 +3630,20 @@ B64Key.decode = function decodeCmprsShip(cmprsShip) {
     rot[n] = 8;
   // first block
   b[pl = l = 0] = fixedBlock();
-  p_i = B64Key.i << 3;
-  chunkEnd = B64Key.i + 512;
+  p_i = i << 3;
+  chunkEnd = i + 512;
   var v;
   while (++l < BLEN) {
-    if (+(v = relativeBlock()) && B64Key.i < chunkEnd)
+    if ((v = relativeBlock()) && i < chunkEnd)
       return v;
-    if (B64Key.i >= chunkEnd)
+    if (i >= chunkEnd)
       chunkEnding();
   }
-  if (B64Key.j) {
-    B64Key.i++;
-    B64Key.j = 0;
+  if (j) {
+    i++;
+    j = 0;
   }
-  chunkEnd = B64Key.i;
+  chunkEnd = i;
   l--;
   // last/ending chunk
   chunkEnding();
@@ -3290,8 +3651,8 @@ B64Key.decode = function decodeCmprsShip(cmprsShip) {
   if (l = properties.length) {
     if (buffer[buffer.length - 1] !== 93)
       return er("unexpected end of data");
-    for (s = ""; B64Key.i < buffer.length;)
-      s += String.fromCharCode(buffer[B64Key.i++]);
+    for (s = ""; i < buffer.length;)
+      s += String.fromCharCode(buffer[i++]);
     try {
       arr = JSON.parse(s);
     } catch (err) {
@@ -3304,9 +3665,8 @@ B64Key.decode = function decodeCmprsShip(cmprsShip) {
       "Parse the compressed properties.";
     s = arr[1];
     arr = arr[0];
-    for (B64Key.i = l - 1 << 1; l-- > 0; B64Key.i -= 2) {
-      obj = JSON.parse(s.slice(arr[B64Key.i],
-        arr[B64Key.i] + arr[B64Key.i | 1]));
+    for (i = l - 1 << 1; l-- > 0; i -= 2) {
+      obj = JSON.parse(s.slice(arr[i], arr[i] + arr[i | 1]));
       b[properties[l]].properties = obj;
       // (v.0.1.55) compatibility with old keys for control property
       if ("control" in obj && !("customParameter" in obj))
@@ -3317,7 +3677,7 @@ B64Key.decode = function decodeCmprsShip(cmprsShip) {
 }
 /** function used for debugging encode/decode */
 // just converts Uint8Array to string with binary numbers in DevTools
-B64Key.binaryData = function ($help) {
+function binaryData($help) {
   if (typeof $help === "boolean")
     return "args: ArrayBuffer | Array (data), ?[?from, to] (slice), ?b\
 ytesize, ?isMSBF=false :displays data in bits(for viewing data)";
@@ -3355,10 +3715,10 @@ ytesize, ?isMSBF=false :displays data in bits(for viewing data)";
 }
 /** function for manual use to check rotations or/and rotation index
  * @param {[number, number, number]} arr */
-B64Key.rotationIndex = function (arr) {
-  var rot = B64Key.rotateBlock(arr);
+function rotationIndex(arr) {
+  var rot = rotateBlock(arr);
   var num = rot[2] | +rot[1] << 2 | rot[0] << 3;
-  var r = B64Key.gBlockRotation(num);
+  var r = gBlockRotation(num);
   if (typeof r == "string")
     throw new Error(r);
   return [r[0], r[1], r[2], num];
