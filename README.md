@@ -73,3 +73,7 @@ https://discord.com/channels/749233290241769473/1138220708762243072/113822070876
 bullet points: `-` mentioned in a suggestion, `+` made up by me,
 `?` optional additional feature, `(future:...)` unrelated to advanced
 editor features updates  
+
+# Official Haters list
+- [Victheclone](https://discord.com/channels/749233290241769473/757998800366338111/1298041035968086097)  
+![Victheclone's pfp](https://cdn.discordapp.com/avatars/737780953828687953/4cd203e0ba81416cfa368facb205d34d.webp?size=96)
