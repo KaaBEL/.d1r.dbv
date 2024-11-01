@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.js" types="./editor.js" />
 "use strict";
-var version_editor_js = "v.0.1.64T9";
+var version_editor_js = "v.0.1.64T13";
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -47,8 +47,9 @@ else if (/https?/.test(location.protocol) && navigator.serviceWorker)
   try {
     // @type {ServiceWorkerContainer}
     var swc = navigator.serviceWorker, sw = swc.controller;
-    sw || swc.register("/.d1r.dbv/service-worker.js",
-      {scope: "/.d1r.dbv/"}).then(function (swr) {
+    // is it good to have completely relative path for ServiceWorker?
+    sw || swc.register("./service-worker.js",
+      {scope: "./"}).then(function (swr) {
         sw = (swr.installing || swr.waiting || swr.active);
         (sw || OC()).onstatechange = function () {
           console.log.apply(console, Array.prototype.map.call(
@@ -58,7 +59,9 @@ else if (/https?/.test(location.protocol) && navigator.serviceWorker)
             }
           ).concat("sw_change"));
         };
-      }).catch(F);
+      }).catch(function (reason) {
+        console.log(reason, "sw_js")
+      });
   } catch (e) {
     console.log(e, "sw_js");
   }
@@ -79,6 +82,8 @@ canvas.addEventListener("contextlost", function () {
 });
 canvas.addEventListener("contextrestored", function () {
   console.log("%cCONTEXT RESTOERED!", "color:#4f3");
+  rend_checkColors();
+  console.log("D1R DBV rendering restorations initiated...");
 });
 
 /** @typedef addingStyles */
@@ -122,13 +127,14 @@ var defaults = {
   editorBackground: typeof DOMMatrix != "undefined",
   /** mumst be in #xxxxxx hex color format */
   editorBackgroundColor: "#111111",
-  /** (default) 0: dbc, 1: db, ... */
+  /** (default) 0: dbc, 1: db, ... 63: unassigned */
   editorBackgroundImage: 0,
   /** mumst be in #xxxxxx hex color format */
   highlightColor: "#ff0000",
   highlightWidth: 2,
   logicPreviewAlpha: .5,
   buildReplace: !1,
+  /** (default) 1: Lunar, 0: none, ... 31: unassigned */
   editorBackgroundStage: 1,
   /** (default) false: PC, true: touchscreen device detected */
   fullscreenInitialized: false,
@@ -150,6 +156,7 @@ function saveSettings() {
   arr[2] = defaults.editorBackgroundImage >> 1 & 31;
   arr[2] += +defaults.fullscreenInitialized << 5
   arr[2] += +defaults.fullscreenDisabled << 6;
+  arr[2] += +defaults.editorBackgroundStage << 7;
   storage.setItem("D1R_DBV_editor", String.fromCharCode.apply(String, arr));
 }
 function loadSettings() {
@@ -168,6 +175,7 @@ function loadSettings() {
   defaults.editorBackgroundImage = ((arr[2] & 31) << 1) + n;
   defaults.fullscreenInitialized = !!(arr[2] >> 5 & 1);
   defaults.fullscreenDisabled = !!(arr[2] >> (5 + 1) & 1);
+  defaults.editorBackgroundStage = (arr[2] >> 7 & 31);
 }
 
 /** to be able to include some fun when editor is initialized */
@@ -249,6 +257,7 @@ IgRHJvbmVib2kABD9TDSCAv6/65vbGnas+ELMGgvIGgrKuIChrYKhuICjrCoKyBpQ34LgncNaA6g\
 ak9QRBWQPKGnDcFQjauHnfBwJbWzAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMC\
 wxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNl0sIntcImNvbG\
 9yXCI6XCJMaW1lXCJ9Il0=")));
+      defaults.editorBackgroundStage;
     case "8bb3bad8":
       console.log("Fun mode 7");
       setTimeout(function () {
@@ -1845,7 +1854,6 @@ Command.push("Transfrom tool", function (items, collapsed) {
     var option = EL("option");
     option.appendChild(tN(arr[i++]));
     coloring.add(option);
-    ship.blocks[0].properties;
   }
   copy.appendChild(tN("Copy action"));
   copy.onclick = function () {
@@ -2034,6 +2042,9 @@ t regain the Rift Crystals by travelling back. ";
       var block = blocks[i], prop = block.properties || OC();
       var id = Block.ID[block.internalName];
       var rot = 10 - block.rotation[2] & 3, size = Block.Size.VALUE[id];
+      // (v.0.1.64T13) why was this missing
+      if (!size)
+        continue;
       var ow = size.w, oh = size.h, w = ow + (ow & 16), h = oh + (oh & 16);
       var x = (ow & 16) / 32, y = (oh & 16) / 32;
       /** @type {number[]} */
@@ -2319,11 +2330,24 @@ Command.push("Change editor background", function (items, collapsed) {
     saveSettings();
     render();
   };
-  items.push({name: "Image pattern", inp: backgImg},
+  var backgHgr = EL("input");
+  backgHgr.type = "checkbox";
+  backgHgr.checked = !!defaults.editorBackgroundStage;
+  backgHgr.onchange = function () {
+    if (!(this instanceof HTMLInputElement))
+      return;
+    defaults.editorBackgroundStage = +this.checked;
+    saveSettings()
+    render();
+  };
+  items.push(
+    {name: "Image pattern", inp: backgImg},
     tN("Background Image: "),
     select,
     EL("br"),
-    {name: "Background color", inp: backgClr});
+    {name: "Background color", inp: backgClr},
+    {name: "Background hangar", inp: backgHgr}
+  );
 }, "When \"Image pattern\" checkbox is checked, Droneboi: Conquest backgroun\
 d is used. Else color from \"Background color\" input is used. If it is in h\
 exadecimal format #111133 for example, the setting will update.");
@@ -2339,8 +2363,7 @@ Command.push("Current version", function(items, collapsed) {
     version_sw
   );
   var xhr = new XMLHttpRequest();
-  xhr.open("GET",
-    "/.d1r.dbv/service-worker.js");
+  xhr.open("GET", "./service-worker.js");
   xhr.onreadystatechange = function () {
     if (xhr.readyState !== 4)
       return;
@@ -2377,8 +2400,9 @@ on.");
 // Thanks to Beau for Deltarealm and Droneboi: Conquest that DBVE is made
 // for.
 // Thanks to contributors:
-//   KKJKJH for blocks texture source
+//   KKJKJH for blocks texture sources
 //   Brothernova for being the alpha tester
+//   Potentially Larmbs as first sourcode contributor
 // Also thank to cacat9999 for sharing block capacity/use stats from source
 // code in Discord, you all for using DBVE, your feedback, and db
 // suggestions to take inspiration from.
@@ -2481,6 +2505,54 @@ function Tool(name, icon, exec) {
 }
 /** @type {Tool[]} */
 Tool.list = [];
+/** @param {Tool} tool @param {number} [size] */
+Tool.drawPathRc = function (tool, size) {
+  /** @param {string} s */
+  function parseParam(s) {
+    return (s[0] === "-" ? -("0x" + s.slice(1)) : +("0x" + s)) / 1024;
+  }
+  defaults.renderSharp ? size = (size || 0) * 8 : 1;
+  if (size) {
+    rc.canvas.width = rc.canvas.height = size;
+    rc.scale(size / 256, size / 256);
+    rc.fillStyle = "#dbecfe";
+  }
+  rc.beginPath();
+  var ctxCommands = {
+    M: rc.moveTo,
+    L: rc.lineTo,
+    C: rc.bezierCurveTo,
+    Z: rc.closePath,
+    H: function (n) {
+      this.lineTo(n, rY);
+    },
+    V: function (n) {
+      this.lineTo(x = rX, rY = n);
+    }
+  };
+  var rX = 0, rY = 0, x = 0, y = 0;
+  tool.icon.split(" ").map(function (e, i) {
+    var c = e[0].toUpperCase();
+    var params = e.slice(1).split(",").map(e.charCodeAt(0) & 32 ?
+      function (e, i) {
+          var n = parseParam(e);
+          return i & 1 || c === "V" ? y = rY + n : x = rX + n;
+        } :
+      function (e, i) {
+          var n = parseParam(e);
+          return i & 1 ? y = n : x = n;
+        });
+    if (!e.length)
+      return console.error("No command at: " + i + "th \" \"");
+    var c = e[0].toUpperCase();
+    if (!ctxCommands[c])
+      return console.error("Missing command " + c);
+    ctxCommands[c].apply(rc, params);
+    rX = x;
+    rY = y;
+  });
+  rc.fill();
+}
 
 Tool.list.push(new Tool("Tune", "M4a4,24265 c51,2f0,273,ad3,931,f85 c8da,714\
 ,103d,642,13d7,615 c1ea0,-178,3dbe,974,552e,20cc c2c36,2c08,2c5b,7392,53,9fc\
@@ -2629,6 +2701,12 @@ function check_contentScript() {
   }
 }
 
+function devt_bug_testing() {
+  // devt_... stands for dev tools functions and variables
+  var scr = EL("script");
+  scr.src = "./code/unit_tests.js";
+  document.body.appendChild(scr);
+}
 var devt_debugger = false;
 function DefaultUI() {
   throw new TypeError("Illegal constructor");
@@ -2789,8 +2867,6 @@ DefaultUI.reflowBlockBars = function (w) {
         if (selectCode !== -1 && j + maxItems > selectCode) {
           DefaultUI.selectedTile = selectCode % maxItems << 2 | 1;
           DefaultUI.selectedFolder = updated.length;
-          if (devt_debugger)
-            debugger;
           checkAndPush = pushToSame;
           selectCode = -1;
         }
@@ -2867,57 +2943,11 @@ function test_juhus(w, h) {
     rc.drawImage(imgMask, x - size.x, y - size.y);
     rc.globalCompositeOperation = "source-over";
     rc.drawImage(imgOverlay, size.x, size.y, w, h, x, y, w, h);
-  }
-  /** used by @see {drawPathRc} @param {string} s */
-  function parseParam(s) {
-    return (s[0] === "-" ? -("0x" + s.slice(1)) : +("0x" + s)) / 1024;
-  }
-  /** @param {Tool} tool @param {number} size */
-  function drawPathRc(tool, size) {
-    defaults.renderSharp ? size *= 8 : 1;
-    rc.canvas.width = rc.canvas.height = size;
-    rc.scale(size / 256, size / 256);
-    rc.beginPath();
-    var ctxCommands = {
-      M: rc.moveTo,
-      L: rc.lineTo,
-      C: rc.bezierCurveTo,
-      Z: rc.closePath,
-      H: function (n) {
-        this.lineTo(n, rY);
-      },
-      V: function (n) {
-        this.lineTo(x = rX, rY = n);
-      }
-    };
-    var rX = 0, rY = 0, x = 0, y = 0;
-    tool.icon.split(" ").map(function (e, i) {
-      var c = e[0].toUpperCase();
-      var params = e.slice(1).split(",").map(e.charCodeAt(0) & 32 ?
-        function (e, i) {
-            var n = parseParam(e);
-            return i & 1 || c === "V" ? y = rY + n : x = rX + n;
-          } :
-        function (e, i) {
-            var n = parseParam(e);
-            return i & 1 ? y = n : x = n;
-          });
-      if (!e.length)
-        return console.error("No command at: " + i + "th \" \"");
-      var c = e[0].toUpperCase();
-      if (!ctxCommands[c])
-        return console.error("Missing command " + c);
-      ctxCommands[c].apply(rc, params);
-      rX = x;
-      rY = y;
-    });
-    rc.fillStyle = "#dbecfe";
-    rc.fill();
-  }
+  }  
   /** @param {TileType} type @param {number} size */
   function drawIconFn(type, size) {
     if (type instanceof Tool)
-      drawPathRc(type, size);
+      Tool.drawPathRc(type, size);
     if (type instanceof Block)
       drawBlockRc(type);
   }
@@ -3182,8 +3212,12 @@ function rend_backgPattern() {
   } catch (e) {
     console.debug(e, "at drawing background");
   }
+  if (defaults.editorBackgroundStage)
+    rend_backgHangar();
 }
 function rend_backgColor() {
+  if (defaults.editorBackgroundStage)
+    rend_backgHangar();
   canvas.style.backgroundColor = defaults.editorBackgroundColor;
 }
 var rend_backgHangar = F;
@@ -3205,7 +3239,7 @@ var rend_backgHangar = F;
   xhr.send();
 }();
 function backgHangarInit() {
-  var backgPrimary = rend_background;
+  var obackground = rend_background;
   var defRend = DefaultUI.rend, hgw = 544, hgh = 654;
   DefaultUI.rend = rend_background = F;
   var octx = ctx, osc = sc, oxV = vX, oyV = vY, oship = ship;
@@ -3231,8 +3265,7 @@ function backgHangarInit() {
   vX = oxV;
   vY = oyV;
   ship = oship;
-  function backgSecondary() {
-    backgPrimary();
+  rend_backgHangar = function () {
     if (sc > 13 || defaults.renderSharp)
       ctx.imageSmoothingEnabled = ctx.msImageSmoothingEnabled = !1;
     ctx.drawImage(
@@ -3243,8 +3276,7 @@ function backgHangarInit() {
       sc * hgh / 8
     );
   };
-  backgSecondary.primary = backgPrimary;
-  rend_background = backgSecondary;
+  rend_background = obackground;
   render();
 };
 backgHangarInit.ship = Ship.fromObject({b:[]});
@@ -3484,6 +3516,41 @@ render = function () {
     });
   };
 }();
+
+function rend_rc() {
+  bd && bd.appendChild(rc.canvas);
+  var style = rc.canvas.style;
+  style.position = "fixed";
+  style.top = style.left = "0";
+  style.width = style.height = "auto";
+}
+// function used to add ckockpt_cruiser texture
+// setTimeout(function () {
+//   rend_rc();
+//   var ref =
+//     /** @type {ShipBlock|null} */
+//     ({});
+//   [0].map(function () {
+//     ref = null;
+//   });
+//   ship.blocks.forEach(function (e) {
+//     if (e.internalName === "cockpit_cruiser")
+//       // (ref = e).internalName = "__NULL__";
+//       (ref = e);
+//   });
+//   if (!ref)
+//     return;
+//   ref.rotation[0] = 1;
+//   ref.rotation[1] = !0;
+//   ship.blocks.push(new Block(
+//     "cockpit_" + ("fighter" && "cruiser"),
+//     ref.position,
+//     ref.rotation,
+//     ref.properties
+//   ));
+//   render();
+// });
+
 var rend_speeeeed = {}, rend_logs = 69;
 /*async*/ function expensiveRenderer() {
   var t = Date.now(), AT = ", at expensiveRenderer();";
@@ -3500,15 +3567,19 @@ var rend_speeeeed = {}, rend_logs = 69;
         logics.ownerShip = ship;
         return logics;
       }(ship.prop && ship.prop.nodeList))
-  )
+  ) {
     ctx.globalAlpha = defaults.logicPreviewAlpha;
+  }
+  var mult = sc / 16;
   for (var i = 0, id = 0, pos = [0, 0, 0]; i < objs.length; i++) {
     pos = objs[i].position;
     if ((id = Block.ID[objs[i].internalName]) < 12) {
       ctx.save();
-      ctx.fillStyle = "#888";
+      B64Key.drawBlock(rc, objs[i]);
       ctx.globalAlpha = .7;
-      ctx.fillRect(-pos[0] * sc + vX, pos[2] * sc + vY, sc + 1, sc + 1);
+      ctx.scale(mult + 1E-7, mult + 1E-7);
+      ctx.drawImage(rc.canvas,
+        -pos[0] * 16 + vX / mult - 24, pos[2] * 16 + vY / mult - 24);
       ctx.restore();
       continue;
     }

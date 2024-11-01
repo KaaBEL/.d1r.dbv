@@ -1,25 +1,34 @@
-//@ts-check
-/// <reference path="./code.js" types="./editor.js" />
-"use strict";
-var version_editor_js = "v.0.1.64T1";
-/** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
-/** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
-/** @overload @param {string} e @returns {HTMLElement} */
-function EL(e) {
+/// <reference path="./B64Key.ts" />
+// THIS EDITOR.TS IS NOT UP TO DATE WITH ACTUAL EDITOR.JS !
+var version_editor_ts = "v.0.1.64T1.19";
+
+/** defining new property on Console for editor.js */
+declare interface Console {
+  err: Console["error"] | undefined;
+  /** can be set to throw error by enabling with throwErrors fnuction */
+  error: Console["error"];
+}
+declare interface CanvasRenderingContext2D {
+  msImageSmoothingEnabled?: boolean;
+}
+
+function EL(): HTMLDivElement;
+function EL<T extends keyof HTMLElementTagNameMap>(e: T):
+  HTMLElementTagNameMap[T];
+function EL(e: string): HTMLElement;
+function EL(e?: any) {
   return document.createElement(typeof e == "string" ? e : "div");
 }
-/** @param {string} data */
-var tN = function (data) {
+
+var tN = function (data: string) {
   return document.createTextNode(data);
 };
 
 var storage = typeof localStorage == "undefined" ? {
-    /** @param {string} key */
-    getItem: function (key) {
+    getItem: function (key: string) {
       return null;
     },
-    /** @param {string} key @param {string} value */
-    setItem: function (key, value) {}
+    setItem: function (key: string, value: string) {}
   } :
   localStorage;
 if (typeof TouchEvent == "undefined")
@@ -47,8 +56,9 @@ else if (/https?/.test(location.protocol) && navigator.serviceWorker)
   try {
     // @type {ServiceWorkerContainer}
     var swc = navigator.serviceWorker, sw = swc.controller;
-    sw || swc.register("/.d1r.dbv/service-worker.js",
-      {scope: "/.d1r.dbv/"}).then(function (swr) {
+    // is it good to have completely relative path for ServiceWorker?
+    sw || swc.register("./service-worker.js",
+      {scope: "./"}).then(function (swr) {
         sw = (swr.installing || swr.waiting || swr.active);
         (sw || OC()).onstatechange = function () {
           console.log.apply(console, Array.prototype.map.call(
@@ -58,7 +68,9 @@ else if (/https?/.test(location.protocol) && navigator.serviceWorker)
             }
           ).concat("sw_change"));
         };
-      }).catch(F);
+      }).catch(function (reason) {
+        console.log(reason, "sw_js")
+      });
   } catch (e) {
     console.log(e, "sw_js");
   }
@@ -66,11 +78,10 @@ if (/^http:\/\/(?:\d+\.\d+\.\d+\.\d+|localhost:\d+)/.exec(location.href))
   +function (globalWebSocket) {
     try {
       sessionStorage = window.WebSocket =
-        /** @type {any} disables VS code live server live reload */
-        (function WebSocket() {
+        (function WebSocket(this: safe) {
           this.onmessage = function juhus() {};
           window.WebSocket = globalWebSocket;
-        });
+        }) as any;
     } catch (e) {}
   }(WebSocket);
 
@@ -81,7 +92,7 @@ canvas.addEventListener("contextrestored", function () {
   console.log("%cCONTEXT RESTOERED!", "color:#4f3");
 });
 
-/** @typedef addingStyles */
+type addingStyles = any;
 (function addingStyles(css) {
   var s = "style", e = GE(s) || document.head.appendChild(EL(s)), t = null;
   for (e.id = s; t = e.childNodes[0];)
@@ -142,8 +153,8 @@ var init_funMode = F;
     case "f34b79a5":
     case "f37f55d2":
       console.log("Fun mode 1");
-      /** @type {ChildNode|null} */
-      var el = GE("auth"), parent = (el && el.parentNode) || EL();
+      var el: ChildNode | null = GE("auth"),
+        parent = (el && el.parentNode) || EL();
       for (var text; el && (text = el).nodeName !== "H2";) {
         el = el.previousSibling;
         text && parent.removeChild(text);
@@ -179,7 +190,7 @@ var init_funMode = F;
     case "91c5cddf":
     case "aebec1df":
       console.log("Fun mode 5");
-      ship = Ship.fromObject(decodeCmprsShip(base64ToUint8array("gIAEEFN0YXJ\
+      ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr("gIAEEFN0YXJ\
 0ZXIgRHJvbmVib2kABD9TDSCAv6/65vbGnas+ELMGgvIGgrKuIChrYKhuICjrCoKyBpQ34LgncNa\
 A6gak9QRBWQPKGnDcFQjauHnfBwJbWzAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTY\
 sMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNl0sIntcImN\
@@ -197,7 +208,7 @@ vbG9yXCI6XCJMaW1lXCJ9Il0=")));
     case "b6f47340":
       console.log("Fun mode 9");
       init_funMode = function () {
-        ship = Ship.fromObject(decodeCmprsShip(base64ToUint8array("gIAEDEFOT\
+        ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr("gIAEDEFOT\
 05fU2h1dHRsZQAEXVy0aoC/TzvnFnWt0z4R4pYUZx2CorwBRXLToKjrQJPehCK9CdKboLhB4MUPQ\
 VwDhrgGiGuAuAaIa4C1XkER14AjrgFBjHHEFUWbA4oxBxTVDSjWu1FsOeBYccQw3YRiywPBlnFsG\
 cGWcTR3YGgxji0HODKK5gYEzYXmQnOhrhXKGhDENSCIa0DR5oKjywFFigOOFQcczw0obnxxxDXgq\
@@ -542,10 +553,12 @@ var defaults = {
   buildReplace: !1,
   editorBackgroundStage: 1,
   fullscreenInitialized: false,
-  fullscreenDisabled: false
+  fullscreenDisabled: false,
+  /** (default) false */
+  renderSharp: false
 },
-  /** @type {typeof defaults|null} alternative to original */
-  settings = defaults;
+  /** alternative to original */
+  settings: typeof defaults | null = defaults;
 // naming may change? + meaningless comment
 function saveSettings() {
   var n = 0, arr = [+defaults.editorBackground];
@@ -587,19 +600,18 @@ imgBackg.src = "./assets/_" + [
   "dbve"
 ][defaults.editorBackgroundImage] + "_background.png";
 
-/** @this {any} */
-function del(i) {
+function del(this: any, i: number) {
   if (i < 0)
     return this.length;
   while (++i < this.length)
     this[i - 1] = this[i];
   return --this.length;
 }
-/**
- * @type {{input:HTMLInputElement,curr:HTMLInputElement|null,
- * files:(File|null)[],open:number[],upload:HTMLButtonElement}}
- */
-var file = {
+
+var file: {
+  input: HTMLInputElement; curr: HTMLInputElement | null;
+  files: (File | null)[]; open: number[]; upload: HTMLButtonElement;
+} = {
   input: EL("input"),
   curr: null,
   files: [null],
@@ -607,32 +619,32 @@ var file = {
   upload: EL("button")
 };
 function fileNames() {}
-/**
- * @callback fileExecute
- * @param {Uint8Array} fileData
- * @param {number} mode to determine way/place of parser used
- * @param {File} file
- * @returns {boolean} true if file is invalid (to process next)
- */
-/**
- * Executes when the files have been checked with at least one success
- * @callback fileExecuteFinally
- */
-/**
- * Executes callback with readed file data for files supporting a loadbar
- * @param {fileExecute} f_exec returns true if data are correct
- * @param {string} error
- * @param {fileExecuteFinally} [f_final]
- * @param {HTMLElement|null} [loadBar]
- * @param {number} [mode] 0 to check all, else stop after first valid
- */
-function fileOpener(f_exec, error, f_final, loadBar, mode) {
+/** @returns {boolean} true if file is invalid (to process next) */
+type fileExecute = (
+  fileData: Uint8Array,
+  /** to determine way/place of parser used */
+  mode: number,
+  file: File
+) => boolean;
+/** Executes when the files have been checked with at least one success */
+type fileExecuteFinally = Function;
+/** Executes callback with readed file data for files supporting a loadbar */
+function fileOpener(
+  /** returns true if data are correct */
+  f_exec: fileExecute,
+  error: string,
+  f_final?: fileExecuteFinally,
+  loadBar?: HTMLElement | null,
+  /** 0 to check all, else stop after first valid */
+  mode?: number
+  ) {
   var final = f_final || F;
   var btn = loadBar || EL();
   mode = mode || 0;
   if (!file.open.length)
     return console.error("No files chosen");
-  var fl_i = file.open[0], succ = 0, st, barE = function (n, b) {
+  var fl_i = file.open[0], succ = 0, st: CSSStyleDeclaration;
+  var barE = function (n: number, _b: boolean | number) {
     bar.style.width = n * 100 + "%";
   }, barF = function () {
     st.width = "100%";
@@ -704,8 +716,8 @@ function fileOpener(f_exec, error, f_final, loadBar, mode) {
       barF();
     }, false);
   }
-  function pdg(s, px) {
-    return fill.style["padding" + s] = px;
+  function pdg(s: "" | "Left" | "Top" | "Right" | "Bottom", px: string) {
+    return fill.style["padding" + s as any] = px;
   }
   if (loadBar !== null) {
     // <btn.parentNode>
@@ -736,22 +748,25 @@ function fileOpener(f_exec, error, f_final, loadBar, mode) {
     barE = barF = F;
   readFile();
 }
-function dragOver(e) {
+function dragOver(e: DragEvent) {
   e.preventDefault();
 }
-function dragDrop(e) {
+function dragDrop(e: DragEvent) {
   e.preventDefault();
-  var i = 0, l = file.files.length, t = e.dataTransfer, a = t.files, f;
+  var i = 0, l = file.files.length, t = e.dataTransfer;
+  if (!t)
+    return;
+  var a: FileList | DataTransferItemList = t.files,
+    f: () => File | null | void = F;
   if (a && a.length)
     f = function () {
-      return a[i];
+      return (a as FileList)[i];
     };
   else if ((a = t.items) && a.length)
     f = function () {
-      return a[i].getAsFile();
+      return (a as DataTransferItemList)[i].getAsFile();
     };
   for (; i < a.length; i++, l++) {
-    //@ts-ignore
     file.files.push(f() || null);
     file.open.push(l);
   }
@@ -776,8 +791,7 @@ function dragDrop(e) {
   pN.ondragover = dragOver;
   pN.ondrop = dragDrop;
 })(0);
-/** @this {GlobalEventHandlers} */
-function onFile(e) {
+function onFile(this: GlobalEventHandlers, e: Event) {
   if (!(this instanceof HTMLInputElement))
     return;
   var i = 0, a = this.files, el;
@@ -799,20 +813,17 @@ function onFile(e) {
   fileOpener(onFile.temporaray, "Invalid DBV file I guess.", F,
     file.upload);
 }
-/** @param {Uint8Array} uar */
-onFile.temporaray = function (uar) {
+onFile.temporaray = function (uar: Uint8Array) {
   return true;
 };
 file.input.onchange = onFile;
 
-/** @type {()=>string} */
-var placingBlock = function () {
+var placingBlock: () => string = function (): string {
   return ["Core", "Block", "Wedge", "Small Hydrogen Thruster",
     "Reaction Wheel","Small Hydrogen Tank", "Small Battery"
     ][Math.random() * 7 | 0];
 };
-/** @param {string} s @param {boolean} b @returns */
-function blockBind(s, b) {
+function blockBind(s: string, b: boolean) {
   return function () {
     placingBlock = function () {
       blockBind.changingColor = b;
@@ -823,8 +834,7 @@ function blockBind(s, b) {
 blockBind.changingColor = !1;
 blockBind.changingPosition = !1;
 
-/** @param {string} tag @returns {[HTMLButtonElement,HTMLDivElement]} */
-function utilities(tag) {
+function utilities(tag: string): [HTMLButtonElement, HTMLDivElement] {
   var el = EL(), btn = EL("button");
   el.style.display = "none";
   btn.appendChild(tN(tag));
@@ -840,89 +850,146 @@ function utilities(tag) {
   return [btn, el];
 }
 utilities.rend_UI = F;
-/** class is sealed
- * @typedef {{name:string,type:string,fn:(ev:Event)=>any}} CommandItem
- * @param {string} name
- * @param {string} description
- * @param {{name:string,type:string,fn:(ev:Event)=>any}[]|((items:{
- * appendChild:typeof document.appendChild})=>void)} items indefinite
- * @param {boolean|string} [setting=false] */
-function Command(name, description, items, setting) {
-  this.name = name;
-  this.group = typeof setting == "string" ? setting : "";
-  this.description = !setting ? description : "";
-  if (setting && items.length !== 1)
-    throw new Error("Setting must contain only boolean handler.");
-  this.items = items;
-  this.setting = typeof setting != "string" ? !!setting : !1;
-  Object.freeze(this);
-}
-/** @type {Command[]} */
-Command.list = [];
-Command.groupName = "";
-Command.rend_UI = F;
-Command.listening = -1;
-Command.NAME = {"Setup Properties": "Setup Properties"};
-/**
- * @type {{
- *   (name: string, items: [{name:string,type:string,
- *     fn:(ev:Event)=>any}], setting: true): number,
- *   (name: string, items: {name:string,type:string,
- *     fn:(ev:Event)=>any}[], description: string): number
- * }}
- * @param {string} name @param {CommandItem[]} items
- * @param {string|true} desc */
-Command.add = function add(name, items, desc) {
-  if (desc === !0)
-    var o = new Command(name, "", items, !0);
-  else
-    o = new Command(name, desc, items, !1);
-  Command.initItem(o);
-  return this.list.push(o);
+
+type CommandItem = {
+  name: string;
+  type: string;
+  fn: (ev: Event) => any;
 };
 /**
  * @callback CmdInit
- * @param {(Node|{name:string,inp:HTMLInputElement})[]} items
+ * @param {Node|{name:string,inp:HTMLInputElement})[]} items
  * @param {typeof utilities} collapsed utilities interface:
  * itself is a function for making item groups also having plenty
  * of other properties for more funtionalities @see {utilities}
  * @returns {void} */
-/** use items poperty intialize callback by pushing items
- * (items: Array<Node | {name: string, inp: HTMLInputElement}>) => void
- * you can use named inputs or Elemets to build up command menu
- * the fancy stuff is done by utilities inteface (collapsed)
- * @param {string} name @param {string} description
- * @param {CmdInit} initialize @param {{group?:string,
- * reloads?:boolean}} [settings]
- */
-Command.push = function (name, initialize, description, settings) {
-  name = Command.NAME[name] || name;
-  settings = settings || {};
-  function itemsInit(el) {
-    /** @type {(Node|{name:string,inp:HTMLInputElement})[]} */
-    var items = [];
-    initialize(items, utilities); 
-    for (var i = 0, itm; i < items.length; i++)
-      if ((itm = items[i]) instanceof Node)
-        el.appendChild(itm);
-      else {
-        el.appendChild(tN(itm.name + ": "));
-        el.appendChild(itm.inp);
-        el.appendChild(EL("br"));
-      }
+type CmdInit = (
+  items: (Node | {name: string, inp: HTMLInputElement})[],
+  /** utilities interface:
+   * itself is a function for making item groups also having plenty
+   * of other properties for more funtionalities @see {utilities}
+   */
+  collapsed: typeof utilities
+) => void;
+
+/** instance is frost */
+class Command {
+  name: string;
+  group: string;
+  description: string;
+  // indefinite
+  items: CommandItem[] | ((items: {
+    appendChild: typeof document.appendChild
+  }) => void);
+  setting: boolean;
+
+  /**
+   * @param {string} name
+   * @param {string} description
+   * @param {{name:string,type:string,fn:(ev:Event)=>any}[]|((items:{
+   * appendChild:typeof document.appendChild})=>void)} items indefinite
+   * @param {boolean|string} [setting=false] */
+  constructor(
+    name: string,
+    description: string,
+    items: {
+      name: string;
+      type: string;
+      fn: (ev: Event) => any;
+    }[] | ((items: {
+      appendChild: typeof document.appendChild;
+    }) => void),
+    setting?: boolean | string
+  ) {
+    this.name = name;
+    this.group = typeof setting == "string" ? setting : "";
+    this.description = !setting ? description : "";
+    if (setting && items.length !== 1)
+      throw new Error("Setting must contain only boolean handler.");
+    this.items = items;
+    this.setting = typeof setting != "string" ? !!setting : !1;
+    Object.freeze(this);
   }
-  return this.list.push(Command.initItem(new Command(name, description,
-    itemsInit, settings.group)));
-};
-/** after Commands Tab was initialized new commands are added live
- * @param {Command} cmd */
-Command.initItem = function (cmd) {
-  return cmd;
-};
-Object.seal(Command);
+
+  static list: Command[] = [];
+  static groupName = "";
+  static rend_UI = F;
+  static listening = -1;
+  static NAME: {
+    [key: string]: string | undefined
+  } = {"Setup Properties": "Setup Properties"};
+
+  static add(
+    name: string,
+    items: [{name: string, type: string, fn: (ev: Event) => any}],
+    setting: true
+  ): number;
+  static add(
+    name: string,
+    items: {name: string, type: string, fn: (ev: Event) => any}[],
+    description: string
+  ): number;
+  static add(
+    name: string,
+    items: CommandItem[],
+    desc: string | true
+  ): number {
+    if (desc === !0)
+      var o = new Command(name, "", items, !0);
+    else
+      o = new Command(name, desc, items, !1);
+    Command.initItem(o);
+    return this.list.push(o);
+  };
+  /** use items poperty intialize callback by pushing items
+   * (items: Array<Node | {name: string, inp: HTMLInputElement}>) => void
+   * you can use named inputs or Elemets to build up command menu
+   * the fancy stuff is done by utilities inteface (collapsed)
+   * @param {string} name @param {string} description
+   * @param {CmdInit} initialize @param {{group?:string,
+   * reloads?:boolean}} [settings]
+   */
+  static push(
+    name: string,
+    initialize: CmdInit,
+    description: string,
+    settings?: {
+      group?: string;
+      reloads?: boolean;
+    }
+  ) {
+    name = Command.NAME[name] || name;
+    settings = settings || {};
+    function itemsInit(
+      el: {appendChild: <T extends Node>(node: T) => T}
+    ): void {
+      var items: (Node | { name: string; inp: HTMLInputElement; })[] = [];
+      initialize(items, utilities); 
+      for (var i = 0, itm; i < items.length; i++)
+        if ((itm = items[i]) instanceof Node)
+          el.appendChild(itm);
+        else {
+          el.appendChild(tN(itm.name + ": "));
+          el.appendChild(itm.inp);
+          el.appendChild(EL("br"));
+        }
+    }
+    return this.list.push(Command.initItem(new Command(name, description,
+      itemsInit, settings.group)));
+  };
+  /** after Commands Tab was initialized new commands are added live
+   * @param {Command} cmd */
+  static initItem = function (cmd: Command) {
+    return cmd;
+  };
+  
+  static {
+    Object.seal(Command);
+  }
+}
 
 Command.push("Select Block", function (items, collapsed) {
-  var bcks = {
+  var bcks: {[key: string]: string | undefined} = {
       776: "TNT",
       834: "station wall 4 sides LBRU",
       835: "station wall 2 sides corner LB",
@@ -976,7 +1043,7 @@ Command.push("Select Block", function (items, collapsed) {
       "Droneboi (classic)"
     ],
     /** @type {{[kye:string]:[HTMLButtonElement,HTMLDivElement]}} */
-    groups = {
+    groups: { [kye: string]: [HTMLButtonElement, HTMLDivElement]; } = {
       "Core and Basic": collapsed("Core and Basic"),
       "Movement": collapsed("Movement"),
       "Storage": collapsed("Storage"),
@@ -990,22 +1057,27 @@ Command.push("Select Block", function (items, collapsed) {
   btn.onclick = blockBind("remove", !1);
   items.push(btn);
   for (var i = 690, s = ""; i < Block.NAME.length; i++)
-    if (s = bcks[i] || Block.NAME[i])
+    if (s = bcks[i] || Block.NAME[i] || "__unknown__")
       if (!/__(?:placeholder\d+|NULL)__/.test(s)) {
         btn = EL("button");
         btn.appendChild(tN(s));
-        btn.onclick = blockBind(Block.NAME[i], !1);
+        btn.onclick = blockBind(Block.NAME[i] || "__unknown__", !1);
         groups[tags[i - 690 >> 4]][1].appendChild(btn);
       }
-  /** @type {(...args:HTMLElement[][])=>void} */
-  function pushCollapsed() {
+  function pushCollapsed(..._args: HTMLElement[][]): void {
     for (var i = 0; i < arguments.length;)
       Array.prototype.push.apply(items, arguments[i++]);
   }
-  pushCollapsed(groups["Core and Basic"], groups.Movement);
-  pushCollapsed(groups.Storage, groups["Drills and Weapons"]);
-  pushCollapsed(groups.Misc, groups.Logic, groups["Station parts"]);
-  pushCollapsed(groups["Droneboi (classic)"]);
+  pushCollapsed(
+    groups["Core and Basic"],
+    groups.Movement,
+    groups.Storage,
+    groups["Drills and Weapons"],
+    groups.Misc,
+    groups.Logic,
+    groups["Station parts"],
+    groups["Droneboi (classic)"]
+  );
   var opt = EL("input");
   opt.type = "checkbox";
   opt.checked = blockBind.changingPosition;
@@ -1021,10 +1093,9 @@ licking on existing block rotates it. First item \"remove\" removes existing\
 source textures of most blocks.");
 
 Command.add("Select Color", function () {
-  /** @type {CommandItem[]} */
-  var items = [];
+  var items: CommandItem[] = [];
   for (var i = 0, s = ""; i < Color.NAME.length; i++)
-    if (s = Color.NAME[i])
+    if (s = Color.NAME[i] || "__unknown__")
       items.push({name: s, type: "button", fn: blockBind(s, !0)});
   items.push({name: "[custom color]", type: "input", fn: function () {
     if (!(this instanceof HTMLInputElement))
@@ -1050,30 +1121,32 @@ Command.push("Setup Properties", function (items, collapsed) {
   var posX = EL("input"), posY = EL("input"), setPos = EL("button");
   var name = EL("input"), props = EL(), focus = EL("input");
   props.style.textAlign = "middle";
-  /** fost @param {any} reference @param {number|string} property */
-  function Ref(reference, property) {
-    this.ref = reference;
-    this.p = property;
-    Object.freeze(this);
+  /** instance is frost */
+  class Ref {
+    ref: any;
+    p: number | string;
+
+    constructor(reference: any, property: number | string) {
+      this.ref = reference;
+      this.p = property;
+      Object.freeze(this);
+    }
   }
   function displayProperties() {
-    /** @param {WeldGroups} item */
-    function addWeldGroups(item) {
+    function addWeldGroups(item: Block.ItemTs["WeldGroups"]) {
       var b0 = item.default[0] instanceof Array;
       (b0 && weldSelects[0].p == "weldGroup" ? weldSelects = [] : b0) ?
-        /** @type {[number,number,number,number]} */
-        (customParam[item.idx]).forEach(function (e, i, a) {
+        (customParam[item.idx] as [number,number,number,number]
+          ).forEach(function (_e, i, a) {
             weldSelects.push(new Ref(a, i));
           }) :
         weldSelects.push(new Ref(customParam, item.idx));
     }
     /** @param {Ref} ref */
-    function initWeldGroup(ref) {
+    function initWeldGroup(ref: Ref) {
       // onchange event handler has live reference to the value
       // kept in its own scope and assigned from properties.customParameter
-      var node = 
-      /** @type {HTMLSelectElement} */
-        (weldGroup.cloneNode(!0));
+      var node = weldGroup.cloneNode(!0) as HTMLSelectElement;
       node.selectedIndex = +ref.ref[ref.p] || 0;
       node.onchange = function () {
         if (this instanceof HTMLSelectElement)
@@ -1081,8 +1154,7 @@ Command.push("Setup Properties", function (items, collapsed) {
       };
       props.appendChild(node);
     }
-    /** @type {Block} */
-    var block = ship.blocks[text.data = "" + idx],
+    var block: Block = ship.blocks[+(text.data = "" + idx)],
       /** Block.PROP defeinition of type of current processed block */
       p;
     if (!block)
@@ -1091,9 +1163,7 @@ Command.push("Setup Properties", function (items, collapsed) {
     posX.value = block.position[1] / 2 + "";
     posY.value = block.position[2] / 2 + "";
     try {
-      span.onchange &&
-        /** @type {Function} */
-        (span.onchange)();
+      span.onchange && (span.onchange as Function)();
     } catch (e) {
       console.error(e);
     }
@@ -1244,7 +1314,7 @@ Command.push("Setup Properties", function (items, collapsed) {
     else
       for (; idx < dest; idx++)
         blocks[idx] = blocks[idx + 1];
-    blocks[text.data = "" + (idx = dest)] = temp;
+    blocks[+(text.data = "" + (idx = dest))] = temp;
     displayProperties();
   };
   exchange.appendChild(tN("Exchange"));
@@ -1252,7 +1322,7 @@ Command.push("Setup Properties", function (items, collapsed) {
     var temp = ship.blocks[idx], dest = Number(index.value) || 0;
     dest < ship.blocks.length ? 0 : dest = ship.blocks.length - 1;
     ship.blocks[idx] = ship.blocks[dest];
-    ship.blocks[text.data = "" + (idx = dest)] = temp;
+    ship.blocks[+(text.data = "" + (idx = dest))] = temp;
     displayProperties();
   };
   items.push(select, next, {name: "focus", inp: focus}, insert, exchange);
@@ -1323,23 +1393,22 @@ not explained), 0 is white 1 is blue 2 is red 3 is green 4 is yellow, this d\
 escri.");
 Command.push("Display Logic", function (items, collapsed) {
   function updateNodeSelect() {
-    /** uses #text node to recover index selected from blocks selector of
-     * "Setup Properties" command */
+    /**
+     * uses #text node to recover index selected from blocks selector of
+     * "Setup Properties" command
+     */
     var idx = Number(text.data), block = ship.blocks[idx];
     if (!block)
       return;
-    /** @type {(Logic<any>|undefined)[]} */
-    var logics = ship.prop && ship.prop.nodeList || [], temp = EL();
+    var logics: (Logic<any> | undefined)[] =
+      ship.prop && ship.prop.nodeList || [],
+      temp = EL();
     temp.appendChild(tN("Logic block: " + idx + " " + block.internalName));
     temp.appendChild(EL("br"));
-    /** @type {HTMLSelectElement|null} */
-    var numerical = EL("select"),
-      /** @type {(Logic<3>|undefined)[]} */
-      nums = [UDF],
-      /** @type {HTMLSelectElement|null} */
-      logical = EL("select"),
-      /** @type {(Logic<2>|undefined)[]} */
-      logs = [UDF];
+    var numerical: HTMLSelectElement | null = EL("select"),
+      nums: (Logic<LogicNode.OutNum> | undefined)[] = [UDF],
+      logical: HTMLSelectElement | null = EL("select"),
+      logs: (Logic<LogicNode.OutBool> | undefined)[] = [UDF];
     numerical.appendChild(EL("option")).appendChild(tN("none"));
     logical.appendChild(EL("option")).appendChild(tN("none"));
     for (var i = logics.length; i-- > 0;) {
@@ -1362,8 +1431,9 @@ Command.push("Display Logic", function (items, collapsed) {
       if (!(node = logics[ni[i]]) || node.pairs instanceof Array)
         continue;
       var b = node.type & 1,
-        /** @type {HTMLSelectElement} *///@ts-ignore
-        select = (b ? numerical : logical).cloneNode(!0),
+        select = (b ?
+          numerical :
+          logical).cloneNode(!0) as HTMLSelectElement,
         pairsN = b ?
           nums.indexOf(logics[node.pairs]) :
           logs.indexOf(logics[node.pairs]);
@@ -1377,7 +1447,8 @@ Command.push("Display Logic", function (items, collapsed) {
         var input = logics[n], output = logics[ref];
         // output won't be assigned, but old node still needs disconnect
         if (this.value === "none")
-          (output = new Logic(3, 0, 0)).pairs = [ref = -1];
+          (output = new Logic(LogicNode.OutNum, 0, 0)
+            ).pairs = [ref = -1];
         if (!input || !output)
           throw new Error((input ? "" : "input" + (output ?
             " and" :
@@ -1443,10 +1514,9 @@ Command.push("Display Logic", function (items, collapsed) {
     return true;
   });
   updateNodeSelect();
-  /** @param {string} old @param {string} replacer */
-  function updateControlParams(old, replacer) {
-    /** @param {unknown} param custom parameter (DBV block's "c") property */
-    function checkControlBlock(param) {
+  function updateControlParams(old: string, replacer: string) {
+    /** custom parameter (DBV block's "c") property */
+    function checkControlBlock(param: unknown) {
       if (!(param instanceof Array))
         return console.error("Control Block custom parameter is not an Array\
 .");
@@ -1458,17 +1528,17 @@ Command.push("Display Logic", function (items, collapsed) {
       if (options.indexOf(param[0]) === -1)
         param[0] = "Up";
     }
-    /** @type {Block} */
-    var block, options = Block.Properties.getInputOptions(ship.prop);
-    for (i = ship.blocks.length; i-- > 0;)
+    var block: Block,
+      options = Block.Properties.getInputOptions(ship.prop);
+    for (var i = ship.blocks.length; i-- > 0;)
       if ((block = ship.blocks[i]).internalName === "Control Block")
         checkControlBlock(block.properties.customParameter);
   }
   var customInputs = EL(), template = EL("button");
-  /**
-   * @this {GlobalEventHandlers|void}
-   * @param {MouseEvent|Ship.CustomInput} e */
-  function addCustomInput(e) {
+  function addCustomInput(
+    this: GlobalEventHandlers | void,
+    e: MouseEvent | Ship.CustomInput
+  ) {
     var isInit = e instanceof Ship.CustomInput,
       remove = EL("button");
     if (!(this instanceof HTMLButtonElement || isInit))
@@ -1478,12 +1548,11 @@ Command.push("Display Logic", function (items, collapsed) {
     isInit || (prop.customInputs instanceof Array ?
       (inputs = prop.customInputs).push(custom) :
       prop.customInputs = inputs = []);
-    /** @type {Node} */
-    var from = this instanceof HTMLButtonElement ? this : template,
-      /** @type {Node|null} */
-      prev;
-    /** @type {Node&{onclick?:typeof template.onclick}} */
-    var add = EL("button"), toggle = EL("input"), name = EL("input");
+    var from: Node = this instanceof HTMLButtonElement ? this : template,
+      prev: Node | null;
+    var add: Node & {
+      onclick?: typeof template.onclick;
+    } = EL("button"), toggle = EL("input"), name = EL("input");
     while ((prev = from.previousSibling) && prev.nodeName !== "BR")
       from = prev;
     toggle.type = "checkbox";
@@ -1510,9 +1579,10 @@ Command.push("Display Logic", function (items, collapsed) {
     remove.style.width = "unset";
     remove.style.display = "initial";
     remove.appendChild(tN("Remove"));
-    /** @type {Node&{onclick?:typeof template.onclick}} */
     (
-      customInputs.insertBefore(remove, from)
+      customInputs.insertBefore(remove, from) as Node & {
+        onclick?: typeof template.onclick
+      }
     ).onclick = function () {
       if (!(this instanceof HTMLButtonElement))
         return;
@@ -1644,7 +1714,8 @@ Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
     var bs = ship.blocks;
     try {
       ship.withPositionAdjustment(function (temp) {
-        inp.value = uint8arrayToBase64(encodeCmprsShip(temp));
+        //@ts-expect-error
+        inp.value = B64Key.u8arrToB64(B64Key.encode(temp));
       });
       render();
     } catch (err) {
@@ -1660,9 +1731,10 @@ Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
     var old = ship, s = inp.value;
     try {
       if (!/^(:?UGxheWVy)?VmVoaWNsZT/.test(s.slice(0, 18))) {
-        var obj = decodeCmprsShip(base64ToUint8array(s));
+        var obj = B64Key.decode(B64Key.b64ToU8arr(s));
         ship = Ship.fromObject(obj);
         if (typeof obj != "string")
+          //@ts-expect-error
           ship.fixPositionAdjustment(!(obj.significantVersion > 15));
       } else
         ship = Ship.fromDBKey(atob(s));
@@ -1696,8 +1768,8 @@ Command.push("Transfrom tool", function (items, collapsed) {
   var offset = [0, 0];
   select.appendChild(tN("Select rectangle"));
   var xy = [0, 0, 0, 0], locked = EL("input");
-  /** FORMAT INPUTS @this {GlobalEventHandlers} */
-  function formatSelection() {
+  /** FORMAT INPUTS */
+  function formatSelection(this: GlobalEventHandlers) {
     var i = 4, input = selectX0;
     while (input = [selectX0, selectY0, selectX1, selectY1][--i])
       this !== input ?
@@ -1709,16 +1781,15 @@ Command.push("Transfrom tool", function (items, collapsed) {
       selecting = 0;
     render();
   }
-  /** SELECT @param {boolean} [getLock] */
-  function getSelected(getLock) {
+  /** SELECT */
+  function getSelected(getLock?: boolean) {
     if (!getLock && locked.checked)
       return lockedSelect;
     return selecting ?
       ship.selectRect() :
       ship.selectRect(0, xy[0], xy[1], 0, xy[2], xy[3]);
   }
-  /** @type {BlockSelection|null} */
-  var trackPoints = null;
+  var trackPoints: BlockSelection | null = null;
   function pointsSelected() {
     return trackPoints = Ship.fromObject({n: "", b: [
       new Block("Block", [0, xy[0], xy[1]], [0, !1, 0]),
@@ -1853,9 +1924,7 @@ Command.push("Transfrom tool", function (items, collapsed) {
         e.properties.color = Color.default(e.internalName);
       } :
       function (e) {
-        e.properties.color =
-          /** @type {Colors} */
-          (coloring.value);
+        e.properties.color = coloring.value as Colors;
       });
     render();
   };
@@ -1918,7 +1987,7 @@ ks from left to right and from right to left around center of editor space. \
 tom hex color can be set in \"Select Color\" Command.");
 
 Command.push("Vehicle stats", function (items, collapsed) {
-  function addLine(text) {
+  function addLine(text: string) {
     items.push(tN(text), EL("br"));
   }
   // var blocks = ship.blocks, cost = 0, weight = 0, integrity = 0;
@@ -1934,23 +2003,22 @@ Command.push("Vehicle stats", function (items, collapsed) {
     blocks: [0]
   },
     stringify = JSON.stringify(sums),
-    /** @type {typeof sums} */
-    skipped = JSON.parse(stringify);
-  /** @param {string} stat @param {any} value @param {Function} [parse] */
-  function checkStat(stat, value, parse) {
+    skipped: typeof sums = JSON.parse(stringify);
+  function checkStat(stat: string, value: any, parse?: Function) {
     // properties stack for stats counter dictionary
-    var stack = stat.split("."), tmpSums = sums, tmpSkip = skipped;
+    var stack = stat.split(".");
+    var tmpSums: any = sums, tmpSkip: any = skipped;
     for (var i = 0; ++i < stack.length; tmpSkip = tmpSkip[stack[i - 1]])
       tmpSums = tmpSums[stack[i - 1]];
     typeof value != "undefined" ?
       tmpSums[stack[i - 1]] += parse ? parse(value) : value :
       tmpSkip[stack[i - 1]]++;
   }
-  for (var j = 0, texts = [], l = 14; j < l;)
+  for (var j = 0, texts: Text[] = [], l = 14; j < l;)
     items.push(texts[j++] = tN(""), EL("br"));
   var riftLY = items[items.length - l * 2 + 19] = EL("input"),
     /** @type {Text|HTMLSpanElement} */
-    red = items[items.length - l * 2 + 21] = EL("span");
+    red: Text | HTMLSpanElement = items[items.length - l * 2 + 21] = EL("span");
   red.style.color = "red";
   red = red.appendChild(tN(""));
   riftLY.oninput = function () {
@@ -1989,7 +2057,7 @@ t regain the Rift Crystals by travelling back. ";
   function updateStats() {
     var xForce = 0, yForce = 0, forces = 0, xWeight = 0, yWeight = 0;
     var useVal = 0;
-    function anyUse(val) {
+    function anyUse(val: any) {
       var n = +(prop.customParameter || [])[0];
       return useVal = val instanceof Array ?
         val[0] / val[1] :
@@ -2006,13 +2074,13 @@ t regain the Rift Crystals by travelling back. ";
       var ow = size.w, oh = size.h, w = ow + (ow & 16), h = oh + (oh & 16);
       var x = (ow & 16) / 32, y = (oh & 16) / 32;
       /** @type {number[]} */
-      var xys = [x, y, -x, -y], position = block.position;
+      var xys: number[] = [x, y, -x, -y], position = block.position;
       x = position[1] + (rot & 1 ? h / 32 : w / 32) + xys[rot];
       y = position[2] + (rot & 1 ? w / 32 : h / 32) + xys[rot + 3 & 3];
       xWeight += x * (Block.WEIGHT[id] || 0);
       yWeight += y * (Block.WEIGHT[id] || 0);
       texts[13].data += " id"+id+'x'+x+'y'+y;
-      checkStat("cost", Block.COST[id], function (val) {
+      checkStat("cost", Block.COST[id], function (val: number) {
         return val < 0 ? 0 : val;
       });
       checkStat("weight", Block.WEIGHT[id]);
@@ -2126,7 +2194,7 @@ ling disabled fullscreen you will have browser experience of when it wasn't \
 implemented.");
 Command.push("Debug Logic circuit", function (items, collapsed) {
   /** @param {Block|LogicBlock} block @returns {LogicBlock|undefined} */
-  function checkEndComponent(block) {
+  function checkEndComponent(block: Block | LogicBlock): LogicBlock | undefined {
     if (!(block instanceof LogicBlock))
       return;
     var logic = Logic.VALUE[Block.ID[block.internalName]] || [];
@@ -2137,7 +2205,7 @@ Command.push("Debug Logic circuit", function (items, collapsed) {
   }
   items.push(tN("In-game controls, buttons, switches:"), EL("br"));
   /** @type {string[]} */
-  var inputs = ship.getPhysics().selectedInputs = [];
+  var inputs: string[] = ship.getPhysics().selectedInputs = [];
   var inputOptions = Block.Properties.getInputOptions(ship.prop);
   for (var i = 0; i < inputOptions.length; i++) {
     var option = EL("input");
@@ -2171,9 +2239,7 @@ Command.push("Debug Logic circuit", function (items, collapsed) {
       return err.data = "Logic mode only command";
     for (var i = ship.blocks.length, narr = [], block; i-- > 0;)
       if (block = checkEndComponent(ship.blocks[i])) {
-        block.position =
-          /** @type {XYZPosition} */
-          (block.logicPosition.slice());
+        block.position = block.logicPosition.slice() as XYZPosition;
         var n = block.position[1];
         block.position[1] += (++narr[n] || (narr[n] = 0)) / 512;
       }
@@ -2190,8 +2256,8 @@ Command.push("Set camera view", function (items, collapsed) {
   function setCode() {
     code.value = "vX" + vX + "vY" + vY + "sc" + sc;
   }
-  /** @param {string} s @param {number} def default */
-  function execRegEx(s, def) {
+  /** @param def default */
+  function execRegEx(s: string, def: number) {
     var res = new RegExp(s + "[ \\t]*(?:([+\-]?(?:\\.\\d|\\d+\\.|\\d)\\d*(?:\
 [Ee][+\\-]?\\d+)?)|(0x[0-9A-Fa-f]+))(?:[yYvVsScC \\t]|$)").exec(code.value);
     return res ? isNaN(+res[1]) ? +res[2] / 1024 : +res[1] : def;
@@ -2297,19 +2363,34 @@ Command.push("Change editor background", function (items, collapsed) {
 d is used. Else color from \"Background color\" input is used. If it is in h\
 exadecimal format #111133 for example, the setting will update.");
 Command.push("Current version", function(items, collapsed) {
-  var version_sw = tN(""), s = "data";
+  var version_sw = tN(""), child = document.childNodes[1];
   items.push(
-    tN("[editor.html]: " + (document.childNodes[1][s] || "")),
+    tN("[editor.html]: " + (child instanceof Text && child.data || "")),
     EL("br"),
-    tN("[code.js]: " + version_code_js),
+    tN("[defs.ts]: " + version_defs_ts),
     EL("br"),
-    tN("[editor.js]: " + version_editor_js),
+    tN("[Data.ts]: " + Data.VER),
+    EL("br"),
+    tN("[Logic.ts]: " + Logic.VER),
+    EL("br"),
+    tN("[Color.ts]: " + Color.VER),
+    EL("br"),
+    tN("[Physics.ts]: " + Physics.VER),
+    EL("br"),
+    tN("[Block.ts]: " + Block.VER),
+    EL("br"),
+    tN("[Ship.ts]: " + Ship.VER),
+    EL("br"),
+    tN("[Edit.ts]: " + Edit.VER),
+    EL("br"),
+    tN("[B64Key.ts]: " + B64Key.VER),
+    EL("br"),
+    tN("[editor.ts]: " + version_editor_ts),
     EL("br"),
     version_sw
   );
   var xhr = new XMLHttpRequest();
-  xhr.open("GET",
-    "/.d1r.dbv/service-worker.js");
+  xhr.open("GET", "./service-worker.js");
   xhr.onreadystatechange = function () {
     if (xhr.readyState !== 4)
       return;
@@ -2346,8 +2427,9 @@ on.");
 // Thanks to Beau for Deltarealm and Droneboi: Conquest that DBVE is made
 // for.
 // Thanks to contributors:
-//   KKJKJH for blocks texture source
+//   KKJKJH for blocks texture sources
 //   Brothernova for being the alpha tester
+//   Potentially Larmbs as first sourcode contributor
 // Also thank to cacat9999 for sharing block capacity/use stats from source
 // code in Discord, you all for using DBVE, your feedback, and db
 // suggestions to take inspiration from.
@@ -2359,9 +2441,9 @@ var cmdsHeader = EL(), cmds = (function () {
   nav.id = "commandsTab";
   nav.style.display = "none";
   /** @type {HTMLElement} */
-  var e0 = nav.appendChild(EL("header")),
+  var e0: HTMLElement = nav.appendChild(EL("header")),
     /** @type {HTMLElement} */
-    e1 = e0.appendChild(EL("button")),
+    e1: HTMLElement = e0.appendChild(EL("button")),
     back = e1.style;
   e1.appendChild(tN("<"));
   back.visibility = "hidden";
@@ -2385,8 +2467,7 @@ var cmdsHeader = EL(), cmds = (function () {
   items.className = "items";
   (e1 = nav.appendChild(EL())).style.display = items.style.display = "none";
   e1.appendChild(tN("Search commads... coming spoon"));
-  /** @param {Command} item */
-  function initItems(item) {
+  function initItems(item: Command) {
     function ending() {
       var el = items.appendChild(EL());
       el.innerText = "Description:\n" + item.description;
@@ -2440,16 +2521,21 @@ var cmdsHeader = EL(), cmds = (function () {
   return (bd || EL()).appendChild(nav);
 })();
 
-/** instance is sealed
- * @param {string} name @param {string} icon @param {()=>void} [exec] */
-function Tool(name, icon, exec) {
-  this.name = name;
-  this.icon = icon;
-  this.exec = exec || F;
-  Object.seal(this);
+/** instance is sealed */
+class Tool {
+  name: string;
+  icon: string;
+  exec: () => void;
+
+  constructor(name: string, icon: string, exec?: () => void) {
+    this.name = name;
+    this.icon = icon;
+    this.exec = exec || F;
+    Object.seal(this);
+  }
+
+  static list: Tool[] = [];
 }
-/** @type {Tool[]} */
-Tool.list = [];
 
 Tool.list.push(new Tool("Tune", "M4a4,24265 c51,2f0,273,ad3,931,f85 c8da,714\
 ,103d,642,13d7,615 c1ea0,-178,3dbe,974,552e,20cc c2c36,2c08,2c5b,7392,53,9fc\
@@ -2503,8 +2589,7 @@ c,-41c,ae,-60f c64,-1b6,2b6f,-d70d,2b9c,-d7c9 c2f1,-c64,e66,-15a2,1c14,-15a2\
  c78f,0,e71,2d2,1395,771 c6c,61,1e3a,1e85,1e42,1e7e c5b73,-5550,d631,-8984,1\
 5d21,-8984 c11abb,0,1ffee,e532,1ffee,1ffee z", function () {
   DefaultUI.tilesRotation[2] = DefaultUI.tilesRotation[2] =
-    /** @type {0|1|2|3} */
-    (DefaultUI.tilesRotation[2] + 1 & 3);
+    DefaultUI.tilesRotation[2] + 1 & 3;
   setTimeout(function () {
     var tile = DefaultUI.getSelectedTile();
     if (tile instanceof Tool && tile.name === "Rotate") {
@@ -2598,204 +2683,203 @@ function check_contentScript() {
   }
 }
 
+type TileType = Block | LogicBlock | Tool | null;
+
 var devt_debugger = false;
-function DefaultUI() {
-  throw new TypeError("Illegal constructor");
-  this.mode = "any";
-}
-/** used in DefaultUI.createTile for rotatable blocks */
-DefaultUI.tilesRotation =
-  /** @type {Rotation} */
-  ([0, !1, 0]);
-DefaultUI.tilesFlippableRotation = DefaultUI.tilesRotation;
-DefaultUI.createTile = function () {
-  /** @type {XYZPosition} */
-  var pos = [0, 0, 0], id = 0;
-  /** @param {unknown} val */
-  return function (val) {
-    if (typeof val == "number" && typeof Block.NAME[val] == "string")
-      var name = Block.NAME[id = val];
-    else if (typeof (id = Block.ID["" + val]) == "number")
-      name = "" + val;
-    if (typeof name == "string")
-      return new Block(name, pos, Block.isFlippable(id) ?
-          DefaultUI.tilesFlippableRotation :
-          DefaultUI.tilesRotation,
-        0, Color.default(name));
-    if (val instanceof Tool)
-      return val;
-    for (var i = Tool.list.length; i-- > 0;)
-      if (Tool.list[i].name === "" + val)
-        return Tool.list[i];
-    return null;
+class DefaultUI {
+  constructor() {
+    throw new TypeError("Illegal constructor");
+  }
+
+  /** used in DefaultUI.createTile for rotatable blocks */
+  static tilesRotation = [0, !1, 0] as Rotation;
+  static tilesFlippableRotation = DefaultUI.tilesRotation;
+  static createTile = (function () {
+    var pos: XYZPosition = [0, 0, 0], id = 0;
+    return function (val: unknown) {
+      if (typeof val == "number" && typeof Block.NAME[val] == "string")
+        var name = Block.NAME[id = val];
+      else if (typeof (id = Block.ID["" + val]) == "number")
+        name = "" + val;
+      if (typeof name == "string")
+        return new Block(name, pos, Block.isFlippable(id) ?
+            DefaultUI.tilesFlippableRotation :
+            DefaultUI.tilesRotation,
+          0, Color.default(name));
+      if (val instanceof Tool)
+        return val;
+      for (var i = Tool.list.length; i-- > 0;)
+        if (Tool.list[i].name === "" + val)
+          return Tool.list[i];
+      return null;
+    };
+  }());
+  /** @param {unknown[]} [tiles=[]] */
+  static createFolder(type: number | string, tiles: unknown[]) {
+    var folder = (tiles || []).map(DefaultUI.createTile) as
+      TileType[] & {type: TileType};
+    folder.type = DefaultUI.createTile(type);
+    return folder;
   };
-}();
-/** @typedef {Block|LogicBlock|Tool|null} TileType */
-/** @param {number|string} type @param {unknown[]} [tiles=[]] */
-DefaultUI.createFolder = function (type, tiles) {
-  var folder =
-    /** @type {TileType[]&{type:TileType}} */
-    ((tiles || []).map(DefaultUI.createTile));
-  folder.type = DefaultUI.createTile(type);
-  return folder;
-};
-DefaultUI.TILE = {};
-DefaultUI.rend = F;
-/** @type {(TileType[]&{type:TileType})[]} */
-DefaultUI.blockBars = [
-  DefaultUI.createFolder("Core", [739, 746, 757]),
-  DefaultUI.createFolder(739, [738, 739, 740, 741, 742, 743]),
-  DefaultUI.createFolder("Small Hydrogen Thruster", [744, 745, 746]),
-  DefaultUI.createFolder("Small Hydrogen Tank", [757, 758, 759]),
-  DefaultUI.createFolder("Cannon", [771, 772, 773, 774, 775]),
-  DefaultUI.createFolder("Small Hydraulic Drill", [770]),
-  DefaultUI.createFolder(791, [789, 791]),
-  DefaultUI.createFolder("Separator", [790, 792, 795]),
-  DefaultUI.createFolder(804, [802, 803, 804, 805, 804, 807, 808]),
-  DefaultUI.createFolder(804, [809, 810, 811, 812, 828, 813, 814]),
-  DefaultUI.createFolder(804, [815, 816, 817, null, 818, 819, 820]),
-  DefaultUI.createFolder(804, [821, 822, 823, 824, 825, 826, 827])
-];
-DefaultUI.selectedFolder = 0;
-/** value & 3: 0 = selected in toolBar, 1 = selected in BlockBar,
- * 2 = selected inventoryTile, 3 = reserved for selected in inventory
- * value >> 2: index of selected tile
- * value === -1: no tile selected */
-DefaultUI.selectedTile = -1;
-DefaultUI.inventoryTile = false;
-/** @type {TileType[]} */
-DefaultUI.toolBar = [null, null, DefaultUI.createTile("Rotate")];
-/** used at @typedef {"@see"} SeeRenderingFolders */
-DefaultUI.offsetsFolders = 0;
-DefaultUI.previousFolders = false;
-DefaultUI.nextFolders = true;
-/** DefaultUI.press, .move, .contextmenu, .over are memory for
- * 'default' action bind 'callback' for current Ship.Mode,
- * for example used in Command.stop() */
-DefaultUI.press = press;
-DefaultUI.move = move;
-DefaultUI.contextmenu = contextmenu;
-DefaultUI.over = over;
-/** @see {DefaultUI.createTile} @see {DefaultUI.createFolder} */
-/** @TODO @SOCKS */
-/** selctively finds which UI area was interacted with
- * @param {number} x @param {number} y @returns {boolean} over GUI area */
-DefaultUI.actionArea = function (x, y) {
-  if (x < 277) {
-    // toolBar side of canvas: static tile slots
-    var row = (canvas.height - y - 13) / 87 | 0,
-      column = (x - 10) / 87 | 0;
-    if (y > canvas.height - 277)
-      DefaultUI.selectedTile = (row > 2 ? 2 : row) * 3 +
-        (column > 2 ? 2 : column) << 2;
-    else
-      return false;
-  } else if (y > canvas.height - 103) {
-    // items for blockBar rect part of canvas: dynamic resizing to canvas
-    if (DefaultUI.inventoryTile && x > canvas.width - 103)
-      DefaultUI.selectedTile = 2;
-    else if (x - 277 < (DefaultUI.blockBars[DefaultUI.selectedFolder] ||
-      []).length * 87)
-      DefaultUI.selectedTile = (x - 283) / 87 << 2 | 1;
-  } else if (x - 277 + DefaultUI.offsetsFolders <
-    DefaultUI.blockBars.length * 57 && y > canvas.height - 170) {
-    // folders for blockBar rect part of canvas:
-    // resizes with folders amount changed
-    var selected = (x - 277 + DefaultUI.offsetsFolders) / 57 | 0;
-    if (DefaultUI.previousFolders && x < 333)
-      DefaultUI.offsetsFolders -= 57;
-    else if (DefaultUI.nextFolders && x > canvas.width - 61)
-      DefaultUI.offsetsFolders += 57;
-    else if ((DefaultUI.selectedTile & 3) === 1 && selected !==
-      DefaultUI.selectedFolder) {
-      DefaultUI.selectedFolder = selected;
-      DefaultUI.selectedTile = -1;
+  static TILE = {};
+  static rend = F;
+  static blockBars: (TileType[] & {type: TileType})[] = [
+    DefaultUI.createFolder("Core", [739, 746, 757]),
+    DefaultUI.createFolder(739, [738, 739, 740, 741, 742, 743]),
+    DefaultUI.createFolder("Small Hydrogen Thruster", [744, 745, 746]),
+    DefaultUI.createFolder("Small Hydrogen Tank", [757, 758, 759]),
+    DefaultUI.createFolder("Cannon", [771, 772, 773, 774, 775]),
+    DefaultUI.createFolder("Small Hydraulic Drill", [770]),
+    DefaultUI.createFolder(791, [789, 791]),
+    DefaultUI.createFolder("Separator", [790, 792, 795]),
+    DefaultUI.createFolder(804, [802, 803, 804, 805, 804, 807, 808]),
+    DefaultUI.createFolder(804, [809, 810, 811, 812, 828, 813, 814]),
+    DefaultUI.createFolder(804, [815, 816, 817, null, 818, 819, 820]),
+    DefaultUI.createFolder(804, [821, 822, 823, 824, 825, 826, 827])
+  ];
+  static selectedFolder = 0;
+  /** value & 3: 0 = selected in toolBar, 1 = selected in BlockBar,
+   * 2 = selected inventoryTile, 3 = reserved for selected in inventory
+   * value >> 2: index of selected tile
+   * value === -1: no tile selected */
+  static selectedTile = -1;
+  static inventoryTile = false;
+  static toolBar: TileType[] = [
+    null,
+    null,
+    DefaultUI.createTile("Rotate")
+  ];
+  /** used at @see {Ctrl+D_to:RenderOffset} */
+  static offsetsFolders = 0;
+  static previousFolders = false;
+  static nextFolders = true;
+  /** DefaultUI.press, .move, .contextmenu, .over are memory for
+   * 'default' action bind 'callback' for current Ship.Mode,
+   * for example used in Command.stop() */
+  static press = press;
+  static move = move;
+  static contextmenu = contextmenu;
+  static over = over;
+
+  /** @see {DefaultUI.createTile} @see {DefaultUI.createFolder} */
+  /**
+   * selctively finds which UI area was interacted with
+   * @returns {boolean} selected area is GUI
+   */
+  static actionArea(x: number, y: number): boolean {
+    if (x < 277) {
+      // toolBar side of canvas: static tile slots
+      var row = (canvas.height - y - 13) / 87 | 0,
+        column = (x - 10) / 87 | 0;
+      if (y > canvas.height - 277)
+        DefaultUI.selectedTile = (row > 2 ? 2 : row) * 3 +
+          (column > 2 ? 2 : column) << 2;
+      else
+        return false;
+    } else if (y > canvas.height - 103) {
+      // items for blockBar rect part of canvas: dynamic resizing to canvas
+      if (DefaultUI.inventoryTile && x > canvas.width - 103)
+        DefaultUI.selectedTile = 2;
+      else if (x - 277 < (DefaultUI.blockBars[DefaultUI.selectedFolder] ||
+        []).length * 87)
+        DefaultUI.selectedTile = (x - 283) / 87 << 2 | 1;
+    } else if (x - 277 + DefaultUI.offsetsFolders <
+      DefaultUI.blockBars.length * 57 && y > canvas.height - 170) {
+      // folders for blockBar rect part of canvas:
+      // resizes with folders amount changed
+      var selected = (x - 277 + DefaultUI.offsetsFolders) / 57 | 0;
+      if (DefaultUI.previousFolders && x < 333)
+        DefaultUI.offsetsFolders -= 57;
+      else if (DefaultUI.nextFolders && x > canvas.width - 61)
+        DefaultUI.offsetsFolders += 57;
+      else if ((DefaultUI.selectedTile & 3) === 1 && selected !==
+        DefaultUI.selectedFolder) {
+        DefaultUI.selectedFolder = selected;
+        DefaultUI.selectedTile = -1;
+      } else
+        DefaultUI.selectedFolder = selected;
     } else
-      DefaultUI.selectedFolder = selected;
-  } else
-    // the rest of canvas area is handled for building area
-    return false;
-  render();
-  return true;
-}
-/** @param {TileType} tile */
-DefaultUI.getCode = function tileCode(tile) {
-  return tile instanceof Tool ?
-    tile.name :
-    tile instanceof Block ?
-      tile.internalName :
-      NaN;
-};
-/** @param {number} w */
-DefaultUI.reflowBlockBars = function (w) {
-  function pushToSame() {
-    sameTypes = sameTypes.concat(bars[i] || []);
+      // the rest of canvas area is handled for building area
+      return false;
+    render();
+    return true;
   }
-  /** plus = also adds bars[i] to sameTypes afterwards */
-  var checkAndPush = (DefaultUI.selectedTile & 3) === 1 ? function () {
-    if (i === DefaultUI.selectedFolder)
-      selectCode = sameTypes.length + (DefaultUI.selectedTile >> 2);
-    pushToSame();
-  } : pushToSame;
-  /** 380 = distance to the end of first tile + distance */
-  var i = 0,
-    maxItems = ((w - 380) / 87 | 0) - +DefaultUI.inventoryTile + 1,
-    selectCode = -1,
-    bars = DefaultUI.blockBars,
-    prevType = (bars[0] || {}).type || null,
-    /** @type {TileType[]} */
-    sameTypes = [],
-    /** @type {(TileType[]&{type:TileType})[]} */
-    updated = DefaultUI.blockBars = [];
-  checkAndPush();
-  maxItems < 1 && (maxItems = 1);
-  for (i++; i <= bars.length; i++) {
-    var tiles = bars[i] || {}, nowCode = DefaultUI.getCode(tiles.type);
-    if (nowCode === DefaultUI.getCode(prevType) && i < bars.length)
-      checkAndPush();
-    else {
-      for (var j = 0; j < sameTypes.length; j += maxItems) {
-        if (selectCode !== -1 && j + maxItems > selectCode) {
-          DefaultUI.selectedTile = selectCode % maxItems << 2 | 1;
-          DefaultUI.selectedFolder = updated.length;
-          if (devt_debugger)
-            debugger;
-          checkAndPush = pushToSame;
-          selectCode = -1;
-        }
-        var folder =
-          /** @type {TileType[]&{type:TileType}} */ 
-          (sameTypes.slice(j, j + maxItems));
-        folder.type = prevType;
-        updated.push(folder);
-      }
-      sameTypes = [];
-      checkAndPush();
+  static getCode = function tileCode(tile: TileType) {
+    return tile instanceof Tool ?
+      tile.name :
+      tile instanceof Block ?
+        tile.internalName :
+        NaN;
+  };
+  static reflowBlockBars(w: number) {
+    function pushToSame() {
+      sameTypes = sameTypes.concat(bars[i] || []);
     }
-    prevType = tiles.type;
-  }
-  if (DefaultUI.offsetsFolders > (i = updated.length * 57))
-    DefaultUI.offsetsFolders = 0;
-  DefaultUI.previousFolders = DefaultUI.offsetsFolders > 0;
-  DefaultUI.nextFolders = 277 + i - DefaultUI.offsetsFolders > w - 8;
-};
-// live expression used for debugging:
-// https://github.com/KaaBEL/.d1r.dbv/blob/fb90bf5/code/editor.js#L2706-L2726
-// (fb90bf5e0ce42dd2bcbcb00f8a6e64b4a2242da7)
-DefaultUI.getSelectedTile = function () {
-  var select = DefaultUI.selectedTile;
-  return (select & 3) === 1 ?
-    (DefaultUI.blockBars[DefaultUI.selectedFolder] || [])[select >> 2] :
-    (select & 3) === 0 ? DefaultUI.toolBar[select >> 2] : null;
-};
-DefaultUI.setPixelRatio = function () {
-  var n = window.devicePixelRatio;
-  if (defaults.fullscreenInitialized && n > 1) {
-    pR = n;
-    /** @type {()=>void} */
-    (onresize || F)();
-  }
-};
+    /** plus = also adds bars[i] to sameTypes afterwards */
+    var checkAndPush = (DefaultUI.selectedTile & 3) === 1 ? function () {
+      if (i === DefaultUI.selectedFolder)
+        selectCode = sameTypes.length + (DefaultUI.selectedTile >> 2);
+      pushToSame();
+    } : pushToSame;
+    /** 380 = distance to the end of first tile + distance */
+    var i = 0,
+      maxItems = ((w - 380) / 87 | 0) - +DefaultUI.inventoryTile + 1,
+      selectCode = -1,
+      bars = DefaultUI.blockBars,
+      prevType = (bars[0] || {}).type || null,
+      sameTypes: TileType[] = [],
+      updated: (TileType[] & {
+        type: TileType;
+      })[] = DefaultUI.blockBars = [];
+    checkAndPush();
+    maxItems < 1 && (maxItems = 1);
+    for (i++; i <= bars.length; i++) {
+      var tiles = bars[i] || {}, nowCode = DefaultUI.getCode(tiles.type);
+      if (nowCode === DefaultUI.getCode(prevType) && i < bars.length)
+        checkAndPush();
+      else {
+        for (var j = 0; j < sameTypes.length; j += maxItems) {
+          if (selectCode !== -1 && j + maxItems > selectCode) {
+            DefaultUI.selectedTile = selectCode % maxItems << 2 | 1;
+            DefaultUI.selectedFolder = updated.length;
+            if (devt_debugger)
+              debugger;
+            checkAndPush = pushToSame;
+            selectCode = -1;
+          }
+          var folder = sameTypes.slice(j, j + maxItems) as TileType[] & {
+            type:TileType
+          };
+          folder.type = prevType;
+          updated.push(folder);
+        }
+        sameTypes = [];
+        checkAndPush();
+      }
+      prevType = tiles.type;
+    }
+    if (DefaultUI.offsetsFolders > (i = updated.length * 57))
+      DefaultUI.offsetsFolders = 0;
+    DefaultUI.previousFolders = DefaultUI.offsetsFolders > 0;
+    DefaultUI.nextFolders = 277 + i - DefaultUI.offsetsFolders > w - 8;
+  };
+  // live expression used for debugging:
+  // https://github.com/KaaBEL/.d1r.dbv/blob/fb90bf5/code/editor.js#L2706-L2726
+  // (fb90bf5e0ce42dd2bcbcb00f8a6e64b4a2242da7)
+  static getSelectedTile = function () {
+    var select = DefaultUI.selectedTile;
+    return (select & 3) === 1 ?
+      (DefaultUI.blockBars[DefaultUI.selectedFolder] || [])[select >> 2] :
+      (select & 3) === 0 ? DefaultUI.toolBar[select >> 2] : null;
+  };
+  static setPixelRatio = function () {
+    var n = window.devicePixelRatio;
+    if (defaults.fullscreenInitialized && n > 1) {
+      pR = n;
+      ((onresize || F) as () => void)();
+    }
+  };
+}
 
 function enableShipEditing() {
   var mode = ship.getMode();
@@ -2808,10 +2892,8 @@ function enableShipEditing() {
   render();
 };
 
-/** @param {number} w @param {number} h */
-function test_juhus(w, h) {
-  /** @param {Block|LogicBlock} block */
-  function drawBlockRc(block) {
+function test_juhus(w: number, h: number) {
+  function drawBlockRc(block: ShipBlock) {
     var size = Block.Size.VALUE[Block.ID[block.internalName]];
     if (!size)
       console.warn("No Block.Size definition for: " +
@@ -2826,22 +2908,21 @@ function test_juhus(w, h) {
       x = (a - w) / 2,
       y = (a - h) / 2;
     helpCanvas.width = helpCanvas.height = a;
-    var rot = 10 - block.rotation[2] & 3;
+    var rot = 10 - block.rotation[2] & 3, prop = block.properties;
     rc.rotate(rot * Math.PI / 2);
     rc.translate(rot > 1 ? -a : 0, rot && rot < 3 ? -a : 0);
-    rc.fillStyle = rend_colors[Color.ID[block.properties.color]];
+    rc.fillStyle = rend_colors[Color.ID[prop.color || "null"]];
     block.internalName !== "Ghost Block" && rc.fillRect(x, y, w, h);
     rc.globalCompositeOperation = "destination-in";
     rc.drawImage(imgMask, x - size.x, y - size.y);
     rc.globalCompositeOperation = "source-over";
     rc.drawImage(imgOverlay, size.x, size.y, w, h, x, y, w, h);
   }
-  /** used by @see {drawPathRc} @param {string} s */
-  function parseParam(s) {
+  /** used by @see {drawPathRc} */
+  function parseParam(s: string) {
     return (s[0] === "-" ? -("0x" + s.slice(1)) : +("0x" + s)) / 1024;
   }
-  /** @param {Tool} tool @param {number} size */
-  function drawPathRc(tool, size) {
+  function drawPathRc(tool: Tool, size: number) {
     rc.canvas.width = rc.canvas.height = size;
     rc.scale(size / 256, size / 256);
     rc.beginPath();
@@ -2850,10 +2931,10 @@ function test_juhus(w, h) {
       L: rc.lineTo,
       C: rc.bezierCurveTo,
       Z: rc.closePath,
-      H: function (n) {
+      H: function (this: CanvasRenderingContext2D, n: number) {
         this.lineTo(n, rY);
       },
-      V: function (n) {
+      V: function (this: CanvasRenderingContext2D, n: number) {
         this.lineTo(x = rX, rY = n);
       }
     };
@@ -2872,8 +2953,9 @@ function test_juhus(w, h) {
       if (!e.length)
         return console.error("No command at: " + i + "th \" \"");
       var c = e[0].toUpperCase();
-      if (!ctxCommands[c])
+      if (!(c in ctxCommands))
         return console.error("Missing command " + c);
+      //@ts-ignore
       ctxCommands[c].apply(rc, params);
       rX = x;
       rY = y;
@@ -2881,15 +2963,13 @@ function test_juhus(w, h) {
     rc.fillStyle = "#dbecfe";
     rc.fill();
   }
-  /** @param {TileType} type @param {number} size */
-  function drawIconFn(type, size) {
+  function drawIconFn(type: TileType, size: number) {
     if (type instanceof Tool)
       drawPathRc(type, size);
     if (type instanceof Block)
       drawBlockRc(type);
   }
-  /** @param {TileType} tile @param {unknown} selected boolean */
-  function drawItemCtx(tile, selected) {
+  function drawItemCtx(tile: TileType, selected: boolean | unknown) {
     tx += 87;
     if (!tile)
       return;
@@ -2908,8 +2988,8 @@ function test_juhus(w, h) {
     drawIconFn(tile, 60);
     ctx.drawImage(helpCanvas, tx + 9, ty - 84, 60, 60);
   }
-  /** is drawn relatively to local var tfx and tfy @param {TileType} type */
-  function drawFolderCtx(type) {
+  /** is drawn relatively to local var tfx and tfy */
+  function drawFolderCtx(type: TileType) {
     ctx.globalAlpha = b ? .9 : .8;
     ctx.beginPath();
     ctx.moveTo(tfx, h - 101);
@@ -2942,15 +3022,14 @@ function test_juhus(w, h) {
   ctx.closePath();
   ctx.fillStyle = "#0c243c";
   ctx.fill();
-  /** @type {(TileType[]&{type:TileType})[]} */
-  var bars = DefaultUI.blockBars;
+  var bars: (TileType[] & {type: TileType;})[] = DefaultUI.blockBars;
   ctx.lineWidth = 2;
   ctx.strokeStyle = "#5577aa";
   // boolean: b contains fix for reselected item after reflow
   var i = DefaultUI.selectedFolder, b = i !== -1 && i < bars.length;
   for (var j = 0, tx = 200, ty = h; b && j < bars[i].length; j++)
     drawItemCtx(bars[i][j], DefaultUI.selectedTile === (j << 2) + 1);
-  /** here @see {SeeRenderingFolders} */
+  /** : here @see {DefaultUI.offsetsFolders} */
   // tfx + tfy = position reference for folders, tx + ty = ... for items
   var n = DefaultUI.offsetsFolders, tfx = 279 + 56 - (n + 56) % 57;
   for (var i = Math.ceil(n / 57), tfy = 0; i <= bars.length; i++) {
@@ -2996,7 +3075,7 @@ function enableLogicEditing() {
   if (mode.mode === "Logic")
     return;
   /** @type {Block[]} */
-  var blocks = [], last = blocks[0];
+  var blocks: Block[] = [], last = blocks[0];
   for (var i = 0, old = mode.getShip().blocks; i < old.length; i++) {
     if (!Logic.VALUE[Block.ID[old[i].internalName]])
       continue;
@@ -3047,8 +3126,7 @@ function enableLogicEditing() {
       return global;
     }
   ));
-  /** @type {Block.Selected|null} */
-  var found = null, movingId = -1;
+  var found: Block.Selected | null = null, movingId = -1;
   DefaultUI.press = press = edit_logic;
   DefaultUI.move = move = edit_logicmove = function (x, y, e) {
     if (e.type === "mousedown" || e.type === "touchstart") {
@@ -3086,9 +3164,11 @@ function enableLogicEditing() {
         del.call(blocks, movingId);
       } else
         throw new Error("Block __NULL__ not found, at edit_logicmove.");
-      /** unsuccessful attempt for block insert without sorting all at once
+      /**
+       * unsuccessful attempt for block insert without sorting all at once
     @see https://github.com/KaaBEL/.d1r.dbv/blob/61fec271ff39/editor.js#L2631
-       * v.0.1.49, might get usefull once... maybe */
+       * v.0.1.49, might get usefull once... maybe
+       */
       blocks.sort(function (a, b) {
         return b.position[1] - a.position[1];
       });
@@ -3112,8 +3192,7 @@ function enableLogicEditing() {
   render();
 };
 
-/** @param {number} x @param {number} y */
-function edit_logic(x, y) {
+function edit_logic(x: number, y: number) {
   if (DefaultUI.actionArea(x, y)) {
     var tile = DefaultUI.getSelectedTile();
     if (tile instanceof Tool)
@@ -3127,10 +3206,10 @@ function edit_logic(x, y) {
   }
   return false;
 }
-/** @param {number} x @param {number} y @param {TemporaryEventParam} e */
-var edit_logicmove = function (x, y, e) {
-  return e.type === "mousedown" ? DefaultUI.actionArea(x, y) : false;
-};
+var edit_logicmove =
+  function (x: number, y: number, e: TemporaryEventParam) {
+    return e.type === "mousedown" ? DefaultUI.actionArea(x, y) : false;
+  };
 
 function rend_backgPattern() {
   try {
@@ -3176,8 +3255,8 @@ function backgHangarInit() {
   var defRend = DefaultUI.rend, hgw = 544, hgh = 654;
   DefaultUI.rend = rend_background = F;
   var octx = ctx, osc = sc, oxV = vX, oyV = vY, oship = ship;
-  /** @type {HTMLImageElement|null} */
-  var hangarImg = EL("img"), hangarCanv = canvas = EL("canvas");
+  var hangarImg: HTMLImageElement | null = EL("img"),
+    hangarCanv = canvas = EL("canvas");
   canvas.width = hgw;
   canvas.height = hgh;
   ctx = hangarCanv.getContext("2d") || ctx;
@@ -3214,8 +3293,9 @@ function backgHangarInit() {
 };
 backgHangarInit.ship = Ship.fromObject({b:[]});
 backgHangarInit.ready = 0;
-/** @type {(()=>void)&{primary?:()=>void}} */
-var rend_background = defaults.editorBackground ?
+var rend_background: (() => void) & {
+  primary?: () => void;
+} = defaults.editorBackground ?
   rend_backgPattern :
   rend_backgColor;
 var rend_initialized = [F], rend_180 = !1;
@@ -3268,15 +3348,10 @@ function rend_checkColors() {
 var rend_colors = rend_initColors();
 
 /** @type {Block[]} */
-var foundBlocks = [];
+var foundBlocks: Block[] = [];
 
 DefaultUI.setPixelRatio();
 function init_touchScreen() {
-  //-I'll keep it without confirm message
-  //-if (!bd)
-  //-  return console.error("No bd to show confirm message.");
-  //-var background = EL(),
-  //-bd.appendChild()
   if (typeof document.body.requestFullscreen == "function" &&
     !defaults.fullscreenDisabled)
     document.body.requestFullscreen().then(render).catch(function () {
@@ -3350,9 +3425,11 @@ var old_UI = DefaultUI.press = press = function (x, y) {
       )));
     if (logics.length)
       (Logic.nodes =
-        /** @type {(Logic<any>|undefined)[]&{ownerShip:Ship;}} */
-        (((ship.prop || (ship.prop = OC())).nodeList = logics)
-        .concat([]))).ownerShip = ship;
+        ((ship.prop || (ship.prop = OC())).nodeList =
+          logics).concat([]) as (Logic<any> | undefined)[] & {
+            ownerShip: Ship
+          }
+      ).ownerShip = ship;
     (blok.properties.nodeIndex || []).forEach(function (e) {
       var node = logics[e];
       node ? node.owner = blok : console.error("no node in temp code");
@@ -3363,11 +3440,12 @@ var old_UI = DefaultUI.press = press = function (x, y) {
   render();
 };
 
-/** @type {(x:number,y:number,e:TemporaryEventParam)=>void} */
-function commands(x, y, e) {
-  /** also problem initial low resolution on touchscreen devices...
+function commands(x: number, y: number, e: TemporaryEventParam): void {
+  /** 
+   * also problem initial low resolution on touchscreen devices...
    * @TODO since I've just found out it's not a bug, but a matter
-   * of different devicePixelRatio update for this is coming */
+   * of different devicePixelRatio update for this is coming
+   */
   if (e.target instanceof HTMLInputElement ||
     e.target instanceof HTMLTextAreaElement)
     return;
@@ -3386,7 +3464,7 @@ function commands(x, y, e) {
     }
   st.display = "none";
 }
-function devt__share(inp) {
+function devt__share(inp: string) {
   var el = GE("commandsTab");
   if (el)
     (el.lastChild instanceof HTMLTextAreaElement ?
@@ -3449,7 +3527,7 @@ render = function () {
     });
   };
 }();
-var rend_speeeeed = {}, rend_logs = 69;
+var rend_speeeeed: {[key: number]: number} = {}, rend_logs = 69;
 /*async*/ function expensiveRenderer() {
   var t = Date.now(), AT = ", at expensiveRenderer();";
   canvas.width = canvas.width;
@@ -3459,9 +3537,9 @@ var rend_speeeeed = {}, rend_logs = 69;
   if (
     Logic.rend &&
       (Logic.nodes = function (current) {
-        var logics = 
-          /** @type {(Logic|undefined)[]&{ownerShip:Ship}} */
-          (current || [UDF]);
+        var logics = (current || [UDF]) as LogicNodeList & {
+          ownerShip: Ship
+        };
         logics.ownerShip = ship;
         return logics;
       }(ship.prop && ship.prop.nodeList))
@@ -3497,8 +3575,8 @@ var rend_speeeeed = {}, rend_logs = 69;
       (w - 32) * sc / 16 :
       rot === 3 ? (h - 32) * sc / 16 : 0;
     // update logic nodes render posiotions
-    /** @type {typeof Logic.nodes[number]} */
-    var node, indexes = objs[i].properties.nodeIndex;
+    var node: typeof Logic.nodes[number],
+      indexes = objs[i].properties.nodeIndex;
     if (Logic.rend && indexes instanceof Array)
       for (var j = indexes.length; j-- > 0;) {
         // I don't like these logic nodes checks
@@ -3518,8 +3596,7 @@ var rend_speeeeed = {}, rend_logs = 69;
         // facepalm No.1: works now actually
         var x = logic[j].x - (ow & 16) / 32,
           y = logic[j].y - (oh & 16) / 32,
-          /** @type {number[]} */
-          xys = [x, y, -x, -y];
+          xys: number[] = [x, y, -x, -y];
         x = (rot & 1 ? h / 32 : w / 32) + xys[rot];
         y = (rot & 1 ? w / 32 : h / 32) + xys[rot + 3 & 3];
         node.x = dx + x * sc;
@@ -3537,7 +3614,8 @@ var rend_speeeeed = {}, rend_logs = 69;
     rc.rotate(rot * Math.PI / 2);
     rc.translate(rot > 1 ? -w : 0, rot && rot < 3 ? -h : 0);
     // apply textures
-    rc.fillStyle = rend_colors[Color.ID[objs[i].properties.color]];
+    rc.fillStyle = rend_colors[Color.ID[
+      objs[i].properties.color || "null"]];
     id !== 794 && rc.fillRect(0, 0, w, h);
     rc.globalCompositeOperation = "destination-in";
     rc.drawImage(imgMask, size.x, size.y, w, h, 0, 0, w, h);
@@ -3623,7 +3701,7 @@ init = function () {
   check_contentScript();
 };
 
-function onlyConsole(m,s,l,c,e) {
+function onlyConsole(m: any, s: any, l: any, c: any, e: any) {
   if (e && e.stack)
     return "" + m + "\n" + e.stack;
   return "" + m + "\n\t" + s + ":" + l + ":" + c;

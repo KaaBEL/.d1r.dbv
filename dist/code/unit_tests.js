@@ -1,5 +1,5 @@
 "use strict";
-// v.0.1.61 (global version of project when last changes were done)
+// v.0.1.64T13 (global version of project when last changes were done)
 var error = Error;
 Error = function (message) {
   console.error(this.message = message);
@@ -8,16 +8,10 @@ Error = function (message) {
 console.log("Unit tests start:");
 console.time("Timestamp");
 console.time("Succesful unit tests, took");
-// TEST: enableShipEditing //
-press = F;
-try {
-  enableShipEditing();
-  if (press !== old_UI || ship.getMode().mode !== "Ship")
-    throw new Error("did not pass the test");
-} catch (e) {console.error("enableShipEditing:");console.error(e);}
 // TEST: enableLogicEditing //
 press = F;
 try {
+  ship = Ship.fromObject({});
   enableLogicEditing();
   if (press !== edit_logic)
     throw new Error("press not set to edit_logic");
@@ -28,6 +22,13 @@ try {
       throw new Error("contains other than logic blocks");
   });
 } catch (e) {console.error("enableLogicEditing:");console.error(e);}
+// TEST: enableShipEditing //
+press = F;
+try {
+  enableShipEditing();
+  if (press !== old_UI || ship.getMode().mode !== "Ship")
+    throw new Error("did not pass the test");
+} catch (e) {console.error("enableShipEditing:");console.error(e);}
 // add testing positions swap and correct ship after moving logic blocks
 
 // TEST: Block.arrayFromObjects //
@@ -54,13 +55,29 @@ try {
 } catch (e) {console.error("Block.arrayFromObjects:");console.error(e);}
 console.warn = utst_consoleWarn;
 // TEST: Command.list[].items() //
+var utst_i = Command.list.length;
 try {
-  for (var utst_i = Command.list.length; utst_i-- > 0;) {
+  while (utst_i-- > 0) {
+    var utst_fn = Command.list[utst_i].items;
+    typeof utst_fn == "function" && utst_fn(EL());
+  }
+  ship = Ship.fromObject(B64Key.decode(
+    B64Key.b64ToU8arr("gAALU3RhcnRlclNoaXCAAQBnyR+wATjRE/MIg+/jGIhC4AC4AAgsI\
+pEBBBAEDoFSLDKADKAEIFCSGTKAEQAAABClwmuwSAQAIUQIkAEAGAEAACghWoXSoJToICaAFiADA\
+HBCYCgRSlIIIQC0ABkAgBMCWIQEEZlkABkAAAAnAAAAEQAACi9AC5ABAAAA4AQAQBVKgBYAQAYAA\
+MAJAIA4VBApQAqQAQA4AQAgKwDIAACcAAAARAAAABBoATIAAAAAnAAA2AAQKAFaAAAZAAAAJwAA4\
+lABtAAZAAAAJwAAJAUAGQAAACcAAAARAAAKDUALkAEAAADgBABAFU6AFgBABgAAwAkAgDiAAJACZ\
+AAATgAAyAsARgAAAECMCo1BIxEAhBAhQAYAYAQAAGCFWBVOg1Oig7gALoAMAMAJsTCcCCcphBAXw\
+AWQAQA4IRawCAkiYWQQhUABUAAQaEQiAwBBoBAoxSIDyABKAAIlTviFogQ=")));
+  for (utst_i = Command.list.length; utst_i-- > 0;) {
     var utst_fn = Command.list[utst_i].items;
     typeof utst_fn == "function" && utst_fn(EL());
   }
   Logic.rend = !1;
-} catch (e) {console.error("itemsInit<\"Select Block\">:");console.error(e);}
+} catch (e) {
+  console.error("itemsInit<\"" + Command.list[utst_i].name + "\">:");
+  console.error(e);
+}
 // TEST: Ship.toDBV //
 /** @TODO the test for ^ */
 // TEST: Ship.fromObject //
@@ -72,7 +89,7 @@ try {
     new RegExp(utst_arr1.pop() || "^Unexpected warning!$").test(str) ||
       utst_consoleWarn("Unexpected warning(s)!? : " + str);
   };
-  ship = Ship.fromObject(decodeCmprsShip(base64ToUint8array("gIAEDEFOT\
+  ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr("gIAEDEFOT\
 05fU2h1dHRsZQAEXVy0aoC/TzvnFnWt0z4R4pYUZx2CorwBRXLToKjrQJPehCK9CdKboLhB4MUPQ\
 VwDhrgGiGuAuAaIa4C1XkER14AjrgFBjHHEFUWbA4oxBxTVDSjWu1FsOeBYccQw3YRiywPBlnFsG\
 cGWcTR3YGgxji0HODKK5gYEzYXmQnOhrhXKGhDENSCIa0DR5oKjywFFigOOFQcczw0obnxxxDXgq\

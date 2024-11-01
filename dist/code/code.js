@@ -4,7 +4,7 @@
 /**
  * @TODO setup webapp manifest.json @TODO discord server link
  * @TODO Finish block collisions detection @TODO unit_test for Ship */
-var version_code_js = "v.0.1.64T11";
+var version_code_js = "v.0.1.64T13";
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -48,18 +48,191 @@ Data.colors = {"White": 0, "Light Gray": 1, "Dark Gray": 2, "Black": 3,
   "Festive Red": 19, "Festive Green": 20, "BREAD": 21,
   "[custom color]": 22, "Station Floor 0": 23, "Station Floor 1": 24,
   "Station Floor 2": 25, "Wood": 26, "Festive Duck": 27, "Gonb": 28};
+Data.paths = [
+  // graphics path data
+  ["m,hv", 8, -8, -16, 32], // 0 triangle 1x2 L-T
+  ["m,hv", -8, -8, 16, 32], // 1 triangle 1x2 R-T
+  ["m,hv", -8, 8, 16, -16], // 2 triangle 1x1 R-B
+  ["m,hvh", -8, -8, 16, 16, -16], // 3 square 1x1
+  ["m,hvh", -8, -8, 16, 32, -16], // 4 rectangle 1x2
+  ["m,hv", 8, -8, -16, 16], // 5 triangle 1x1 L-T
+  ["m,hv", -8, -8, 16, 16], // 6 triangle 1x1 R-T
+  ["m,vhvh", 8, 0, -8, -16, 16, 8], // 7 inversed_triangle 1x1 L-T
+  ["m,vhvh", -8, 0, -8, 16, 16, -8], // 8 inversed_triangle 1x1 R-T
+  ["m,vhvh", -8, 0, 8, 16, -16, -8], // 9 inversed_triangle 1x1 R-B
+  ["m,vhvh", 8, 8, -16, -16, 32, 8], // 10 inversed_triangle 1x2 L-T
+  ["m,vhvh", -8, 8, -16, 16, 32, -8], // 11 inversed_triangle 1x2 R-T
+  // 12 H2_container frame front
+  ["m,hvhm,hvh", -8, -8, 16, 3, -16, 0, 10, 16, 3, -16],
+  // 13 H2_container (glass)+path_to_text front
+  ["m,hvhm,", -8, -5, 16, 10, -16, 4, -8],
+  // 14 H2_container text front
+  ["vhvhvhvhvhvm,vhvhvhvhvhvh", 5, 1, -2, 1, 2, 1, -5, -1, 2, -1, -2, 3,
+    1, 1, 2, 1, -2, 3, 3, -1, -2, -1, 2, -3, -3],
+  // 15 H2_container path_to_text front
+  ["m,", -4, -3],
+  // 16 H2_container text mirrored front
+  ["vhvhvhvhvhvhm,hvhvhvhvhvh", 4, 2, 1, -2, 1, 3, -3, -2, -1, 2, -1, -3,
+    4, 4, 1, -2, 1, 2, 1, -5, -1, 2, -1, -2, -1],
+  // 17 H2_container outline+path_to_ventil top
+  ["m,vl,hl,vl,hm,", -8, 6, -12, 2, -2, 12, 2, 2, 12, -2, 2, -12, 1, -5],
+  // 18 H2_container ventil top
+  ["vhvm,vhvm,vhvm,vhv", 2, 10, -2, 0, -1, -2, -10, 2, 0, -5,
+    2, 10, -2, 0, -1, -1, -10, 1],
+  // 19 H2_container path_to_ventil top
+  ["m,", -5, 3],
+  // 20 small_thruster base+path_to_thruster back
+  ["m,hvhm,", -8, -8, 16, 16, -16, 0, -8],
+  // 21 thrusters thruster back
+  ["c, , ,c, , ,c, , ,c, , ,", 0, -4.18, 3.81, -8, 8, -8, 4.18, 0, 8,
+    3.81, 8, 8, 0, 4.18, -3.81, 8, -8, 8, -4.18, 0, -8, -3.81, -8, -8],
+  // 22 path_to_thruster back
+  ["m,", -8, 0],
+  // 23 small_thruster base top
+  ["hvhv", 8, 8, -16, -8],
+  // 24 small_thruster thruster top
+  ["hl,hl,", -6, -2, -8, 16, -2, 8],
+  // 25 long_thruster thruster top
+  ["m,hl,h", 6, -8, -12, -2, -16, 16],
+  // 26 cockpit_3x4 frame side
+  ["m,hvhl,", -24, -24, 32, 64, -16, 16, -32, 0],
+  // 27 cockpit_3x4 window1 side
+  ["m,hl,z", -40, -24, 16, -8, 24, 0],
+  // 28 cockpit_3x4 window2 side
+  ["m,l,l,l,", -24, -24, 32, 32, -16, 32, -24, -40, 0],
+  // 29 cockpit_3x4 frame top
+  ["m,vhm,vh", -24, 8, 32, 16, 32, -32, 32, -16, 0],
+  // 30 cockpit_3x4 window1 top
+  ["m,vl,vm,vl,v", -24, 8, -32, 16, 24, 40, 16, 0, -40, 16, -24, 32, 0],
+  // 31 cockpit_3x4 window2 top
+  ["m,hl,vhv", -24, -24, 48, -16, 24, 40, -16, -40, 0],
+  // 32 cockpit_3x4 frame front
+  ["m,hl,h", -24, -8, 48, -16, 16, -16, 0],
+  // 33 cockpit_3x4 window2 front
+  ["m,vl,vm,vl,v", 8, 40, -32, 16, -16, 32, -48, 0, -32, 16, 16, 32],
+  // 34 cockpit_3x4 frame bottom
+  ["m,hvh", -24, -24, 48, 64, -48, 0],
+  // 35 cockpit_3x4 frame back
+  ["m,hl,vhv", -8, -40, 16, 16, 16, 32, -48, -32, 0],
+  // 36 cockpit_3x3 frame side
+  ["m,hvh", -8, -24, 16, 48, -16],
+  // 37 cockpit_3x3 window1 side
+  ["m,vl,", 8, 24, -16, 32, -16],
+  // 38 cockpit_3x3 window2 side
+  ["m,hvl,", 8, -24, 32, 16, -32, 16],
+  // 39 cockpit_3x3 frame top
+  ["m,vl,m,hv", -24, 24, -16, 16, 16, 16, 0, 16, -16],
+  // 40 cockpit_3x4_fix window1 front
+  ["m,", 0, 16],
+  // 41 cockpit_3x3 window1 top
+  ["m,vl,m,l,v", -24, -8, 16, 16, 16, 16, 0, 16, -16, -16],
+  // 42 cockpit_3x3 window2 top
+  ["m,vl,hl,v", -24, -24, 16, 16, 32, 16, 16, -32, -16],
+  // 43 cockpit_3x3 window1 front
+  ["m,hvm,vh", -40, 24, 32, -16, 0, -16, -16, -32],
+  // 44 cockpit_3x3 window2 front
+  ["m,l,vl,", -40, 24, 32, -16, -16, -32, -16],
+  // 45 cockpit_3x3 frame bottom
+  ["m,vhv", -24, -24, 48, 48, -48]
+];
+Data.groups = [
+  // multiple colored paths graphics data
+  
+  // 0 H2_container front
+  "[[14,15],255,187,132,[14,13],255,215,175,[12],128,128,128,1,0]",
+  // 1 H2_container back
+  "[[16,15],255,187,132,[16,13],255,215,175,[12],128,128,128,3,0]",
+  // 2 H2_container side
+  "[[16,15],255,187,132,[16,13],255,215,175,[12],128,128,128,0,0]",
+  // 3 H2_container top
+  "[[18,19],64,64,64,[18,17],128,128,128,0,0]",
+  // 4 H2_container second_side
+  "[[14,15],255,187,132,[14,13],255,215,175,[12],128,128,128,0,0]",
+  // 5 thrusters front
+  "[[3],96,96,96,0,0]",
+  // 6 thrusters back
+  "[[21,22],32,32,32,[21,20],96,96,96,0,0]",
+  // 7 small_thruster top
+  "[[24],32,32,32,[23],96,96,96,0,0]",
+  // 8 long_hturuster top
+  "[[25],32,32,32,[3],96,96,96,0,0]",
+  // 9 cockpit_3x4 side
+  "[[28],29,0,0,[27],18,0,0,[26],128,128,128,2,1]",
+  // 10 cockpit_3x4 top
+  "[[31],29,0,0,[30],21,0,0,[29],128,128,128,0,0]",
+  // 11 cockpit_3x4 front
+  "[[33],29,0,0,[4,40],21,0,0,[32],128,128,128,2,0]",
+  // 12 cockpit_3x4 bottom
+  "[[34],128,128,128,0,0]",
+  // 13 cockpit_3x4 back
+  "[[35],128,128,128,0,0]",
+  // 14 block
+  "[[3],128,128,128,0,0]",
+  // 15 wedge side
+  "[[5],128,128,128,0,0]",
+  // 16 pyramid top
+  "[[6],128,128,128,0,0]",
+  // 17 pyramid front
+  "[[2],128,128,128,0,0]",
+  // 18
+  "[[8],128,128,128,0,0]",
+  // 19
+  "[[9],128,128,128,0,0]",
+  // 20 pyramid_1x2 side
+  "[[0],128,128,128,0,0]",
+  // 21 pyramid_1x2 top
+  "[[1],128,128,128,0,0]",
+  // 22
+  "[[7],128,128,128,0,0]",
+  // 23
+  "[[10],128,128,128,0,0]",
+  // 24
+  "[[4],128,128,128,0,0]",
+  // 25
+  "[[11],128,128,128,0,0]",
+  // 26 cockpit_3x3 side
+  "[[38],29,0,0,[37],18,0,0,[36],128,128,128,0,0]",
+  // 27 cockpit_3x3 top
+  "[[42],29,0,0,[41],18,0,0,[39],128,128,128,0,0]",
+  // 28 cockpit_3x3 front
+  "[[44],29,0,0,[43],18,0,0,[36],128,128,128,1,0]",
+  // 29 cockpit_3x3 bottom
+  "[[45],128,128,128,0,0]",
+  // 30 cockpit_3x3 back
+  "[[45,40],128,128,128,2,0]",
+  // ? inv_tri 1x2 ... red
+  "[[10],0,0,128,0,0]",
+  // ? inv_tri 1x2 ... red
+  "[[11],0,0,128,0,0]",
+  // ? inv_tri 1x1 ... red
+  "[[9],0,0,128,0,0]",
+  // ? rect 1x2 blue
+  "[[4],128,0,0,0,0]",
+  // ? rect 1x1 blue
+  "[[3],128,0,0,0,0]",
+  // ? green fighter side
+  "[[28],0,29,0,[27],0,18,0,[26],96,164,96,2,1]"
+];
 /**
  * @typedef {number|[number,number]} UseData
  * @typedef {{id:number,weight?:number,strength?:number,cost?:number,
  * energy_use?:UseData,energy_store?:number,fuel_use?:UseData,
  * fuel_store?:number,cargo_use?:UseData,cargo_store?:number}} BlockData
  */
-Data.blocks = {block: {id: 0}, wedge: {id: 1}, wedge_1x2: {id: 2},
-  pyramid: {id: 3}, pyramid_1x2: {id: 4}, inverse_pyramid: {id: 5},
-  inverse_pyramid_1x2: {id: 6}, hydrogen_tank_small: {id: 7},
-  rcs_rocket_thruster_small: {id: 8}, rocket_thruster_small: {id: 9},
-  cockpit_fighter: {id: 10}, cockpit_cruiser: {id: 11}, __unknown__: {
-  id: 511}, Core: {id: 690, weight: 2, strength: 10, cost: -1,
+Data.blocks = {block: {id: 0, draw: [14, 14, 14, 14, 14, 14]},
+  wedge: {id: 1, draw: [15, 14, 14, 15, 14, 14]},
+  wedge_1x2: {id: 2, draw: [20, 24, 5, 20, 24, 5]},
+  pyramid: {id: 3, draw: [15, 16, 17, 15, 16, 17]},
+  pyramid_1x2: {id: 4, draw: [20, 21, 17, 20, 21, 17]},
+  inverse_pyramid: {id: 5, draw: [22, 18, 19, 14, 14, 14]},
+  inverse_pyramid_1x2: {id: 6, draw: [23, 25, 19, 24, 24, 14]},
+  hydrogen_tank_small: {id: 7, draw: [0, 3, 4, 1, 3, 2]},
+  rcs_rocket_thruster_small: {id: 8, draw: [7, 7, 5, 7, 7, 6]},
+  rocket_thruster_small: {id: 9, draw: [8, 8, 5, 8, 8, 6]},
+  cockpit_fighter: {id: 10, draw: [9, 10, 11, 9, 12, 13]},
+  cockpit_cruiser: {id: 11, draw: [26, 27, 28, 26, 29, 30]},
+  __unknown__: {id: 511},
+  Core: {id: 690, weight: 2, strength: 10, cost: -1,
   cargo_store: 5}, Block: {id: 691, weight: 1, strength: 10, cost: 100},
   Wedge: {id: 692, weight: 0.5, strength: 5, cost: 100}, "Wedge 1x2": {
   id: 693, weight: 1, strength: 10, cost: 100}, "Wedge 1x4": {id: 694,
@@ -2775,6 +2948,7 @@ B64Key.wBit = function (b) {
     B64Key.j = 0;
   }
 };
+/** Concluded to be safe to include max 24 bits */
 B64Key.wBitsMSBfFast = function (l, n) {
   var buffer = B64Key.buffer;
   buffer[B64Key.i] |= n << B64Key.j;
@@ -3364,3 +3538,78 @@ B64Key.rotationIndex = function (arr) {
     throw new Error(r);
   return [r[0], r[1], r[2], num];
 };
+/** piece of history
+ * @param {CanvasRenderingContext2D} rc
+ * @param {Block} block */
+B64Key.drawBlock = function (rc, block) {
+  if (typeof Tool != "function" || !("drawPathRc" in Tool))
+    throw Error("class Tool is not availible");
+  /** @param {any} face @param {any} mirr @param {number} rot */
+  function rotatePath(face, mirr, rot) {
+    /** @param {number} add @param {number} multiply */
+    function format(add, multiply) {
+      return (face[++i + 1 - add] * multiply << 10).toString(16);
+    }
+    var x = rot > 1 ? -1 : 1 , y = +(rot && rot < 3) ^ mirr ? -1 : 1,
+      i = 0, c, str = face[0].replace(/ /g, ","), path = "";
+    if (rot & 1)
+      while (i < str.length)
+        if ((c = str.charCodeAt(i) & 95) === 72)
+          path += (str[i] === "h" ? " v" : " V") + format(1, x);
+        else if (c === 86)
+          path += (str[i] === "v" ? " h" : " H") + format(1, y);
+        else {
+          if (c > 64 && c < 91)
+            path += " ";
+          path += str[i] + format(0, y) + str[i] + format(2, x);
+        }
+    else
+      while (i < str.length)
+        if ((c = str.charCodeAt(i) & 95) === 72)
+          path += " " + str[i] + format(1, x);
+        else if (c === 86)
+          path += " " + str[i] + format(1, y);
+        else {
+          if (c > 64 && c < 91)
+            path += " ";
+          path += str[i] + format(1, x) + str[i] + format(1, y);
+        }
+    return path;
+  }
+  function procsColor(clr) {
+    if (n > 128)
+      return 255 - ((255 - clr) * (255 - n) >> 7);
+    else if (n < 128)
+      return clr * n >> 7;
+    return clr;
+  }
+  rc.canvas.width = rc.canvas.height = 80;
+  var b_dat = Data.blocks[block.internalName].draw,
+    p = block.position;
+    // posX = w_mid - p[0] * 16 + 8,
+    // posY = h_mid + p[2] * 16 + 8;
+  var n = p[1] * 4 + 128,
+    r = block.rotation,
+    g_dat = [];
+  try {
+    g_dat = JSON.parse(Data.groups[b_dat[r[0] + +r[1] * 3]]);
+  } catch (e) {
+    console.error(e instanceof Error ? e.message : e,
+      block.internalName + " b_dat: ", b_dat, " i: ", r[0] + +r[1] * 3);
+  }
+  // -r[1] -> !r[1] superbug solved!1!!
+  r = [r[0], g_dat.pop() ? !r[1] : r[1], r[2]];
+  r[2] =
+    /** @type {0|1|2|3} */
+    (r[2] + g_dat.pop() & 3);
+  while (g_dat.length) {
+    var path = "";
+    rc.fillStyle = "#" + [0, 0, 0].map(function () {
+      return ("0" + procsColor(g_dat.pop()).toString(16)).slice(-2);
+    }).join("");
+    var arr = g_dat.pop();
+    while (arr.length)
+      path += rotatePath(Data.paths[arr.pop()], r[1], r[2]);
+    Tool.drawPathRc(new Tool("", "Ma000,a000" + path + " z"));
+  }
+}

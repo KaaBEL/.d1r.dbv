@@ -49,6 +49,7 @@ interface Ship {
     y1: number,
     z1: number
   ): never;
+  mirror2d(): void;
   mirror2d(
     this: Ship,
     x0: number,
@@ -65,9 +66,9 @@ interface Ship {
 }
 
 /** @see {Logic} @see {Ship.CustomInput} */
-/** class is frost, for usuall ship creation ues @see {Ship.fromObject} */
+/** class is frost, for usuall ship creation use @see {Ship.fromObject} */
 class Ship {
-  static VER = "v.0.1.64T11";
+  static VER = "v.0.1.64T13";
 
   name: string;
   gameVersion: number[];
@@ -365,7 +366,7 @@ namespace Ship {
   };
 
   /**
-   * instance is frost, (experimental class is frost)
+   * class is frost instance is frost, (experimental class is frost)
    * (keeping reference to mode object also keeps its old ship object)
    */
   export class Mode {
@@ -400,6 +401,8 @@ namespace Ship {
       });
     };
   }
+
+  Object.freeze(Object.freeze(Ship).Mode);
 }
 
 Ship.prototype.selectRect = function (
@@ -436,15 +439,15 @@ Ship.prototype.selectRect = function (
   select.parentShip = ship;
   return select;
 };
-Ship.prototype.removeRect = function (xl, yt, zr, xr, yb, zf) {
-  var x = xl, y = yt, z = zr, selected = [];
-  xr > xl ? xl = xr : x = xr;
-  yb > yt ? yt = yb : y = yb;
-  zf > zr ? zr = zf : z = zf;
+Ship.prototype.removeRect = function (x0, y0, z0, x1, y1, z1) {
+  var x = x0, y = y0, z = z0, selected = [];
+  x1 > x0 ? x0 = x1 : x = x1;
+  y1 > y0 ? y0 = y1 : y = y1;
+  z1 > z0 ? z0 = z1 : z = z1;
   for (var all = this.blocks, i = all.length; i-- > 0;) {
     var pos = all[i].position;
-    if (pos[0] < x || pos[0] > xl || pos[1] < y || pos[1] > yt ||
-      pos[2] < z || pos[2] > zr)
+    if (pos[0] < x || pos[0] > x0 || pos[1] < y || pos[1] > y0 ||
+      pos[2] < z || pos[2] > z0)
       continue;
     Logic.removeLogic(all[i], ship.prop && ship.prop.nodeList || []);
     all[i] = all.slice(-1)[0];
@@ -455,7 +458,8 @@ Ship.prototype.removeRect = function (xl, yt, zr, xr, yb, zf) {
   // for (var i = deletion.length; i-- > 0;)
   Edit.eventFire(this);
 };
-Ship.prototype.fillRect = function (x0, y0, z0, x1, y1, z1, select: BlockSelection) {
+Ship.prototype.fillRect = function (x0, y0, z0, x1, y1, z1,
+  select: BlockSelection) {
   // https://stackoverflow.com/a/424445 backup random number solution
   if (!select.length)
     return;
@@ -503,19 +507,19 @@ Ship.prototype.fillRect = function (x0, y0, z0, x1, y1, z1, select: BlockSelecti
   // width, height, length
   var w = x - x0 + 1, h = y - y0 + 1, l = z - z0 + 1;
   var b;
-  };
-  /**
-  * @param {number} x @param {number} y @param {number} z
-  * @param {BlockSelection} select */
-  Ship.prototype.paste = function (x: number, y: number, z: number, select: BlockSelection) {
-  /** @type {(Logic<any>|undefined)[]} */
+};
+Ship.prototype.paste = function (
+  x: number,
+  y: number,
+  z: number,
+  select: BlockSelection
+) {
   var logics: LogicNodeList = ship.prop && ship.prop.nodeList || [],
-    /** @type {(Logic<any>|undefined)[]} */
     oldLogics: LogicNodeList = select.parentShip.prop &&
       select.parentShip.prop.nodeList || [],
-    /** @type {number[]} mapping new output nodes indexes by old ones */
+    /** mapping new output nodes indexes by old ones */
     outputs: number[] = [],
-    /** @type {number[]} later used to assign each to output */
+    /** later used to assign each to output */
     inputs: number[] = [];
   for (var i = select.length, l = 1; i-- > 0;) {
     var pos = select[i].position, rot = select[i].rotation;
@@ -526,18 +530,18 @@ Ship.prototype.fillRect = function (x0, y0, z0, x1, y1, z1, select: BlockSelecti
       JSON.parse(JSON.stringify(select[i].properties))
     ), logicDef = Logic.VALUE[Block.ID[block.internalName]];
     if (logicDef) {
-      /** @type {number[]} nodeIndex(es) */
+      /** nodeIndex (node Identifiers) */
       var ni: number[] = [], property = block.properties;
       property.nodeIndex instanceof Array || (property.nodeIndex = []);
       // backwards iterating >:D (evil laugh)
       for (var j = logicDef.length; j-- > 0;) {
         while (logics[l])
           l++;
-        /** @type {Logic<any>|safe} */
-        var newNode: Logic<any> | safe = logics[l] = new Logic(logicDef[j].type, 0, 0),
-          idx = (select[i].properties.nodeIndex || [])[j];
+        var newNode: Logic<any> | safe = logics[l] =
+          new Logic(logicDef[j].type, 0, 0);
+        var idx = (select[i].properties.nodeIndex || [])[j];
         newNode.owner = block;
-        /** @type {Logic<any>|safe} node from nodeList of selection */
+        /** node from nodeList of selection */
         var oldNode: Logic<any> | safe = oldLogics[idx] || OC();
         if (logicDef[j].type > 1) {
           // only add nodeIndex references for actual output
@@ -582,81 +586,79 @@ Ship.prototype.fillRect = function (x0, y0, z0, x1, y1, z1, select: BlockSelecti
       newNode.pairs = -1;
   };
   Edit.eventFire(this);
-  };
-  //@ts-ignore no one cares
-  Ship.prototype.mirror = function (x0, y0, z0, x1, y1, z1) {
-    throw new Error("Unimplemented");
-    // what was selected and all
-    var x = x0, y = y0, z = z0, selected = [];
-    if (typeof x == "number") {
-      var all = this.blocks;
-      x1 > x0 ? x0 = x1 : x = x1;
-      y1 > y0 ? y0 = y1 : y = y1;
-      z1 > z0 ? z0 = z1 : z = z1;
+};
+//@ts-ignore no one cares
+Ship.prototype.mirror = function (x0, y0, z0, x1, y1, z1) {
+  throw new Error("Unimplemented");
+  // what was selected and all
+  var x = x0, y = y0, z = z0, selected = [];
+  if (typeof x == "number") {
+    var all = this.blocks;
+    x1 > x0 ? x0 = x1 : x = x1;
+    y1 > y0 ? y0 = y1 : y = y1;
+    z1 > z0 ? z0 = z1 : z = z1;
+  } else
+    selected = this.blocks.concat(all = []);
+  Edit.eventFire(this);
+};
+Ship.prototype.mirror2d = function (
+  this: Ship,
+  x0?: number,
+  y0?: number,
+  z0?: number,
+  x1?: number,
+  y1?: number,
+  z1?: number): void {
+  function pushBlock(block: Block, pos: XYZPosition) {
+    var r = block.rotation[2], id = Block.ID[block.internalName];
+    var size = Block.Size.VALUE[id];
+    if (r & 1) {
+      pos[1] = size ?
+        // (is tiny block ? 1 : 0) -...
+        ((size.w | size.h) >> 4 & 1) - pos[1] :
+        -pos[1];
+      // ...&& (is tiny block) ?
+      pos[2] += size && ((size.w | size.h) & 16) ?
+        // (has size of tiny thruster ? leave it alone : [0, 1, 2, -1][r];
+        (size.w & 16 ? 0 : (r + 1) % 4 - 1) :
+        // move bigger blocks to keep position of their center
+        r > 1 ? -(size.w -32 >> 4) : (size.w - 32 >> 4);
+      // 180deg turn
+      block.rotation[2] = (4 - r) as Rot;
     } else
-      selected = this.blocks.concat(all = []);
-    Edit.eventFire(this);
-  };
-  Ship.prototype.mirror2d = (
-  /**
-    * @overload @returns {void} @this {Ship}
-    * @overload @param {number} x0 @param {number} x1 @param {number} y0
-    * @param {number} y1 @param {number} z0 @param {number} z1
-    * @returns {void} @this {Ship} */
-  function (x0, y0, z0, x1, y1, z1) {
-    /** @param {Block} block @param {XYZPosition} pos */
-    function pushBlock(block: Block, pos: XYZPosition) {
-      var r = block.rotation[2], id = Block.ID[block.internalName];
-      var size = Block.Size.VALUE[id];
-      if (r & 1) {
-        pos[1] = size ?
-          // (is tiny block ? 1 : 0) -...
-          ((size.w | size.h) >> 4 & 1) - pos[1] :
-          -pos[1];
-        // ...&& (is tiny block) ?
-        pos[2] += size && ((size.w | size.h) & 16) ?
-          // (has size of tiny thruster ? leave it alone : [0, 1, 2, -1][r];
-          (size.w & 16 ? 0 : (r + 1) % 4 - 1) :
-          // move bigger blocks to keep position of their center
-          r > 1 ? -(size.w -32 >> 4) : (size.w - 32 >> 4);
-        // 180deg turn
-        block.rotation[2] =
-          /** @type {0|1|2|3} */
-          (4 - r);
-      } else
-        pos[1] = size ?
-          (r ?
-            (size.w - 32 >> 4) + ((size.w | size.h) >> 3 & 2) :
-            -(size.w - 32 >> 4)) - pos[1] :
-          -pos[1];
-      // Wedges and Smoooofth Coorners
-      if (Block.isFlippable(id))
-        block.rotation[1] = !block.rotation[1];
-    }
-    var x = x0, y = y0, z = z0;
-    /** @type {XYZPosition} */
-    var pos: XYZPosition, all = this.blocks;
-    if (typeof x == "number") {
-      x1 > x0 ? x0 = x1 : x = x1;
-      y1 > y0 ? y0 = y1 : y = y1;
-      z1 > z0 ? z0 = z1 : z = z1;
-      for (var i = 0; i < all.length; i++) {
-        pos = all[i].position;
-        // selection is inverted TROLOLOOLOOLLOOLOLOLOOLOLOLO LOLOLOLOLOLOLOL
-        if (pos[0] < x || pos[0] > x0 || pos[1] < y || pos[1] > y0 ||
-          pos[2] < z || pos[2] > z0)
-          pushBlock(all[i], pos);
-      }
-    } else
-      for (var i = 0; i < all.length; i++) {
-        pos = all[i].position
-        pushBlock(all[i], pos);
-      }
-    Edit.eventFire(this);
+      pos[1] = size ?
+        (r ?
+          (size.w - 32 >> 4) + ((size.w | size.h) >> 3 & 2) :
+          -(size.w - 32 >> 4)) - pos[1] :
+        -pos[1];
+    // Wedges and Smoooofth Coorners
+    if (Block.isFlippable(id))
+      block.rotation[1] = !block.rotation[1];
   }
-  );
-  /** @param {number} x @param {number} y @returns null if nothing found */
-  Ship.prototype.blockAtPonit2d = function (x: number, y: number) {
+  var lx = x0 || 0, ly = y0 || 0, lz = z0 || 0, hx = 0, hy = 0, hz = 0;
+  var pos: XYZPosition, all = this.blocks;
+  if (typeof x1 == "number") {
+    y1 = y1 || 0;
+    z1 = z1 || 0;
+    x1 > (x0 || 0) ? hx = x1 : lx = x1;
+    y1 > (y0 || 0) ? hy = y1 : ly = y1;
+    z1 > (z0 || 0) ? hz = z1 : lz = z1;
+    for (var i = 0; i < all.length; i++) {
+      pos = all[i].position;
+      // selection is inverted TROLOLOOLOOLLOOLOLOLOOLOLOLO LOLOLOLOLOLOLOL
+      if (pos[0] < lx || pos[0] > hx ||
+        pos[1] < ly || pos[1] > hy || pos[2] < lz || pos[2] > hz)
+        pushBlock(all[i], pos);
+    }
+  } else
+    for (var i = 0; i < all.length; i++) {
+      pos = all[i].position
+      pushBlock(all[i], pos);
+    }
+  Edit.eventFire(this);
+};
+/** @returns null if nothing found */
+Ship.prototype.blockAtPonit2d = function (x: number, y: number) {
   for (var bs = ship.blocks, i = bs.length; i-- > 0;) {
     var block = bs[i], pos = block.position;
     // calculations from expensiveRenderer
@@ -678,13 +680,13 @@ Ship.prototype.fillRect = function (x0, y0, z0, x1, y1, z1, select: BlockSelecti
     return new Block.Selected(block, i, cx, cy, cw, ch);
   }
   return null;
-  };
-  /** used to revert position adjustment from vehicles 'infected' by it:
-  * https://github.com/KaaBEL/.d1r.dbv/commit/0b8156e155383059cf1aeeb4a997818
-  3c92b92f8#diff-fa9a713c17c685348118b8d29bd55f10491e651ccafaf45d1044ed01ffe6e
-  80bL1414
-  * @param {boolean} [fixSlab] if true it also fixes wrong Slab size */
-  Ship.prototype.fixPositionAdjustment = function (fixSlab: boolean) {
+};
+/** used to revert position adjustment from vehicles 'infected' by it:
+* https://github.com/KaaBEL/.d1r.dbv/commit/0b8156e155383059cf1aeeb4a997818
+3c92b92f8#diff-fa9a713c17c685348118b8d29bd55f10491e651ccafaf45d1044ed01ffe6e
+80bL1414
+* @param {boolean} [fixSlab] if true it also fixes wrong Slab size */
+Ship.prototype.fixPositionAdjustment = function (fixSlab?: boolean) {
   var slabsFix = fixSlab ? Block.Size.VALUE[696] : null;
   console.log(this.name + ".PositionAdjustment(" + fixSlab + ")");
   if (this.getMode().mode !== "Ship")
@@ -699,10 +701,14 @@ Ship.prototype.fillRect = function (x0, y0, z0, x1, y1, z1, select: BlockSelecti
       (rot + 1 & 3) > 1 ? block.position[1] -= 1 : 0;
     }
   }
-  };
-  /** allows using position adjustment for certain operations such as,
-  * DR base64 keys prototype @param {(ship:Ship)=>void} operation */
-  Ship.prototype.withPositionAdjustment = function (operation: (ship: Ship) => void) {
+};
+/**
+ * allows using position adjustment for certain operations such as,
+ * DR base64 keys prototype
+ */
+Ship.prototype.withPositionAdjustment = function (
+  operation: (ship: Ship) => void
+) {
   var l = 0, adjusted = [], adjustment = [], block = this.blocks[0];
   for (var i = 0, n = 0; i < this.blocks.length; i++) {
     var block = adjusted[l] = this.blocks[i],
@@ -719,11 +725,15 @@ Ship.prototype.fillRect = function (x0, y0, z0, x1, y1, z1, select: BlockSelecti
     adjusted[i].position[1] -= adjustment[i] & 1;
     adjusted[i].position[2] -= adjustment[i] >>> 1;
   }
-  };
-  /**
-  * @param {number} x @param {number} y @param {number} z
-  * @param {ShipBlock} ref template Block for the new one */
-  Ship.prototype.placeBlock = function (x: number, y: number, z: number, ref: ShipBlock) {
+};
+/** @param ref template Block for the new one */
+Ship.prototype.placeBlock = function (
+  x: number,
+  y: number,
+  z: number,
+  /** template Block for the new one */
+  ref: ShipBlock
+) {
   // improved old_UI from editor.js
   var logics = this.prop && this.prop.nodeList || [];
   var block = new Block(
@@ -750,8 +760,7 @@ Ship.prototype.fillRect = function (x0, y0, z0, x1, y1, z1, select: BlockSelecti
     block);
   Edit.eventFire();
   return block;
-  };
-Object.freeze(Object.freeze(Ship).Mode);
+};
 
 // generating Droneboi
 /** global ship that's being rendered and editng */

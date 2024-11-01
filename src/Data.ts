@@ -27,7 +27,7 @@ interface BlockDataSimple {
 };
 
 class Data {
-  static VER = "v.0.1.64T11";
+  static VER = "v.0.1.64T13";
 
   constructor() {
     throw new TypeError("Illegal constructor");
@@ -35,7 +35,8 @@ class Data {
 
   // little minified to optionally save up some lines
   static colors = {
-    "White": 0, "Light Gray": 1, "Dark Gray": 2, "Black": 3,
+    // experimental null property on colors data
+    "null": -1, "White": 0, "Light Gray": 1, "Dark Gray": 2, "Black": 3,
     "Yellow": 4, "Orange": 5, "Red": 6, "Wine": 7, "Pink": 8, "Purple": 9,
     "Light Blue": 10, "Dark Blue": 11, "Navy": 12, "Lime": 13,
     "Green": 14, "Fuel": 15, "Yellow Hazard Stripes": 16,
