@@ -40,6 +40,7 @@ https://discord.com/channels/749233290241769473/1230046786631237632
 \+ turning moment and speed  
 https://discord.com/channels/749233290241769473/1225047342357549066  
 \- available rift driving distance  
+\- weapons range, DPS
 ? acceleration time  
 
 **Logic connections tool**: (work in progress)  
