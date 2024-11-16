@@ -1,4 +1,4 @@
-/// <reference path="Block.new.ts" />
+/// <reference path="Block.ts" />
 
 type BlockSelection = ShipBlock[] & {parentShip: Ship;};
 /**

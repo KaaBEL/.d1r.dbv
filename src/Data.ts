@@ -3,6 +3,7 @@
 type UseData = number | [number, number];
 interface BlockData {
   id: number,
+  draw?: [number, number, number, number, number, number],
   weight?: number,
   strength?: number,
   cost?: number,
@@ -15,6 +16,7 @@ interface BlockData {
 };
 interface BlockDataSimple {
   id: number,
+  draw?: [number, number, number, number, number, number],
   weight?: number,
   strength?: number,
   cost?: number,
@@ -310,8 +312,7 @@ class Data {
       length: number
     } = {
       length: 0
-    }, data: {[key: string]: number | BlockDataSimple} = Data[src],
-      p: string;
+    }, data: {[key: string]: number | BlockDataSimple} = Data[src];
     for (var p in data) {
       /** one data item: color id, block data */
       var item = data[p];

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.1.64T9 -->
+<!-- v.0.1.64T14 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -88,6 +88,7 @@
     tools for advanced drone designs. It is currently in development.
     First thanks to Beau for Droneboi series and its visual graphics,
     to the DBVE contributors and for feedback from also others.
+    Most of the icons are made by Freepik from www.flaticon.com.
     <h2>How to use it?</h2>
     <span style="color: #ff3333;">Disclaimer: Vehicles buildead in a way
     that it cannot be replicated by using only unmodified vanilla in-game
@@ -104,13 +105,14 @@
     they are opened. Click on Welcome message to close it, rightclicking
     around to open commands tab also closes Welcome message.
     <h2>What's new?</h2>
-    Well... not much yet, works on proper UI slowly continue, you can see
-    the propgress by using
+    Soon reaching Beta, works on proper UI slowly continue, you can see
+    some behind the scene functionalities from development using
     <a href="http://kaabel.github.io/.d1r.dbv/editor.html?logic">
       ?logic
-    </a> fun mode. You can find the sourcecode at:
-    <a href="https://github.com/KaaBEL/.d1r.dbv">
-      https://github.com/KaaBEL/.d1r.dbv
+    </a> fun mode. You can find out more about the project or just discuss
+    and suggest features, report bugs in dicord server dedicated to DBVE:
+    <a href="https://discord.gg/Nb2jAgVHm5">
+      Deltarealm fanclub
     </a>.
     <div id="auth" itemprop="dateModified" content="2024-10-04" datetime="2024-10-04">Made by:
       <!-- link is unproperly displayed when whitespace is outside svg and pre -->
@@ -143,25 +145,25 @@
     // . mouseStamp = 0, tStart = 0, touch = null, touch_2 = null;
 
     /** @typedef {MouseEvent|TouchEvent|TchD} TemporaryEventParam */
-    /** @type {(()=>void)|null} */
+    /** @type {((click?:true)=>void)|null} */
     var touchdevice = null;
-
+    
     /** signals UI API click on canvas */
     var press = function press(x, y) {
-      return console.log(x, y);
+      return console.debug(x, y);
     };
 
     /** return true if move is used outside UI API */
     var move = function move(x, y, e) {
-      return Boolean(console.log(x, y));
+      return Boolean(console.debug(x, y));
     };
 
     var contextmenu = function contextmenu(x, y, ev) {
-      return console.log(x, y);
+      return console.debug(x, y);
     };
 
     var over = function (ev) {
-      return console.log(ev);
+      return console.debug(ev);
     };
 
     var render = function render() {
@@ -171,7 +173,7 @@
     var init = function init() {
       return;
     };
-
+    
     var UDF = void 0, F = function () {};
     try {
       /** @type {TouchEvent} */
@@ -297,7 +299,7 @@
       return Object.seal(this);
     }
     /** @typedef {TouchDat} TchD */
-
+    
     /** aditional/optional js logging of touch events */
     function test_touches(targ, calls, globalArr, customLog) {
       var a = [], t = {ch: TCH}, custLog = typeof customLog == "function" ?
@@ -375,7 +377,7 @@
 
       return {a: a, tch: t};
     }
-
+    
     /**
      * @param {HTMLElement} src
      * @param {hardH} [hardHandler]
@@ -411,7 +413,7 @@
       [events, temp, added, removed, touches, identifiers].map(function (e) {
         e.length = 0;
       });
-
+    
       // console.log(o = test_touches(src, handlers, 1, function () {
       //   return [events, temp.length, added.length, removed.length,
       //     touches.length, identifiers].map(
@@ -450,7 +452,7 @@
         events[i] = !0;
         touches[i] ?
           temp[i] = touches[i].update(tch, ev) :
-          console.error("Indentified touch unpresent in touches.");
+          console.error("Indentified touch is unpresent in touches.");
       }
       function removeTouch(tch, ev, i) {
         var j = identifiers.indexOf(tch.identifier);
@@ -460,7 +462,7 @@
         identifiers[j] = -1;
         touches[j] ?
           removed[j] = temp[j] = touches[j].update(tch, ev) :
-          console.error("Indentified touch unpresent in touches.");
+          console.error("Indentified touch is unpresent in touches.");
         touches[j] = null;
         for (j = touches.length - 1; j > 0 && touches[j] === null;)
           touches.length--;
@@ -530,11 +532,6 @@
     touchesInit.time = 350;
     /** allowed press precision, @see {mouseInit.move} */
     touchesInit.move = 13;
-    touchesInit.interacted = 4;
-    document.onvisibilitychange = function () {
-      if (document.visibilityState === "visible")
-        touchesInit.interacted = 8;
-    };
 
     var mouseStamp = 0, test_debug = !1;
     var WheelSroll = typeof WheelEvent == "undefined" ? Object : WheelEvent;
@@ -642,7 +639,7 @@
           (all[0].pageY > all[1].pageY ?
             y0 - y1 :
             y1 - y0) || 0) *
-          sc / (474 << (actionType === 2));
+          sc / (474 << +(actionType === 2));
         vX = (vX - w) * sc / prev + w;
         vY = (vY - h) * sc / prev + h;
         // TODO: the default (actionType = 2) is supposed to detect either
@@ -777,15 +774,15 @@
           thetouchcancel]);
 
       /** also called first touch, used to initiate fullscreen */
-      var touchevent = window.ontouchstart = window.ontouchmove =
-        window.ontouchend = window.ontouchcancel = function () {
-          if ((touchesInit.interacted >>= 1) === 1 && touchdevice)
-            touchdevice();
-        };
+      window.ontouchend = function () {
+        if (touchdevice && !document.fullscreenEnabled &&
+          !document.webkitIsFullScreen)
+          touchdevice();
+      };
       (GE("info") || document.createElement("br")).onclick = function (e) {
         document.body.classList.remove("scroll");
         this instanceof Node && document.body.removeChild(this);
-        touchevent();
+        touchdevice && touchdevice(true);
       };
       document.head.appendChild(document.createComment(navigator.userAgent +
         JSON.stringify(navigator.userAgentData || {})));

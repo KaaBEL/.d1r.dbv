@@ -1,7 +1,8 @@
 //@ts-check
 /// <reference path="./code.js" types="./editor.js" />
 "use strict";
-var version_editor_js = "v.0.1.64T13";
+var version_editor_js = "v.0.1.64T14";
+/** @TODO check @see {defaults} for setting a setting without saveSettings */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -177,6 +178,7 @@ function loadSettings() {
   defaults.fullscreenDisabled = !!(arr[2] >> (5 + 1) & 1);
   defaults.editorBackgroundStage = (arr[2] >> 7 & 31);
 }
+loadSettings();
 
 /** to be able to include some fun when editor is initialized */
 var init_funMode = F;
@@ -245,6 +247,7 @@ AAABBoATIAAAAAnAAA2AAQKAFaAAAZAAAAJwAA4lABtAAZAAAAJwAAJAUAGQAAACcAAAARAAAKDU\
 ALkAEAAADgBABAFU6AFgBABgAAwAkAgDiAAJACZAAATgAAyAsARgAAAECMCo1BIxEAhBAhQAYAYA\
 QAAGCFWBVOg1Oig7gALoAMAMAJsTCcCCcphBAXwAWQAQA4IRawCAkiYWQQhUABUAAQaEQiAwBBoB\
 AoxSIDyABKAAIlTviFogQ=")));
+      defaults.editorBackgroundStage = 0;
       break;
     case "17a472d":
     case "25f75d93":
@@ -257,7 +260,6 @@ IgRHJvbmVib2kABD9TDSCAv6/65vbGnas+ELMGgvIGgrKuIChrYKhuICjrCoKyBpQ34LgncNaA6g\
 ak9QRBWQPKGnDcFQjauHnfBwJbWzAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMC\
 wxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNl0sIntcImNvbG\
 9yXCI6XCJMaW1lXCJ9Il0=")));
-      defaults.editorBackgroundStage;
     case "8bb3bad8":
       console.log("Fun mode 7");
       setTimeout(function () {
@@ -271,6 +273,7 @@ wxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNl0sIntcImNvbG\
     case "b6f47340":
       console.log("Fun mode 9");
       init_funMode = function () {
+        enableLogicEditing();
         ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr(("gIAEDEFOT05\
 fU2h1dHRsZQAEXVy0aoC/TzvnFnWt0z4R4pYUZx2CorwBRXLToKjrQJPehCK9CdKboLhB4MUPQVw\
 DhrgGiGuAuAaIa4C1XkER14AjrgFBjHHEFUWbA4oxBxTVDSjWu1FsOeBYccQw3YRiywPBlnFsGcG\
@@ -325,7 +328,9 @@ sXCJub2RlSW5kZXhcIjpbOSw4XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCI\
 sXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMjZdLFwid2VsZEdyb3VwXCI6MH0" +
         "iXQ==").replace(/ /g, ""))));
         ship.fixPositionAdjustment(!0);
-        enableLogicEditing();
+        Math.random() > .5 ?
+          rend_collisions = true :
+          test_collbxs = true;
       };
       break;
     case "bad106e2":
@@ -616,7 +621,6 @@ var helpCanvas = document.createElement("canvas"),
     // shut up chromium browsers
     {willReadFrequently: true}));
 
-loadSettings();
 canvas.style.backgroundColor = document.body.style.backgroundColor =
   defaults.editorBackground ? "#132122" : defaults.editorBackgroundColor;
 imgBackg.src = "./assets/_" + [
@@ -2005,25 +2009,25 @@ Command.push("Vehicle stats", function (items, collapsed) {
     texts[10].data = "LY ";
     red.data = texts[11].data = "";
     dist ?
-      +(crystals > sums.blocks[796] || 0) * 4 ?
-        texts[11].data = "requires " + rcAmount() +
-          ", remember to take mo\
-re crystals for further travelling and enough for return." :
+      (sums.blocks[796] || 0) * 4 > crystals ?
+        texts[11].data = "requires " + rcAmount() + ", remember to ta" +
+          "ke more crystals for further travelling and enough for ret" +
+          "urn." :
         red.data = "you don't have enough Rift Drives to use " +
           rcAmount() + " for the jump, lighter vehicle needs less RCs." :
       texts[11].data = riftLY.value ?
         dist === 0 ?
-          "doesn't require any Rift Crystals since you don't seem going any\
-where." :
+          "doesn't require any Rift Crystals since you don't seem goi" +
+            "ng anywhere." :
           "Distance format is not a number." :
-          "Type desired Rift Driving Light Years (LY) distance into the inp\
-ut.";
+        "Type desired Rift Driving Light Years (LY) distance into the" +
+          " input.";
     if (sums.blocks[796] > 1)
-      red.data += "You can't buy more then one Small Rift Drive in Conquest\
-! ";
+      red.data += "You can't buy more then one Small Rift Drive in Co" +
+        "nquest! ";
     if (dist < 0)
-      texts[10].data += "Unless you own Time Travel Machine block, you can'\
-t regain the Rift Crystals by travelling back. ";
+      texts[10].data += "Unless you own Time Travel Machine block, yo" +
+        "u can't regain the Rift Crystals by travelling back. ";
   };
   function updateStats() {
     var xForce = 0, yForce = 0, forces = 0, xWeight = 0, yWeight = 0;
@@ -2153,19 +2157,30 @@ Command.push("Editing Mode", function (items) {
   fullscreen.checked = defaults.fullscreenDisabled;
   fullscreen.oninput = function () {
     defaults.fullscreenDisabled = fullscreen.checked;
+    saveSettings();
   };
   items.push({name: "Disable fullscreen", inp: fullscreen});
-  var touchScreen = EL("button");
-  touchScreen.appendChild(tN("Disable touch screen resolution"));
+  var touchScreen = EL("button"),
+    detectionText = tN(defaults.fullscreenInitialized ?
+      "Disable touch screen detected" :
+      "Touch screen is not detected");
+  touchScreen.appendChild(detectionText);
   touchScreen.onclick = function () {
     defaults.fullscreenInitialized = false;
+    saveSettings();
+    touchdevice = null;
+    detectionText.data = "Touch screen is not detected";
   };
   items.push(touchScreen);
 }, "Editing modes is the newest feature that is Work In Progress. Be aware t\
 hat non of the older commands were designed to be compatible with other mode\
-s in there. You can use inventoryTile to enable inventory icon item. By enab\
-ling disabled fullscreen you will have browser experience of when it wasn't \
-implemented.");
+s in there. \nYou can use inventoryTile to enable inventory icon item. By en\
+abling disabled fullscreen you will have browser experience of when it wasn'\
+t implemented. \nFor proper display of UI and mobile experience there is aut\
+omatic detection of touchscreen, this feature changes resolution and turns o\
+n fullscreen whenever the browser allows it, if it was somehow incorrectly d\
+etected you can use designated button to reset it. In case it still keeps de\
+tecting and it is not supposed to, that's a bug then.");
 Command.push("Debug Logic circuit", function (items, collapsed) {
   /** @param {Block|LogicBlock} block @returns {LogicBlock|undefined} */
   function checkEndComponent(block) {
@@ -2490,7 +2505,9 @@ var cmdsHeader = EL(), cmds = (function () {
     var pre = content.appendChild(EL("div"));
     pre.style.overflowWrap = "break-word";
     pre.style.wordBreak = "break-all";
-    pre.appendChild(tN(onlyConsole(m,s,l,c,e)));
+    pre.appendChild(tN(e && e.stack ?
+      "" + m + "\n" + e.stack :
+      "" + m + "\n\t" + s + ":" + l + ":" + c));
   }
   return (bd || EL()).appendChild(nav);
 })();
@@ -2523,10 +2540,10 @@ Tool.drawPathRc = function (tool, size) {
     L: rc.lineTo,
     C: rc.bezierCurveTo,
     Z: rc.closePath,
-    H: function (n) {
+    H: function horizontalTo(n) {
       this.lineTo(n, rY);
     },
-    V: function (n) {
+    V: function verticalTo(n) {
       this.lineTo(x = rX, rY = n);
     }
   };
@@ -2544,10 +2561,12 @@ Tool.drawPathRc = function (tool, size) {
         });
     if (!e.length)
       return console.error("No command at: " + i + "th \" \"");
-    var c = e[0].toUpperCase();
-    if (!ctxCommands[c])
+    var c = e[0].toUpperCase(), cmd = ctxCommands[c];
+    if (!cmd)
       return console.error("Missing command " + c);
-    ctxCommands[c].apply(rc, params);
+    if (params.length < cmd.length)
+      return console.error("Not enough args for command " + c);
+    cmd.apply(rc, params);
     rX = x;
     rY = y;
   });
@@ -3338,19 +3357,17 @@ var rend_colors = rend_initColors();
 var foundBlocks = [];
 
 DefaultUI.setPixelRatio();
-function init_touchScreen() {
-  //-I'll keep it without confirm message
-  //-if (!bd)
-  //-  return console.error("No bd to show confirm message.");
-  //-var background = EL(),
-  //-bd.appendChild()
-  if (typeof document.body.requestFullscreen == "function" &&
-    !defaults.fullscreenDisabled)
-    document.body.requestFullscreen().then(render).catch(function () {
-      setTimeout(function () {
-        document.body.requestFullscreen().then(render).catch(alert);
-      }, 169);
-    });
+/** @type {(click?: true | undefined) => void} */
+function init_touchScreen(click) {
+  if (click && !defaults.fullscreenInitialized)
+    return;
+  var max = 3, logging = alert;
+  if (typeof document.body.requestFullscreen == "function")
+    (touchdevice = function () {
+      if (!defaults.fullscreenDisabled)
+        document.body.requestFullscreen().then(render).catch(logging);
+      max-- ;
+    })();
   defaults.fullscreenInitialized = true;
   saveSettings();
   DefaultUI.setPixelRatio();
@@ -3524,34 +3541,35 @@ function rend_rc() {
   style.top = style.left = "0";
   style.width = style.height = "auto";
 }
-// function used to add ckockpt_cruiser texture
-// setTimeout(function () {
-//   rend_rc();
-//   var ref =
-//     /** @type {ShipBlock|null} */
-//     ({});
-//   [0].map(function () {
-//     ref = null;
-//   });
-//   ship.blocks.forEach(function (e) {
-//     if (e.internalName === "cockpit_cruiser")
-//       // (ref = e).internalName = "__NULL__";
-//       (ref = e);
-//   });
-//   if (!ref)
-//     return;
-//   ref.rotation[0] = 1;
-//   ref.rotation[1] = !0;
-//   ship.blocks.push(new Block(
-//     "cockpit_" + ("fighter" && "cruiser"),
-//     ref.position,
-//     ref.rotation,
-//     ref.properties
-//   ));
-//   render();
-// });
+//-function used to add ckockpt_cruiser texture
+//-setTimeout(function () {
+//-  rend_rc();
+//-  var ref =
+//-    /** @type {ShipBlock|null} */
+//-    ({});
+//-  [0].map(function () {
+//-    ref = null;
+//-  });
+//-  ship.blocks.forEach(function (e) {
+//-    if (e.internalName === "cockpit_cruiser")
+//-      // (ref = e).internalName = "__NULL__";
+//-      (ref = e);
+//-  });
+//-  if (!ref)
+//-    return;
+//-  ref.rotation[0] = 1;
+//-  ref.rotation[1] = !0;
+//-  ship.blocks.push(new Block(
+//-    "cockpit_" + ("fighter" && "cruiser"),
+//-    ref.position,
+//-    ref.rotation,
+//-    ref.properties
+//-  ));
+//-  render();
+//-});
 
 var rend_speeeeed = {}, rend_logs = 69;
+var test_collisions = "", rend_collisions = false;
 /*async*/ function expensiveRenderer() {
   var t = Date.now(), AT = ", at expensiveRenderer();";
   canvas.width = canvas.width;
@@ -3662,6 +3680,10 @@ var rend_speeeeed = {}, rend_logs = 69;
       ctx.fillText(str, dx + 4, dy + 25);
       ctx.restore();
     }
+    if (test_debug) {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(-pos[1] * sc + vX - 7, pos[2] * sc + vY - 7, 14, 14);
+    }
     // await new Promise(function (res) {
     //   var tfn = expensiveRenderer;//@ts-ignore
     //   clearTimeout(tfn.tOut);tfn.tOut = setTimeout(res, 100);
@@ -3712,8 +3734,15 @@ var rend_speeeeed = {}, rend_logs = 69;
     }
   }
   utilities.rend_UI();
+  if ((test_collbxs) && objs[0])
+    Block.Box2d.collisions(objs[0], objs);
+  else if (rend_collisions)
+    for (i = objs.length;
+      //-, (GE('evil_result') || {}).innerText = ''
+      i-- > 0;)
+      Block.Box2d.collisions(objs[i], objs);
   DefaultUI.rend();
-  if (rend_180) {
+  if (rend_180 || 0) {
     ctx.setTransform(1, 0, 0, 1, canvas.width, canvas.height);
     ctx.rotate(Math.PI);
     ctx.globalCompositeOperation = "copy";
@@ -3722,6 +3751,46 @@ var rend_speeeeed = {}, rend_logs = 69;
   var t = Date.now() - t | 0;
   rend_speeeeed[t] = rend_speeeeed[t] + 1 || 0;
 }
+/** @type {typeof Block.Box2d.visualize} */
+Block.Box2d.visualize = function (path, x, y, green) {
+  //try{
+  var visuals = test_collisions || (test_collbxs && green !== UDF) ||
+    (rend_collisions && green === UDF);
+  if (!visuals)
+    return;
+  var coll = green === UDF ? x === UDF ? path.slice(2, 4) : [] : null;
+  ctx.beginPath();
+  ctx.strokeStyle = green ? "#33bb33" : coll ? "#db9725" : "#bb3333";
+  if (coll && coll.length > 1) {
+    path.length = 2;
+    ctx.moveTo(vX - (coll[0].x - 2) * sc, (coll[0].y + 2) * sc + vY);
+    ctx.lineTo(vX - (coll[1].x - 2) * sc, (coll[1].y + 2) * sc + vY);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.beginPath();
+  }
+  ctx.lineWidth = green === UDF ? 8 : green ? 4 : 2;
+  if (path[0])
+    ctx.moveTo(vX - (path[0].x - 2) * sc, (path[0].y + 2) * sc + vY);
+  //@ts-ignore
+  for (var i = path.length; i-- > 1;)
+  //0&&window.onerror(i+'=x:',(path[0].x + x) * sc + vX,'y',(path[i].y + y)
+  //- * sc + vY)
+    ctx.lineTo(vX - (path[i].x - 2) * sc, (path[i].y + 2) * sc + vY);
+  ctx.closePath();
+  //-ctx.globalAlpha = 1;
+  //-ctx.globalCompositeOperation = "source-over";
+  if (!("range" in path))
+    return ctx.stroke();
+  x = (x || 0) - 2;
+  y = (y || 0) + 2;
+  ctx.moveTo(vX - (x - path.range) * sc, (y) * sc + vY);
+  ctx.arc(vX - (x) * sc, (y) * sc + vY, path.range * sc, 0, Math.PI * 2);
+  ctx.stroke();
+  //-ctx.strokeRect(vX - (x) * sc - 4.5, (y) * sc + vY - 4.5, 9, 9);
+  //@ts-ignore
+  //}catch(e){console.error(e && e.message || e);}
+};
 
 init = function () {
   rend_checkColors();
@@ -3729,8 +3798,104 @@ init = function () {
   check_contentScript();
 };
 
-function onlyConsole(m,s,l,c,e) {
-  if (e && e.stack)
-    return "" + m + "\n" + e.stack;
-  return "" + m + "\n\t" + s + ":" + l + ":" + c;
+function test_blocks1_2_10() {
+  var temp = B64Key.decode(B64Key.b64ToU8arr("gIAZDWJsb2Nrc18xLjIuMTCBggoFQJ\
+qtpoC/L0rXJus9jD4A8gYIqBsgOG6AAK0BArMGCMgaIODrIBDoNUCA1wCBXQMEdG0QyLVAANcAgV\
+sDBGwNEKi1QYDWAvwaIFDuLBBIdxYIkJsioO4nILoNAucWCJgbIDBuBsQNENB3EQjQ2yKQ7yoQuD\
+dBwN4EgXkrBPA9BQL1VkDeChz8CwQMDhAoOECA4ACBgQMEBH4GAhuPAgGNAwQyDhDAOEDA4gCBiw\
+MEKg4QoLhAYOIAAYkDBDgOEKBZIDBzgIDMAQL/BQjEHCAAc4DAywECLgcItBwgwHOAAMsBAisHCK\
+gcIJBygADKAQInBwiYHCBQcoAAyQECIwcIiBwgsPMsENA5QCDnAIH/AoBzgMDNAQI2BwjUHCAAXc\
+2T6QcAW1swLDE3LDAsMTddLCJ7XCJjb2xvclwiOlwiV2hpdGVcIn0iXQ=="));
+  typeof temp == "object" && temp.blocks.forEach(function (e) {
+    e.properties = {color: e.properties.color || null};
+    var rot = e.rotation, pos = e.position;
+    e.position = [pos[1] / 2, pos[2] / 2];
+    e.rotation = rot[2];
+    e.flipped = rot[1];
+  });
+  ship = Ship.fromObject(temp);
+  render();
 };
+test_debugbox2collisions = function (rend) {
+  if (rend !== UDF)
+    return;
+  var running = false, rc2d = EL("canvas").getContext("2d") || rc;
+  (test_debugbox2collisions = function (rend) {
+    if (rend === false) {
+      var val = running;
+      running = false;
+      return val;
+    }
+    var oB = test_collbxs, oRC = rend_collisions, oTC = test_collisions;
+    if (rend !== UDF) {
+      if (!running)
+        return;
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalCompositeOperation = "copy";
+      ctx.drawImage(rc2d.canvas, 0, 0);
+      ctx.restore();
+      if (rend instanceof Array && rend[0] instanceof Block.Box2d) {
+        rend_collisions = false;
+        test_collisions = "true";
+        Block.Box2d.visualize(rend,
+          (vX + 99) / sc, -(vY + 99) / sc, true);
+        rend_collisions = oRC;
+        test_collisions = oTC;
+      }
+      return true;
+    }
+    var oDD = devt_debugger;
+    test_collbxs = rend_collisions = false;
+    test_collisions = "";
+    expensiveRenderer();
+    rc2d.globalCompositeOperation = "copy";
+    rc2d.canvas.width = canvas.width;
+    rc2d.canvas.height = canvas.height;
+    rc2d.drawImage(canvas, 0, 0);
+    rend_collisions = devt_debugger = true;
+    running = true;
+    expensiveRenderer();
+    running = false;
+    test_collbxs = oB;
+    rend_collisions = oRC;
+    test_collisions = oTC;
+    devt_debugger = oDD;
+  })();
+};
+
+//-Block.Box2d.collisions(ship.blocks[0], ship.blocks);
+
+//-enableLogicEditing();
+//-ship = Ship.fromObject({b:[{n:"Core",p:[0,-.75]},
+//-  {n:"Small Hydraulic Drill",p:[0,0]}]});
+//-setTimeout(function () {
+//-  test_collbxs = false;//true;
+//-  rend_collisions = true;//false;
+//-  /** @TODO There's still something wrong with those cases */
+//-  ship = Ship.fromObject({"n":"ANON_Shuttle","gv":"0",
+//-    "dt":"compressed: 23.05.2024 5:45:39 UTC","ls":0,"b":[{
+//-    "n":"Smooth Corner 1x2","p":[-2,-5],"r":180,"f":false,"s":"Orange",
+//-    "c":[],"ni":[],"wg":0},{"n":"Small Ion Thruster","p":[3.5,5],
+//-    "r":180,"f":false,"s":"White","c":[4500],"ni":[37,36],"wg":0},{
+//-    "n":"Large Ion Thruster","p":[2.5,6],"r":180,"f":false,"s":"White",
+//-    "c":[27000],"ni":[16,15],"wg":0},{"n":"Small Hydrogen Tank","p":[
+//-    -1,-5],"r":180,"f":false,"s":"Orange","c":[],"ni":[],"wg":0},{
+//-    "n":"Slab","p":[1,-1],"r":90,"f":false,"s":"White","c":[],"ni":[],
+//-    "wg":0},{"n":"Slab","p":[2,-1],"r":180,"f":false,"s":"White",
+//-    "c":[],"ni":[],"wg":0}],"nc":[],"ci":[],"significantVersion":25});
+//-    // {b:[{n:"Large Hydrogen Tank",p:[0,0]},
+//-    // {n:"Core",p:[.5,1]},{n:"Abs",p:[-1,1]},{n:"Abs",p:[3,1]},
+//-    // {n:"Abs",p:[.5,3]},{n:"Abs",p:[.5,-.5]}]});
+//-  render();
+//-  try{
+//-  //@ts-ignore
+//-  GE("info").click();
+//-  test_debugbox2collisions();
+//-  }catch(e){}
+//-}, 1000);
+//-setTimeout(function () {
+//-  test_collbxs = false;
+//-  rend_collisions = true;
+//-  render();
+//-}, 3000)

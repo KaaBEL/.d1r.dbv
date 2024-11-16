@@ -1,4 +1,4 @@
-// v.0.1.64T11
+// v.0.1.64T14
 function GE(v:any){return document.getElementById(+v===v?(GE.i=v+1)-1:
   v===void 0?v=GE.i++:v)}GE.i=0;
 
@@ -22,14 +22,12 @@ var canvas: HTMLCanvasElement;
 var ctx: CanvasRenderingContext2D;
 
 type TemporaryEventParam = MouseEvent | TouchEvent | TouchDat;
-var touchdevice: (()=>void)|null = null;
+var touchdevice: ((click?: true) => void) | null = null;
 
 /** signals UI API click on canvas */
 var press = function press(x: number, y: number) {
   return console.log(x, y);
 };
-
-var touchdevice: (() => void) | null = null;
 
 /** return true if move is used outside UI API */
 var move = function move(x: number, y: number, e: TemporaryEventParam) {
@@ -61,9 +59,9 @@ var bd: HTMLElement & {onmousewheel?: (
 var UDF: undefined, F: () => void, TCH: TouchEvent;
 
 /** @TODO check the definitions for new changes at some point */
-type TchDArr = (TouchDat|null)[];
+type TchDArr = (TouchDat | null)[];
 /** same as TchDArr but also has count variable for non-null items amount */
-type AllTchD = (TouchDat|null)[] & {count: number};
+type AllTchD = (TouchDat | null)[] & {count: number};
 /** fires when action of event doesn't correspond with touches array
  * @returns {boolean} ? keep current touches : reset to the new action
  * ^ swapped result by boolean (should reset on default: void functions) */
@@ -342,7 +340,9 @@ function touchesInit(src: HTMLElement,
           console.error("Adding Touch", createTouch(tch, ev, i));
     }
     events[i] = !0;
+    // touches[i] ?
     temp[i] = (touches[i] || new TouchDat()).update(tch, ev);
+    // console.error("Indentified touch is unpresent in touches.");
   }
   function removeTouch(tch: Touch, ev: TouchEvent, i: number): void {
     var j = identifiers.indexOf(tch.identifier);
@@ -350,7 +350,9 @@ function touchesInit(src: HTMLElement,
       return console.error("Can't remove unexisting Touch");
     events[j] = !0;
     identifiers[j] = -1;
+    // touches[i] ?
     removed[j] = temp[j] = (touches[j] || new TouchDat()).update(tch, ev);
+    // console.error("Indentified touch is unpresent in touches.");
     touches[j] = null;
     for (j = touches.length - 1; j > 0 && touches[j] === null;)
       touches.length--;
@@ -417,11 +419,6 @@ function touchesInit(src: HTMLElement,
 touchesInit.time = 350;
 /** allowed press precision, @see {mouseInit.move} */
 touchesInit.move = 13;
-touchesInit.interacted = 4;
-document.onvisibilitychange = function () {
-  if (document.visibilityState === "visible")
-    touchesInit.interacted = 8;
-};
 
 var mouseStamp = 0, test_debug = !1;
 var WheelSroll = typeof WheelEvent == "undefined" ? Object : WheelEvent;
@@ -460,8 +457,8 @@ function mouseInit() {
       return over(e);
     if (!(e.buttons & 5))
       return;
-      var x = (e.pageX - canvas.offsetLeft) * pR,
-        y = (e.pageY - canvas.offsetTop) * pR;
+    var x = (e.pageX - canvas.offsetLeft) * pR,
+      y = (e.pageY - canvas.offsetTop) * pR;
     if (!moving && (Date.now() < mouseStamp + mouseInit.time &&
       Math.abs(gX - x) < mouseInit.move &&
       Math.abs(gY - y) < mouseInit.move || taken))
@@ -477,8 +474,8 @@ function mouseInit() {
   bd.onmouseup = function (e) {
     if (foreign)
       return over(e);
-      var x = (e.pageX - canvas.offsetLeft) * pR,
-        y = (e.pageY - canvas.offsetTop) * pR;
+    var x = (e.pageX - canvas.offsetLeft) * pR,
+      y = (e.pageY - canvas.offsetTop) * pR;
     if (Date.now() < mouseStamp + mouseInit.time &&
       Math.abs(gX - x) < mouseInit.move &&
       Math.abs(gY - y) < mouseInit.move && !taken && !moving)
@@ -529,7 +526,7 @@ function touchGrab(all: TchDArr, ev: Event) {
       (all[0].pageY > all[1].pageY ?
         y0 - y1 :
         y1 - y0) || 0) *
-      sc / (237 << +(actionType === 2));
+      sc / (474 << +(actionType === 2));
     vX = (vX - w) * sc / prev + w;
     vY = (vY - h) * sc / prev + h;
     // TODO: the default (actionType = 2) is supposed to detect either
@@ -635,10 +632,15 @@ function thetouchcancel(all: AllTchD, changed: TchDArr, ev: TouchEvent) {
 declare interface Navigator {
   userAgentData?: object;
 }
+
+declare interface Document {
+  webkitIsFullScreen?: boolean;
+}
+
 document.body.onload = function initDoc() {
   function resizeWindow() {
-    var w = window.innerWidth,// * devicePixelRatio,
-      h = window.innerHeight;// * devicePixelRatio;
+    var w = window.innerWidth * pR,
+      h = window.innerHeight * pR;
     if (w > 4096 || h > 4096)
       if (w > h) {
         h = h * 4096 / w;
@@ -662,9 +664,16 @@ document.body.onload = function initDoc() {
     touchesInit(bd, UDF, [thetouchstart, thetouchmove, thetouchend,
       thetouchcancel]);
 
+  /** also called first touch, used to initiate fullscreen */
+  window.ontouchend = function () {
+    if (touchdevice && !document.fullscreenEnabled &&
+      !document.webkitIsFullScreen)
+      touchdevice();
+  };
   (GE("info") || document.createElement("br")).onclick = function (e) {
     document.body.classList.remove("scroll");
     this instanceof Node && document.body.removeChild(this);
+    touchdevice && touchdevice(true);
   };
   document.head.appendChild(document.createComment(navigator.userAgent +
     JSON.stringify(navigator.userAgentData || {})));

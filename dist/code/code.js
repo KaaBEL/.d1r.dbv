@@ -2,9 +2,14 @@
 /// <reference path="./code.d.ts" types="./code.js" />
 "use strict";
 /**
+ * @TODO leftout comments @TODO fix .JSON file containing Logic Nodes *
  * @TODO setup webapp manifest.json @TODO discord server link
- * @TODO Finish block collisions detection @TODO unit_test for Ship */
-var version_code_js = "v.0.1.64T13";
+ * @TODO delete all //- comments in v.0.1.6* */
+// NOTE: 3 options to modify and/or contribute are:
+// A) download and edit source files localy
+// B) create chrome extensions with custom modifications for live page
+// C) pull requests to main repo on github
+var version_code_js = "v.0.1.64T14";
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -49,175 +54,106 @@ Data.colors = {"White": 0, "Light Gray": 1, "Dark Gray": 2, "Black": 3,
   "[custom color]": 22, "Station Floor 0": 23, "Station Floor 1": 24,
   "Station Floor 2": 25, "Wood": 26, "Festive Duck": 27, "Gonb": 28};
 Data.paths = [
-  // graphics path data
-  ["m,hv", 8, -8, -16, 32], // 0 triangle 1x2 L-T
-  ["m,hv", -8, -8, 16, 32], // 1 triangle 1x2 R-T
-  ["m,hv", -8, 8, 16, -16], // 2 triangle 1x1 R-B
-  ["m,hvh", -8, -8, 16, 16, -16], // 3 square 1x1
-  ["m,hvh", -8, -8, 16, 32, -16], // 4 rectangle 1x2
-  ["m,hv", 8, -8, -16, 16], // 5 triangle 1x1 L-T
-  ["m,hv", -8, -8, 16, 16], // 6 triangle 1x1 R-T
-  ["m,vhvh", 8, 0, -8, -16, 16, 8], // 7 inversed_triangle 1x1 L-T
-  ["m,vhvh", -8, 0, -8, 16, 16, -8], // 8 inversed_triangle 1x1 R-T
-  ["m,vhvh", -8, 0, 8, 16, -16, -8], // 9 inversed_triangle 1x1 R-B
-  ["m,vhvh", 8, 8, -16, -16, 32, 8], // 10 inversed_triangle 1x2 L-T
-  ["m,vhvh", -8, 8, -16, 16, 32, -8], // 11 inversed_triangle 1x2 R-T
-  // 12 H2_container frame front
+  ["m,hv", 8, -8, -16, 32],
+  ["m,hv", -8, -8, 16, 32],
+  ["m,hv", -8, 8, 16, -16],
+  ["m,hvh", -8, -8, 16, 16, -16],
+  ["m,hvh", -8, -8, 16, 32, -16],
+  ["m,hv", 8, -8, -16, 16],
+  ["m,hv", -8, -8, 16, 16],
+  ["m,vhvh", 8, 0, -8, -16, 16, 8],
+  ["m,vhvh", -8, 0, -8, 16, 16, -8],
+  ["m,vhvh", -8, 0, 8, 16, -16, -8],
+  ["m,vhvh", 8, 8, -16, -16, 32, 8],
+  ["m,vhvh", -8, 8, -16, 16, 32, -8],
   ["m,hvhm,hvh", -8, -8, 16, 3, -16, 0, 10, 16, 3, -16],
-  // 13 H2_container (glass)+path_to_text front
   ["m,hvhm,", -8, -5, 16, 10, -16, 4, -8],
-  // 14 H2_container text front
   ["vhvhvhvhvhvm,vhvhvhvhvhvh", 5, 1, -2, 1, 2, 1, -5, -1, 2, -1, -2, 3,
     1, 1, 2, 1, -2, 3, 3, -1, -2, -1, 2, -3, -3],
-  // 15 H2_container path_to_text front
   ["m,", -4, -3],
-  // 16 H2_container text mirrored front
   ["vhvhvhvhvhvhm,hvhvhvhvhvh", 4, 2, 1, -2, 1, 3, -3, -2, -1, 2, -1, -3,
     4, 4, 1, -2, 1, 2, 1, -5, -1, 2, -1, -2, -1],
-  // 17 H2_container outline+path_to_ventil top
   ["m,vl,hl,vl,hm,", -8, 6, -12, 2, -2, 12, 2, 2, 12, -2, 2, -12, 1, -5],
-  // 18 H2_container ventil top
   ["vhvm,vhvm,vhvm,vhv", 2, 10, -2, 0, -1, -2, -10, 2, 0, -5,
     2, 10, -2, 0, -1, -1, -10, 1],
-  // 19 H2_container path_to_ventil top
   ["m,", -5, 3],
-  // 20 small_thruster base+path_to_thruster back
   ["m,hvhm,", -8, -8, 16, 16, -16, 0, -8],
-  // 21 thrusters thruster back
   ["c, , ,c, , ,c, , ,c, , ,", 0, -4.18, 3.81, -8, 8, -8, 4.18, 0, 8,
     3.81, 8, 8, 0, 4.18, -3.81, 8, -8, 8, -4.18, 0, -8, -3.81, -8, -8],
-  // 22 path_to_thruster back
   ["m,", -8, 0],
-  // 23 small_thruster base top
   ["hvhv", 8, 8, -16, -8],
-  // 24 small_thruster thruster top
   ["hl,hl,", -6, -2, -8, 16, -2, 8],
-  // 25 long_thruster thruster top
   ["m,hl,h", 6, -8, -12, -2, -16, 16],
-  // 26 cockpit_3x4 frame side
   ["m,hvhl,", -24, -24, 32, 64, -16, 16, -32, 0],
-  // 27 cockpit_3x4 window1 side
   ["m,hl,z", -40, -24, 16, -8, 24, 0],
-  // 28 cockpit_3x4 window2 side
   ["m,l,l,l,", -24, -24, 32, 32, -16, 32, -24, -40, 0],
-  // 29 cockpit_3x4 frame top
   ["m,vhm,vh", -24, 8, 32, 16, 32, -32, 32, -16, 0],
-  // 30 cockpit_3x4 window1 top
   ["m,vl,vm,vl,v", -24, 8, -32, 16, 24, 40, 16, 0, -40, 16, -24, 32, 0],
-  // 31 cockpit_3x4 window2 top
   ["m,hl,vhv", -24, -24, 48, -16, 24, 40, -16, -40, 0],
-  // 32 cockpit_3x4 frame front
   ["m,hl,h", -24, -8, 48, -16, 16, -16, 0],
-  // 33 cockpit_3x4 window2 front
   ["m,vl,vm,vl,v", 8, 40, -32, 16, -16, 32, -48, 0, -32, 16, 16, 32],
-  // 34 cockpit_3x4 frame bottom
   ["m,hvh", -24, -24, 48, 64, -48, 0],
-  // 35 cockpit_3x4 frame back
   ["m,hl,vhv", -8, -40, 16, 16, 16, 32, -48, -32, 0],
-  // 36 cockpit_3x3 frame side
   ["m,hvh", -8, -24, 16, 48, -16],
-  // 37 cockpit_3x3 window1 side
   ["m,vl,", 8, 24, -16, 32, -16],
-  // 38 cockpit_3x3 window2 side
   ["m,hvl,", 8, -24, 32, 16, -32, 16],
-  // 39 cockpit_3x3 frame top
   ["m,vl,m,hv", -24, 24, -16, 16, 16, 16, 0, 16, -16],
-  // 40 cockpit_3x4_fix window1 front
   ["m,", 0, 16],
-  // 41 cockpit_3x3 window1 top
   ["m,vl,m,l,v", -24, -8, 16, 16, 16, 16, 0, 16, -16, -16],
-  // 42 cockpit_3x3 window2 top
   ["m,vl,hl,v", -24, -24, 16, 16, 32, 16, 16, -32, -16],
-  // 43 cockpit_3x3 window1 front
   ["m,hvm,vh", -40, 24, 32, -16, 0, -16, -16, -32],
-  // 44 cockpit_3x3 window2 front
   ["m,l,vl,", -40, 24, 32, -16, -16, -32, -16],
-  // 45 cockpit_3x3 frame bottom
   ["m,vhv", -24, -24, 48, 48, -48]
 ];
 Data.groups = [
-  // multiple colored paths graphics data
-  
-  // 0 H2_container front
   "[[14,15],255,187,132,[14,13],255,215,175,[12],128,128,128,1,0]",
-  // 1 H2_container back
   "[[16,15],255,187,132,[16,13],255,215,175,[12],128,128,128,3,0]",
-  // 2 H2_container side
   "[[16,15],255,187,132,[16,13],255,215,175,[12],128,128,128,0,0]",
-  // 3 H2_container top
   "[[18,19],64,64,64,[18,17],128,128,128,0,0]",
-  // 4 H2_container second_side
   "[[14,15],255,187,132,[14,13],255,215,175,[12],128,128,128,0,0]",
-  // 5 thrusters front
   "[[3],96,96,96,0,0]",
-  // 6 thrusters back
   "[[21,22],32,32,32,[21,20],96,96,96,0,0]",
-  // 7 small_thruster top
   "[[24],32,32,32,[23],96,96,96,0,0]",
-  // 8 long_hturuster top
   "[[25],32,32,32,[3],96,96,96,0,0]",
-  // 9 cockpit_3x4 side
   "[[28],29,0,0,[27],18,0,0,[26],128,128,128,2,1]",
-  // 10 cockpit_3x4 top
   "[[31],29,0,0,[30],21,0,0,[29],128,128,128,0,0]",
-  // 11 cockpit_3x4 front
   "[[33],29,0,0,[4,40],21,0,0,[32],128,128,128,2,0]",
-  // 12 cockpit_3x4 bottom
   "[[34],128,128,128,0,0]",
-  // 13 cockpit_3x4 back
   "[[35],128,128,128,0,0]",
-  // 14 block
   "[[3],128,128,128,0,0]",
-  // 15 wedge side
   "[[5],128,128,128,0,0]",
-  // 16 pyramid top
   "[[6],128,128,128,0,0]",
-  // 17 pyramid front
   "[[2],128,128,128,0,0]",
-  // 18
   "[[8],128,128,128,0,0]",
-  // 19
   "[[9],128,128,128,0,0]",
-  // 20 pyramid_1x2 side
   "[[0],128,128,128,0,0]",
-  // 21 pyramid_1x2 top
   "[[1],128,128,128,0,0]",
-  // 22
   "[[7],128,128,128,0,0]",
-  // 23
   "[[10],128,128,128,0,0]",
-  // 24
   "[[4],128,128,128,0,0]",
-  // 25
   "[[11],128,128,128,0,0]",
-  // 26 cockpit_3x3 side
   "[[38],29,0,0,[37],18,0,0,[36],128,128,128,0,0]",
-  // 27 cockpit_3x3 top
   "[[42],29,0,0,[41],18,0,0,[39],128,128,128,0,0]",
-  // 28 cockpit_3x3 front
   "[[44],29,0,0,[43],18,0,0,[36],128,128,128,1,0]",
-  // 29 cockpit_3x3 bottom
   "[[45],128,128,128,0,0]",
-  // 30 cockpit_3x3 back
   "[[45,40],128,128,128,2,0]",
-  // ? inv_tri 1x2 ... red
   "[[10],0,0,128,0,0]",
-  // ? inv_tri 1x2 ... red
   "[[11],0,0,128,0,0]",
-  // ? inv_tri 1x1 ... red
   "[[9],0,0,128,0,0]",
-  // ? rect 1x2 blue
   "[[4],128,0,0,0,0]",
-  // ? rect 1x1 blue
   "[[3],128,0,0,0,0]",
-  // ? green fighter side
   "[[28],0,29,0,[27],0,18,0,[26],96,164,96,2,1]"
 ];
 /**
  * @typedef {number|[number,number]} UseData
  * @typedef {{id:number,weight?:number,strength?:number,cost?:number,
  * energy_use?:UseData,energy_store?:number,fuel_use?:UseData,
- * fuel_store?:number,cargo_use?:UseData,cargo_store?:number}} BlockData
+ * fuel_store?:number,cargo_use?:UseData,cargo_store?:number,
+ * draw?:number[]}} BlockData
+ * @typedef {{id:number,draw?:number[],weight?:number,strength?:number,
+ * cost?:number,energy_use?:number|number[],energy_store?:number,
+ * fuel_use?:number|number[],fuel_store?:number,cargo_use?:number|number[],
+ * cargo_store?:number}} BlockDataSimple
  */
 Data.blocks = {block: {id: 0, draw: [14, 14, 14, 14, 14, 14]},
   wedge: {id: 1, draw: [15, 14, 14, 15, 14, 14]},
@@ -244,8 +180,9 @@ Data.blocks = {block: {id: 0, draw: [14, 14, 14, 14, 14, 14]},
   cost: 100}, Struct: {id: 700, weight: 0.5, strength: 5, cost: 100},
   "Glass Block": {id: 701, weight: 1, strength: 1, cost: 100},
   "Glass Wedge": {id: 702, weight: 0.5, strength: 0.5, cost: 100},
-  "Slab Wedge": {id: 703, cost: 100}, "Tiny Hydrogen Thruster": {id: 738,
-  weight: 0.5, strength: 2.5, cost: 100, fuel_use: 175},
+  "Slab Wedge": {id: 703, weight: 0.5, strength: 5, cost: 100},
+  "Tiny Hydrogen Thruster": {id: 738, weight: 0.5, strength: 2.5,
+  cost: 100, fuel_use: 175},
   "Small Hydrogen Thruster": {id: 739, weight: 2, strength: 10, cost: 100,
   fuel_use: 150}, "Medium Hydrogen Thruster": {id: 740, weight: 8,
   strength: 40, cost: 400, fuel_use: 125}, "Large Hydrogen Thruster":
@@ -482,37 +419,51 @@ Data.titles = {
   1059: "Camera Block,",
   1060: "T1 Nano Healer"
 };
-/** @param {"colors"|"blocks"|"titles"} src */
+/** @param {"colors"|"blocks"} src */
 Data.generateNames = function (src) {
   /** @type {{[key:number]:string|undefined,length:number}} Names by ID */
-  var names = {length: 0}, data = Data[src];
+  var names = {length: 0},
+    /** @type {{[key:string]:number|BlockDataSimple}} */
+    data = Data[src];
   for (var p in data) {
-    var id = typeof data[p] == "number" ? data[p] : data[p].id;
+    /** one data item: color id, block data */
+    var item = data[p];
+    var id = typeof item == "object" ? item.id : item;
     names[id] = p;
     if (id >= names.length)
       names.length = id + 1;
   }
   return names;
 };
-/** @param {"colors"|"blocks"|"titles"} src */
+/** @param {"colors"|"blocks"} src */
 Data.generateIDs = function (src) {
   /** is missing the undefined case, isn't 100% type safe
    * @type {{[key:string]:number}} IDs by Name */
-  var ids = {length: 0}, data = Data[src];
-  for (var p in data)
-    ids[p] = typeof data[p] == "number" ? data[p] : data[p].id;
+  var ids = {length: 0},
+    /** @type {{[key:string]:number|BlockDataSimple}} */
+    data = Data[src];
+  for (var p in data) {
+    /** @type {BlockDataSimple|number} */
+    var item = data[p];
+    ids[p] = typeof item == "object" ? item.id : item;
+  }
   return ids;
 };
 /** @template {keyof BlockData} T @param {T} type */
 Data.generateValues = function (type) {
   /** @type {{[key:string]:BlockData[T]|undefined}} Values by Name */
-  var values = {}, data = Data.blocks;
-  for (var p in data) {
-    /** @type {BlockData} */
-    var stuff = data[p];
-    if (stuff[type])
-      values[data[p].id] = stuff[type];
-  }
+  var values = {},
+    /** @type {{[key:string]:BlockDataSimple}} */
+    data = Data.blocks,
+    /** @type {BlockDataSimple[keyof BlockData]} */
+    val;
+  for (var p in data)
+    if (val = data[p][type])
+      values[data[p].id] =
+        /** @type {BlockData[T]} */
+        (val instanceof Array ?
+          [val[0], val[1]] :
+          (val));
   return values;
 };
 
@@ -838,7 +789,7 @@ Object.freeze(Logic.VALUE);
 /** addDefault but for Logic - if property contains nodeIndex data it
  * will use them to reassemble these connections, to reassamble them
  * properly Logic.reassemble must be used on completed blocks
- * @param {string|number} name @param {object} property
+ * @param {string|number} name @param {safe} property
  * @param {(Logic<any>|undefined)[]} logics
  * it is the global Logic.nodes or ship.prop.nodeList
  * @param {Block[]} blocks */
@@ -849,9 +800,11 @@ Logic.addLogic = function (name, property, logics, blocks) {
     logicDef = Logic.VALUE[typeof name == "number" ?
       name :
       Block.ID[name]
-    ];
-  property.nodeIndex instanceof Array ||
-    (property.nodeIndex = []);
+    ],
+    /** @type {(number|undefined)[]} */
+    nodeIndex = property.nodeIndex instanceof Array ?
+      property.nodeIndex :
+      property.nodeIndex = [];
   if (!logicDef)
     return property;
   for (var i = logicDef.length, l = 1; i-- > 0; ni[i] = index) {
@@ -863,10 +816,10 @@ Logic.addLogic = function (name, property, logics, blocks) {
     /** @type {number} */
     // BE AWARE nodeIndex is nor DBV property here, it's old format
     // connections references like extracted from control property
-    var index = property.nodeIndex[i], item = logics[index];
+    var index = nodeIndex[i] || 0, item = logics[index];
     // logicDef defines what node is going to be specified/listed
     if (logicDef[i].type > 1) {
-      // if it is output it will later or might already be referenced
+      // ^if it is output it will later or might already be referenced
       // by input, so it needs to be replaced to presented index
       // index is not taken
       if (!item) {
@@ -874,9 +827,9 @@ Logic.addLogic = function (name, property, logics, blocks) {
         continue;
       }
       // 'huh!' case check (checking for unsupposed wierd case)
-      if (typeof index != "number")
+      if (typeof index != "number" || index < 1)
         console.error("logics contain property with non-number key" +
-          ", at Logic.addLogic().");
+          " or less then 1, at Logic.addLogic().");
       // index being already taken by another output
       if (item.pairs instanceof Array) {
         console.warn("Two output nodes with identical index" +
@@ -897,11 +850,12 @@ Logic.addLogic = function (name, property, logics, blocks) {
       logics[index] = node;
       continue;
     }
+    // else it is input
     node.pairs = index || -1;
     // else just take first unassigned index for input
     logics[index = l] = node;
     // there's the requirement of Logic.reassemble to be used
-    // due to the lack of blocks list while blocks are uner construcion
+    // due to the lack of blocks list while blocks are under construcion
   }
   property.nodeIndex = ni;
   return property;
@@ -1154,12 +1108,14 @@ Block.CARGO_STORE = Data.generateValues("cargo_store");
 /** positive = buy price of block, -1 = block isn't purchasable
  * @type {{[key:number]:number|undefined}} (MarketValue) */
 Block.COST = Data.generateValues("cost");
+Block.creatorWarns = 3;
 /** @TODO handling ls (DBV property?) */
 /**
- * @param {object[]|object} blocks
+ * @param {any[]|any} blocks
  * @param {Logic<any>[]&{nc?:any}} [logics$] */
-Block.arrayFromObjects = function arrayFromObjects(blocks, logics$) {
-  var warn = 3, bs = blocks instanceof Array ? blocks : [blocks];
+Block.arrayFromObjects = function (blocks, logics$) {
+  var warn = Block.creatorWarns,
+    bs = blocks instanceof Array ? blocks : [blocks];
   /** nodeIndex (DBV "ni") property of a block is number[] type:
    * = it contains inputs and outputs indexes
    * = their connections are specified in "nc" DBV savefile property
@@ -1218,15 +1174,19 @@ s|c|ni|invalidName|getPhysics|logicPosition|logicBlockIndex)$");
       name: block.internalName || block.name || block.n,
       pos: block.position || block.pos || block.p,
       rot: block.rotation || block.rot || block.r || 0,
-      prop: block.properties || block.prop || {color: ""},
+      prop: block.properties || block.prop || {},
       flip: block.f || block.flipped,
       weld: block.wg || block.weld,
       lpos: block.logicPosition
     };
-    o.prop.color = block.color || block.s || o.prop.color || "";
+    // (v.0.1.64T14) color is nullable so null as deafault for DBV detected
+    // uses later Color.default to set it
+    var color = block.color || block.s || o.prop.color;
+    o.prop.color = typeof color == "string" ? color : null;
+    // (v.0.1.64T14) hasOwnProperty check for "for ... in ..." ?
     for (var p in block)
       if (warn)
-        propertyNames.test(p) || warn-- && console.warn("Unknown prop" +
+        propertyNames.test(p) || warn-- && 0 &&console.warn("Unknown prop" +
           "erty name: " + JSON.stringify(p) + " at: " + i);
       else
         break;
@@ -1242,20 +1202,22 @@ s|c|ni|invalidName|getPhysics|logicPosition|logicBlockIndex)$");
         }).concat([0, 0, 0]),
       flip = typeof o.flip == "boolean" ? o.flip : !1,
       /** @type {Rotation} *///@ts-ignore
-      rot = o.rot instanceof Array && o.rot.length === 3 ?
-        [o.rot[0] >= 0 && o.rot[0] < 3 && typeof o.rot[0] == "number" ?
-          o.rot[0] : 0,
+      rot = o.rot instanceof Array && o.rot.length === 3 ? [
+        o.rot[0] >= 0 && o.rot[0] < 3 && typeof o.rot[0] == "number" ?
+          o.rot[0] :
+          0,
         typeof o.rot[1] == "boolean" ? o.rot[1] : !1,
-        typeof o.rot[2] == "number" ? o.rot[2] & 3 : 0] :
-        [0, flip, typeof o.rot == "number" && o.rot / 90 || 0 & 3];
+        typeof o.rot[2] == "number" ? o.rot[2] & 3 : 0
+      ] : [0, flip, (typeof o.rot == "number" && o.rot / 90 || 0) & 3];
     if (Block.ID[name] === UDF) {
       o.prop.invalidName = name;
       name = "__unknown__";
     }
     if (o.pos instanceof Array && o.pos.length === 2) {
       if (typeof o.prop.color != "string")
-       o.prop.color = Color.default(name);
-      if (typeof o.rot != "number")
+        // NOTE that defaulting color requires DBV like position ^
+        o.prop.color = Color.default(name);
+      if (typeof o.rot != "number" && warn && warn--)
         console.warn("incorrect array position length or wrong rota" +
           "tion? at: Block.arrayFromObjects, blocks: ", bs, " i: ", i);
       var adjX = 0, adjY = 0, size = Block.Size.VALUE[Block.ID[name]];
@@ -1282,15 +1244,16 @@ s|c|ni|invalidName|getPhysics|logicPosition|logicBlockIndex)$");
       Logic.addLogic(name, o.prop, logics, r);
     }
     if (Block.ID[name] > 689 && Block.ID[name] < 947)
-      o.prop.weldGroup = o.weld || 0;
+      // (v.0.1.64T14) was it really impossible to load wgs from JSON?
+      o.prop.weldGroup = o.weld || o.prop.weldGroup || 0;
     block = new Block(name, [pos[0], pos[1], pos[2]], rot, o.prop);
     if (o.lpos && o.lpos instanceof Array)
       logicBlockPositions[i] =
         [+o.lpos[0] || 0, +o.lpos[1] || 0, +o.lpos[2] || 0];
     r[i] = block;
   }
-  // optionally correct loading if logic nodes will require
-  // to finish references after all blocks are loaded
+  // optionally for preserving old connections, the correct loading of logic
+  // nodes will require to assign references after all blocks are loaded
   Logic.reassemble(r, logics);
   logicBlockPositions.forEach(function (e, i) {
     (r[i] = new LogicBlock(block, i, logics)).logicPosition = e;
@@ -1659,19 +1622,20 @@ Block.Properties.VALUE = Block.PROP = {
 };
 // /** @type {{[key:number]:number|undefined}} */
 // Block.Properties.WELDGROUPS = {790: 2, 791: 4, 792: 2};
-/** @param {string|number} name @param {object} property */
+/** @param {string|number} name @param {safe} property */
 Block.Properties.addProperty = function (name, property) {
   var propsDef = Block.Properties.VALUE[typeof name == "number" ?
     name :
     Block.ID[name]
   ];
-  property.customParameter = [];
+  /** @type {any[]} works in Block.ts as well */
+  var custom = property.customParameter = [];
   if (!(propsDef instanceof Array))
     return property;
   for (var i = 0, n = 0, p; i < propsDef.length;)
     if ((p = propsDef[i++]) instanceof Block.Properties)
       for (var j = 0, l = p.item.default.length; j < l;)
-        property.customParameter[n++] = p.name === "Controls" &&
+        custom[n++] = p.name === "Controls" &&
           p.item instanceof Block.Properties.Items.Dropdown ?
             p.item.options[p.item.default[j++]] :
             p.item.default[j++];
@@ -1699,40 +1663,87 @@ Block.Selected = function (block, id, x, y, w, h) {
   this.h = h;
   Object.freeze(this);
 };
-/** instance is frost @param {number} x @param {number} y */
+/**  */
+var test_collbxs = false,
+  /** @type {typeof F|((rend?:any)=>true|undefined)} */
+  test_debugbox2collisions = F;
+/** instance is frost, Point @param {number} x @param {number} y */
 Block.Box2d = function Point(x, y) {
   this.x = x;
   this.y = y;
   Object.freeze(this);
 };
 /** @typedef {{x:number,y:number}|[number,number]} PathArg */
+/** @typedef {Block.Box2d[]&{range:number}} Box2dPath */
 /** @param {...PathArg[]|string|number} args */
 Block.Box2d.generateBuildBox = function () {
-  /** @type {{[key:number]:Block.Box2d[]&{range:number}|undefined}} */
+  /**
+   * @type {{[key:number]:[Box2dPath,Box2dPath,Box2dPath,Box2dPath,
+   * Box2dPath,Box2dPath,Box2dPath,Box2dPath]|undefined}}
+   */
   var o = {},
-    /** @type {(Block.Box2d[]&{range:number})[]} */
+    /** 
+     * @type {[Box2dPath,Box2dPath,Box2dPath,Box2dPath,Box2dPath,
+     * Box2dPath,Box2dPath,Box2dPath][]}
+     */
     defs = [],
+    /** @type {{[key:string]:Block.Box2d|undefined}} */
+    points = {},
     /** @constant */
     AT = " at Block.Box2d.generateBuildBox.";
+  /** @param {{x:number,y:number}[]} path @param {boolean} [flip] */
+  function box2dArray(path, flip) {
+    function box2dItem() {
+      var x = path[j].x, y = path[j].y, n = Math.sqrt(x * x + y * y);
+      n > max ? max = n : 0;
+      frost.push(points[x + "_" + y] ||
+        (points[x + "_" + y] = new Block.Box2d(x, y)));
+    }
+    /** @type {Block.Box2d[]} */
+    var frost = [], result;
+    if (flip)
+      for (var j = 0, max = 1; j < path.length; j++)
+        box2dItem();
+    else
+      for (j = path.length, max = 1; j-- > 0;)
+        box2dItem();
+    (result =
+      /** @type {Block.Box2d[]&{range:number}} */
+      (frost)
+    ).range = max;
+    return Object.freeze(result);
+  }
   /** @param {PathArg[]|string} arg */
   function setBuildBox(arg) {
     if (typeof arg == "undefined")
       return console.warn("Found \"undefined\" type" + AT);
     var path = typeof arg == "object" ? arg.map(function (e) {
-      return e instanceof Array ?
-        new Block.Box2d(e[0], e[0]) :
-        new Block.Box2d(e.x, e.y);
+      return e instanceof Array ? {x: e[0], y: e[1]} : {x: e.x, y: e.y};
     }) : null;
-    if (path)
-      var j = path.length;
-    else
+    if (!path)
       return o[l++] = defs[+arg];
-    for (var n = 0, max = 1; j-- > 0; n > max ? max = n : 0)
-      var x = path[j].x, y = path[j].y, n = Math.sqrt(x * x + y * y);
-    (o[l++] = defs[defs.length] =
-      /** @type {Block.Box2d[]&{range:number}} */
-      (path)
-    ).range = max;
+    for (var n = 3, rots = [box2dArray(path)]; n-- > 0;) {
+      path.forEach(function (e) {
+        var x = -e.y;
+        e.y = e.x - 2;
+        e.x = x;
+      });
+      rots.push(box2dArray(path));
+    }
+    path.forEach(function (e) {
+      // vertical mirror, but it's done in horizontal position
+      e.y = -e.y - 2;
+    });
+    for (n = 4; n-- > 0;) {
+      path.forEach(function (e) {
+        var x = -e.y;
+        e.y = e.x - 2;
+        e.x = x;
+      });
+      rots.push(box2dArray(path, true));
+    }
+    //@ts-ignore
+    o[l++] = defs[defs.length] = Object.freeze(rots);
   }
   for (var i = 0, l = 690, a = arguments; i < a.length; i++)
     typeof a[i] == "number" ?
@@ -1758,19 +1769,19 @@ Block.Box2d.VALUE = Block.Box2d.generateBuildBox(
   ],
   // def2: 1x2 wedge "Wedge 1x2"
   [
-    {x: 0, y: 0},
-    {x: 0, y: -4},
-    {x: 2, y: -4},
-    {x: 2, y: -3.625},
-    {x: 0.25, y: 0}
+    {x: 0, y: 2},
+    {x: 0, y: -2},
+    {x: 2, y: -2},
+    {x: 2, y: -1.625},
+    {x: 0.25, y: 2}
   ],
   // def3: 1x4 wedge "Wedge 1x4"
   [
-    {x: 0, y: 0},
-    {x: 0, y: -8},
-    {x: 2, y: -8},
-    {x: 2, y: -7.5},
-    {x: 0.125, y: 0}
+    {x: 0, y: 6},
+    {x: 0, y: -2},
+    {x: 2, y: -2},
+    {x: 2, y: -1.5},
+    {x: 0.125, y: 6}
   ],
   // def4: 1x1 pyramid "Pyramid"
   [
@@ -1789,21 +1800,21 @@ Block.Box2d.VALUE = Block.Box2d.generateBuildBox(
   [{x: 0, y: -1}, {x: 0, y: -2}, {x: 2, y: -2}, {x: 2, y: -1}],
   738,
   // def7: .5x.5 block "LED"
-  [{x: 1, y: -1}, {x: 1, y: -2}, {x: 2, y: -2}, {x: 2, y: -1}],
+  [{x: 0, y: -1}, {x: 0, y: -2}, {x: 1, y: -2}, {x: 1, y: -1}],
   "0",
   // def8: 2x2 block "Medium Hydrogen Tank"
-  [{x: 0, y: 0}, {x: 0, y: -4}, {x: 4, y: -4}, {x: 4, y: 0}],
+  [{x: 0, y: 2}, {x: 0, y: -2}, {x: 4, y: -2}, {x: 4, y: 2}],
   // def9: 3x4 block "Large Hydrogen Thruster"
-  [{x: 0, y: 0}, {x: 0, y: -8}, {x: 6, y: -8}, {x: 6, y: 0}],
+  [{x: 0, y: 6}, {x: 0, y: -2}, {x: 6, y: -2}, {x: 6, y: 6}],
   "7", "0",
   // def10: 1x2 block "Medium Ion Thruster"
-  [{x: 0, y: 0}, {x: 0, y: -4}, {x: 2, y: -4}, {x: 2, y: 0}],
+  [{x: 0, y: 2}, {x: 0, y: -2}, {x: 2, y: -2}, {x: 2, y: 2}],
   // def11: 2x3 block "Large Battery"
-  [{x: 0, y: 0}, {x: 0, y: -6}, {x: 4, y: -6}, {x: 4, y: 0}],
+  [{x: 0, y: 4}, {x: 0, y: -2}, {x: 4, y: -2}, {x: 4, y: 4}],
   "0",
   754, "0", "8",
   // def12: 3x3 block "Large Hydrogen Tank"
-  [{x: 0, y: 0}, {x: 0, y: -6}, {x: 6, y: -6}, {x: 6, y: 0}],
+  [{x: 0, y: 4}, {x: 0, y: -2}, {x: 6, y: -2}, {x: 6, y: 4}],
   "0", "8", "11", "0", "8", "12",
   770,
   // def13: 1x1 drill "Small Hydraulic Drill"
@@ -1842,7 +1853,7 @@ Block.Box2d.VALUE = Block.Box2d.generateBuildBox(
   "0", "0", "0", "10", "0", "0", "0", "0", "0", "5", "0", "5", "5",
   802,
   "7", "0", "0", "0", "0", "0", "0", "0", "5", "7", "5", "7", "0",
-  "0", "0", "0", "0", "5", "5", "5", "0", "0", "0",
+  "0", "0", "0", "5", "5", "5", "5", "0", "0", "0",
   // def16: .5x1 block "Gauge"
   [{x: 0, y: 0}, {x: 0, y: -2}, {x: 1, y: -2}, {x: 1, y: 0}],
   "7", "5", "5",
@@ -1859,91 +1870,296 @@ Block.Box2d.VALUE = Block.Box2d.generateBuildBox(
   ],
   // def18: 1x2 smooth_corner "Smooth Corner 1x2"
   [
-    {x: 0, y: 0},
-    {x: 0, y: -4},
-    {x: 2, y: -4},
-    {x: 2, y: -3.25},
-    {x: 1.5, y: -1.25},
-    {x: 0.875, y: -0.25},
-    {x: 0.375, y: 0}
+    {x: 0, y: 2},
+    {x: 0, y: -2},
+    {x: 2, y: -2},
+    {x: 2, y: -1.25},
+    {x: 1.5, y: 0.75},
+    {x: 0.875, y: 1.75},
+    {x: 0.375, y: 2}
   ],
   // def19: 1x4 smooth_corner "Smooth Corner 1x4"
   [
-    {x: 0, y: 0},
-    {x: 0, y: -8},
-    {x: 2, y: -8},
-    {x: 2, y: -6.75},
-    {x: 1.375, y: -2},
-    {x: 0.875, y: -0.5},
-    {x: 0.25, y: 0}
+    {x: 0, y: 6},
+    {x: 0, y: -2},
+    {x: 2, y: -2},
+    {x: 2, y: -0.75},
+    {x: 1.375, y: 4},
+    {x: 0.875, y: 5.5},
+    {x: 0.25, y: 6}
   ]
 );
-/** @typedef {{ax:number,by:number,c:number}} VRP */
-// global test functions so it can be tested separately from its local scope
-/** @param {Block.Box2d} pointA @param {Block.Box2d} pointB */
-function test_someVRPshetFromSchoolMathNotes(pointA, pointB) {
-  // nominal vector of A->B (a, b)
-  var a = pointA.y - pointB.y, b = pointB.x - pointA.x;
-  /** @see {VRP}: a*x + b*y + c = 0 */
-  return {ax: a, by: b, c: -(a * pointA.x + b * pointA.y)};
-  // (basically check formula for points on that line)
-}
-// JSON.stringify(someVRPshetFromSchoolMathNotes({x: 3, y: 7}, {x:-2, y: 1}));
-// Should return {ax: 6, by: -5, c: 17}
-/** @param {VRP} vrp1 @param {VRP} vrp2 */
-function test_collisionOfVRPshets(vrp1, vrp2) {
-  // coercion
-  var n = vrp2.ax === 0 ?
-    // the line is horizontal, I have no idea what to do with it
-    function () {
-      debugger;
-      throw new Error("Debug this.");
-    }() :
-    vrp1.ax / -vrp2.ax;
-  return vrp1.ax + vrp2.ax * n + vrp1.by + vrp2.by * n +
-    vrp1.c + vrp2.c * n;
-}
-/** @param {ShipBlock} ofBlock @param {ShipBlock[]} within */
-Block.Box2d.collisions = function (ofBlock, within) {
-  function combineLines() {
-    for (var j = path.length, point = path[j - 1]; j-- > 0;) {
-      for (var n = ofPath.length, ofPoint = path[n - 1]; n-- > 0;) {
-        var a1x = path[j].x, a1y = path[j].y
-        // if (straightLineCollision(path[j], point, ofPath[n], ofPoint))
-        //   return colliding.push(within[i]);
+Block.Box2d.warn = test_collbxs;
+/**
+ * @overload @param {Block.Box2d[]} path @returns {void}
+ * @overload @param {Box2dPath} path @param {number} x @param {number} y
+ * @param {boolean} isBlock1 @returns {void}
+ * @param {Box2dPath|Block.Box2d[]} path @param {number} [x]
+ * @param {number} [y] @param {boolean} [isBlock1] @returns {void}
+ * {(x:number,y:number,path:Box2dPath,isBlock1?:boolean)=>void}
+ */
+Block.Box2d.visualize = function (path, x, y, isBlock1) {};
+/** @param {ShipBlock} block1 @param {ShipBlock[]} within */
+Block.Box2d.collisions = function (block1, within) {
+  /** @typedef {{ax:number,by:number,c:number}} VRP */
+  /** @param {Block.Box2d} pointA @param {Block.Box2d} pointB */
+  function someVRPthing(pointA, pointB) {
+    // nominal vector of A->B (a, b)
+    var a = pointA.y - pointB.y, b = pointB.x - pointA.x;
+    /** @see {VRP}: a*x + b*y + c = 0 it's an equtation */
+    return {ax: a, by: b, c: -(a * pointA.x + b * pointA.y)};
+    // (basically check equotation for points on that line)
+  }
+  //(GE('evil_result') || {}).innerText += block1.internalName + ";";
+  /** @param {VRP} vrp1 @param {VRP} vrp2 */
+  function intersectionOfVRPs(vrp1, vrp2) {
+    //-console.log("colliding result = " + (vrp1.ax + vrp2.ax * n
+    //-  + vrp1.by + vrp2.by * n + vrp1.c + vrp2.c * n === 0));
+    // coercion
+    if (vrp2.ax !== 0)
+      //-// 
+      //-if (vrp2.by === 0 && vrp1.ax === 0)
+      //-  return ;
+      //-else
+      // multiplier to be able to subtract both equtations
+      var n = vrp1.ax / vrp2.ax || vrp1.by / vrp2.by;
+    // line2 is horizontal
+    else if (vrp1.ax === 0)
+      // lines are paralel or equal, no intersection there
+      return null;
+    else if (vrp2.by === 0) {
+      // line2 is defined by two equal points, only let know about it
+      console.error("Line2 defined by equal points.COLISNS");
+      return null;
+    } //-else if (vrp1.by === 0)
+      //- prependicular intersection
+      //-return ;
+    else
+      // multiplier, but ... from y coefficient
+      n = vrp1.by / vrp2.by;
+    // variables subtracting the equtasions
+    var x = vrp1.ax - vrp2.ax * n, y = vrp1.by - vrp2.by * n;
+    // lines are parralel, no intersection
+    if (x === 0 && y === 0)
+      return null;
+    // resolving the equation for the other
+    if (Math.abs(x) < 1E-9)
+      x = (-vrp1.by * (y = -(vrp1.c - vrp2.c * n) / y) - vrp1.c) /
+        vrp1.ax;
+    else if (Math.abs(y) < 1E-9)
+      y = (-vrp1.ax * (x = -(vrp1.c - vrp2.c * n) / x) - vrp1.c) /
+        vrp1.by;
+    else {
+      //er("Incorrect multiplication for x1: y1: x2: y2:" + vrp2.by) :
+      console.error("Incorrect multiplication at collisioons.COLISNS");
+      if (devt_debugger)
+        debugger;
+      return null;
+    }
+    return new Block.Box2d(x, y);
+    //-vrp1 = test_someVRPthing({x:4,y:0.25},{x:2.25,y:2});;
+    //-{ax: -1.75, by: -1.75, c: 7.4375}
+    //-vrp2 = test_someVRPthing({x:3,y:1},{x:3,y:3});
+    //-{ax: -2, by: 0, c: 6}
+    //-y = -(vrp1.c - vrp2.c * n) / y;
+    //-1.25
+    //-x = -vrp1.by * y - vr vrp1.ax
+    //-undefined
+    //-x = (-vrp1.by * y - vrp1.c) / vrp1.ax;
+    //-3
+  }
+  function combineOutlines() {
+    for (var i = path1.length, point1 = path1[0]; i-- > 0;) {
+      var endpoint1 = path1[i];
+      if (point1.x > endpoint1.x)
+        // oPrpdcr = original prependicular (shortened)
+        var xMax1 = point1.x, xMin1 = endpoint1.x, oPrpdcr = 0;
+      else {
+        xMin1 = point1.x;
+        xMax1 = endpoint1.x;
+        oPrpdcr = +(xMin1 === xMax1);
       }
+      if (point1.y > endpoint1.y)
+        var yMax1 = point1.y, yMin1 = endpoint1.y;
+      else {
+        yMin1 = point1.y;
+        yMax1 = endpoint1.y;
+        oPrpdcr |= +(yMin1 === yMax1 && 2);
+      }
+      for (var j = path2.length, point2 = path2[0]; j-- > 0;) {
+        // prpdcr = local prependicular (shortened)
+        var endpoint2 = path2[j], prpdcr = oPrpdcr, intersect = null;
+        if (prpdcr) {
+          prpdcr |= +(point2.x === endpoint2.x && 8);
+          prpdcr |= +(point2.y === endpoint2.y && 16);
+          //(GE('evil_result') || {}).innerText += block1.internalName + "; ";
+          intersect = prpdcr === 17 ?
+            new Block.Box2d(point1.x, point2.y) :
+            prpdcr === 10 ?
+              new Block.Box2d(point2.x, point1.y) :
+              null;
+        }
+        if (prpdcr < 3)
+          intersect = intersectionOfVRPs(
+            someVRPthing(point1, endpoint1),
+            someVRPthing(point2, endpoint2)
+          );
+        else if (prpdcr === 9 || prpdcr === 18)
+          intersect = new Block.Box2d(NaN, NaN);
+        //-  (endpoint1.y > point1.y) === (endpoint2.y > point2.y) :
+        //-  prpdcr === 18 &&
+        //-    (endpoint1.x > point1.x) === (endpoint2.x > point2.x)) {
+        //-  Block.Box2d.visualise([point1, endpoint1, point2, endpoint2]);
+        //-  return true;
+        //-}
+        if (intersect) {
+          x = intersect.x, y = intersect.y;
+          //-if (straightLineCollision(path[j], point, ofPath[n], ofPoint))
+          //-  return colliding.push(within[i]);
+          //-intersect point lies on both line segments
+          if (point2.x > endpoint2.x)
+            var xMax2 = point2.x, xMin2 = endpoint2.x;
+          else {
+            xMin2 = point2.x;
+            xMax2 = endpoint2.x;
+          }
+          if (point2.y > endpoint2.y)
+            var yMax2 = point2.y, yMin2 = endpoint2.y;
+          else {
+            yMin2 = point2.y;
+            yMax2 = endpoint2.y;
+          }
+          if (x !== x || y !== y)
+            if (
+              // paralel vertical lines on x axis (xMin<i> === xMax<i>)
+              prpdcr === 9 ?
+                // lines are same position
+                xMax1 === xMax2 &&
+                  // (vertical) lines are the same direction
+                  (point1.y === yMin1) === (point2.y === yMin2) &&
+                  // line segments are overlaping
+                  yMax1 > yMin2 && yMin1 < yMax2 :
+              // paralel horizontal lines on y axis (yMin<i> === yMax<i>)
+              prpdcr === 18 &&
+                // lines are same position
+                yMax1 === yMax2 &&
+                // (horizontal) lines are the same direction
+                (point1.x === xMin1) === (point2.x === xMin2) &&
+                // line segments are overlaping
+                xMax1 > xMin2 && xMin1 < xMax2
+            ) {
+              return [point1, endpoint1, point2, endpoint2];
+            } else
+              prpdcr !== 9 && prpdcr !== 18 &&
+                console.error("Detected NaN at comparing part.COLISNS");
+          else if (
+            (xMin1 === xMax1 ?
+              y > yMin1 && y < yMax1 :
+              x > xMin1 && x < xMax1) && (xMin2 === xMax2 ?
+                y > yMin2 && y < yMax2 :
+                x > xMin2 && x < xMax2)
+          ) {
+            return [point1, endpoint1, point2, endpoint2];
+          }
+        }
+        point2 = endpoint2;
+      }
+      point1 = endpoint1;
     }
   }
-  /** @param {ShipBlock} block @param {Block.Box2d[]} path */
-  function transformPath(block, path) {
-    if (!block.rotation[1] && block.rotation[2] === 0)
-      throw new Error("Flipped and rotated collisions not yet implemented");
-    return path;
-    var rot = block.rotation[2];
-    return path.map(function (e) {
-      return new Block.Box2d(e.x * -1, e.y * 1);
-    });
+  /** @param {Block.Box2d} [point1] @param {Block.Box2d[]} [path2] */
+  function insides(point1, path2) {
+    if (!point1 || !path2)
+      return;
+    /** ( @TODO rename back to:) nonzeroRule */
+    var before = 0, at = 0, after = 0, point2 = path2[0];
+    var a1 = new Block.Box2d(point1.x - 512, point1.y),
+      b1 = new Block.Box2d(point1.x + 512, point1.y);
+    // checking being inside other block using horizontal checker line
+    for (var j = path2.length; j-- > 0;) {
+      var endpoint2 = path2[j];
+      path1.length && test_debugbox2collisions(path1) &&
+        Block.Box2d.visualize([point2, endpoint2, a1, b1]);
+      // line is horizontal, no intersection with checker
+      if (point2.y > endpoint2.y) {
+        var yMax2 = point2.y, yMin2 = endpoint2.y;
+      } else {
+        yMin2 = point2.y;
+        yMax2 = endpoint2.y;
+      }
+      if (point2.y === endpoint2.y ||
+        point1.y >= yMax2 || point1.y <= yMin2) {
+        point2 = endpoint2;
+        continue;
+      }
+      var intersect = point2.x === endpoint2.x ?
+        // line is vertical, just use an
+        new Block.Box2d(point2.x, point1.y) :
+        intersectionOfVRPs(
+          {ax: 0, by: -1, c: point1.y},
+          someVRPthing(point2, endpoint2)
+        );
+      if (intersect) {
+        x = intersect.x;
+        var n = point2.y > endpoint2.y ? 1 : -1;
+        x < point1.x ? before += n : x > point1.x ? after += n : 0;
+        //-x < point1.x ? before += n : x > point1.x ? after += n : at += n;
+        // How to use test_debugbox2collisions:
+        // devt_debugger && rend_collisions &&
+        //   console.log("before:", before, "at:", at, "after:", after);
+        // if ()
+      }
+      point2 = endpoint2;
+    }
+    // devt_debugger && rend_collisions &&
+    //   console.log("before:", before, "at:", at, "after:", after);
+    if (before & after & 1) {
+      Block.Box2d.visualize(path1.slice(), x1, y1);
+      return [];
+    }
   }
-  var temporary = Block.Box2d.VALUE[Block.ID[ofBlock.internalName]];
+  /** @param {ShipBlock} block @param {Box2dPath[]} def */
+  function transformPath(block, def) {
+    var rot = block.rotation, path = def[+rot[1] * 4 + rot[2]];
+    var x = block.position[1], y = block.position[2], done = [];
+    (done =
+      /** @type {Box2dPath} */
+      (path.map(function (e) {
+        // might be modified to use cos sin for more angles
+        return new Block.Box2d(e.x + x, e.y + y);
+      }))
+    ).range = path.range;
+    return done;
+  }
+  var temporary = Block.Box2d.VALUE[Block.ID[block1.internalName]];
   if (!temporary) {
-    console.warn("Uhm, trying to collide block without collisions?");
+    Block.Box2d.warn &&
+      console.warn("Uhm, trying to collide block without collisions?");
     return [];
   }
+  var path1 = transformPath(block1, temporary);
   /** @type {ShipBlock[]} */
-  var colliding = [], ofRange = temporary.range;
-  var ofPath = transformPath(ofBlock, temporary);
-  var ofX = ofBlock.position[1], ofY = ofBlock.position[2];
-  for (var i = within.length; i-- > 0 && within[i] !== ofBlock;) {
-    temporary = Block.Box2d.VALUE[Block.ID[within[i].internalName]];
-    if (!temporary)
+  var colliding = [], range1 = test_collbxs ? Infinity : path1.range;
+  var x1 = block1.position[1], y1 = block1.position[2];
+  Block.Box2d.visualize(path1, x1, y1, true);
+  for (var i = within.length; i-- > 0;) {
+    var block = within[i];
+    temporary = Block.Box2d.VALUE[Block.ID[block.internalName]];
+    if (!temporary || within[i] === block1)
       continue;
-    var path = transformPath(within[i], temporary);
-    var pos = within[i].position,
-      x = Math.abs(ofX - pos[1]),
-      y = Math.abs(ofY - pos[2]);
-    if (Math.sqrt(x * x + y * y) >= ofRange + temporary.range)
+    var pos2 = block.position, path2 = transformPath(block, temporary);
+    var x = Math.abs(x1 - pos2[1]), y = Math.abs(y1 - pos2[2]);      
+    if (Math.sqrt(x * x + y * y) >= range1 + path2.range)
       continue;
-    colliding.push(within[i]);
+    Block.Box2d.visualize(path2, pos2[1], pos2[2], false);
+    var result = combineOutlines();
+    for (var j = path1.length && path2.length; !result && j-- > 0;)
+      result = insides(path1[0], path2) || insides(path2[0], path1);
+    if (devt_debugger) debugger;
+    if (result) {
+      colliding.push(block) && Block.Box2d.visualize(result);
+      break;
+    }
   }
   return colliding;
 };
@@ -2029,8 +2245,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @constant @type {25} significantVersion: 25 (integer) */
-Ship.VERSION = 25;
+/** @constant @type {27} significantVersion: 27 (integer) */
+Ship.VERSION = 27;
 Ship.prototype.selectRect = (
   /**
    * @overload @returns {Block[]&{parentShip:Ship}}
@@ -2291,10 +2507,16 @@ Ship.prototype.mirror2d = (
     Edit.eventFire(this);
   }
 );
-/** @param {number} x @param {number} y @returns null if nothing found */
-Ship.prototype.blockAtPonit2d = function (x, y) {
+/** ignores __NULL__ blocks if nonull is true
+ * @param {number} x @param {number} y
+ * @param {boolean} [nonull=true]  @returns null if nothing found */
+Ship.prototype.blockAtPonit2d = function (x, y, nonull) {
+  if (nonull === UDF)
+    nonull = true;
   for (var bs = ship.blocks, i = bs.length; i-- > 0;) {
     var block = bs[i], pos = block.position;
+    if (block.internalName === "__NULL__" && nonull)
+      continue;
     // calculations from expensiveRenderer
     var size = Block.Size.VALUE[Block.ID[block.internalName]] ||
       {w: 1, h: 1};
@@ -2388,7 +2610,7 @@ Ship.prototype.placeBlock = function (x, y, z, ref) {
   Edit.eventFire();
   return block;
 };
-/** @param {object} object */
+/** @param {any} object */
 Ship.fromObject = function fromObject(object) {
   var o = {
     name: object.name || object.n,
@@ -2454,7 +2676,8 @@ Ship.toDBV = function toDBV(ship) {
       wg: e.properties.weldGroup || 0
     });
   }
-  var shipProp = ship.prop || OC(), connections = [], custominps = [];
+  /** @type {{Item1:number,Item2:number}[]} */
+  var connections = [], custominps = [], shipProp = ship.prop || OC();
   var logics = shipProp.nodeList instanceof Array ?
     shipProp.nodeList :
     [];
@@ -2466,7 +2689,7 @@ Ship.toDBV = function toDBV(ship) {
         // node identifier, input type
         Item1: i,
         // referenced node
-        Item2: node.pairs
+        Item2: n
       });
   }
   var inputs = shipProp.customInputs instanceof Array ?
@@ -2754,12 +2977,13 @@ Edit.eventFire = function (ship) {
     (this.listeners[i] || F)(ship);
 };
 // TODO: appended at the end of methods, might be more logical to be earlier
-// for (var i = 1, seed = 35589; i < 0xfff; i++)
-//   (seed = seedRand(seed));
-// var matcher = seed, i = 0;
-// for (seed = seedRand(seed); seed !== matcher && i < 0xffffff; i++)
-//   seed = seedRand(seed);
-// taken from: https://stackoverflow.com/a/47593316
+//-The code used to test the seed generator obviously:
+//-for (var i = 1, seed = 35589; i < 0xfff; i++)
+//-  (seed = seedRand(seed));
+//-var matcher = seed, i = 0;
+//-for (seed = seedRand(seed); seed !== matcher && i < 0xffffff; i++)
+//-  seed = seedRand(seed);
+//-taken from: https://stackoverflow.com/a/47593316
 /** @param {number} seed */
 Edit.randSFC32 = function (seed) {
   var a = seed, b = seed, c = seed, d = seed;
