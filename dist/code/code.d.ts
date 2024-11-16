@@ -1,4 +1,5 @@
-// v.0.1.52
+// v.0.1.65
+/// <reference path="./editor.html.ts" />
 /** Definitons of Property item structs for code.js */
 interface Slider {
   min: number;

@@ -1,7 +1,8 @@
 //@ts-check
 /// <reference path="./code.js" types="./editor.js" />
 "use strict";
-var version_editor_js = "v.0.1.64";
+var version_editor_js = "v.0.1.65";
+/** @TODO check @see {defaults} for setting a setting without saveSettings */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -47,8 +48,9 @@ else if (/https?/.test(location.protocol) && navigator.serviceWorker)
   try {
     // @type {ServiceWorkerContainer}
     var swc = navigator.serviceWorker, sw = swc.controller;
-    sw || swc.register("/.d1r.dbv/service-worker.js",
-      {scope: "/.d1r.dbv/"}).then(function (swr) {
+    // is it good to have completely relative path for ServiceWorker?
+    sw || swc.register("./service-worker.js",
+      {scope: "./"}).then(function (swr) {
         sw = (swr.installing || swr.waiting || swr.active);
         (sw || OC()).onstatechange = function () {
           console.log.apply(console, Array.prototype.map.call(
@@ -58,7 +60,9 @@ else if (/https?/.test(location.protocol) && navigator.serviceWorker)
             }
           ).concat("sw_change"));
         };
-      }).catch(F);
+      }).catch(function (reason) {
+        console.log(reason, "sw_js")
+      });
   } catch (e) {
     console.log(e, "sw_js");
   }
@@ -79,6 +83,8 @@ canvas.addEventListener("contextlost", function () {
 });
 canvas.addEventListener("contextrestored", function () {
   console.log("%cCONTEXT RESTOERED!", "color:#4f3");
+  rend_checkColors();
+  console.log("D1R DBV rendering restorations initiated...");
 });
 
 /** @typedef addingStyles */
@@ -115,6 +121,64 @@ canvas.addEventListener("contextrestored", function () {
   "#commandsTab input, #commandsTab textarea, #commandsTab select" +
   "{background-color: #000;color: #bbb;border: 1px solid #888;}"
 );
+
+/** original settings variable, defines type for settings */
+var defaults = {
+  /** (default) true: image pattern, false: color */
+  editorBackground: typeof DOMMatrix != "undefined",
+  /** mumst be in #xxxxxx hex color format */
+  editorBackgroundColor: "#111111",
+  /** (default) 0: dbc, 1: db, ... 63: unassigned */
+  editorBackgroundImage: 0,
+  /** mumst be in #xxxxxx hex color format */
+  highlightColor: "#ff0000",
+  highlightWidth: 2,
+  logicPreviewAlpha: .5,
+  buildReplace: !1,
+  /** (default) 1: Lunar, 0: none, ... 31: unassigned */
+  editorBackgroundStage: 1,
+  /** (default) false: PC, true: touchscreen device detected */
+  fullscreenInitialized: false,
+  /** (default) false: enabled, true: disabled */
+  fullscreenDisabled: false,
+  /** (default) false */
+  renderSharp: false
+},
+  /** @type {typeof defaults|null} alternative to original */
+  settings = defaults;
+// naming may change? + meaningless comment
+function saveSettings() {
+  var n = 0, arr = [+defaults.editorBackground];
+  if (isNaN(n = Number("0x" + defaults.editorBackgroundColor.slice(1))))
+    throw new Error("Wrong format of editorBackgroundColor setting");
+  arr[0] += (n & 0x7fff) << 1;
+  arr[1] = n >> 15 & 0xffff;
+  arr[1] += defaults.editorBackgroundImage << 15 & 1 << 15;
+  arr[2] = defaults.editorBackgroundImage >> 1 & 31;
+  arr[2] += +defaults.fullscreenInitialized << 5
+  arr[2] += +defaults.fullscreenDisabled << 6;
+  arr[2] += +defaults.editorBackgroundStage << 7;
+  storage.setItem("D1R_DBV_editor", String.fromCharCode.apply(String, arr));
+}
+function loadSettings() {
+  var s = storage.getItem("D1R_DBV_editor") || "";
+  if (!s.length)
+    return;
+  if (s.length > 3)
+    return console.error("Unsupported length of localStorage item");
+  var n = 0, arr = s.split("").map(function (e) {
+    return e.charCodeAt(0);
+  });
+  defaults.editorBackground = !!(arr[0] & 1);
+  s = ((arr[0] & 0x7fff) + ((arr[1] & 0x01ff) << 16) >> 1).toString(16);
+  defaults.editorBackgroundColor = "#" + "000000".slice(s.length) + s;
+  n = arr[1] >> 15;
+  defaults.editorBackgroundImage = ((arr[2] & 31) << 1) + n;
+  defaults.fullscreenInitialized = !!(arr[2] >> 5 & 1);
+  defaults.fullscreenDisabled = !!(arr[2] >> (5 + 1) & 1);
+  defaults.editorBackgroundStage = (arr[2] >> 7 & 31);
+}
+loadSettings();
 
 /** to be able to include some fun when editor is initialized */
 var init_funMode = F;
@@ -173,17 +237,29 @@ var init_funMode = F;
         placingBlock = function () {return "__unknown__";};
       });
       break;
+    case "47f76cb8":
+      console.log("Fun mode 4");
+      ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr("gAALU3RhcnRlcl\
+NoaXCAAQBnyR+wATjRE/MIg+/jGIhC4AC4AAgsIpEBBBAEDoFSLDKADKAEIFCSGTKAEQAAABClwm\
+uwSAQAIUQIkAEAGAEAACghWoXSoJToICaAFiADAHBCYCgRSlIIIQC0ABkAgBMCWIQEEZlkABkAAA\
+AnAAAAEQAACi9AC5ABAAAA4AQAQBVKgBYAQAYAAMAJAIA4VBApQAqQAQA4AQAgKwDIAACcAAAARA\
+AAABBoATIAAAAAnAAA2AAQKAFaAAAZAAAAJwAA4lABtAAZAAAAJwAAJAUAGQAAACcAAAARAAAKDU\
+ALkAEAAADgBABAFU6AFgBABgAAwAkAgDiAAJACZAAATgAAyAsARgAAAECMCo1BIxEAhBAhQAYAYA\
+QAAGCFWBVOg1Oig7gALoAMAMAJsTCcCCcphBAXwAWQAQA4IRawCAkiYWQQhUABUAAQaEQiAwBBoB\
+AoxSIDyABKAAIlTviFogQ=")));
+      defaults.editorBackgroundStage = 0;
+      break;
     case "17a472d":
     case "25f75d93":
     case "9e808430":
     case "91c5cddf":
     case "aebec1df":
       console.log("Fun mode 5");
-      ship = Ship.fromObject(decodeCmprsShip(base64ToUint8array("gIAEEFN0YXJ\
-0ZXIgRHJvbmVib2kABD9TDSCAv6/65vbGnas+ELMGgvIGgrKuIChrYKhuICjrCoKyBpQ34LgncNa\
-A6gak9QRBWQPKGnDcFQjauHnfBwJbWzAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTY\
-sMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNl0sIntcImN\
-vbG9yXCI6XCJMaW1lXCJ9Il0=")));
+      ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr("gIAEEFN0YXJ0ZX\
+IgRHJvbmVib2kABD9TDSCAv6/65vbGnas+ELMGgvIGgrKuIChrYKhuICjrCoKyBpQ34LgncNaA6g\
+ak9QRBWQPKGnDcFQjauHnfBwJbWzAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMC\
+wxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNl0sIntcImNvbG\
+9yXCI6XCJMaW1lXCJ9Il0=")));
     case "8bb3bad8":
       console.log("Fun mode 7");
       setTimeout(function () {
@@ -197,65 +273,69 @@ vbG9yXCI6XCJMaW1lXCJ9Il0=")));
     case "b6f47340":
       console.log("Fun mode 9");
       init_funMode = function () {
-        ship = Ship.fromObject(decodeCmprsShip(base64ToUint8array("gIAEDEFOT\
-05fU2h1dHRsZQAEXVy0aoC/TzvnFnWt0z4R4pYUZx2CorwBRXLToKjrQJPehCK9CdKboLhB4MUPQ\
-VwDhrgGiGuAuAaIa4C1XkER14AjrgFBjHHEFUWbA4oxBxTVDSjWu1FsOeBYccQw3YRiywPBlnFsG\
-cGWcTR3YGgxji0HODKK5gYEzYXmQnOhrhXKGhDENSCIa0DR5oKjywFFigOOFQcczw0obnxxxDXgq\
-GsSmGvBE1uuied3AltbMCw0NSw0NSw2OCwwLDQ1LDAsNDUsMTEzLDcxLDAsNDUsMCw0NSwwLDQ1L\
-DAsNDUsMTg0LDY4LDI1Miw2OSwzMjEsNDQsMzIxLDQ0LDMyMSw0NCwzMjEsNDQsMzIxLDQ0LDMyM\
-Sw0NCwzMjEsNDQsMzIxLDQ0LDM2NSw1OSwzMjEsNDQsNDI0LDcwLDQ5NCw2NCw1NTgsNzAsNjI4L\
-DQ5LDY3Nyw2Miw3MzksNTYsNzk1LDY3LDg2Miw2Miw5MjQsNjIsOTg2LDYyLDEwNDgsNjIsMTExM\
-Cw2NSwxMTc1LDU5LDEyMzQsNjIsMTI5Niw2MiwxMzU4LDY1LDE0MjMsNjUsMTQ4OCw2NSwxNTUzL\
-DY1LDE2MTgsNDQsMzIxLDQ0LDMyMSw0NCwzMjEsNDQsMTY2Miw3MCwxNzMyLDYyLDE3OTQsMzksM\
-TgzMyw1NiwxODg5LDY2LDE5NTUsNjEsMzIxLDQ0LDMyMSw0NCwzMjEsNDQsMzIxLDQ0XSwie1wiY\
-29sb3JcIjpcIk9yYW5nZVwiLFwiY29udHJvbFwiOltdLFwid2VsZEdyb3VwXCI6MH17XCJjb2xvc\
-lwiOlwiRGFyayBHcmF5XCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzNdLFwid\
-2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiRGFyayBHcmF5XCIsXCJjb250cm9sXCI6WzE4MDAwX\
-SxcIm5vZGVJbmRleFwiOlsyLDFdLFwid2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiRGFyayBHc\
-mF5XCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzRdLFwid2VsZEdyb3VwXCI6M\
-H17XCJjb2xvclwiOlwiV2hpdGVcIixcImNvbnRyb2xcIjpbWzAsMCwwLDBdXSxcIm5vZGVJbmRle\
-FwiOls1XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6W\
-10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJcIixcImNvbnRyb2xcIjpbMSwwXSxcIm5vZ\
-GVJbmRleFwiOlszNF0sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJXaGl0ZVwiLFwiY29ud\
-HJvbFwiOltdLFwibm9kZUluZGV4XCI6WzIzLDIyLDIxLDIwXSxcIndlbGRHcm91cFwiOjB9e1wiY\
-29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMTksMThdLFwid\
-2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiTGlnaHQgR3JheVwiLFwiY29udHJvbFwiOls3NTAwX\
-SxcIm5vZGVJbmRleFwiOlsyNF0sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJMaWdodCBHc\
-mF5XCIsXCJjb250cm9sXCI6W10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJXaGl0ZVwiL\
-FwiY29udHJvbFwiOlswXSxcIm5vZGVJbmRleFwiOlsxN10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvb\
-G9yXCI6XCJcIixcImNvbnRyb2xcIjpbXSxcIm5vZGVJbmRleFwiOlsxMV0sXCJ3ZWxkR3JvdXBcI\
-jowfXtcImNvbG9yXCI6XCJXaGl0ZVwiLFwiY29udHJvbFwiOlsyNzAwMF0sXCJub2RlSW5kZXhcI\
-jpbNyw2XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIkJsYWNrXCIsXCJjb250cm9sXCI6W\
-zBdLFwibm9kZUluZGV4XCI6WzM3XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIkJsYWNrX\
-CIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzM2XSxcIndlbGRHcm91cFwiOjB9e1wiY\
-29sb3JcIjpcIkJsYWNrXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzM4XSxcIndlb\
-GRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZ\
-GV4XCI6WzM1XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sX\
-CI6WzExMjVdLFwibm9kZUluZGV4XCI6WzMxXSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcI\
-lwiLFwiY29udHJvbFwiOlsxLDBdLFwibm9kZUluZGV4XCI6WzMzXSxcIndlbGRHcm91cFwiOjB9e\
-1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzMyXSxcI\
-ndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZ\
-UluZGV4XCI6WzI1XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250c\
-m9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzI3XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcI\
-jpcIldoaXRlXCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzMwXSxcIndlbGRHc\
-m91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZ\
-GV4XCI6WzI4XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sX\
-CI6WzExMjVdLFwibm9kZUluZGV4XCI6WzI5XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcI\
-kJsYWNrXCIsXCJjb250cm9sXCI6W10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJXaGl0Z\
-VwiLFwiY29udHJvbFwiOltdLFwibm9kZUluZGV4XCI6WzE2LDE1LDE0LDEzXSxcIndlbGRHcm91c\
-FwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6W\
-zEyXSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIlwiLFwiY29udHJvbFwiOltdLFwid2VsZ\
-Edyb3VwXCI6MH17XCJjb2xvclwiOlwiXCIsXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbM\
-TBdLFwid2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiV2hpdGVcIixcImNvbnRyb2xcIjpbNDUwM\
-F0sXCJub2RlSW5kZXhcIjpbOSw4XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlX\
-CIsXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMjZdLFwid2VsZEdyb3VwXCI6MH0iXQ=="
-        .replace(/ /g, ""))));
-        ship.fixPositionAdjustment(!0);
         enableLogicEditing();
+        ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr(("gIAEDEFOT05\
+fU2h1dHRsZQAEXVy0aoC/TzvnFnWt0z4R4pYUZx2CorwBRXLToKjrQJPehCK9CdKboLhB4MUPQVw\
+DhrgGiGuAuAaIa4C1XkER14AjrgFBjHHEFUWbA4oxBxTVDSjWu1FsOeBYccQw3YRiywPBlnFsGcG\
+WcTR3YGgxji0HODKK5gYEzYXmQnOhrhXKGhDENSCIa0DR5oKjywFFigOOFQcczw0obnxxxDXgqGs\
+SmGvBE1uuied3AltbMCw0NSw0NSw2OCwwLDQ1LDAsNDUsMTEzLDcxLDAsNDUsMCw0NSwwLDQ1LDA\
+sNDUsMTg0LDY4LDI1Miw2OSwzMjEsNDQsMzIxLDQ0LDMyMSw0NCwzMjEsNDQsMzIxLDQ0LDMyMSw\
+0NCwzMjEsNDQsMzIxLDQ0LDM2NSw1OSwzMjEsNDQsNDI0LDcwLDQ5NCw2NCw1NTgsNzAsNjI4LDQ\
+5LDY3Nyw2Miw3MzksNTYsNzk1LDY3LDg2Miw2Miw5MjQsNjIsOTg2LDYyLDEwNDgsNjIsMTExMCw\
+2NSwxMTc1LDU5LDEyMzQsNjIsMTI5Niw2MiwxMzU4LDY1LDE0MjMsNjUsMTQ4OCw2NSwxNTUzLDY\
+1LDE2MTgsNDQsMzIxLDQ0LDMyMSw0NCwzMjEsNDQsMTY2Miw3MCwxNzMyLDYyLDE3OTQsMzksMTg\
+zMyw1NiwxODg5LDY2LDE5NTUsNjEsMzIxLDQ0LDMyMSw0NCwzMjEsNDQsMzIxLDQ0XSwie1wiY29\
+sb3JcIjpcIk9yYW5nZVwiLFwiY29udHJvbFwiOltdLFwid2VsZEdyb3VwXCI6MH17XCJjb2xvclw\
+iOlwiRGFyayBHcmF5XCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzNdLFwid2V\
+sZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiRGFyayBHcmF5XCIsXCJjb250cm9sXCI6WzE4MDAwXSx\
+cIm5vZGVJbmRleFwiOlsyLDFdLFwid2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiRGFyayBHcmF\
+5XCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzRdLFwid2VsZEdyb3VwXCI6MH1\
+7XCJjb2xvclwiOlwiV2hpdGVcIixcImNvbnRyb2xcIjpbWzAsMCwwLDBdXSxcIm5vZGVJbmRleFw\
+iOls1XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6W10\
+sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJcIixcImNvbnRyb2xcIjpbMSwwXSxcIm5vZGV\
+JbmRleFwiOlszNF0sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJXaGl0ZVwiLFwiY29udHJ\
+vbFwiOltdLFwibm9kZUluZGV4XCI6WzIzLDIyLDIxLDIwXSxcIndlbGRHcm91cFwiOjB9e1wiY29\
+sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMTksMThdLFwid2V\
+sZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiTGlnaHQgR3JheVwiLFwiY29udHJvbFwiOls3NTAwXSx\
+cIm5vZGVJbmRleFwiOlsyNF0sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJMaWdodCBHcmF\
+5XCIsXCJjb250cm9sXCI6W10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJXaGl0ZVwiLFw\
+iY29udHJvbFwiOlswXSxcIm5vZGVJbmRleFwiOlsxN10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9\
+yXCI6XCJcIixcImNvbnRyb2xcIjpbXSxcIm5vZGVJbmRleFwiOlsxMV0sXCJ3ZWxkR3JvdXBcIjo\
+wfXtcImNvbG9yXCI6XCJXaGl0ZVwiLFwiY29udHJvbFwiOlsyNzAwMF0sXCJub2RlSW5kZXhcIjp\
+bNyw2XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIkJsYWNrXCIsXCJjb250cm9sXCI6WzB\
+dLFwibm9kZUluZGV4XCI6WzM3XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIkJsYWNrXCI\
+sXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzM2XSxcIndlbGRHcm91cFwiOjB9e1wiY29\
+sb3JcIjpcIkJsYWNrXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzM4XSxcIndlbGR\
+Hcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV\
+4XCI6WzM1XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI\
+6WzExMjVdLFwibm9kZUluZGV4XCI6WzMxXSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIlw\
+iLFwiY29udHJvbFwiOlsxLDBdLFwibm9kZUluZGV4XCI6WzMzXSxcIndlbGRHcm91cFwiOjB9e1w\
+iY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzMyXSxcInd\
+lbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUl\
+uZGV4XCI6WzI1XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9\
+sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzI3XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjp\
+cIldoaXRlXCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV4XCI6WzMwXSxcIndlbGRHcm9\
+1cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzExMjVdLFwibm9kZUluZGV\
+4XCI6WzI4XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI\
+6WzExMjVdLFwibm9kZUluZGV4XCI6WzI5XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIkJ\
+sYWNrXCIsXCJjb250cm9sXCI6W10sXCJ3ZWxkR3JvdXBcIjowfXtcImNvbG9yXCI6XCJXaGl0ZVw\
+iLFwiY29udHJvbFwiOltdLFwibm9kZUluZGV4XCI6WzE2LDE1LDE0LDEzXSxcIndlbGRHcm91cFw\
+iOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb250cm9sXCI6WzBdLFwibm9kZUluZGV4XCI6WzE\
+yXSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIlwiLFwiY29udHJvbFwiOltdLFwid2VsZEd\
+yb3VwXCI6MH17XCJjb2xvclwiOlwiXCIsXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMTB\
+dLFwid2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiV2hpdGVcIixcImNvbnRyb2xcIjpbNDUwMF0\
+sXCJub2RlSW5kZXhcIjpbOSw4XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCI\
+sXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMjZdLFwid2VsZEdyb3VwXCI6MH0" +
+        "iXQ==").replace(/ /g, ""))));
+        ship.fixPositionAdjustment(!0);
+        Math.random() > .5 ?
+          rend_collisions = true :
+          test_collbxs = true;
       };
       break;
     case "bad106e2":
     case "ebbbcdda":
+      console.log("Fun mode 10");
       ship = Ship.fromObject(JSON.parse('{"n":"Ingame logic prev iew","gv":"\
 ","dt":"15.09.2024 11:29:59","ls":0,"b":[{"n":"Core","p":[0,0],"r":180,"f":f\
 alse,"s":"White","c":[],"ni":[],"wg":0},{"n":"Small Battery","p":[1,0.5],"r"\
@@ -289,6 +369,20 @@ anel","p":[2,1],"r":270,"f":false,"s":"White","c":[],"ni":[22],"wg":0},{"n":\
 {"Item1":22,"Item2":4},{"Item1":19,"Item2":4},{"Item1":16,"Item2":2},{"Item1\
 ":14,"Item2":3},{"Item1":8,"Item2":15},{"Item1":7,"Item2":15},{"Item1":6,"It\
 em2":1},{"Item1":5,"Item2":15}],"ci":[],"significantVersion":20}'));
+      break;
+    case "d4d00d64":
+    case "c058adcc":
+      console.log("Fun mode 11");
+      defaults =
+        /** @type {typeof defaults} */
+        ({});
+      loadSettings();
+      defaults.renderSharp = true;
+      saveSettings();
+      (GE("style") || EL()).appendChild(tN("#commandsTab,#info,#commandsTab \
+*,#info *{border-radius: 0;filter: contrast(7) brightness(0.7);font-weight: \
+bolder;}#commandsTab button:hover,#commandsTab button:focus{font-weight: nor\
+mal;}"));
   }
 })(/\/[0-9a-zA-Z._+\-:]+\/editor(?:\.html)?(?:#[^?]*)?($|\?[^=]*)/);
 
@@ -523,60 +617,10 @@ var helpCanvas = document.createElement("canvas"),
   rc = function (rc) {
     return rc instanceof CanvasRenderingContext2D ?
        rc : new CanvasRenderingContext2D();
-  }(helpCanvas.getContext("2d", 
+  }(helpCanvas.getContext("2d",
     // shut up chromium browsers
     {willReadFrequently: true}));
 
-/** original settings variable, defines type for settings */
-var defaults = {
-  /** (default) true: image pattern, false: color */
-  editorBackground: typeof DOMMatrix != "undefined",
-  /** mumst be in #xxxxxx hex color format */
-  editorBackgroundColor: "#111111",
-  /** (default) 0: dbc, 1: db, ... */
-  editorBackgroundImage: 0,
-  /** mumst be in #xxxxxx hex color format */
-  highlightColor: "#ff0000",
-  highlightWidth: 2,
-  logicPreviewAlpha: .5,
-  buildReplace: !1,
-  editorBackgroundStage: 1,
-  fullscreenInitialized: false,
-  fullscreenDisabled: false
-},
-  /** @type {typeof defaults|null} alternative to original */
-  settings = defaults;
-// naming may change? + meaningless comment
-function saveSettings() {
-  var n = 0, arr = [+defaults.editorBackground];
-  if (isNaN(n = Number("0x" + defaults.editorBackgroundColor.slice(1))))
-    throw new Error("Wrong format of editorBackgroundColor setting");
-  arr[0] += (n & 0x7fff) << 1;
-  arr[1] = n >> 15 & 0xffff;
-  arr[1] += defaults.editorBackgroundImage << 15 & 1 << 15;
-  arr[2] = defaults.editorBackgroundImage >> 1 & 31;
-  arr[2] += +defaults.fullscreenInitialized << 5
-  arr[2] += +defaults.fullscreenDisabled << 6;
-  storage.setItem("D1R_DBV_editor", String.fromCharCode.apply(String, arr));
-}
-function loadSettings() {
-  var s = storage.getItem("D1R_DBV_editor") || "";
-  if (!s.length)
-    return;
-  if (s.length > 3)
-    return console.error("Unsupported length of localStorage item");
-  var n = 0, arr = s.split("").map(function (e) {
-    return e.charCodeAt(0);
-  });
-  defaults.editorBackground = !!(arr[0] & 1);
-  s = ((arr[0] & 0x7fff) + ((arr[1] & 0x01ff) << 16) >> 1).toString(16);
-  defaults.editorBackgroundColor = "#" + "000000".slice(s.length) + s;
-  n = arr[1] >> 15;
-  defaults.editorBackgroundImage = ((arr[2] & 31) << 1) + n;
-  defaults.fullscreenInitialized = !!(arr[2] >> 5 & 1);
-  defaults.fullscreenDisabled = !!(arr[2] >> (5 + 1) & 1);
-}
-loadSettings();
 canvas.style.backgroundColor = document.body.style.backgroundColor =
   defaults.editorBackground ? "#132122" : defaults.editorBackgroundColor;
 imgBackg.src = "./assets/_" + [
@@ -587,7 +631,7 @@ imgBackg.src = "./assets/_" + [
   "dbve"
 ][defaults.editorBackgroundImage] + "_background.png";
 
-/** @this {Array} */
+/** @this {any} */
 function del(i) {
   if (i < 0)
     return this.length;
@@ -596,8 +640,8 @@ function del(i) {
   return --this.length;
 }
 /**
- * @type {{input:HTMLInputElement,curr:File|null,files:(File|null)[],
- * open:number[],upload:HTMLButtonElement}}
+ * @type {{input:HTMLInputElement,curr:HTMLInputElement|null,
+ * files:(File|null)[],open:number[],upload:HTMLButtonElement}}
  */
 var file = {
   input: EL("input"),
@@ -681,14 +725,17 @@ function fileOpener(f_exec, error, f_final, loadBar, mode) {
         fileNames();
       }
       try {
-        //@ts-ignore
+        //@ts-expect-error
         var ar = new Uint8Array(this.result),
-        //@ts-ignore
+        //@ts-expect-error
           next = f_exec(ar, mode, file.files[fl_i]);
       } catch (e) {
-        //@ts-ignore
-        next = !!console.error(e.message || e,
-          " fileOpener:?", e.stack || "");
+        next = !!+console.error(e && e instanceof Error ?
+            e.message || e :
+            e,
+          " fileOpener:?", e && typeof e == "object" && "stack" in e ?
+            e.stack + "" :
+            "");
       }
       barE(fl_i / file.open.length, succ |= +!next);
       if (next || mode)
@@ -773,9 +820,12 @@ function dragDrop(e) {
   pN.ondragover = dragOver;
   pN.ondrop = dragDrop;
 })(0);
+/** @this {GlobalEventHandlers} */
 function onFile(e) {
+  if (!(this instanceof HTMLInputElement))
+    return;
   var i = 0, a = this.files, el;
-  if (a.length) {
+  if (a && a.length) {
     file.curr = this;
     file.files = [];
     for (file.open = []; i < a.length; i++)
@@ -786,7 +836,7 @@ function onFile(e) {
     el.type = "file";
     el.multiple = true;
     el.style.display = "none";
-    this.parentNode.replaceChild(el, this);
+    this.parentNode && this.parentNode.replaceChild(el, this);
     el.onchange = onFile;
   }
   // temporary solution: single purpuse file load
@@ -895,7 +945,7 @@ Command.push = function (name, initialize, description, settings) {
   function itemsInit(el) {
     /** @type {(Node|{name:string,inp:HTMLInputElement})[]} */
     var items = [];
-    initialize(items, utilities); 
+    initialize(items, utilities);
     for (var i = 0, itm; i < items.length; i++)
       if ((itm = items[i]) instanceof Node)
         el.appendChild(itm);
@@ -988,7 +1038,7 @@ Command.push("Select Block", function (items, collapsed) {
       if (!/__(?:placeholder\d+|NULL)__/.test(s)) {
         btn = EL("button");
         btn.appendChild(tN(s));
-        btn.onclick = blockBind(Block.NAME[i], !1);
+        btn.onclick = blockBind("" + Block.NAME[i], !1);
         groups[tags[i - 690 >> 4]][1].appendChild(btn);
       }
   /** @type {(...args:HTMLElement[][])=>void} */
@@ -1018,7 +1068,7 @@ Command.add("Select Color", function () {
   /** @type {CommandItem[]} */
   var items = [];
   for (var i = 0, s = ""; i < Color.NAME.length; i++)
-    if (s = Color.NAME[i])
+    if (s = Color.NAME[i] || "White")
       items.push({name: s, type: "button", fn: blockBind(s, !0)});
   items.push({name: "[custom color]", type: "input", fn: function () {
     if (!(this instanceof HTMLInputElement))
@@ -1065,8 +1115,8 @@ Command.push("Setup Properties", function (items, collapsed) {
     function initWeldGroup(ref) {
       // onchange event handler has live reference to the value
       // kept in its own scope and assigned from properties.customParameter
-      var node = 
-      /** @type {HTMLSelectElement} */
+      var node =
+        /** @type {HTMLSelectElement} */
         (weldGroup.cloneNode(!0));
       node.selectedIndex = +ref.ref[ref.p] || 0;
       node.onchange = function () {
@@ -1454,12 +1504,14 @@ Command.push("Display Logic", function (items, collapsed) {
     }
     /** @type {Block} */
     var block, options = Block.Properties.getInputOptions(ship.prop);
-    for (i = ship.blocks.length; i-- > 0;)
-      if ((block = ship.blocks[i]).internalName === "Control Block")
+    for (B64Key.i = ship.blocks.length; B64Key.i-- > 0;)
+      if ((block = ship.blocks[B64Key.i]).internalName === "Control Block")
         checkControlBlock(block.properties.customParameter);
   }
   var customInputs = EL(), template = EL("button");
-  /** @param {MouseEvent|Ship.CustomInput} e */
+  /**
+   * @this {GlobalEventHandlers|void}
+   * @param {MouseEvent|Ship.CustomInput} e */
   function addCustomInput(e) {
     var isInit = e instanceof Ship.CustomInput,
       remove = EL("button");
@@ -1471,7 +1523,7 @@ Command.push("Display Logic", function (items, collapsed) {
       (inputs = prop.customInputs).push(custom) :
       prop.customInputs = inputs = []);
     /** @type {Node} */
-    var from = this || template,
+    var from = this instanceof HTMLButtonElement ? this : template,
       /** @type {Node|null} */
       prev;
     /** @type {Node&{onclick?:typeof template.onclick}} */
@@ -1544,7 +1596,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
       dbv.value = JSON.stringify(Ship.toDBV(ship));
       render();
     } catch (err) {
-      error.innerText = err;
+      error.innerText = "" + err;
       console.error(err);
     }
   };
@@ -1556,7 +1608,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
       ship = Ship.fromObject(JSON.parse(dbv.value));
       render();
     } catch (err) {
-      error.innerText = err;
+      error.innerText = "" + err;
       console.error(err);
     }
   };
@@ -1565,13 +1617,14 @@ Command.push("Import/Export DBV", function (items, collapsed) {
   onFile.temporaray = function (buffer) {
     if (buffer[0] !== 123 || buffer[buffer.length - 1] !== 125)
       return false;
+    var s = "";
     try {
-      var s = String.fromCharCode.apply(String, buffer),
-        obj = JSON.parse(s);
+      s = String.fromCharCode.apply(String, [].slice.apply(buffer));
+      var obj = JSON.parse(s);
       Ship.fromObject(obj);
       !(obj.significantVersion > 15) && ship.fixPositionAdjustment(!0);
     } catch (err) {
-      error.innerText = err;
+      error.innerText = "" + err;
       console.error(err);
       console.log(s);
       return !1;
@@ -1592,7 +1645,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
       download.download = ship.name + ".json";
       json.value = s.slice(0, 69);
     } catch (err) {
-      error.innerText = err;
+      error.innerText = "" + err;
       console.error(err);
     }
     if (ship.getMode().mode !== "Ship")
@@ -1609,7 +1662,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
       !(obj.significantVersion > 15) && ship.fixPositionAdjustment(!0);
       render();
     } catch (err) {
-      error.innerText = err;
+      error.innerText = "" + err;
       console.error(err);
     }
   };
@@ -1635,11 +1688,11 @@ Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
     var bs = ship.blocks;
     try {
       ship.withPositionAdjustment(function (temp) {
-        inp.value = uint8arrayToBase64(encodeCmprsShip(temp));
+        inp.value = B64Key.u8arrToB64(B64Key.encode(temp));
       });
       render();
     } catch (err) {
-      error.innerText = err;
+      error.innerText = "" + err;
       console.error(err);
     }
     ship.blocks = bs;
@@ -1651,7 +1704,7 @@ Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
     var old = ship, s = inp.value;
     try {
       if (!/^(:?UGxheWVy)?VmVoaWNsZT/.test(s.slice(0, 18))) {
-        var obj = decodeCmprsShip(base64ToUint8array(s));
+        var obj = B64Key.decode(B64Key.b64ToU8arr(s));
         ship = Ship.fromObject(obj);
         if (typeof obj != "string")
           ship.fixPositionAdjustment(!(obj.significantVersion > 15));
@@ -1659,7 +1712,7 @@ Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
         ship = Ship.fromDBKey(atob(s));
       render();
     } catch (err) {
-      error.innerText = err;
+      error.innerText = "" + err;
       console.error(err);
       inp.value = JSON.stringify(ship);
       ship = old;
@@ -1687,7 +1740,7 @@ Command.push("Transfrom tool", function (items, collapsed) {
   var offset = [0, 0];
   select.appendChild(tN("Select rectangle"));
   var xy = [0, 0, 0, 0], locked = EL("input");
-  /** FORMAT INPUTS */
+  /** FORMAT INPUTS @this {GlobalEventHandlers} */
   function formatSelection() {
     var i = 4, input = selectX0;
     while (input = [selectX0, selectY0, selectX1, selectY1][--i])
@@ -1800,12 +1853,11 @@ Command.push("Transfrom tool", function (items, collapsed) {
       }) + (blockSelect.length > 21 ? ", ..." : "");
   }
   var copied = tN(updateCopied()), coloring = EL("select");
-  var arr = ["defaults"];
-  for (var i = 0, l = [].push.apply(arr, Color.NAME); i < l;) {
+  var arr = ["defaults"].concat([].slice.apply(Color.NAME));
+  for (var i = 0, l = arr.length; i < l;) {
     var option = EL("option");
     option.appendChild(tN(arr[i++]));
     coloring.add(option);
-    ship.blocks[0].properties;
   }
   copy.appendChild(tN("Copy action"));
   copy.onclick = function () {
@@ -1957,25 +2009,25 @@ Command.push("Vehicle stats", function (items, collapsed) {
     texts[10].data = "LY ";
     red.data = texts[11].data = "";
     dist ?
-      +(crystals > sums.blocks[796] || 0) * 4 ?
-        texts[11].data = "requires " + rcAmount() +
-          ", remember to take mo\
-re crystals for further travelling and enough for return." :
+      (sums.blocks[796] || 0) * 4 > crystals ?
+        texts[11].data = "requires " + rcAmount() + ", remember to ta" +
+          "ke more crystals for further travelling and enough for ret" +
+          "urn." :
         red.data = "you don't have enough Rift Drives to use " +
           rcAmount() + " for the jump, lighter vehicle needs less RCs." :
       texts[11].data = riftLY.value ?
         dist === 0 ?
-          "doesn't require any Rift Crystals since you don't seem going any\
-where." :
+          "doesn't require any Rift Crystals since you don't seem goi" +
+            "ng anywhere." :
           "Distance format is not a number." :
-          "Type desired Rift Driving Light Years (LY) distance into the inp\
-ut.";
+        "Type desired Rift Driving Light Years (LY) distance into the" +
+          " input.";
     if (sums.blocks[796] > 1)
-      red.data += "You can't buy more then one Small Rift Drive in Conquest\
-! ";
+      red.data += "You can't buy more then one Small Rift Drive in Co" +
+        "nquest! ";
     if (dist < 0)
-      texts[10].data += "Unless you own Time Travel Machine block, you can'\
-t regain the Rift Crystals by travelling back. ";
+      texts[10].data += "Unless you own Time Travel Machine block, yo" +
+        "u can't regain the Rift Crystals by travelling back. ";
   };
   function updateStats() {
     var xForce = 0, yForce = 0, forces = 0, xWeight = 0, yWeight = 0;
@@ -1994,6 +2046,9 @@ t regain the Rift Crystals by travelling back. ";
       var block = blocks[i], prop = block.properties || OC();
       var id = Block.ID[block.internalName];
       var rot = 10 - block.rotation[2] & 3, size = Block.Size.VALUE[id];
+      // (v.0.1.64T13) why was this missing
+      if (!size)
+        continue;
       var ow = size.w, oh = size.h, w = ow + (ow & 16), h = oh + (oh & 16);
       var x = (ow & 16) / 32, y = (oh & 16) / 32;
       /** @type {number[]} */
@@ -2096,25 +2151,36 @@ Command.push("Editing Mode", function (items) {
     DefaultUI.inventoryTile = inventory.checked;
     render();
   };
-  items.push(button0, button1, inventory);
+  items.push(button1, button0, inventory);
   items.push({name: "Show inventory tile", inp: inventory});
   fullscreen.type = "checkbox";
   fullscreen.checked = defaults.fullscreenDisabled;
   fullscreen.oninput = function () {
     defaults.fullscreenDisabled = fullscreen.checked;
+    saveSettings();
   };
   items.push({name: "Disable fullscreen", inp: fullscreen});
-  var touchScreen = EL("button");
-  touchScreen.appendChild(tN("Disable touch screen resolution"));
+  var touchScreen = EL("button"),
+    detectionText = tN(defaults.fullscreenInitialized ?
+      "Disable touch screen detected" :
+      "Touch screen is not detected");
+  touchScreen.appendChild(detectionText);
   touchScreen.onclick = function () {
     defaults.fullscreenInitialized = false;
+    saveSettings();
+    touchdevice = null;
+    detectionText.data = "Touch screen is not detected";
   };
   items.push(touchScreen);
 }, "Editing modes is the newest feature that is Work In Progress. Be aware t\
 hat non of the older commands were designed to be compatible with other mode\
-s in there. You can use inventoryTile to enable inventory icon item. By enab\
-ling disabled fullscreen you will have browser experience of when it wasn't \
-implemented.");
+s in there. \nYou can use inventoryTile to enable inventory icon item. By en\
+abling disabled fullscreen you will have browser experience of when it wasn'\
+t implemented. \nFor proper display of UI and mobile experience there is aut\
+omatic detection of touchscreen, this feature changes resolution and turns o\
+n fullscreen whenever the browser allows it, if it was somehow incorrectly d\
+etected you can use designated button to reset it. In case it still keeps de\
+tecting and it is not supposed to, that's a bug then.");
 Command.push("Debug Logic circuit", function (items, collapsed) {
   /** @param {Block|LogicBlock} block @returns {LogicBlock|undefined} */
   function checkEndComponent(block) {
@@ -2279,11 +2345,24 @@ Command.push("Change editor background", function (items, collapsed) {
     saveSettings();
     render();
   };
-  items.push({name: "Image pattern", inp: backgImg},
+  var backgHgr = EL("input");
+  backgHgr.type = "checkbox";
+  backgHgr.checked = !!defaults.editorBackgroundStage;
+  backgHgr.onchange = function () {
+    if (!(this instanceof HTMLInputElement))
+      return;
+    defaults.editorBackgroundStage = +this.checked;
+    saveSettings()
+    render();
+  };
+  items.push(
+    {name: "Image pattern", inp: backgImg},
     tN("Background Image: "),
     select,
     EL("br"),
-    {name: "Background color", inp: backgClr});
+    {name: "Background color", inp: backgClr},
+    {name: "Background hangar", inp: backgHgr}
+  );
 }, "When \"Image pattern\" checkbox is checked, Droneboi: Conquest backgroun\
 d is used. Else color from \"Background color\" input is used. If it is in h\
 exadecimal format #111133 for example, the setting will update.");
@@ -2299,8 +2378,7 @@ Command.push("Current version", function(items, collapsed) {
     version_sw
   );
   var xhr = new XMLHttpRequest();
-  xhr.open("GET",
-    "/.d1r.dbv/service-worker.js");
+  xhr.open("GET", "./service-worker.js");
   xhr.onreadystatechange = function () {
     if (xhr.readyState !== 4)
       return;
@@ -2337,8 +2415,9 @@ on.");
 // Thanks to Beau for Deltarealm and Droneboi: Conquest that DBVE is made
 // for.
 // Thanks to contributors:
-//   KKJKJH for blocks texture source
+//   KKJKJH for blocks texture sources
 //   Brothernova for being the alpha tester
+//   Potentially Larmbs as first sourcode contributor
 // Also thank to cacat9999 for sharing block capacity/use stats from source
 // code in Discord, you all for using DBVE, your feedback, and db
 // suggestions to take inspiration from.
@@ -2426,7 +2505,9 @@ var cmdsHeader = EL(), cmds = (function () {
     var pre = content.appendChild(EL("div"));
     pre.style.overflowWrap = "break-word";
     pre.style.wordBreak = "break-all";
-    pre.appendChild(tN(onlyConsole(m,s,l,c,e)));
+    pre.appendChild(tN(e && e.stack ?
+      "" + m + "\n" + e.stack :
+      "" + m + "\n\t" + s + ":" + l + ":" + c));
   }
   return (bd || EL()).appendChild(nav);
 })();
@@ -2441,6 +2522,56 @@ function Tool(name, icon, exec) {
 }
 /** @type {Tool[]} */
 Tool.list = [];
+/** @param {Tool} tool @param {number} [size] */
+Tool.drawPathRc = function (tool, size) {
+  /** @param {string} s */
+  function parseParam(s) {
+    return (s[0] === "-" ? -("0x" + s.slice(1)) : +("0x" + s)) / 1024;
+  }
+  defaults.renderSharp ? size = (size || 0) * 8 : 1;
+  if (size) {
+    rc.canvas.width = rc.canvas.height = size;
+    rc.scale(size / 256, size / 256);
+    rc.fillStyle = "#dbecfe";
+  }
+  rc.beginPath();
+  var ctxCommands = {
+    M: rc.moveTo,
+    L: rc.lineTo,
+    C: rc.bezierCurveTo,
+    Z: rc.closePath,
+    H: function horizontalTo(n) {
+      this.lineTo(n, rY);
+    },
+    V: function verticalTo(n) {
+      this.lineTo(x = rX, rY = n);
+    }
+  };
+  var rX = 0, rY = 0, x = 0, y = 0;
+  tool.icon.split(" ").map(function (e, i) {
+    var c = e[0].toUpperCase();
+    var params = e.slice(1).split(",").map(e.charCodeAt(0) & 32 ?
+      function (e, i) {
+          var n = parseParam(e);
+          return i & 1 || c === "V" ? y = rY + n : x = rX + n;
+        } :
+      function (e, i) {
+          var n = parseParam(e);
+          return i & 1 ? y = n : x = n;
+        });
+    if (!e.length)
+      return console.error("No command at: " + i + "th \" \"");
+    var c = e[0].toUpperCase(), cmd = ctxCommands[c];
+    if (!cmd)
+      return console.error("Missing command " + c);
+    if (params.length < cmd.length)
+      return console.error("Not enough args for command " + c);
+    cmd.apply(rc, params);
+    rX = x;
+    rY = y;
+  });
+  rc.fill();
+}
 
 Tool.list.push(new Tool("Tune", "M4a4,24265 c51,2f0,273,ad3,931,f85 c8da,714\
 ,103d,642,13d7,615 c1ea0,-178,3dbe,974,552e,20cc c2c36,2c08,2c5b,7392,53,9fc\
@@ -2589,6 +2720,12 @@ function check_contentScript() {
   }
 }
 
+function devt_bug_testing() {
+  // devt_... stands for dev tools functions and variables
+  var scr = EL("script");
+  scr.src = "./code/unit_tests.js";
+  document.body.appendChild(scr);
+}
 var devt_debugger = false;
 function DefaultUI() {
   throw new TypeError("Illegal constructor");
@@ -2749,13 +2886,11 @@ DefaultUI.reflowBlockBars = function (w) {
         if (selectCode !== -1 && j + maxItems > selectCode) {
           DefaultUI.selectedTile = selectCode % maxItems << 2 | 1;
           DefaultUI.selectedFolder = updated.length;
-          if (devt_debugger)
-            debugger;
           checkAndPush = pushToSame;
           selectCode = -1;
         }
         var folder =
-          /** @type {TileType[]&{type:TileType}} */ 
+          /** @type {TileType[]&{type:TileType}} */
           (sameTypes.slice(j, j + maxItems));
         folder.type = prevType;
         updated.push(folder);
@@ -2801,6 +2936,7 @@ function enableShipEditing() {
 
 /** @param {number} w @param {number} h */
 function test_juhus(w, h) {
+  var radius = defaults.renderSharp ? 0 : 5;
   /** @param {Block|LogicBlock} block */
   function drawBlockRc(block) {
     var size = Block.Size.VALUE[Block.ID[block.internalName]];
@@ -2820,62 +2956,17 @@ function test_juhus(w, h) {
     var rot = 10 - block.rotation[2] & 3;
     rc.rotate(rot * Math.PI / 2);
     rc.translate(rot > 1 ? -a : 0, rot && rot < 3 ? -a : 0);
-    rc.fillStyle = rend_colors[Color.ID[block.properties.color]];
+    rc.fillStyle = rend_colors[Color.ID[block.properties.color || ""]];
     block.internalName !== "Ghost Block" && rc.fillRect(x, y, w, h);
     rc.globalCompositeOperation = "destination-in";
     rc.drawImage(imgMask, x - size.x, y - size.y);
     rc.globalCompositeOperation = "source-over";
     rc.drawImage(imgOverlay, size.x, size.y, w, h, x, y, w, h);
-  }
-  /** used by @see {drawPathRc} @param {string} s */
-  function parseParam(s) {
-    return (s[0] === "-" ? -("0x" + s.slice(1)) : +("0x" + s)) / 1024;
-  }
-  /** @param {Tool} tool @param {number} size */
-  function drawPathRc(tool, size) {
-    rc.canvas.width = rc.canvas.height = size;
-    rc.scale(size / 256, size / 256);
-    rc.beginPath();
-    var ctxCommands = {
-      M: rc.moveTo,
-      L: rc.lineTo,
-      C: rc.bezierCurveTo,
-      Z: rc.closePath,
-      H: function (n) {
-        this.lineTo(n, rY);
-      },
-      V: function (n) {
-        this.lineTo(x = rX, rY = n);
-      }
-    };
-    var rX = 0, rY = 0, x = 0, y = 0;
-    tool.icon.split(" ").map(function (e, i) {
-      var c = e[0].toUpperCase();
-      var params = e.slice(1).split(",").map(e.charCodeAt(0) & 32 ?
-        function (e, i) {
-            var n = parseParam(e);
-            return i & 1 || c === "V" ? y = rY + n : x = rX + n;
-          } :
-        function (e, i) {
-            var n = parseParam(e);
-            return i & 1 ? y = n : x = n;
-          });
-      if (!e.length)
-        return console.error("No command at: " + i + "th \" \"");
-      var c = e[0].toUpperCase();
-      if (!ctxCommands[c])
-        return console.error("Missing command " + c);
-      ctxCommands[c].apply(rc, params);
-      rX = x;
-      rY = y;
-    });
-    rc.fillStyle = "#dbecfe";
-    rc.fill();
-  }
+  }  
   /** @param {TileType} type @param {number} size */
   function drawIconFn(type, size) {
     if (type instanceof Tool)
-      drawPathRc(type, size);
+      Tool.drawPathRc(type, size);
     if (type instanceof Block)
       drawBlockRc(type);
   }
@@ -2886,10 +2977,10 @@ function test_juhus(w, h) {
       return;
     ctx.beginPath();
     ctx.moveTo(tx, ty - 25);
-    ctx.arcTo(tx, ty - 15, tx + 78, ty - 15, 5);
-    ctx.arcTo(tx + 78, ty - 15, tx + 78, ty - 93, 5);
-    ctx.arcTo(tx + 78, ty - 93, tx, ty - 93, 5);
-    ctx.arcTo(tx, ty - 93, tx, ty, 5);
+    ctx.arcTo(tx, ty - 15, tx + 78, ty - 15, radius);
+    ctx.arcTo(tx + 78, ty - 15, tx + 78, ty - 93, radius);
+    ctx.arcTo(tx + 78, ty - 93, tx, ty - 93, radius);
+    ctx.arcTo(tx, ty - 93, tx, ty, radius);
     ctx.closePath();
     ctx.stroke();
     if (selected) {
@@ -2904,8 +2995,8 @@ function test_juhus(w, h) {
     ctx.globalAlpha = b ? .9 : .8;
     ctx.beginPath();
     ctx.moveTo(tfx, h - 101);
-    ctx.arcTo(tfx, h - tfy, tfx + 12, h - tfy, 5);
-    ctx.arcTo(tfx += 54, h - tfy, tfx, h - 146, 5);
+    ctx.arcTo(tfx, h - tfy, tfx + 12, h - tfy, radius);
+    ctx.arcTo(tfx += 54, h - tfy, tfx, h - 146, radius);
     ctx.lineTo(tfx, h - 101);
     ctx.closePath();
     ctx.fillStyle = b ? "#0c243c" : "#000c1c";
@@ -2918,17 +3009,17 @@ function test_juhus(w, h) {
   ctx.lineJoin = "round";
   ctx.beginPath();
   ctx.moveTo(7, h - 19);
-  ctx.arcTo(7, h - 7, 19, h - 7, 5);
-  ctx.arcTo(275, h - 7, 275, h - 19, 5);
-  ctx.arcTo(275, h - 275, 263, h - 275, 5);
-  ctx.arcTo(7, h - 275, 7, h - 263, 5);
+  ctx.arcTo(7, h - 7, 19, h - 7, radius);
+  ctx.arcTo(275, h - 7, 275, h - 19, radius);
+  ctx.arcTo(275, h - 275, 263, h - 275, radius);
+  ctx.arcTo(7, h - 275, 7, h - 263, radius);
   ctx.closePath();
   ctx.moveTo(279, h - 19);
-  ctx.arcTo(279, h - 7, 291, h - 7, 5);
-  ctx.arcTo(w - 7, h - 7, w - 7, h - 19, 5);
+  ctx.arcTo(279, h - 7, 291, h - 7, radius);
+  ctx.arcTo(w - 7, h - 7, w - 7, h - 19, radius);
   DefaultUI.nextFolders ?
     ctx.lineTo(w - 7, h - 101) :
-    ctx.arcTo(w - 7, h - 101, w - 19, h - 101, 5);
+    ctx.arcTo(w - 7, h - 101, w - 19, h - 101, radius);
   ctx.lineTo(279, h - 101);
   ctx.closePath();
   ctx.fillStyle = "#0c243c";
@@ -3140,8 +3231,12 @@ function rend_backgPattern() {
   } catch (e) {
     console.debug(e, "at drawing background");
   }
+  if (defaults.editorBackgroundStage)
+    rend_backgHangar();
 }
 function rend_backgColor() {
+  if (defaults.editorBackgroundStage)
+    rend_backgHangar();
   canvas.style.backgroundColor = defaults.editorBackgroundColor;
 }
 var rend_backgHangar = F;
@@ -3163,7 +3258,7 @@ var rend_backgHangar = F;
   xhr.send();
 }();
 function backgHangarInit() {
-  var backgPrimary = rend_background;
+  var obackground = rend_background;
   var defRend = DefaultUI.rend, hgw = 544, hgh = 654;
   DefaultUI.rend = rend_background = F;
   var octx = ctx, osc = sc, oxV = vX, oyV = vY, oship = ship;
@@ -3189,8 +3284,9 @@ function backgHangarInit() {
   vX = oxV;
   vY = oyV;
   ship = oship;
-  function backgSecondary() {
-    backgPrimary();
+  rend_backgHangar = function () {
+    if (sc > 13 || defaults.renderSharp)
+      ctx.imageSmoothingEnabled = ctx.msImageSmoothingEnabled = !1;
     ctx.drawImage(
       hangarImg || hangarCanv,
       sc * -33 + vX,
@@ -3199,8 +3295,7 @@ function backgHangarInit() {
       sc * hgh / 8
     );
   };
-  backgSecondary.primary = backgPrimary;
-  rend_background = backgSecondary;
+  rend_background = obackground;
   render();
 };
 backgHangarInit.ship = Ship.fromObject({b:[]});
@@ -3209,6 +3304,8 @@ backgHangarInit.ready = 0;
 var rend_background = defaults.editorBackground ?
   rend_backgPattern :
   rend_backgColor;
+/** make interface for it if there will already be some uses for it
+ * @TODO update this with Render class overhaul */
 var rend_initialized = [F], rend_180 = !1;
 rend_initialized.push(function () {
   backgHangarInit.ready++ && backgHangarInit();
@@ -3262,19 +3359,17 @@ var rend_colors = rend_initColors();
 var foundBlocks = [];
 
 DefaultUI.setPixelRatio();
-function init_touchScreen() {
-  //-I'll keep it without confirm message
-  //-if (!bd)
-  //-  return console.error("No bd to show confirm message.");
-  //-var background = EL(),
-  //-bd.appendChild()
-  if (typeof document.body.requestFullscreen == "function" &&
-    !defaults.fullscreenDisabled)
-    document.body.requestFullscreen().then(render).catch(function () {
-      setTimeout(function () {
-        document.body.requestFullscreen().then(render).catch(alert);
-      }, 169);
-    });
+/** @type {(click?: true | undefined) => void} */
+function init_touchScreen(click) {
+  if (click && !defaults.fullscreenInitialized)
+    return;
+  var max = 3, logging = alert;
+  if (typeof document.body.requestFullscreen == "function")
+    (touchdevice = function () {
+      if (!defaults.fullscreenDisabled)
+        document.body.requestFullscreen().then(render).catch(logging);
+      max-- ;
+    })();
   defaults.fullscreenInitialized = true;
   saveSettings();
   DefaultUI.setPixelRatio();
@@ -3440,7 +3535,43 @@ render = function () {
     });
   };
 }();
+
+function rend_rc() {
+  bd && bd.appendChild(rc.canvas);
+  var style = rc.canvas.style;
+  style.position = "fixed";
+  style.top = style.left = "0";
+  style.width = style.height = "auto";
+}
+//-function used to add ckockpt_cruiser texture
+//-setTimeout(function () {
+//-  rend_rc();
+//-  var ref =
+//-    /** @type {ShipBlock|null} */
+//-    ({});
+//-  [0].map(function () {
+//-    ref = null;
+//-  });
+//-  ship.blocks.forEach(function (e) {
+//-    if (e.internalName === "cockpit_cruiser")
+//-      // (ref = e).internalName = "__NULL__";
+//-      (ref = e);
+//-  });
+//-  if (!ref)
+//-    return;
+//-  ref.rotation[0] = 1;
+//-  ref.rotation[1] = !0;
+//-  ship.blocks.push(new Block(
+//-    "cockpit_" + ("fighter" && "cruiser"),
+//-    ref.position,
+//-    ref.rotation,
+//-    ref.properties
+//-  ));
+//-  render();
+//-});
+
 var rend_speeeeed = {}, rend_logs = 69;
+var test_collisions = "", rend_collisions = false;
 /*async*/ function expensiveRenderer() {
   var t = Date.now(), AT = ", at expensiveRenderer();";
   canvas.width = canvas.width;
@@ -3450,21 +3581,25 @@ var rend_speeeeed = {}, rend_logs = 69;
   if (
     Logic.rend &&
       (Logic.nodes = function (current) {
-        var logics = 
+        var logics =
           /** @type {(Logic|undefined)[]&{ownerShip:Ship}} */
           (current || [UDF]);
         logics.ownerShip = ship;
         return logics;
       }(ship.prop && ship.prop.nodeList))
-  )
+  ) {
     ctx.globalAlpha = defaults.logicPreviewAlpha;
+  }
+  var mult = sc / 16;
   for (var i = 0, id = 0, pos = [0, 0, 0]; i < objs.length; i++) {
     pos = objs[i].position;
     if ((id = Block.ID[objs[i].internalName]) < 12) {
       ctx.save();
-      ctx.fillStyle = "#888";
+      B64Key.drawBlock(rc, objs[i]);
       ctx.globalAlpha = .7;
-      ctx.fillRect(-pos[0] * sc + vX, pos[2] * sc + vY, sc + 1, sc + 1);
+      ctx.scale(mult + 1E-7, mult + 1E-7);
+      ctx.drawImage(rc.canvas,
+        -pos[0] * 16 + vX / mult - 24, pos[2] * 16 + vY / mult - 24);
       ctx.restore();
       continue;
     }
@@ -3528,7 +3663,7 @@ var rend_speeeeed = {}, rend_logs = 69;
     rc.rotate(rot * Math.PI / 2);
     rc.translate(rot > 1 ? -w : 0, rot && rot < 3 ? -h : 0);
     // apply textures
-    rc.fillStyle = rend_colors[Color.ID[objs[i].properties.color]];
+    rc.fillStyle = rend_colors[Color.ID[objs[i].properties.color || ""]];
     id !== 794 && rc.fillRect(0, 0, w, h);
     rc.globalCompositeOperation = "destination-in";
     rc.drawImage(imgMask, size.x, size.y, w, h, 0, 0, w, h);
@@ -3546,6 +3681,10 @@ var rend_speeeeed = {}, rend_logs = 69;
       ctx.fillStyle = "#ffffff";
       ctx.fillText(str, dx + 4, dy + 25);
       ctx.restore();
+    }
+    if (test_debug) {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(-pos[1] * sc + vX - 7, pos[2] * sc + vY - 7, 14, 14);
     }
     // await new Promise(function (res) {
     //   var tfn = expensiveRenderer;//@ts-ignore
@@ -3597,8 +3736,15 @@ var rend_speeeeed = {}, rend_logs = 69;
     }
   }
   utilities.rend_UI();
+  if ((test_collbxs) && objs[0])
+    Block.Box2d.collisions(objs[0], objs);
+  else if (rend_collisions)
+    for (i = objs.length;
+      //-, (GE('evil_result') || {}).innerText = ''
+      i-- > 0;)
+      Block.Box2d.collisions(objs[i], objs);
   DefaultUI.rend();
-  if (rend_180) {
+  if (rend_180 || 0) {
     ctx.setTransform(1, 0, 0, 1, canvas.width, canvas.height);
     ctx.rotate(Math.PI);
     ctx.globalCompositeOperation = "copy";
@@ -3607,6 +3753,46 @@ var rend_speeeeed = {}, rend_logs = 69;
   var t = Date.now() - t | 0;
   rend_speeeeed[t] = rend_speeeeed[t] + 1 || 0;
 }
+/** @type {typeof Block.Box2d.visualize} */
+Block.Box2d.visualize = function (path, x, y, green) {
+  //try{
+  var visuals = test_collisions || (test_collbxs && green !== UDF) ||
+    (rend_collisions && green === UDF);
+  if (!visuals)
+    return;
+  var coll = green === UDF ? x === UDF ? path.slice(2, 4) : [] : null;
+  ctx.beginPath();
+  ctx.strokeStyle = green ? "#33bb33" : coll ? "#db9725" : "#bb3333";
+  if (coll && coll.length > 1) {
+    path.length = 2;
+    ctx.moveTo(vX - (coll[0].x - 2) * sc, (coll[0].y + 2) * sc + vY);
+    ctx.lineTo(vX - (coll[1].x - 2) * sc, (coll[1].y + 2) * sc + vY);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.beginPath();
+  }
+  ctx.lineWidth = green === UDF ? 8 : green ? 4 : 2;
+  if (path[0])
+    ctx.moveTo(vX - (path[0].x - 2) * sc, (path[0].y + 2) * sc + vY);
+  //@ts-ignore
+  for (var i = path.length; i-- > 1;)
+  //0&&window.onerror(i+'=x:',(path[0].x + x) * sc + vX,'y',(path[i].y + y)
+  //- * sc + vY)
+    ctx.lineTo(vX - (path[i].x - 2) * sc, (path[i].y + 2) * sc + vY);
+  ctx.closePath();
+  //-ctx.globalAlpha = 1;
+  //-ctx.globalCompositeOperation = "source-over";
+  if (!("range" in path))
+    return ctx.stroke();
+  x = (x || 0) - 2;
+  y = (y || 0) + 2;
+  ctx.moveTo(vX - (x - path.range) * sc, (y) * sc + vY);
+  ctx.arc(vX - (x) * sc, (y) * sc + vY, path.range * sc, 0, Math.PI * 2);
+  ctx.stroke();
+  //-ctx.strokeRect(vX - (x) * sc - 4.5, (y) * sc + vY - 4.5, 9, 9);
+  //@ts-ignore
+  //}catch(e){console.error(e && e.message || e);}
+};
 
 init = function () {
   rend_checkColors();
@@ -3614,8 +3800,104 @@ init = function () {
   check_contentScript();
 };
 
-function onlyConsole(m,s,l,c,e) {
-  if (e && e.stack)
-    return "" + m + "\n" + e.stack;
-  return "" + m + "\n\t" + s + ":" + l + ":" + c;
+function test_blocks1_2_10() {
+  var temp = B64Key.decode(B64Key.b64ToU8arr("gIAZDWJsb2Nrc18xLjIuMTCBggoFQJ\
+qtpoC/L0rXJus9jD4A8gYIqBsgOG6AAK0BArMGCMgaIODrIBDoNUCA1wCBXQMEdG0QyLVAANcAgV\
+sDBGwNEKi1QYDWAvwaIFDuLBBIdxYIkJsioO4nILoNAucWCJgbIDBuBsQNENB3EQjQ2yKQ7yoQuD\
+dBwN4EgXkrBPA9BQL1VkDeChz8CwQMDhAoOECA4ACBgQMEBH4GAhuPAgGNAwQyDhDAOEDA4gCBiw\
+MEKg4QoLhAYOIAAYkDBDgOEKBZIDBzgIDMAQL/BQjEHCAAc4DAywECLgcItBwgwHOAAMsBAisHCK\
+gcIJBygADKAQInBwiYHCBQcoAAyQECIwcIiBwgsPMsENA5QCDnAIH/AoBzgMDNAQI2BwjUHCAAXc\
+2T6QcAW1swLDE3LDAsMTddLCJ7XCJjb2xvclwiOlwiV2hpdGVcIn0iXQ=="));
+  typeof temp == "object" && temp.blocks.forEach(function (e) {
+    e.properties = {color: e.properties.color || null};
+    var rot = e.rotation, pos = e.position;
+    e.position = [pos[1] / 2, pos[2] / 2];
+    e.rotation = rot[2];
+    e.flipped = rot[1];
+  });
+  ship = Ship.fromObject(temp);
+  render();
 };
+test_debugbox2collisions = function (rend) {
+  if (rend !== UDF)
+    return;
+  var running = false, rc2d = EL("canvas").getContext("2d") || rc;
+  (test_debugbox2collisions = function (rend) {
+    if (rend === false) {
+      var val = running;
+      running = false;
+      return val;
+    }
+    var oB = test_collbxs, oRC = rend_collisions, oTC = test_collisions;
+    if (rend !== UDF) {
+      if (!running)
+        return;
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalCompositeOperation = "copy";
+      ctx.drawImage(rc2d.canvas, 0, 0);
+      ctx.restore();
+      if (rend instanceof Array && rend[0] instanceof Block.Box2d) {
+        rend_collisions = false;
+        test_collisions = "true";
+        Block.Box2d.visualize(rend,
+          (vX + 99) / sc, -(vY + 99) / sc, true);
+        rend_collisions = oRC;
+        test_collisions = oTC;
+      }
+      return true;
+    }
+    var oDD = devt_debugger;
+    test_collbxs = rend_collisions = false;
+    test_collisions = "";
+    expensiveRenderer();
+    rc2d.globalCompositeOperation = "copy";
+    rc2d.canvas.width = canvas.width;
+    rc2d.canvas.height = canvas.height;
+    rc2d.drawImage(canvas, 0, 0);
+    rend_collisions = devt_debugger = true;
+    running = true;
+    expensiveRenderer();
+    running = false;
+    test_collbxs = oB;
+    rend_collisions = oRC;
+    test_collisions = oTC;
+    devt_debugger = oDD;
+  })();
+};
+
+//-Block.Box2d.collisions(ship.blocks[0], ship.blocks);
+
+//-enableLogicEditing();
+//-ship = Ship.fromObject({b:[{n:"Core",p:[0,-.75]},
+//-  {n:"Small Hydraulic Drill",p:[0,0]}]});
+//-setTimeout(function () {
+//-  test_collbxs = false;//true;
+//-  rend_collisions = true;//false;
+//-  /** @TODO There's still something wrong with those cases */
+//-  ship = Ship.fromObject({"n":"ANON_Shuttle","gv":"0",
+//-    "dt":"compressed: 23.05.2024 5:45:39 UTC","ls":0,"b":[{
+//-    "n":"Smooth Corner 1x2","p":[-2,-5],"r":180,"f":false,"s":"Orange",
+//-    "c":[],"ni":[],"wg":0},{"n":"Small Ion Thruster","p":[3.5,5],
+//-    "r":180,"f":false,"s":"White","c":[4500],"ni":[37,36],"wg":0},{
+//-    "n":"Large Ion Thruster","p":[2.5,6],"r":180,"f":false,"s":"White",
+//-    "c":[27000],"ni":[16,15],"wg":0},{"n":"Small Hydrogen Tank","p":[
+//-    -1,-5],"r":180,"f":false,"s":"Orange","c":[],"ni":[],"wg":0},{
+//-    "n":"Slab","p":[1,-1],"r":90,"f":false,"s":"White","c":[],"ni":[],
+//-    "wg":0},{"n":"Slab","p":[2,-1],"r":180,"f":false,"s":"White",
+//-    "c":[],"ni":[],"wg":0}],"nc":[],"ci":[],"significantVersion":25});
+//-    // {b:[{n:"Large Hydrogen Tank",p:[0,0]},
+//-    // {n:"Core",p:[.5,1]},{n:"Abs",p:[-1,1]},{n:"Abs",p:[3,1]},
+//-    // {n:"Abs",p:[.5,3]},{n:"Abs",p:[.5,-.5]}]});
+//-  render();
+//-  try{
+//-  //@ts-ignore
+//-  GE("info").click();
+//-  test_debugbox2collisions();
+//-  }catch(e){}
+//-}, 1000);
+//-setTimeout(function () {
+//-  test_collbxs = false;
+//-  rend_collisions = true;
+//-  render();
+//-}, 3000)
