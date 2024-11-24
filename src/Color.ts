@@ -1,4 +1,4 @@
-/// <reference path="Logic.ts" />
+/// <reference path="logic.ts" />
 
 type Colors = keyof typeof Data.colors | "" | null;
 

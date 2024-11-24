@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.js" types="./editor.js" />
 "use strict";
-var version_editor_js = "v.0.1.65";
+var version_editor_js = "v.0.1.67";
 /** @TODO check @see {defaults} for setting a setting without saveSettings */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -205,20 +205,20 @@ var init_funMode = F;
     case "4dbb2442":
     case "f34b79a5":
     case "f37f55d2":
-      console.log("Fun mode 1");
-      /** @type {ChildNode|null} */
-      var el = GE("auth"), parent = (el && el.parentNode) || EL();
-      for (var text; el && (text = el).nodeName !== "H2";) {
-        el = el.previousSibling;
-        text && parent.removeChild(text);
-      }
-      parent.appendChild(EL("img")).src =
-        "./assets/just_use_common_sense.png";
+      console.info("Fun mode 1");
+      var el = GE("info_help"), parent = el && el.parentNode, img, nxt;
+      if (!parent || !el)
+        break;
+      (img = EL("img")).src = "./assets/just_use_common_sense.png";
+      while ((nxt = el.nextSibling) && !(nxt instanceof Element &&
+        nxt.getAttribute("itemprop")))
+        parent.removeChild(nxt);
+      nxt && parent.appendChild(img) && parent.appendChild(nxt);
       break;
     case "3a613b4c":
     case "2b675e07":
     case "ab235503":
-      console.log("Fun mode 2");
+      console.info("Fun mode 2");
       setTimeout(function () {
         var oldPress = press, oldContme = contextmenu;
         press = contextmenu = function () {
@@ -231,14 +231,14 @@ var init_funMode = F;
       break;
     case "c96679af":
     case "ec4dca90":
-      console.log("Fun mode 3.1");
+      console.info("Fun mode 3.1");
       setTimeout(function () {
         ship = Ship.fromObject({n: "", dt: "", b: []});
         placingBlock = function () {return "__unknown__";};
       });
       break;
     case "47f76cb8":
-      console.log("Fun mode 4");
+      console.info("Fun mode 4");
       ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr("gAALU3RhcnRlcl\
 NoaXCAAQBnyR+wATjRE/MIg+/jGIhC4AC4AAgsIpEBBBAEDoFSLDKADKAEIFCSGTKAEQAAABClwm\
 uwSAQAIUQIkAEAGAEAACghWoXSoJToICaAFiADAHBCYCgRSlIIIQC0ABkAgBMCWIQEEZlkABkAAA\
@@ -254,24 +254,24 @@ AoxSIDyABKAAIlTviFogQ=")));
     case "9e808430":
     case "91c5cddf":
     case "aebec1df":
-      console.log("Fun mode 5");
+      console.info("Fun mode 5");
       ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr("gIAEEFN0YXJ0ZX\
 IgRHJvbmVib2kABD9TDSCAv6/65vbGnas+ELMGgvIGgrKuIChrYKhuICjrCoKyBpQ34LgncNaA6g\
 ak9QRBWQPKGnDcFQjauHnfBwJbWzAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMC\
 wxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNl0sIntcImNvbG\
 9yXCI6XCJMaW1lXCJ9Il0=")));
     case "8bb3bad8":
-      console.log("Fun mode 7");
+      console.info("Fun mode 7");
       setTimeout(function () {
         backgHangarInit.ready = NaN;
       });
       break;
     case "123897b6":
-      console.log("Debug mode (8)");
+      console.info("Debug mode (8)");
       test_debug = !0;
       break;
     case "b6f47340":
-      console.log("Fun mode 9");
+      console.info("Fun mode 9");
       init_funMode = function () {
         enableLogicEditing();
         ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr(("gIAEDEFOT05\
@@ -328,6 +328,8 @@ sXCJub2RlSW5kZXhcIjpbOSw4XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCI\
 sXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMjZdLFwid2VsZEdyb3VwXCI6MH0" +
         "iXQ==").replace(/ /g, ""))));
         ship.fixPositionAdjustment(!0);
+        if (location.href.slice(-3) === "=uh")
+          return;
         Math.random() > .5 ?
           rend_collisions = true :
           test_collbxs = true;
@@ -335,7 +337,7 @@ sXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMjZdLFwid2VsZEdyb3VwXCI6MH0" +
       break;
     case "bad106e2":
     case "ebbbcdda":
-      console.log("Fun mode 10");
+      console.info("Fun mode 10");
       ship = Ship.fromObject(JSON.parse('{"n":"Ingame logic prev iew","gv":"\
 ","dt":"15.09.2024 11:29:59","ls":0,"b":[{"n":"Core","p":[0,0],"r":180,"f":f\
 alse,"s":"White","c":[],"ni":[],"wg":0},{"n":"Small Battery","p":[1,0.5],"r"\
@@ -372,7 +374,7 @@ em2":1},{"Item1":5,"Item2":15}],"ci":[],"significantVersion":20}'));
       break;
     case "d4d00d64":
     case "c058adcc":
-      console.log("Fun mode 11");
+      console.info("Fun mode 11");
       defaults =
         /** @type {typeof defaults} */
         ({});
@@ -1638,7 +1640,16 @@ Command.push("Import/Export DBV", function (items, collapsed) {
   (elBtn = EL("button")).onclick = function () {
     error.innerText = "";
     try {
+      var logics = ship.prop && ship.prop.nodeList || [];
+      if (ship.prop && ship.prop.nodeList) {
+        ship.prop.nodeConnections = logics.map(function (e, i) {
+          var node = e || {pairs: []}, n = node.pairs;
+          return !!(typeof n == "number" && logics[n]) && [i, n] || [];
+        }) 
+        ship.prop.nodeList = UDF;
+      }
       var s = JSON.stringify(ship);
+      ship.prop && (ship.prop.nodeList = logics);
       download.href = URL.createObjectURL(
         new Blob([s], {type: "application/json"})
       );
@@ -1730,7 +1741,7 @@ lemented blocks like TNT, station blocks and more. Be aware that the key lim\
 its vehicle in and will refuse to compress too big vehicle. There are also b\
 ugs since I wasn't going down the rabbit hole of debugging every last one.");
 
-Command.push("Transfrom tool", function (items, collapsed) {
+Command.push("Transform tool", function (items, collapsed) {
   var blockSelect = ship.selectRect(.1, 0, 0, .1, 0, 0),
     lockedSelect = ship.selectRect();
   var selectX0 = EL("input"), selectY0 = EL("input");
@@ -1753,26 +1764,27 @@ Command.push("Transfrom tool", function (items, collapsed) {
       selecting = 0;
     render();
   }
-  /** SELECT @param {boolean} [getLock] */
-  function getSelected(getLock) {
-    if (!getLock && locked.checked)
-      return lockedSelect;
-    return selecting ?
+  /** SELECT @param {boolean} [isLocking] */
+  function getSelected(isLocking) {
+    if (!isLocking && locked.checked)
+      return;
+    selecting ?
       ship.selectRect() :
       ship.selectRect(0, xy[0], xy[1], 0, xy[2], xy[3]);
+    return 
   }
-  /** @type {BlockSelection|null} */
+  /** @type {Ship|null} */
   var trackPoints = null;
   function pointsSelected() {
     return trackPoints = Ship.fromObject({n: "", b: [
       new Block("Block", [0, xy[0], xy[1]], [0, !1, 0]),
       new Block("Block", [0, xy[2], xy[3]], [0, !1, 0])
-    ]}).selectRect();
+    ]});
   }
   function updateSelected() {
     if (!trackPoints)
       return console.error("trackPoints unset, AT Command.\"Transfrom\"");
-    var point0 = trackPoints[0], point1 = trackPoints[1];
+    var point0 = trackPoints.blocks[0], point1 = trackPoints.blocks[1];
     selectY0.value = "" + (xy[0] = point0.position[1]);
     selectX0.value = "" + (xy[1] = point0.position[2]);
     selectY1.value = "" + (xy[2] = point1.position[1]);
@@ -1805,7 +1817,7 @@ Command.push("Transfrom tool", function (items, collapsed) {
   locked.type = "checkbox";
   locked.oninput = function () {
     if (locked.checked)
-      lockedSelect = getSelected(!0);
+      lockedSelect = ship.getSelection();
   };
   items.push(
     {name: "Selection X0", inp: selectX0},
@@ -1819,7 +1831,7 @@ Command.push("Transfrom tool", function (items, collapsed) {
   move.appendChild(tN("Move action"));
   move.onclick = function () {
     var x = +inpX.value || 0, y = +inpY.value || 0;
-    Edit.move(getSelected(), 0, x, y);
+    Edit.move(ship, 0, x, y);
     Edit.move(pointsSelected(), 0, x, y);
     updateSelected();
     render();
@@ -1828,7 +1840,7 @@ Command.push("Transfrom tool", function (items, collapsed) {
   rotate.onclick = function rotateDBV() {
     // rotation around axis
     var rx = +inpX.value || +inpY.value || 0;
-    Edit.rotate(getSelected(), rx);
+    Edit.rotate(ship, rx);
     Edit.rotate(pointsSelected(), rx);
     updateSelected();
     render();
@@ -1876,7 +1888,7 @@ Command.push("Transfrom tool", function (items, collapsed) {
     if (selecting > 1)
       return;
     //var x = Math.min(x, xy[2]), y = Math.max(, xy[3]);
-    ship.paste(0, xy[0] - offset[0], xy[1] - offset[1], blockSelect);
+    ship.paste(0, xy[0] - offset[0], xy[1] - offset[1]);
     // also deselect the selection
     selecting = 2;
     selectX0.value = selectY0.value = "";
@@ -1891,7 +1903,7 @@ Command.push("Transfrom tool", function (items, collapsed) {
   };
   paint.appendChild(tN("Paint action"));
   paint.onclick = function () {
-    getSelected().forEach(coloring.value === "defaults" ?
+    ship.getSelection().forEach(coloring.value === "defaults" ?
       function (e) {
         e.properties.color = Color.default(e.internalName);
       } :
@@ -1907,7 +1919,7 @@ Command.push("Transfrom tool", function (items, collapsed) {
     if (selecting)
       return;
     defaults.buildReplace = !0;
-    ship.fillRect(0, xy[0], xy[1], 0, xy[2], xy[3], blockSelect);
+    ship.fillRect(0, xy[0], xy[1], 0, xy[2], xy[3]);
     defaults.buildReplace = !1;
     render();
   };
@@ -2392,9 +2404,9 @@ Command.push("Current version", function(items, collapsed) {
   };
   xhr.send();
 }, "");
-Command.push("About Commands tab", function (items) {}, "OPENING AND MOVIGN \
+Command.push("About Commands tab", function (items) {}, "OPENING AND MOVING \
 AROUND\nCommands tab is opened or moved by activating contextmenu, the optio\
-ns usually from right click or long press on touch screen, not on already op\
+ns, usually from right click or long press on touch screen, not on already op\
 ened Commands tab. The Commands tab them opens and/or moves centered to wher\
 e contextmenu was activated, but it will align with top, right or left edge \
 of the page if it was going to 'display partialy behind them'. This is to cr\
@@ -2694,22 +2706,61 @@ Tool.list.push(new Tool("Clone", "M2ba5a,2bab5 vda5e c0,33ca,-29fc,5dc6,-5dc\
 ,-169d,c12,-16a6,1820 l-a3,d63a ld185,67 c3c14,9,66ad,2841,6729,5855 l-33,de\
 f3 ld5ec,1a6 cba6,-76,175b,-a4c,17d6,-1935 l-61,-1f52a c-5,-f8c,-a81,-17f3,-\
 146b,-17a5 z"));
-Tool.list.push(new Tool("Undo", "M3f6f3,16ab0 cc15,c15,c15,1fad,0,2bc2 c-c15\
+Tool.list.push(new Tool("Undo", "M3f6f3,19ab0 cc15,c15,c15,1fad,0,2bc2 c-c15\
 ,c15,-1fad,c15,-2bc2,0 c0,0,-334f,-32bd,-ba42,-2670 c-c4f3,ef0,-12d5f,89d9,-\
 12d5f,89d9 c42b1,42b1,7222,7222,732f,732f cc15,c15,c15,1fad,0,2bc2 c-4b5,4b5\
 ,-a8f,795,-10aa,89f c-6aa,122,-21ce2,5967,-22309,59df c-8af,a8,-1198,-254,-1\
 83c,-8f9 c-6b7,-6b7,-9b3,-fc1,-8f3,-1888 c85,-615,5940,-21dea,599b,-2210e cc\
 3,-6b4,3b8,-d35,8dc,-1259 cc15,-c15,1fad,-c15,2bc2,0 c62,62,733f,733f,733f,7\
-33f c0,0,76,-a5,152,-152 c88c2,-6b53,1cea0,-db12,2f024,5037 z"));
-Tool.list.push(new Tool("Redo", "Mb37,16889 c12184,-12b4a,26761,-bb8b,2f024,\
+33f c0,0,76,-a5,152,-152 c88c2,-6b53,1cea0,-db12,2f024,5037 z", function () {
+  
+}));
+Tool.list.push(new Tool("Redo", "Mb37,19889 c12184,-12b4a,26761,-bb8b,2f024,\
 -5037 cdb,ac,152,152,152,152 c0,0,72dc,-72dc,733f,-733f cc15,-c15,1fad,-c15,\
 2bc2,0 c524,524,818,ba5,8dc,1259 c5b,324,5916,21af9,599b,2210e cc0,8c7,-23b,\
 11d0,-8f3,1888 c-6a4,6a4,-f8d,9a2,-183c,8f9 c-626,-77,-21c5f,-58bd,-22309,-5\
 9df c-61a,-109,-bf4,-3e9,-10aa,-89f c-c15,-c15,-c15,-1fad,0,-2bc2 c10d,-10d,\
 307e,-307e,732f,-732f c0,0,-686c,-7ae9,-12d5f,-89d9 c-86f2,-c4d,-ba42,2670,-\
-ba42,2670 c-c15,c15,-1fad,c15,-2bc2,0 c-c15,-c15,-c15,-1fad,0,-2bc2 z"));
+ba42,2670 c-c15,c15,-1fad,c15,-2bc2,0 c-c15,-c15,-c15,-1fad,0,-2bc2 z", function () {}));
 Tool.list.push(new Tool("Next", "M10200,0 L10200,40000 L40000,20000 z"));
 Tool.list.push(new Tool("Previous", "M2fc00,0 L0,20000 L2fc00,40000 z"));
+Tool.list.push(new Tool("Stats", "M2e6b3,388fc c0,1052,d3b,1d8e,1d8e,1d8e c1\
+13,0,da03,0,de2d,0 c1052,0,1d8e,-d3b,1d8e,-1d8e c0,-4f7,0,-287bf,0,-28dbc c0\
+,-1052,-d3b,-1d8e,-1d8e,-1d8e c-5ba,0,-d6a7,0,-de2d,0 c-1052,0,-1d8e,d3b,-1d\
+8e,1d8e c0,35a,0,28a4a,0,28dbc z M19032,3a68a c-1052,0,-1d8e,-d3b,-1d8e,-1d8\
+e c0,-5a6,0,-35d59,0,-3643c c0,-1052,d3b,-1d8e,1d8e,-1d8e c88f,0,db66,0,de2d\
+,0 c1052,0,1d8e,d3b,1d8e,1d8e c0,94,0,35e4d,0,3643c c0,1052,-d3b,1d8e,-1d8e,\
+1d8e c-5a0,0,-d9c6,0,-de2d,0 z M11958,1d2d2 c0,-1052,-d3b,-1d8e,-1d8e,-1d8e \
+c-6b6,0,-d69e,0,-de2d,0 c-1052,0,-1d8e,d3b,-1d8e,1d8e c0,80c,0,1b1a5,0,1b629\
+ c0,1052,d3b,1d8e,1d8e,1d8e c5e9,0,d9f1,0,de2d,0 c1052,0,1d8e,-d3b,1d8e,-1d8\
+e c0,-754,0,-1b5c7,0,-1b629 z"));
+Tool.list.push(new Tool("Node", "Mf70a,34a28 c0,f1b,0,7296,0,8060 c0,1e09,-1\
+859,3663,-3663,3663 c-fa9,0,-73b3,0,-8944,0 c-1e09,0,-3663,-1859,-3663,-3663\
+ c0,-bcb,0,-7be7,0,-89f4 c0,-1e09,1859,-3663,3663,-3663 h81d1 l251bf,-250eb \
+v-81e2 c0,-1e09,1859,-3663,3663,-3663 cb18,0,7b71,0,8944,0 c1e09,0,3663,1859\
+,3663,3663 c0,eac,0,7ff7,0,89f4 c0,1e09,-1859,3663,-3663,3663 h-81b3 z"));
+Tool.list.push(new Tool("History", "Mc400,0 c-238d,0,-4400,2072,-4400,4400 v\
+37800 c0,238d,2072,4400,4400,4400 h27800 c238d,0,4400,-2072,4400,-4400 v-378\
+00 c0,-238d,-2072,-4400,-4400,-4400 z M31beb,a445 c6cc,548,6cc,dd8,0,1320 c-\
+6cc,548,-11d1,548,-189d,0 c0,0,-1cdc,-162d,-68c5,-10cd c-6ec9,687,-a986,3c41\
+,-a986,3c41 c2584,1d27,4033,31e3,40cb,3259 c6cc,548,6cc,dd8,0,1320 c-2a6,20f\
+,-5f1,350,-95f,3c4 c-3bf,7e,-13040,2714,-133b6,2748 c-4e2,49,-9e5,-104,-da2,\
+-3ec c-3c7,-2ef,-574,-6e2,-508,-ab9 c4a,-2a8,3234,-ece0,3267,-ee3f c6e,-2ee,\
+217,-5c5,4fc,-805 c6cc,-548,11d1,-548,189d,0 c37,2b,40d3,3260,40d3,3260 c0,0\
+,42,-48,be,-93 c4ced,-2ee9,1043b,-5fc2,1a715,2310 Me7cd,1c954 ca2da,-82d2,15\
+a28,-51fa,1a715,-2310 c7b,4b,be,93,be,93 c0,0,409c,-3235,40d3,-3260 c6cc,-54\
+8,11d1,-548,189d,0 c2e4,23f,48d,517,4fc,805 c33,15f,321c,eb96,3267,ee3f c6c,\
+3d6,-141,7c9,-508,ab9 c-3bc,2e7,-8bf,435,-da2,3ec c-375,-34,-12ff6,-26c9,-13\
+3b6,-2748 c-36e,-74,-6b9,-1b5,-95f,-3c4 c-6cc,-548,-6cc,-dd8,0,-1320 c97,-75\
+,1b47,-1532,40cb,-3259 c0,0,-3abc,-35b9,-a986,-3c41 c-4be8,-560,-68c5,10cd,-\
+68c5,10cd c-6cc,548,-11d1,548,-189d,0 c-6cc,-548,-6cc,-dd8,0,-1320 Me7cd,2f5\
+54 ca2da,-82d2,15a28,-51fa,1a715,-2310 c7b,4b,be,93,be,93 c0,0,409c,-3235,40\
+d3,-3260 c6cc,-548,11d1,-548,189d,0 c2e4,23f,48d,517,4fc,805 c33,15f,321c,eb\
+96,3267,ee3f c6c,3d6,-141,7c9,-508,ab9 c-3bc,2e7,-8bf,435,-da2,3ec c-375,-34\
+,-12ff6,-26c9,-133b6,-2748 c-36e,-74,-6b9,-1b5,-95f,-3c4 c-6cc,-548,-6cc,-dd\
+8,0,-1320 c97,-75,1b47,-1532,40cb,-3259 c0,0,-3abc,-35b9,-a986,-3c41 c-4be8,\
+-560,-68c5,10cd,-68c5,10cd c-6cc,548,-11d1,548,-189d,0 c-6cc,-548,-6cc,-dd8,\
+0,-1320 z"));
 /** May throw error, use asynchronously! @throws {TypeError} */
 function check_contentScript() {
   var contentScript = GE("contentScript"), data = "";
@@ -2779,7 +2830,7 @@ DefaultUI.blockBars = [
   DefaultUI.createFolder("Small Hydraulic Drill", [770]),
   DefaultUI.createFolder(791, [789, 791]),
   DefaultUI.createFolder("Separator", [790, 792, 795]),
-  DefaultUI.createFolder(804, [802, 803, 804, 805, 804, 807, 808]),
+  DefaultUI.createFolder(804, [802, 803, 804, 805, 805 + 1, 807, 808]),
   DefaultUI.createFolder(804, [809, 810, 811, 812, 828, 813, 814]),
   DefaultUI.createFolder(804, [815, 816, 817, null, 818, 819, 820]),
   DefaultUI.createFolder(804, [821, 822, 823, 824, 825, 826, 827])
@@ -2792,7 +2843,14 @@ DefaultUI.selectedFolder = 0;
 DefaultUI.selectedTile = -1;
 DefaultUI.inventoryTile = false;
 /** @type {TileType[]} */
-DefaultUI.toolBar = [null, null, DefaultUI.createTile("Rotate")];
+DefaultUI.toolBar = [
+  DefaultUI.createTile("Undo"),
+  DefaultUI.createTile("Redo"),
+  DefaultUI.createTile("Rotate"),
+  DefaultUI.createTile("Stats"),
+  DefaultUI.createTile("History"),
+  DefaultUI.createTile("Node")
+];
 /** used at @typedef {"@see"} SeeRenderingFolders */
 DefaultUI.offsetsFolders = 0;
 DefaultUI.previousFolders = false;
@@ -2926,8 +2984,8 @@ DefaultUI.setPixelRatio = function () {
 function enableShipEditing() {
   var mode = ship.getMode();
   ship = mode.getShip();
-  press = DefaultUI.press = old_UI;
-  move = DefaultUI.move = function (x, y, z) {
+  DefaultUI.press = press = old_UI;
+  DefaultUI.move = move = function (x, y, z) {
     return false;
   };
   DefaultUI.rend = F;
@@ -3133,7 +3191,8 @@ function enableLogicEditing() {
   var found = null, movingId = -1;
   DefaultUI.press = press = edit_logic;
   DefaultUI.move = move = edit_logicmove = function (x, y, e) {
-    if (e.type === "mousedown" || e.type === "touchstart") {
+    if (e.type === "mousedown" || e.type === "touchstart" ||
+      e.type === "mouseenter") {
       if (DefaultUI.actionArea(x, y)) {
         var tile = DefaultUI.getSelectedTile();
         if (tile instanceof Tool)
@@ -3156,7 +3215,8 @@ function enableLogicEditing() {
       found.block.position[1] = (vX - x) / sc - oX;
       found.block.position[2] = (y - vY) / sc - oY;
       render();
-    } else if (e.type === "mouseup" || e.type === "touchend") {
+    } else if (e.type === "mouseup" || e.type === "touchend" ||
+      e.type === "mouseleave") {
       if (!found)
         return !1;
       if ((blocks[movingId] === found.block ?
@@ -3174,6 +3234,9 @@ function enableLogicEditing() {
       blocks.sort(function (a, b) {
         return b.position[1] - a.position[1];
       });
+      for (var i = blocks.length; i-- > 0;)
+        if (blocks[i].internalName === "__NULL__")
+          alert("GHOST __NULL__ BLOCK INFECTED YOUR VEHILCE! D:");
       render();
     } else
       console.error("edit_logicmove unhandled event type: " +
@@ -3222,7 +3285,7 @@ function rend_backgPattern() {
       var n = sc / 32, sx = vX - sc, sy = vY - sc, idk = 32;
       canvas.style.backgroundColor = defaults.editorBackgroundColor;
     } else
-      var n = sc / 2, sx = vX - sc * 37, sy = vY - sc * 37, idk = 74;
+      var n = sc / 4, sx = vX - sc * 37, sy = vY - sc * 37, idk = 148;
     ctx.translate(sx, sy);
     ctx.scale(n, n);
     ctx.fillRect(-vX / n + idk, -vY / n + idk,
@@ -3413,7 +3476,7 @@ var old_UI = DefaultUI.press = press = function (x, y) {
       //@ts-ignore
       e.rotation[2] = rot + 1 & 3;
     }
-    Edit.eventFire();
+    Edit.capture();
     return e;
   });
   // placingBlock function executed sets blockBind.changingColor
@@ -3445,7 +3508,7 @@ var old_UI = DefaultUI.press = press = function (x, y) {
     });
     arr.push(blok);
   }
-  Edit.eventFire();
+  Edit.capture();
   render();
 };
 
@@ -3543,36 +3606,11 @@ function rend_rc() {
   style.top = style.left = "0";
   style.width = style.height = "auto";
 }
-//-function used to add ckockpt_cruiser texture
-//-setTimeout(function () {
-//-  rend_rc();
-//-  var ref =
-//-    /** @type {ShipBlock|null} */
-//-    ({});
-//-  [0].map(function () {
-//-    ref = null;
-//-  });
-//-  ship.blocks.forEach(function (e) {
-//-    if (e.internalName === "cockpit_cruiser")
-//-      // (ref = e).internalName = "__NULL__";
-//-      (ref = e);
-//-  });
-//-  if (!ref)
-//-    return;
-//-  ref.rotation[0] = 1;
-//-  ref.rotation[1] = !0;
-//-  ship.blocks.push(new Block(
-//-    "cockpit_" + ("fighter" && "cruiser"),
-//-    ref.position,
-//-    ref.rotation,
-//-    ref.properties
-//-  ));
-//-  render();
-//-});
 
-var rend_speeeeed = {}, rend_logs = 69;
+var rend_speeeeed = {}, rend_logs = 69, test_cam = "";
 var test_collisions = "", rend_collisions = false;
 /*async*/ function expensiveRenderer() {
+  test_cam = "vX:" + vX + ";vY:" + vY + " " + test_cam.slice(0, 256);
   var t = Date.now(), AT = ", at expensiveRenderer();";
   canvas.width = canvas.width;
   rend_background();
@@ -3740,7 +3778,7 @@ var test_collisions = "", rend_collisions = false;
     Block.Box2d.collisions(objs[0], objs);
   else if (rend_collisions)
     for (i = objs.length;
-      //-, (GE('evil_result') || {}).innerText = ''
+      //, (GE('evil_result') || {}).innerText = ''
       i-- > 0;)
       Block.Box2d.collisions(objs[i], objs);
   DefaultUI.rend();
@@ -3777,11 +3815,8 @@ Block.Box2d.visualize = function (path, x, y, green) {
   //@ts-ignore
   for (var i = path.length; i-- > 1;)
   //0&&window.onerror(i+'=x:',(path[0].x + x) * sc + vX,'y',(path[i].y + y)
-  //- * sc + vY)
     ctx.lineTo(vX - (path[i].x - 2) * sc, (path[i].y + 2) * sc + vY);
   ctx.closePath();
-  //-ctx.globalAlpha = 1;
-  //-ctx.globalCompositeOperation = "source-over";
   if (!("range" in path))
     return ctx.stroke();
   x = (x || 0) - 2;
@@ -3789,7 +3824,6 @@ Block.Box2d.visualize = function (path, x, y, green) {
   ctx.moveTo(vX - (x - path.range) * sc, (y) * sc + vY);
   ctx.arc(vX - (x) * sc, (y) * sc + vY, path.range * sc, 0, Math.PI * 2);
   ctx.stroke();
-  //-ctx.strokeRect(vX - (x) * sc - 4.5, (y) * sc + vY - 4.5, 9, 9);
   //@ts-ignore
   //}catch(e){console.error(e && e.message || e);}
 };
@@ -3865,39 +3899,3 @@ test_debugbox2collisions = function (rend) {
     devt_debugger = oDD;
   })();
 };
-
-//-Block.Box2d.collisions(ship.blocks[0], ship.blocks);
-
-//-enableLogicEditing();
-//-ship = Ship.fromObject({b:[{n:"Core",p:[0,-.75]},
-//-  {n:"Small Hydraulic Drill",p:[0,0]}]});
-//-setTimeout(function () {
-//-  test_collbxs = false;//true;
-//-  rend_collisions = true;//false;
-//-  /** @TODO There's still something wrong with those cases */
-//-  ship = Ship.fromObject({"n":"ANON_Shuttle","gv":"0",
-//-    "dt":"compressed: 23.05.2024 5:45:39 UTC","ls":0,"b":[{
-//-    "n":"Smooth Corner 1x2","p":[-2,-5],"r":180,"f":false,"s":"Orange",
-//-    "c":[],"ni":[],"wg":0},{"n":"Small Ion Thruster","p":[3.5,5],
-//-    "r":180,"f":false,"s":"White","c":[4500],"ni":[37,36],"wg":0},{
-//-    "n":"Large Ion Thruster","p":[2.5,6],"r":180,"f":false,"s":"White",
-//-    "c":[27000],"ni":[16,15],"wg":0},{"n":"Small Hydrogen Tank","p":[
-//-    -1,-5],"r":180,"f":false,"s":"Orange","c":[],"ni":[],"wg":0},{
-//-    "n":"Slab","p":[1,-1],"r":90,"f":false,"s":"White","c":[],"ni":[],
-//-    "wg":0},{"n":"Slab","p":[2,-1],"r":180,"f":false,"s":"White",
-//-    "c":[],"ni":[],"wg":0}],"nc":[],"ci":[],"significantVersion":25});
-//-    // {b:[{n:"Large Hydrogen Tank",p:[0,0]},
-//-    // {n:"Core",p:[.5,1]},{n:"Abs",p:[-1,1]},{n:"Abs",p:[3,1]},
-//-    // {n:"Abs",p:[.5,3]},{n:"Abs",p:[.5,-.5]}]});
-//-  render();
-//-  try{
-//-  //@ts-ignore
-//-  GE("info").click();
-//-  test_debugbox2collisions();
-//-  }catch(e){}
-//-}, 1000);
-//-setTimeout(function () {
-//-  test_collbxs = false;
-//-  rend_collisions = true;
-//-  render();
-//-}, 3000)

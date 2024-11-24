@@ -2,10 +2,6 @@
   "include": [
     "src/**/*.ts"
   ],
-  "exclude": [
-    "src/**/code.ts"
-  ],
-  "files": ["src/Data.ts"],
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig to read more about this file */
 

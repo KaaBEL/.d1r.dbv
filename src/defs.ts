@@ -1,5 +1,5 @@
 // contents of editor.html
-/// <reference path="./e.ts" />
+/// <reference path="./html.ts" />
 var version_defs_ts = "v.0.1.64T13";
 
 // contents of initiations in code.js

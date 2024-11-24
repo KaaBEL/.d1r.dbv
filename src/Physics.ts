@@ -1,4 +1,4 @@
-/// <reference path="Color.ts" />
+/// <reference path="color.ts" />
 
 /** class is frost, Block Physics */
 class Physics {

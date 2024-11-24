@@ -1,4 +1,4 @@
-/// <reference path="Data.ts" />
+/// <reference path="data.ts" />
 
 /** @DOTO eliminate all @ts-ignore */
 type ShipBlock = Block | LogicBlock;

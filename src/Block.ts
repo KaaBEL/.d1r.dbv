@@ -1,4 +1,4 @@
-/// <reference path="Physics.ts" />
+/// <reference path="physics.ts" />
 
 const enum Rot {
   Up,

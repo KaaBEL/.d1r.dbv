@@ -1,4 +1,4 @@
-/// <reference path="Ship.ts" />
+/// <reference path="ship.ts" />
 
 interface rotate {
   (selection: BlockSelection, rx: number): void;

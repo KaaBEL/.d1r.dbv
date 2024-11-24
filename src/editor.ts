@@ -1,4 +1,4 @@
-/// <reference path="./B64Key.ts" />
+/// <reference path="./b64key.ts" />
 // THIS EDITOR.TS IS NOT UP TO DATE WITH ACTUAL EDITOR.JS !
 var version_editor_ts = "v.0.1.64T1.19";
 

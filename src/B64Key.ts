@@ -1,4 +1,4 @@
-/// <reference path="Edit.ts" />
+/// <reference path="edit.ts" />
 
 /** class for old Deltarealm base64 prototype keys code */
 class B64Key {

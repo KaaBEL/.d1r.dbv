@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.1.65 -->
+<!-- v.0.1.67 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -15,7 +15,7 @@
     body {
       position: relative;
       margin: 0;
-      background-color: #000;
+      background-color: #012;
       overflow: hidden;
     }
     canvas {
@@ -59,7 +59,7 @@
       font-size: 24px;
       font-weight: normal;
     }
-    #auth {
+    #info_auth {
       margin-top: 25px;
       text-align: center;
     }
@@ -70,13 +70,28 @@
       position: fixed;
       top: 0;
     }
+    .red {color: #ff3333;}
   </style>
+  <script>
+    (function (h) {
+      h && h.appendChild(document.createElement("style")).appendChild(
+        document.createTextNode(".no-script{display:none;}")
+      );
+    })(document.head || document.querySelector("head"));
+  </script>
 </head>
 <body class="scroll">
   <main id="8">
     <canvas id="0"></canvas>
   </main>
   <footer id="info">
+    <noscript class="red">
+      This page has disabled JavaScript execution, which is necessary if
+      you want to try or use the editor.
+    </noscript>
+    <a class="no-script" href="https://www.enable-javascript.com/">
+      Enable javascript to view all of this page's content.
+    </a>
     <h1>Welcome to the beggining of Droneboi Vehicles editor</h1>
     <h2>What is it?</h2>
     It is a fan made opensource tool for modifying and creating Droneboi
@@ -89,8 +104,8 @@
     First thanks to Beau for Droneboi series and its visual graphics,
     to the DBVE contributors and for feedback from also others.
     Most of the icons are made by Freepik from www.flaticon.com.
-    <h2>How to use it?</h2>
-    <span style="color: #ff3333;">Disclaimer: Vehicles buildead in a way
+    <h2 id="info_help">How to use it?</h2>
+    <span class="red">Disclaimer: Vehicles buildead in a way
     that it cannot be replicated by using only unmodified vanilla in-game
     editor without exploiting any bugs or with otherwise altered
     functionality starting from scratch by clearing the build area with
@@ -114,7 +129,7 @@
     <a href="https://discord.gg/Nb2jAgVHm5">
       Deltarealm fanclub
     </a>.
-    <div id="auth" itemprop="dateModified" content="2024-10-04" datetime="2024-10-04">Made by:
+    <div id="info_auth" itemprop="dateModified" content="2024-10-04" datetime="2024-10-04">Made by:
       <!-- link is unproperly displayed when whitespace is outside svg and pre -->
       <a href="https://github.com/KaaBEL"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="16" height="16" viewBox="0,0,16,16">
           <g data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill-rule="nonzero" stroke="none" style="mix-blend-mode: normal">
@@ -125,7 +140,7 @@
       <time itemprop="dateModified" content="2024-10-04" datetime="2024-10-04">Last updated, October 4, 2024</time>
     </div>
   </footer>
-  <!-- v.0.0.25 -->
+  <!-- v.0.0.27 -->
   <script>
     "use strict";
     function GE(v){return document.getElementById(+v===v?(GE.i=v+1)-1:v===
@@ -544,17 +559,22 @@
         if (e.target !== canvas || !(e instanceof WheelSroll ||
           e instanceof MouseWheelEvent))
           return;
-        test_debug && console.log("onwheel", +new Date / 100 | 0, e.deltaY ||
-          -(e.wheelDelta || 0), +new Date, sc);
+        test_debug && console.log("onwheel", +new Date / 100 | 0,
+          e.deltaY || -(e.wheelDelta || 0), +new Date, sc);
         var prev = sc, w = canvas.width / 2, h = canvas.height / 2;
         sc -= sc / (e.deltaY || -(e.wheelDelta || 0)) * 10;
         vX = (vX - w) * sc / prev + w;
         vY = (vY - h) * sc / prev + h;
         render();
       };
+      // maybe the first step in refining could be making all boolean states
+      // into one better understandable enum for different states (:TODO)
+      // pX/pY = prev x, y (previous press position)
       var foreign = !1, pX = 0, pY = 0, moving = !1, taken = !1;
+      // fix for mouseleave and mouseenter after fixing ghost __NULL__ blocks
+      var left = !1;
       bd.onmousedown = function (e) {
-        moving = taken = !1;
+        left = moving = taken = !1;
         var x = (e.pageX - canvas.offsetLeft) * pR,
           y = (e.pageY - canvas.offsetTop) * pR;
         if (foreign = e.target !== canvas)
@@ -564,6 +584,18 @@
         mouseStamp = e.buttons === 1 ? Date.now() : 0;
         pX = gX = x;
         pY = gY = y;
+        //-render();
+      };
+      bd.onmouseenter = function (e) {
+        foreign = taken = !1;
+        if (left = !(moving && e.buttons & 5))
+          return moving = !1;
+        var x = (e.pageX - canvas.offsetLeft) * pR,
+          y = (e.pageY - canvas.offsetTop) * pR;
+        pX = gX = x;
+        pY = gY = y;
+        //-render();
+        // there's still some weird in OBS's interact with browser
       };
       bd.onmousemove = function (e) {
         if (foreign)
@@ -574,8 +606,11 @@
           y = (e.pageY - canvas.offsetTop) * pR;
         if (!moving && (Date.now() < mouseStamp + mouseInit.time &&
           Math.abs(gX - x) < mouseInit.move &&
-          Math.abs(gY - y) < mouseInit.move || taken))
-          return taken && move(x, y, e);
+          Math.abs(gY - y) < mouseInit.move || left)) {
+          return;
+        }
+        if (taken)
+          return move(x, y, e);
         moving = !0;
         // works on add difference basis to not fight with other movement
         vX += x - pX || 0;
@@ -584,21 +619,28 @@
         pY = y;
         render();
       };
-      bd.onmouseup = function (e) {
+      bd.onmouseleave = bd.onmouseup = function (e) {
         if (foreign)
           return over(e);
         var x = (e.pageX - canvas.offsetLeft) * pR,
           y = (e.pageY - canvas.offsetTop) * pR;
         if (Date.now() < mouseStamp + mouseInit.time &&
           Math.abs(gX - x) < mouseInit.move &&
-          Math.abs(gY - y) < mouseInit.move && !taken && !moving)
+          Math.abs(gY - y) < mouseInit.move &&
+          e.type === "mouseup" && !taken && !moving) {
           return press(x, y);
-        else if (taken || !moving)
-          return taken && move(x, y, e);
+        }
+        if (taken) {
+          taken = !1;
+          return move(x, y, e);
+        }
+        if (!moving || left)
+          return;
         vX += x - pX || 0;
         vY += y - pY || 0;
         pX = x;
         pY = y;
+        moving = e.type === "mouseleave";
       };
       window.oncontextmenu = function (e) {
         for (var el = e.target; el instanceof Node;)
@@ -614,7 +656,7 @@
     /** settings: allowed press time legth, @see {touchesInit.time} */
     mouseInit.time = 350;
     /** allowed press precision, @see {touchesInit.move} */
-    mouseInit.move = 4;
+    mouseInit.move = 2;
 
     var actionType = 0, moveScore = 0, moveCount = 0;
     function touchGrab(all, ev) {
