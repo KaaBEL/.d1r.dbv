@@ -1,8 +1,8 @@
-/// <reference path="edit.ts" />
+/// <reference path="ship.ts" />
 
 /** class for old Deltarealm base64 prototype keys code */
 class B64Key {
-  static VER = "v.0.1.64T11";
+  static VER = "v.0.1.64T11.68";
 
   constructor() {
     throw new TypeError("Illegal constructor");

@@ -1,4 +1,4 @@
-/// <reference path="block.ts" />
+/// <reference path="edit.ts" />
 
 type BlockSelection = ShipBlock[] & {parentShip: Ship;};
 /**
@@ -68,7 +68,7 @@ interface Ship {
 /** @see {Logic} @see {Ship.CustomInput} */
 /** class is frost, for usuall ship creation use @see {Ship.fromObject} */
 class Ship {
-  static VER = "v.0.1.64T13";
+  static VER = "v.0.1.64T13.68";
 
   name: string;
   gameVersion: number[];

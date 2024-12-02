@@ -1,4 +1,4 @@
-/// <reference path="ship.ts" />
+/// <reference path="block.ts" />
 
 interface rotate {
   (selection: BlockSelection, rx: number): void;
@@ -7,7 +7,7 @@ interface rotate {
 
 // huh? A concept for undo redo history implementation
 class Edit {
-  static VER = "v.0.1.64T11";
+  static VER = "v.0.1.64T11.68";
 
   history: [];
   edited: Ship;

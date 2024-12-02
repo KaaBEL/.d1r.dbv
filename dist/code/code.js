@@ -1,12 +1,12 @@
 //@ts-check
-/// <reference path="./code.d.ts" types="./code.js" />
+/// <reference path="./defs.d.ts" />
 "use strict";
 /** @TODO setup webapp manifest.json */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
 // B) create chrome extensions with custom modifications for live page
 // C) pull requests to main repo on github
-var version_code_js = "v.0.1.67";
+var version_code_js = "v.0.1.68";
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -42,14 +42,17 @@ function Data() {
   throw new TypeError("Illegal constructor");
   this.data = null;
 }
-Data.colors = {"White": 0, "Light Gray": 1, "Dark Gray": 2, "Black": 3,
+
+Data.colors =
+  /** @type {const} */
+  ({"White": 0, "Light Gray": 1, "Dark Gray": 2, "Black": 3,
   "Yellow": 4, "Orange": 5, "Red": 6, "Wine": 7, "Pink": 8, "Purple": 9,
   "Light Blue": 10, "Dark Blue": 11, "Navy": 12, "Lime": 13,
   "Green": 14, "Fuel": 15, "Yellow Hazard Stripes": 16,
   "Red Hazard Stripes": 17, "White Hazard Stripes": 18,
   "Festive Red": 19, "Festive Green": 20, "BREAD": 21,
   "[custom color]": 22, "Station Floor 0": 23, "Station Floor 1": 24,
-  "Station Floor 2": 25, "Wood": 26, "Festive Duck": 27, "Gonb": 28};
+  "Station Floor 2": 25, "Wood": 26, "Festive Duck": 27, "Gonb": 28});
 Data.paths = [
   ["m,hv", 8, -8, -16, 32],
   ["m,hv", -8, -8, 16, 32],
@@ -152,7 +155,9 @@ Data.groups = [
  * fuel_use?:number|number[],fuel_store?:number,cargo_use?:number|number[],
  * cargo_store?:number}} BlockDataSimple
  */
-Data.blocks = {block: {id: 0, draw: [14, 14, 14, 14, 14, 14]},
+Data.blocks =
+  /** @type {const} */
+  ({block: {id: 0, draw: [14, 14, 14, 14, 14, 14]},
   wedge: {id: 1, draw: [15, 14, 14, 15, 14, 14]},
   wedge_1x2: {id: 2, draw: [20, 24, 5, 20, 24, 5]},
   pyramid: {id: 3, draw: [15, 16, 17, 15, 16, 17]},
@@ -259,8 +264,11 @@ Data.blocks = {block: {id: 0, draw: [14, 14, 14, 14, 14, 14]},
   __NULL__: {id: 1023}, Afterburner: {id: 1035, weight: 2, strength: 10,
   cost: 70}, "Dynamo Thruster": {id: 1037, weight: 3, strength: 15,
   cost: 90}, "T1 Rammer": {id: 1043, weight: 1, strength: 20, cost: 70},
-  "T1 Nano Healer": {id: 1060, weight: 1, strength: 10, cost: 130}};
-Data.titles = {
+  "T1 Nano Healer": {id: 1060, weight: 1, strength: 10, cost: 130},
+  __placeholder6969__: {id: 6969, weight: .101, cost: 6969}});
+Data.titles =
+  /** @type {const} */
+  ({
   0: "block",
   1: "wedge",
   2: "wedge_1x2",
@@ -414,31 +422,60 @@ Data.titles = {
   1057: "Hinge",
   1058: "Seperator",
   1059: "Camera Block,",
-  1060: "T1 Nano Healer"
-};
-/** @param {"colors"|"blocks"} src */
+  1060: "T1 Nano Healer",
+  6969: "Clamp Chan"
+});
+// /** @typedef {keyof Data.blocks} BlockDataKeys */
+// /** @typedef {Data.blocks[BlockDataKeys]["id"]} BlockDataIds */
+// /** @typedef {Data.colors[keyof Data.colors]} ColorDataIds */
+// /** @template {object} T @typedef {T&{lenght:number}} DataList */
+// /** @typedef {keyof BlockDataKeys} BlockDataValueKeys */
+// /**
+//  * @template {BlockDataKeys} K
+//  * @typedef {Data.blocks[K]["id"]} BlockIdByKey
+//  */
+// /**
+//  * @typedef {{[K in keyof Data.blocks as Data.blocks[K]["id"]]:K}&
+//  * {length:number}} DataBlockNames
+//  */
+// /**
+//  * @typedef {{[K in keyof Data.colors as number]:K extends keyof Data.colors[K] ? K : undefined}&
+//  * {length:number}} DataColorNames
+//  */
+// /** @template {"colors"|"blocks"} T @typedef {Exclude<number,keyof typeof Data[T]>} keyai */
+/** @template {"colors"|"blocks"} T @param {T} src */
 Data.generateNames = function (src) {
-  /** @type {{[key:number]:string|undefined,length:number}} Names by ID */
-  var names = {length: 0},
-    /** @type {{[key:string]:number|BlockDataSimple}} */
+  //-** @type {{[key:number]:string|undefined,length:number}} Names by ID */
+  /** */
+  var names =
+    /** Names by ID
+     * @type {{length:number}&{[K in keyof typeof Data[T]as(typeof Data[T][
+     * K] extends number?typeof Data[T][K]:typeof Data[T][K]["id"])]:K}&
+     * {[K in number as Exclude<K,keyof typeof Data[T]>]:
+     * keyof typeof Data[T]|undefined}}
+     */
+    ({length: 0}),
+    //-** @type {{[key:string]:number|BlockDataSimple}} */
     data = Data[src];
   for (var p in data) {
     /** one data item: color id, block data */
     var item = data[p];
-    var id = typeof item == "object" ? item.id : item;
+    var id = typeof item == "object" && item ? item.id : item;
     names[id] = p;
     if (id >= names.length)
       names.length = id + 1;
   }
   return names;
 };
-/** @param {"colors"|"blocks"} src */
+/** @template {"colors"|"blocks"} T @param {T} src */
 Data.generateIDs = function (src) {
-  /** is missing the undefined case, isn't 100% type safe
-   * @type {{[key:string]:number}} IDs by Name */
-  var ids = {length: 0},
-    /** @type {{[key:string]:number|BlockDataSimple}} */
-    data = Data[src];
+  //-** @type {{[key:string]:number|BlockDataSimple}} */
+  var data = Data[src], ids =
+    /** IDs by Name is missing the undefined case, isn't 100% type safe
+     * @type {{[K in keyof typeof Data[T]]:typeof Data[T][
+     * K] extends number?typeof Data[T][K]:typeof Data[T][K]["id"]}}
+     */
+    ({});
   for (var p in data) {
     /** @type {BlockDataSimple|number} */
     var item = data[p];
@@ -450,7 +487,7 @@ Data.generateIDs = function (src) {
 Data.generateValues = function (type) {
   /** @type {{[key:string]:BlockData[T]|undefined}} Values by Name */
   var values = {},
-    /** @type {{[key:string]:BlockDataSimple}} */
+    //-** @type {{[key:string]:BlockDataSimple}} */
     data = Data.blocks,
     /** @type {BlockDataSimple[keyof BlockData]} */
     val;
@@ -462,6 +499,34 @@ Data.generateValues = function (type) {
           [val[0], val[1]] :
           (val));
   return values;
+};
+/** @param {typeof Edit|typeof Ship} namespace */
+Data.nameMethods = function (namespace) {
+  if (namespace === Edit)
+    var name = "Edit.";
+  else if (namespace === Ship)
+    name = "Ship.";
+  else
+    return;
+  function setMethodName(proprety) {
+    if (typeof proprety == "function")
+      proprety.methodName = name + p;
+  }
+  for (var p in namespace)
+    p in {} || setMethodName(namespace[p]);
+  name += "proptotype.";
+  for (var p in namespace.prototype)
+    p in {} || setMethodName(namespace.prototype[p]);
+};
+Data.estimateIdentifier = new RegExp("^[^f]*function\\s+([_$a-zA-Z\\xA0-\
+\\uFFFF][_$a-zA-Z0-9\\xA0-\\uFFFF]*)");
+/** @param {Function&{methodName?:string,name?:string}} fn */
+Data.getFunctionName = function (fn) {
+  var s = fn.methodName || fn.name;
+  return typeof s == "string" ?
+    s :
+    (Data.estimateIdentifier.exec(
+      Function.prototype.toString.call(fn)) || ["", ""])[1];
 };
 
 /** @typedef {Block|LogicBlock} ShipBlock */
@@ -1106,7 +1171,6 @@ Block.CARGO_STORE = Data.generateValues("cargo_store");
  * @type {{[key:number]:number|undefined}} (MarketValue) */
 Block.COST = Data.generateValues("cost");
 Block.creatorWarns = 3;
-/** @TODO handling ls (DBV property?) */
 /**
  * @param {any[]|any} blocks
  * @param {Logic<any>[]&{nc?:any}} [logics$] */
@@ -1244,11 +1308,11 @@ s|c|ni|invalidName|getPhysics|logicPosition|logicBlockIndex)$");
     if (Block.ID[name] > 689 && Block.ID[name] < 947)
       // (v.0.1.64T14) was it really impossible to load wgs from JSON?
       o.prop.weldGroup = o.weld || o.prop.weldGroup || 0;
-    block = new Block(name, [pos[0], pos[1], pos[2]], rot, o.prop);
+    r[i] = new Block(name, [pos[0], pos[1], pos[2]], rot, o.prop);
     if (o.lpos && o.lpos instanceof Array)
       logicBlockPositions[i] =
         [+o.lpos[0] || 0, +o.lpos[1] || 0, +o.lpos[2] || 0];
-    r[i] = block;
+    //-r[i] = block; // (v.0.1.68) was then returning any[] ...Susge
   }
   // optionally for preserving old connections, the correct loading of logic
   // nodes will require to assign references after all blocks are loaded
@@ -1413,7 +1477,7 @@ Block.Size.VALUE = Block.Size.genterateSizes([[128], [52], [53]],
   [[179], [180], [181], [134, 2, 2], [164, 1, 2], [165, 1, 2]],
   [[166, 1, 2], [183], [184, 2, 2], [186, 2, 2], [160], [161], [162]],
   [[144, 4, 1], [158, 2, 1], [148, 2, 3], [163], [140, 4, 1], [182]],
-  [[155], [154], [-1, -1, -1], [16], [30], [64], [66]]);
+  [[155], [154], [-1, -1, -1], [16], [30], [64], [66], [82]]);
 /**
  * @typedef {{block:ShipBlock,id:number,x:number,y:number,w:number,
  * h:number}} Block.Selected @see {Block.Size.highlight}
@@ -1480,12 +1544,27 @@ Block.Mirror.VALUE = {
   11: new Block.Mirror("WEDGE"),
 };
 
+/** JSDoc syntax for interfaces */
+/** @typedef {{min:number;max:number;default:number[];}} Slider */
+/** @typedef {{min:number;max:number;default:number[];}} IntegerSlider */
+/** @typedef {{options:string[];default:number[];}} Dropdown */
+/** @typedef {{default:number[];}} NumberInputs */
+/** @typedef {{default:string[];}} TextInputs */
+/** @typedef {{idx:number;default:number[] | number[][];}} WeldGroups */
+/**
+ * @typedef {{"Slider":Slider;"Integer Slider":IntegerSlider;
+ * "Dropdown":Dropdown;"Number Inputs":NumberInputs;"Text Inputs":TextInputs;
+ * "WeldGroups":WeldGroups;}} ItemTs
+ */
 // TODO: To be considered for resystemizing
-/** @template {keyof ItemTs} T @param {T} type @param {string} name */
+/** blocks can have any combination of Block.Properies (dropdown, input(s))
+ * @template {keyof ItemTs} T @param {T} type @param {string} name */
 Block.Properties = function (type, name) {
+  /** type defines the kind of item, item is one of few classes */
   this.type = type;
+  /** text displayed above the setting like Tourque, Thrust, Function */
   this.name = name;
-  /** @type {ItemTs[T]} *///@ts-ignore
+  /** @type {ItemTs[T]} defines the data structure *///@ts-ignore
   this.item = new Block.Properties.Items[type]();
 }
 Block.Properties.Items = {
@@ -1495,30 +1574,38 @@ Block.Properties.Items = {
   "Slider": function Slider() {
     this.min = 0;
     this.max = 0;
+    /** @type {[number]} */
     this.default = [0];
   },
   /** @type {new()=>IntegerSlider} */
   "Integer Slider": function IntegerSlider() {
     this.min = 0;
     this.max = 0;
+    /** @type {[number]} integer! */
     this.default = [0];
   },
   /** @type {new()=>Dropdown} */
   "Dropdown": function Dropdown() {
     this.options = [""];
+    /** @type {[number]} integer */
     this.default = [0];
   },
   /** @type {new()=>NumberInputs} */
   "Number Inputs": function NumberInputs() {
+    /** @type {number[]} */
     this.default = [0];
   },
   /** @type {new()=>TextInputs} */
   "Text Inputs": function TextInputs() {
+    /** @type {string[]} */
     this.default = [""];
   },
   /** @type {new()=>WeldGroups} hidden property */
   "WeldGroups": function WeldGroups() {
+    /** not exactly sure what's this for */
     this.idx = 0;
+    /** Hinge/Piston use additnional digit
+     * @type {[number]|number[][]} Separator must have array of four >:o */
     this.default = [0];
   }
 };
@@ -1534,9 +1621,9 @@ Block.Properties.itemTypes = ["Slider", "Integer Slider", "Dropdown",
  * [1,string,number,number,number]|[2,string,string[],number]|
  * [3,string,number[]]|[4,string,string[]]|[5,number|number[]]} PropsArg
  */
-/** @typedef {Block.Properties<keyof ItemTs>} Props */
+/** @typedef {Block.Properties<keyof ItemTs>} Prop properties definitions */
 /**
- * @type {<T extends PropsArg[]>(argArr: T)=>Props[]} */
+ * @type {<T extends PropsArg[]>(argArr: T)=>Prop[]} */
 Block.Properties.justOne = function (argArr) {
   for (var j = 0, r = []; j < argArr.length; j++) {
     var p, v = argArr[j];
@@ -1581,7 +1668,7 @@ Block.Properties.justOne = function (argArr) {
   return r;
 };
 /**
- * @type {{[key:number]:Props[]|undefined,
+ * @type {{[key:number]:Prop[]|undefined,
  * 803:[Block.Properties<"Dropdown">]}}
  * @see {Ship.CustomInput} @see {ShipProperties} */
 Block.Properties.VALUE = Block.PROP = {
@@ -1608,7 +1695,7 @@ Block.Properties.VALUE = Block.PROP = {
   792: Block.Properties.justOne([[0, "Gear Ratio", 0.2, 3, 1], [5, 0]]),
   803:
     // custom parameter (DBV block's "c") property contains option string
-    // instead of number reference to option index (as for Ship class)
+    // instead of number reference to option index (DBVE has that shit too)
     // (which's in Block.Properties<"Dropdown"> item.default[0])
     /** @type {[Block.Properties<"Dropdown">]} */
     (Block.Properties.justOne([[2, "Controls", [
@@ -1905,8 +1992,9 @@ Block.Box2d.warn = test_collbxs;
  * {(x:number,y:number,path:Box2dPath,isBlock1?:boolean)=>void}
  */
 Block.Box2d.visualize = function (path, x, y, isBlock1) {};
-/** @param {ShipBlock} block1 @param {ShipBlock[]} within */
-Block.Box2d.collisions = function (block1, within) {
+/** if using Box2dPath as collider, last point is the reference point
+ * @param {ShipBlock|Box2dPath} forShape @param {ShipBlock[]} within */
+Block.Box2d.collisions = function (forShape, within) {
   /** @typedef {{ax:number,by:number,c:number}} VRP */
   /** @param {Block.Box2d} pointA @param {Block.Box2d} pointB */
   function someVRPthing(pointA, pointB) {
@@ -1924,25 +2012,12 @@ Block.Box2d.collisions = function (block1, within) {
     if (vrp2.ax !== 0)
       // multiplier to be able to subtract both equtations
       var n = vrp1.ax / vrp2.ax || vrp1.by / vrp2.by;
-    /** @TODO remove //- comments in v.0.1.68 */
-    //-// line2 is horizontal
-    //-else if (vrp1.ax === 0)
-    //-  // lines are paralel or equal, no intersection there
-    //-  return null;
-    //-else if (vrp2.by === 0) {
-    //-  // line2 is defined by two equal points, only let know about it
-    //-  console.error("Line2 defined by equal points.COLISNS");
-    //-  return null;
-    //-}
     else
       // multiplier, but ... from y coefficient
       n = vrp1.by / vrp2.by;
     // variables subtracting the equtasions
     var x = vrp1.ax - vrp2.ax * n, y = vrp1.by - vrp2.by * n;
-    //-// lines are parralel, no intersection
-    //-if (x === 0 && y === 0)
-    //-  return null;
-    //-resolving the equation for the other
+    // resolving the equation (...?)
     if (Math.abs(x) < 1E-9)
       x = (-vrp1.by * (y = -(vrp1.c - vrp2.c * n) / y) - vrp1.c) /
         vrp1.ax;
@@ -2085,7 +2160,7 @@ Block.Box2d.collisions = function (block1, within) {
         x < point1.x ? before += n : x > point1.x ? after += n : 0;
         // How to use test_debugbox2collisions:
         // devt_debugger && rend_collisions &&
-        //   console.log("before:", before, "at:", at, "after:", after);
+          console.log("before:", before, "at:, at", "after:", after);
         // if ()
       }
       point2 = endpoint2;
@@ -2097,8 +2172,10 @@ Block.Box2d.collisions = function (block1, within) {
       return [];
     }
   }
-  /** @param {ShipBlock} block @param {Box2dPath[]} def */
+  /** @param {ShipBlock} block @param {Box2dPath[]|undefined} def */
   function transformPath(block, def) {
+    if (!def)
+      return;
     var rot = block.rotation, path = def[+rot[1] * 4 + rot[2]];
     var x = block.position[1], y = block.position[2], done = [];
     (done =
@@ -2110,25 +2187,33 @@ Block.Box2d.collisions = function (block1, within) {
     ).range = path.range;
     return done;
   }
-  var temporary = Block.Box2d.VALUE[Block.ID[block1.internalName]];
-  if (!temporary) {
+  if (!(forShape instanceof Array)) {
+    var temporaray = temporaray = transformPath(forShape,
+      Block.Box2d.VALUE[Block.ID[forShape.internalName]]);
+    var x1 = forShape.position[1], y1 = forShape.position[2];
+  } else {
+    x1 = forShape[forShape.length - 1].x;
+    y1 = forShape[forShape.length - 1].y;
+    forShape.length--;
+    temporaray = forShape;
+  }
+  if (!temporaray) {
     Block.Box2d.warn &&
       console.warn("Uhm, trying to collide block without collisions?");
     return [];
-  }
-  var path1 = transformPath(block1, temporary);
+  } else
+    var path1 = temporaray;
   /** @type {ShipBlock[]} */
   var colliding = [], range1 = test_collbxs ? Infinity : path1.range;
-  var x1 = block1.position[1], y1 = block1.position[2];
   Block.Box2d.visualize(path1, x1, y1, true);
   for (var i = within.length; i-- > 0;) {
-    var block = within[i];
-    temporary = Block.Box2d.VALUE[Block.ID[block.internalName]];
-    if (!temporary || within[i] === block1)
+    var block = within[i], pos2 = block.position, path2;
+    temporaray = transformPath(block,
+      Block.Box2d.VALUE[Block.ID[block.internalName]]);
+    if (!temporaray || block === forShape)
       continue;
-    var pos2 = block.position, path2 = transformPath(block, temporary);
     var x = Math.abs(x1 - pos2[1]), y = Math.abs(y1 - pos2[2]);      
-    if (Math.sqrt(x * x + y * y) >= range1 + path2.range)
+    if (Math.sqrt(x * x + y * y) >= range1 + (path2 = temporaray).range)
       continue;
     Block.Box2d.visualize(path2, pos2[1], pos2[2], false);
     var result = combineOutlines();
@@ -2192,6 +2277,309 @@ function LogicBlock(block, index, ship) {
 }
 __extends(LogicBlock, Block);
 
+/** @typedef {0|1|2|3} Edit.Type commands enum @typedef {0} Edit.Save */
+/** @typedef {1} Edit.Target @typedef {2} Edit.This @typedef {3} Edit.Undo */
+// A concept for undo redo history implementation
+/**
+ * @param {((...args:any[])=>any)&{methodName?:string}} command 
+ * @param {string} args stringified Array @param {Edit.Type} type */
+function Edit(command, args, type) {
+  /** @type {Edit.Type} commands enum */
+  this.type = type;
+  this.command = command;
+  this.args = args;
+  /** if not 0, it holds temporary reference to @see {Edit.Undo} */
+  // when Edit.historyAt crawls edits list for progression path
+  // it assigns a 0 or reference to what was skipped by undone
+  this.temp = 0;
+}
+// what about buildReplace options kind !!?
+// > if an Edit command uses settings, it must contain optional
+// parameters for them
+/** @type {(((ship?:Ship)=>void)&{id?:string}|undefined)[]} */
+Edit.listeners = [];
+/** this property must be set true while executing commands of Edit history,
+ * it prevents @see {Edit.capture} from adding duplicate Edits to history */
+Edit.settingHistory = false;
+Edit.prototype.toString = function () {
+  if (this.args[0] !== "[" || this.args.slice(-1)[0] !== "]")
+    return "\"Error: args is not arguments array (" + this.type + " " +
+    (this.command.methodName || (this + "").slice(0, 32)) + ")\"";
+  var s = Data.getFunctionName(this.command) || "(anonymous)";
+  return "[" + this.type + ",\"" + s + "\"," + this.args + "]";
+};
+/** @typedef {Edit.save} Ship.clone set second param (copy) to 1 */
+// @param {Ship} target @param {number} [copy] ? get clone : pass target
+/** @param {Ship} target and also used to reset setting history */
+Edit.save = function (target) {
+  var copy = target.getMode().mode === "Save",
+    clone = copy ?
+      target.getMode().getShip() :
+      new Ship("", [], "", [], null, new Ship.Mode("Save", target));
+  if (!copy)
+    Edit.settingHistory = false;
+  target.getSelection().length = 0;
+  /** @type {Ship|ShipProperties|null} */
+  var prop = target.prop, blocks = target.blocks.map(function (e, i) {
+    var block = new Block(
+      e.internalName,
+      /** @type {XYZPosition} */
+      (e.position.slice()),
+      /** @type {Rotation} */
+      (e.rotation.slice()),
+      /** @see {BlockProps} */
+      JSON.parse(JSON.stringify(e.properties))
+    );
+    return e instanceof LogicBlock ?
+      new LogicBlock(block, i, target) :
+      block;
+  });
+  clone.name = target.name;
+  clone.gameVersion = JSON.parse(JSON.stringify(target.gameVersion));
+  clone.dateTime = target.dateTime;
+  clone.blocks = blocks,
+  clone.prop = prop && function (logics, inputs) {
+    var result = JSON.parse(JSON.stringify(prop));
+    delete result.nodeList;
+    delete result.customInputs;
+    if (logics instanceof Array)
+      result.nodeList = logics.map(function (e) {
+        if (e) {
+          var node = new Logic(e.type, 0, 0);
+          node.pairs = JSON.parse(JSON.stringify(e.pairs));
+          node.owner = e.owner &&
+            blocks[target.blocks.indexOf(e.owner)] || null;
+          return node;
+        }
+      });
+    if (inputs instanceof Array)
+      result.customInputs = inputs.map(function (e) {
+        return new Ship.CustomInput(e.name, e.type);
+      });
+    return result;
+  }(prop.nodeList, prop.customInputs) || null;
+  if (copy)
+    return clone;
+  target.getHistory().push(new Edit(
+    function cloneEditSave() {
+      return Edit.save(clone);
+    },
+    "[]",
+    /** @type {Edit.Save} */
+    (0)
+  ));
+  return target;
+};
+/**
+ * @typedef {((slab?:boolean)=>any)|((ids:number[])=>any)} EditSomeCommand
+ * @typedef {(x:number,y:number,z:number,block:any)=>any} EditBlockCommand
+ * @typedef {(...args:number[])=>any} EditNumberCommand
+ * @typedef {EditBlockCommand|EditNumberCommand|EditSomeCommand
+ * } EditThisCommand
+ * @typedef {(target:Ship,...args:number[])=>any} EditTargetCommand */
+Edit.capture = (
+  /** Finally reliazed how the overloads work with JSDoc
+   * @overload @param {Ship} target @param {EditThisCommand} cmd
+   * @param {...any} _inputs @returns {void}
+   * @overload @param {EditTargetCommand} cmd @param {Ship} target
+   * @param {...any} _inputs @returns {void}
+   * @param {EditTargetCommand|Ship} cmdOrThis
+   * @param {Ship|EditThisCommand} [targetOrCmd]
+   * @param {...any[]} [_inputs] */
+  function (cmdOrThis, targetOrCmd, _inputs) {
+    // if properly used Edits won't duplicate after the undo/redoing
+    // operation scope was detected
+    if (Edit.settingHistory)
+      return;
+    var isThis = cmdOrThis instanceof Ship,
+      args = JSON.stringify([].slice.call(arguments, 2)),
+      /** @type {Ship} */
+      target = cmdOrThis instanceof Ship ?
+        cmdOrThis :
+        targetOrCmd || arguments[1],
+      command = typeof cmdOrThis == "function" ?
+        cmdOrThis :
+        typeof targetOrCmd == "function" ? targetOrCmd : console.error;
+    target.getHistory().push(new Edit(
+      command,
+      args,
+      /** @type {Edit.Target|Edit.This} */
+      (+isThis + 1)
+    ));
+    for (var i = 0, l = this.listeners.length; i < l; i++)
+      (this.listeners[i] || F)(ship);
+  }
+);
+/** @param {Ship} target @param {number} index */
+Edit.historyAt = function (target, index) {
+  var edits = target.getHistory(), last = edits[edits.length - 1];
+  if (!(index in edits))
+    return console.error("Index: " + index +
+      " is out of range for editing history");
+  Edit.settingHistory = true;
+  if (last.type === 3) {
+    last.args = "[" + (index) + "]";
+    if (index >= edits.length - 2)
+      index = --edits.length - 1;
+  } else if (index === edits.length - 1)
+    console.info("Executing undo history restart");
+  else
+    edits.push(last = new Edit(
+      Edit.undo,
+      "[" + index + "]",
+      /** @type {Edit.Undo} */
+      (3)
+    ));
+  // chech all the relevant references/jumps with Edit.undo-s
+  for (var i = index, n = 0, lmax = 0xffff; i > 0;) {
+    if (edits[n = i].type ===
+        /** @type {Edit.Undo} */
+        (3) ?
+          edits[i = +edits[i].args.slice(1, -1)].temp = n :
+          edits[--i].temp = 0)
+      i < n ? i : console.error("Edit.Undo refers forward");
+  }
+  try {
+    for (i = 0; i <= index && lmax-- > 0; i++) {
+      var args = JSON.parse((last = edits[i]).args);
+      if (!(args instanceof Array))
+        console.warn("edit.args is not an Array");
+      /** @see {Edit.This} */
+      if (last.type === 2)
+        last.command.apply(target, args);
+      /** @see {Edit.Undo} */
+      else if (last.type !== 3)
+        last.command.apply(UDF, [
+          /** @type {any} */
+          (target)
+        ].concat(args));
+      if (last.temp)
+        i = last.temp;
+    }
+  } catch (e) {
+    console.error("Executing Edit commands failed misserably, " +
+      "at index: " + i + " command: " + edits[i], e);
+    // save Ship before completely throwimg an error
+    Edit.save(target);
+  }
+  Edit.settingHistory = false;
+};
+/** @param {Ship} target */
+Edit.undo = function (target) {
+  var edits = target.getHistory(), last = edits[edits.length - 1];
+  var index = last.type === 3 ?
+    +last.args.slice(1, -1) :
+    edits.length - 1;
+  Edit.historyAt(target, index - +!!index);
+};
+/** @param {Ship} target */
+Edit.redo = function (target) {
+  var edits = target.getHistory(), last = edits[edits.length - 1];
+  var index = last.type === 3 ?
+    +last.args.slice(1, -1) :
+    edits.length - 1;
+ Edit.historyAt(target, index + +!!(index < edits.length - 1));
+};
+Edit.rotate = (
+  /** rotates Dr ships as well as db vehicles
+   * @overload @param {Ship} target
+   * @param {number} rx
+   * @overload @param {Ship} target
+   * @param {number} rx @param {number} ry @param {number} rz
+   * @returns {void} @param {Ship} target @param {number} rx
+   * @param {number} [ny] @param {number} [nz]  */
+  function (target, rx, ny, nz) {
+    if (typeof ny != "number") {
+      var ry = 0, rz = 0, applyRotation = function (rot) {
+        rot[2] =
+          /** @type {0|1|2|3} */
+          (rot[2] + rx & 3);
+      };
+      Edit.capture(Edit.rotate, target, rx *= 90);
+    } else {
+      ry = ny;
+      rz = nz || 0;
+      applyRotation = function (rot) {
+        Block.rotate(rot, rx, ry, rz);
+      };
+      Edit.capture(Edit.rotate, target, rx, ry, rz);
+    }
+
+    rx >= 0 && rx < 4 ? rx |= 0 : rx = Math.round(rx / 90) % 4 + 4 & 3;
+    ry >= 0 && ry < 4 ? ry |= 0 : ry = Math.round(ry / 90) % 4 + 4 & 3;
+    rz >= 0 && rz < 4 ? rz |= 0 : rz = Math.round(rz / 90) % 4 + 4 & 3;
+    var i = 0, edtA = [0, 1, 2, 0, 0, 0];
+    var selection = target.getSelection();
+    /** @param {number} ax ; */
+    function prcsAxis(ax) {
+      if (ax) {
+        var a = i > 1 ? 0 : i + 1, b = i < 1 ? 2 : i - 1;
+        if (ax === 2)
+          var m = edtA[a], n = edtA[b];
+        else
+          var m = edtA[b], n = edtA[a];
+        edtA[a] = ax < 3 ? m & 4 ? m & 3 : m | 4 : m;
+        edtA[b] = ax > 1 ? n & 4 ? n & 3 : n | 4 : n;
+      }
+      edtA[i++ | 4] = ax * 90;
+    }
+    prcsAxis(rx);
+    prcsAxis(ry);
+    prcsAxis(rz);
+    for (i = 0; i < selection.length;) {
+      /** @type {XYZPosition} */
+      var newA = [0, 0, 0];
+      for (var n = 3, pos = selection[i].position; n-- > 0;) {
+        newA[n] = edtA[n] & 4 ? -pos[edtA[n] & 3] : pos[edtA[n] & 3];
+      }
+      applyRotation(selection[i].rotation);
+      selection[i++].position = newA;
+    }
+  }
+);
+/**
+ * @param {Ship} target
+ * @param {number} x @param {number} y @param {number} z */
+Edit.move = function (target, x, y, z) {
+  for (var aar = target.getSelection(), i = aar.length; i-- > 0;) {
+    var pos = aar[i].position;
+    pos[0] += x;
+    pos[1] += y;
+    pos[2] += z;
+  }
+  Edit.capture(Edit.move, target, x, y, z);
+};
+/** @param {Ship} target @param {number} color */
+Edit.paint = function (target, color) {
+  var colorName = Color.NAME[color] || null;
+  target.getSelection().forEach(color === -1 ?
+    function (e) {
+      e.properties.color = Color.default(e.internalName);
+    } :
+    function (e) {
+      e.properties.color = colorName;
+    });
+  Edit.capture(Edit.paint, target, color);
+};
+// TODO: appended at the end of methods, might be more logical to be earlier
+// taken from: https://stackoverflow.com/a/47593316
+/** @param {number} seed @see {Ship.dateTime} also (todo for discussion) */
+Edit.randSFC32 = function (seed) {
+  var a = seed, b = seed, c = seed, d = seed;
+  return function() {
+    a |= 0; b |= 0; c |= 0; d |= 0;
+    var t = (a + b | 0) + d | 0;
+    d = d + 1 | 0;
+    a = b ^ b >>> 9;
+    b = c + (c << 3) | 0;
+    c = (c << 21 | c >>> 11);
+    c = c + t | 0;
+    return (t >>> 0) / 4294967296;
+  }
+};
+// end of taken
+Data.nameMethods(Edit);
+
 /**
  * @typedef {Block[]&{target?:Ship,id:number}} EditSelection
  * @TODO BlockSelection can be used only with its target
@@ -2201,7 +2589,7 @@ __extends(LogicBlock, Block);
  * @typedef {{nodeList?:(Logic|undefined)[],nodeConnections?:number[][],
  * customInputs?:Ship.CustomInput[],[key:string]:unknown}} ShipProperties
  * @see {Logic} @see {Ship.CustomInput}
- * @typedef {"Ship"|"Logic"} EditMode */
+ * @typedef {"Ship"|"Logic"|"Save"} EditMode */
 /** class is frost
  * @param {string} name
  * @param {number[]} version
@@ -2223,14 +2611,14 @@ function Ship(name, version, time, blocks, properties, mode) {
   /** @type {()=>Edit[]} */
   this.getHistory = __private([]);
   /** @type {()=>ShipBlock[]} */
-  this.getSelection = __private([])
+  this.getSelection = __private([]);
   /** to track Droneboi Vehicles editor version in its JSON savefiles
    * @type {number} */
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @constant @type {28} significantVersion: 28 (integer) */
-Ship.VERSION = 28;
+/** @constant @type {29} significantVersion: 29 (integer) */
+Ship.VERSION = 29;
 Ship.prototype.selectRect = (
   /**
    * @overload @returns {ShipBlock[]}
@@ -2264,7 +2652,8 @@ Ship.prototype.selectRect = (
     return selected;
   }
 );
-/** @this {Ship} @param {ShipBlock[]|number[]} selection */
+/** for selectimg all blocks use @see {ship.selectRect}
+ * @this {Ship} @param {ShipBlock[]|number[]} selection */
 Ship.prototype.setSelected = function (selection) {
   var ids = [], selected = this.getSelection(), blocks = this.blocks;
   for (var i = selected.length = selection.length; i-- > 0;) {
@@ -2273,7 +2662,9 @@ Ship.prototype.setSelected = function (selection) {
       console.error("Selected ShipBlock was not found:" + id);
     selected[i] = blocks[ids[i]];
   }
-  Edit.capture(this, this.getSelection, );
+  // TODO: just had mega bug of capturing getSelection instead
+  // of setSelected
+  Edit.capture(this, this.setSelected, ids);
 };
 Ship.prototype.removeRect = function (x0, y0, z0, x1, y1, z1) {
   var x = x0, y = y0, z = z0, selected = [];
@@ -2585,10 +2976,13 @@ Ship.prototype.withPositionAdjustment = function (operation) {
 };
 /**
  * @param {number} x @param {number} y @param {number} z
- * @param {ShipBlock} ref template Block for the new one */
-Ship.prototype.placeBlock = function (x, y, z, ref) {
+ * @param {ShipBlock|number} refBlock template for the new one */
+Ship.prototype.placeBlock = function placeBlock(x, y, z, refBlock) {
   // improved old_UI from editor.js
-  ref = JSON.parse(JSON.stringify(ref));
+  var ref = typeof refBlock == "number" ?
+    Block.arrayFromObjects({n: Block.NAME[refBlock], p: [0, 0]})[0] :
+    /** @type {ShipBlock} */
+    (JSON.parse(JSON.stringify(refBlock)));
   var logics = this.prop && this.prop.nodeList || [];
   var block = new Block(
     ref.internalName,
@@ -2613,8 +3007,21 @@ Ship.prototype.placeBlock = function (x, y, z, ref) {
     // #MessingWithWorkingLogics
     new LogicBlock(block, -1, logics) :
     block);
-  Edit.capture(this, this.placeBlock, x, y, z, ref);
+  Edit.capture(this, placeBlock, x, y, z, typeof refBlock == "number" ?
+    refBlock :
+    ref);
   return block;
+};
+/** replaces block on given index with last block and cuts off
+ * last item of blocks array @this {Ship} @param {number[]} ids */
+Ship.prototype.removeBlocks = function removeBlocks(ids) {
+  var logics = this.prop && this.prop.nodeList || [];
+  for (var i = ids.sort().length, blocks = this.blocks; i-- > 0;) {
+    Logic.removeLogic(blocks[ids[i]], logics);
+    blocks[ids[i]] = blocks.slice(-1)[0];
+    blocks.length--;
+  }
+  Edit.capture(this, removeBlocks, JSON.parse(JSON.stringify(ids)));
 };
 /** @param {any} object */
 Ship.fromObject = function fromObject(object) {
@@ -2664,7 +3071,7 @@ Ship.fromObject = function fromObject(object) {
     (props = props || OC()).nodeList = logics;
   // reassamble different from Logic.reassemble
   Ship.CustomInput.reassemble(blocks, (props = props || OC()));
-  return new Ship(name, ver, time, blocks, props);
+  return Edit.save(new Ship(name, ver, time, blocks, props));
 };
 /** @param {Ship} ship */
 Ship.toDBV = function toDBV(ship) {
@@ -2673,12 +3080,10 @@ Ship.toDBV = function toDBV(ship) {
   var blocks = [];
   for (var i = 0, e = ship.blocks[0]; i < ship.blocks.length; i++) {
     e = ship.blocks[i];
-    var rot = e.rotation[2], adjX = 0, adjY = 0;
     var size = Block.Size.VALUE[Block.ID[e.internalName]];
-    /__placeholder\d+__/.test(e.internalName) || blocks.push({
+    /__placeholder\d+__/.test(e.internalName) || size && blocks.push({
       n: e.internalName,
-      p: [Math.floor(e.position[1]) / 2 - adjX,
-        Math.floor(e.position[2]) / 2 - adjY],
+      p: [Math.floor(e.position[1]) / 2, Math.floor(e.position[2]) / 2],
       r: Math.floor(e.rotation[2] * 90),
       f: e.rotation[1],
       s: e.properties.color,
@@ -2803,9 +3208,123 @@ Ship.fromDBKey = function (key) {
         }, logics, blocks));
   }
   var obj = {nodeList: logics};
-  return new Ship("[unnamed]", [], Ship.dateTime(1714557750), blocks, obj);
+  return Edit.save(
+    new Ship("[unnamed]", [], Ship.dateTime(1714557750), blocks, obj));
+};
+/** @param {Ship} ship @throws {Error} */
+Ship.checkDBV = function (ship) {
+  /** @param {Error} err */
+  function at(err) {
+    if (i !== -1)
+      err.message += " for \"" + b[i].internalName + "\" block.";
+    return err;
+  }
+  function notPositiveInteger(n) {
+    return (n % 1 !== 0) || isNaN(n % 1) || n < 0;
+  }
+  /** @param {Prop["item"]} item @param {unknown[]} arr @param {number} id */
+  function checkProperty(item, arr, id) {
+    if (id === 803) {
+      if (typeof arr[0] != "string")
+        throw at(new Error("The \"c\" property requires type:" +
+          " string at index: 0"));
+      n = 1;
+      return;
+    }
+    for (var j = 0, def = item.default; j < def.length; j++)
+      if (typeof arr[n++] != typeof def[j])
+        throw at(new Error("The \"c\" property requires type: " +
+          typeof def[j] + " at index: " + (n - 1)));
+    if (id === 791) {
+      if (!(arr[0] instanceof Array && arr[0].length === 4) ||
+        arr[0].some(function (e) {
+          return notPositiveInteger(e) || n > 4
+        }))
+        throw at(new Error("Incorrect welgroups array"));
+    } else if (item instanceof classes["Integer Slider"] ||
+      item instanceof classes["Dropdown"])
+      if (notPositiveInteger(arr[n - 1])) {
+        throw at(new Error("The \"c\" property requires positive" +
+          " integer value at index: " + (n - 1)));
+    }
+    var n0 = arr[n - 1];
+    if ("max" in item && "min" in item && typeof n0 == "number")
+      if (n0 > item.max || n0 < item.min)
+        throw at(new Error("Only values in range: " + item.min + " " +
+          item.max + " are allowed at index: " + (n - 1) +
+          " of \"c\" property"));
+    "CONTINUE HERE";
+  }
+  rend_collisions = false;
+  var gridBox = function () {
+    var arr =
+      /** @type {Box2dPath} */
+      ([[-9, -13], [9, -13], [9, 13], [-9, 13], [0, 0]].map(function (e) {
+        return new Block.Box2d(e[0], e[1]);
+      }));
+    arr.range = Infinity;
+    return arr;
+  }(), classes = Block.Properties.Items, shipProp = ship.prop || OC();
+  for (var b = ship.blocks, i = b.length, msg = ""; i-- > 0;) {
+    var id = Block.ID[b[i].internalName], pos = b[i].position;
+    if (id < 690 && id > 959)
+      console.warn("Non Droneboi: Conquest block " + b[i].internalName);
+    if (pos[1] % 1 || pos[2] % 1 || isNaN(pos[1] % 1 + pos[2] % 1))
+      throw at(new Error("Fractial position: " + pos));
+    var n = +b[i].rotation[2], arr = b[i].properties.customParameter;
+    if (notPositiveInteger(Math.floor(n * 90)) || n > 3)
+      throw new Error("Invalid rotation value isn't 0, 1, 2 or 3");
+    if (typeof b[i].rotation[1] != "boolean")
+      throw at(new Error("Flippable value (rotation[1]) is invalid"));
+    if (b[i].rotation[1] && !Block.isFlippable(id))
+      throw at(new Error("Block is not flippable"));
+    n = Color.ID[b[i].properties.color || ""];
+    if (n > 20 || n < 0)
+      throw at(new Error("Unexisting color"));
+    n = b[i].properties.weldGroup || 0;
+    if (notPositiveInteger(n) || n > 4)
+      throw at(new Error("Ivalid weld group"));
+    var propsDef = Block.Properties.VALUE[id];
+    if (!(arr instanceof Array))
+      throw at(new Error("The array \"c\" property is required"));
+    if (propsDef) {
+      for (var j = 0, n = 0; j < propsDef.length; j++)
+        checkProperty(propsDef[j].item, arr, id);
+      if (arr.length !== n)
+        throw at(new Error("The \"c\" property requires " + n +
+          " items long array"));
+    }
+    arr = b[i].properties.nodeIndex;
+    if (arr && !(arr instanceof Array && arr.every(function (e) {
+      return typeof e == "number" && !isNaN(e % 1);
+    })))
+      throw at(new Error("The \"ni\" property can be (int) number[]"));
+    var colliding = Block.Box2d.collisions(b[i], b);
+    if (rend_collisions = !!colliding.length)
+      throw at(new Error("There is some overlapping with " + 
+        colliding.map(function (e) {
+          return e.internalName;
+        })));
+  }
+  if ("launchpadSize" in shipProp && shipProp.launchpadSize !== 0)
+    throw new Error("Can do only small grid for now :(");
+  if (typeof ship.name != "string")
+    throw new Error("ship.name must be of type string.");
+  colliding = Block.Box2d.collisions(function () {
+    var arr =
+      /** @type {Box2dPath} */
+      ([[-8, -14], [-8, 12], [10, 12], [10, -14], [0, 0]].map(
+        function (e) {return new Block.Box2d(e[0], e[1]);
+      }));
+    arr.range = Infinity;
+    return arr;
+  }(), ship.blocks);
+  if (colliding.length)
+    throw new Error("Your Droneboi: Conquest Vehicle sucks, it collides.");
+  return ship;
 };
 // TODO: appended at the end of methods, might be more logical to be earlier
+// though
 /** timeToString @param {number} [t=Date.now()] @param {number} [f=1] ?1 */
 Ship.dateTime = function (t, f) {
   // uses unix timestamp input
@@ -2905,6 +3424,7 @@ Ship.Mode.useParser = function (mode, globalShip, parse) {
     return globalShip;
   });
 };
+Data.nameMethods(Ship);
 Object.freeze(Object.freeze(Ship).Mode);
 
 // generating Droneboi
@@ -2912,162 +3432,6 @@ Object.freeze(Object.freeze(Ship).Mode);
 var ship = Ship.fromObject({name: "Starter Droneboi", ci: []});
 // var block = new Block("Block", [0, 0, 0], [0, !0, 0]),
 //   ship = new Ship("None", [0, 9], "never", [block]);
-
-// huh? A concept for undo redo history implementation
-/**
- * @param {(...args:any[])=>any} command @param {string} args
- * @param {number} type */
-function Edit(command, args, type) {
-  this.type = type;
-  this.args = args;
-  this.command = command;
-  //new Ship("", [], "", []);
-}
-//-scrap all the properties go to scrapyard
-//-every target (Ship instance) has own undo/redo history and
-//-selections work only with for their targets, syncing targets is not
-//-what about buildReplace options kind ???
-/** @type {(((ship?:Ship)=>void)&{id?:string}|undefined)[]} */
-Edit.listeners = [];
-//-/** @type {Edit[]} */
-//-Edit.targets = [];
-//-/** @type {(EditSelection|null)[]} */
-//-Edit.selections = [];
-Edit.rotate = (
-  /** rotates Dr ships as well as db vehicles
-   * @overload @param {Ship} target
-   * @param {number} rx
-   * @overload @param {Ship} target
-   * @param {number} rx @param {number} ry @param {number} rz */
-  function (target, rx, ry, rz) {
-    if (typeof ry != "number") {
-      var applyRotation = function (rot) {
-        rot[2] =
-          /** @type {0|1|2|3} */
-          (rot[2] + rx & 3);
-      };
-      ry = rz = 0;
-      Edit.capture(Edit.rotate, rx);
-    } else {
-      applyRotation = function (rot) {
-        Block.rotate(rot, rx, ry, rz);
-      };
-      Edit.capture(Edit.rotate, rx, ry, rz);
-    }
-
-    rx >= 0 && rx < 4 ? rx |= 0 : rx = Math.round(rx / 90) % 4 + 4 & 3;
-    ry >= 0 && ry < 4 ? ry |= 0 : ry = Math.round(ry / 90) % 4 + 4 & 3;
-    rz >= 0 && rz < 4 ? rz |= 0 : rz = Math.round(rz / 90) % 4 + 4 & 3;
-    var i = 0, n = 0, edtA = [0, 1, 2], newA = [0];
-    var selection = target.getSetSelection();
-    function prcsAxis(ax) {
-      if (ax) {
-        var a = i > 1 ? 0 : i + 1, b = i < 1 ? 2 : i - 1;
-        if (ax === 2)
-          var m = edtA[a], n = edtA[b];
-        else
-          var m = edtA[b], n = edtA[a];
-        edtA[a] = ax < 3 ? m & 4 ? m & 3 : m | 4 : m;
-        edtA[b] = ax > 1 ? n & 4 ? n & 3 : n | 4 : n;
-      }
-      edtA[i++ | 4] = ax * 90;
-    }
-    prcsAxis(rx);
-    prcsAxis(ry);
-    prcsAxis(rz);
-    for (i = 0; i < selection.length;) {
-      var pos = selection[i].position;
-      for (n = 3, newA = [0, 0, 0]; n-- > 0;) {
-        newA[n] = edtA[n] & 4 ? -pos[edtA[n] & 3] : pos[edtA[n] & 3];
-      }
-      applyRotation(selection[i].rotation);
-      selection[i++].position =
-        /** @type {XYZPosition} */
-        (newA);
-    }
-  }
-);
-/**
- * @param {Ship} target
- * @param {number} x @param {number} y @param {number} z */
-Edit.move = function (target, x, y, z) {
-  for (var aar = target.getSelection(), i = aar.length; i-- > 0;) {
-    var pos = aar[i].position;
-    pos[0] += x;
-    pos[1] += y;
-    pos[2] += z;
-  }
-  Edit.capture(Edit.move, x, y, z);
-};
-// TODO: appended at the end of methods, might be more logical to be earlier
-/** @param {number} seed @see {Ship.dateTime} also (todo for discussion) */
-Edit.randSFC32 = function (seed) {
-  var a = seed, b = seed, c = seed, d = seed;
-  return function() {
-    a |= 0; b |= 0; c |= 0; d |= 0;
-    var t = (a + b | 0) + d | 0;
-    d = d + 1 | 0;
-    a = b ^ b >>> 9;
-    b = c + (c << 3) | 0;
-    c = (c << 21 | c >>> 11);
-    c = c + t | 0;
-    return (t >>> 0) / 4294967296;
-  }
-};
-// end of taken
-//-/** @param {EditSelection} selection */
-//-Edit.destroySelection = function (selection) {
-//-  var index = Edit.selections.indexOf(selection);
-//-  if (index < 0) {
-//-    console.error("attempt to remove unexisitng selection");
-//-    return false;
-//-  } else {
-//-    selection.length = 0;
-//-    delete selection.target;
-//-    selection.id = -1;
-//-    Edit.selections[index];
-//-    return true;
-//-  }
-//-}
-/** @param {Ship} ship */
-Edit.undo = function (ship) {
-  ship.getHistory();
-  ship.getSelection();
-  //Edit.targets
-  // CONTINUE HERE
-};
-/** @param {Ship} ship */
-Edit.redo = function (ship) {};
-/**
- * @typedef {((slab?:boolean)=>any)|((ids:number[])=>any)} EditSomeCommand
- * @typedef {(x:number,y:number,z:number,block:any)=>any} EditBlockCommand
- * @typedef {(...args:number[])=>any} EditNumberCommand
- * @typedef {EditBlockCommand|EditNumberCommand|EditSomeCommand
- * } EditThisCommand
- * @typedef {(target:Ship,...args:number[])=>any} EditTargetCommand */
-Edit.capture = (
-  /** Finally reliazed how the overloads work with JSDoc
-   * @overload @param {Ship} target @param {EditThisCommand} cmd
-   * @param {...any} _inputs @returns {void}
-   * @overload @param {EditTargetCommand} cmd
-   * @param {...any} _inputs @returns {void}
-   * @param {EditTargetCommand|Ship} cmdThis
-   * @param {Ship|EditThisCommand} [targetCmd] @param {...any[]} [_inputs] */
-  function (cmdThis, targetCmd, _inputs) {
-    var isThis = typeof cmdThis == "function",
-      args = JSON.stringify([].slice.call(arguments, 1)),
-      /** @type {Ship} */
-      target = cmdThis instanceof Ship ?
-        cmdThis :
-        targetCmd || arguments[1],
-      command = typeof cmdThis == "function" ?
-        cmdThis :
-        typeof targetCmd == "function" ? targetCmd : console.error;
-    ship.getHistory().push(new Edit(command, args, +isThis));
-    for (var i = 0, l = this.listeners.length; i < l; i++)
-      (this.listeners[i] || F)(ship);
-  }
-);
 
 /** class for old Deltarealm base64 prototype keys code */
 function B64Key() {

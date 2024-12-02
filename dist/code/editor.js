@@ -1,7 +1,7 @@
 //@ts-check
-/// <reference path="./code.js" types="./editor.js" />
+/// <reference path="./code.js" />
 "use strict";
-var version_editor_js = "v.0.1.67";
+var version_editor_js = "v.0.1.68";
 /** @TODO check @see {defaults} for setting a setting without saveSettings */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -68,14 +68,15 @@ else if (/https?/.test(location.protocol) && navigator.serviceWorker)
   }
 if (/^http:\/\/(?:\d+\.\d+\.\d+\.\d+|localhost:\d+)/.exec(location.href))
   +function (globalWebSocket) {
-    try {
-      sessionStorage = window.WebSocket =
+    //try {
+      //sessionStorage = 
+      window.WebSocket =
         /** @type {any} disables VS code live server live reload */
         (function WebSocket() {
           this.onmessage = function juhus() {};
           window.WebSocket = globalWebSocket;
         });
-    } catch (e) {}
+    //} catch (e) {}
   }(WebSocket);
 
 canvas.addEventListener("contextlost", function () {
@@ -141,8 +142,10 @@ var defaults = {
   fullscreenInitialized: false,
   /** (default) false: enabled, true: disabled */
   fullscreenDisabled: false,
-  /** (default) false */
-  renderSharp: false
+  // not saved ** (default) false */
+  renderSharp: false,
+  /** (default) true: position inputs use dbc units */
+  meterPositions: true
 },
   /** @type {typeof defaults|null} alternative to original */
   settings = defaults;
@@ -158,6 +161,7 @@ function saveSettings() {
   arr[2] += +defaults.fullscreenInitialized << 5
   arr[2] += +defaults.fullscreenDisabled << 6;
   arr[2] += +defaults.editorBackgroundStage << 7;
+  arr[2] += +defaults.meterPositions << 12;
   storage.setItem("D1R_DBV_editor", String.fromCharCode.apply(String, arr));
 }
 function loadSettings() {
@@ -177,6 +181,7 @@ function loadSettings() {
   defaults.fullscreenInitialized = !!(arr[2] >> 5 & 1);
   defaults.fullscreenDisabled = !!(arr[2] >> (5 + 1) & 1);
   defaults.editorBackgroundStage = (arr[2] >> 7 & 31);
+  defaults.meterPositions = !!(arr[2] >> 12 & 1);
 }
 loadSettings();
 
@@ -1134,8 +1139,9 @@ Command.push("Setup Properties", function (items, collapsed) {
     if (!block)
       return render();
     name.value = block.internalName;
-    posX.value = block.position[1] / 2 + "";
-    posY.value = block.position[2] / 2 + "";
+    var units = +defaults.meterPositions + 1;
+    posX.value = block.position[1] / units + "";
+    posY.value = block.position[2] / units + "";
     try {
       span.onchange &&
         /** @type {Function} */
@@ -1304,9 +1310,10 @@ Command.push("Setup Properties", function (items, collapsed) {
   items.push(select, next, {name: "focus", inp: focus}, insert, exchange);
   setPos.appendChild(tN("Set position"));
   setPos.onclick = function () {
+    var units = +defaults.meterPositions + 1;
     var pos = ship.blocks[idx].position;
     [posX, posY].map(function (e, i) {
-      pos[i + 1] = Math.round((Number(e.value) || 0) * 2);
+      pos[i + 1] = Math.round((Number(e.value) || 0) * units);
     });
     render();
   };
@@ -1590,12 +1597,13 @@ Inputs not yet with tags are listed with option field to select logic output\
 
 Command.push("Import/Export DBV", function (items, collapsed) {
   var dbv = EL("input"), elBtn = EL("button"), error = EL();
-  items.push({name: ".DBV file content", inp: dbv});
+  var grid = EL("select");
+  // TODO: launchpadSize items.push(tN("Grid size: "), grid, EL("br"));
   elBtn.onclick = function () {
     error.innerText = "";
     try {
       dbv.id = "saveFile";
-      dbv.value = JSON.stringify(Ship.toDBV(ship));
+      dbv.value = JSON.stringify(Ship.toDBV(Ship.checkDBV(ship)));
       render();
     } catch (err) {
       error.innerText = "" + err;
@@ -1603,7 +1611,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
     }
   };
   elBtn.appendChild(tN("Export"));
-  items.push(elBtn);
+  items.push({name: ".DBV file content", inp: dbv},elBtn);
   (elBtn = EL("button")).onclick = function () {
     error.innerText = "";
     try {
@@ -1742,59 +1750,62 @@ its vehicle in and will refuse to compress too big vehicle. There are also b\
 ugs since I wasn't going down the rabbit hole of debugging every last one.");
 
 Command.push("Transform tool", function (items, collapsed) {
-  var blockSelect = ship.selectRect(.1, 0, 0, .1, 0, 0),
-    lockedSelect = ship.selectRect();
+  //-var blockSelect = ship.selectRect(.1, 0, 0, .1, 0, 0),
+  //-  lockedSelect = ship.selectRect();
   var selectX0 = EL("input"), selectY0 = EL("input");
   var selectX1 = EL("input"), selectY1 = EL("input");
   var select = EL("button"), inpX = EL("input"), inpY = EL("input");
   /** for copied in blockSelect selection */
-  var offset = [0, 0];
+  var offset = [0, 0], copied = Block.arrayFromObjects([]);
   select.appendChild(tN("Select rectangle"));
-  var xy = [0, 0, 0, 0], locked = EL("input");
+  var xy = [0, 0, 0, 0], locked = EL("input"), posUnits = EL("input");
   /** FORMAT INPUTS @this {GlobalEventHandlers} */
   function formatSelection() {
-    var i = 4, input = selectX0;
+    var i = 4, input = selectX0, units = +defaults.meterPositions + 1;
     while (input = [selectX0, selectY0, selectX1, selectY1][--i])
       this !== input ?
-        input.value = "" + (xy[i] = +input.value || 0) :
+        input.value = "" + (xy[i] = +input.value * units || 0) * units :
         isNaN(+input.value) ?
           0 :
-          xy[i] = +input.value || 0;
+          xy[i] = +input.value / units || 0;
     if (xy[0] !== xy[2] && xy[1] !== xy[3])
       selecting = 0;
     render();
   }
-  /** SELECT @param {boolean} [isLocking] */
+  /** SELECT @param {Event} [isLocking] */
   function getSelected(isLocking) {
-    if (!isLocking && locked.checked)
-      return;
-    selecting ?
-      ship.selectRect() :
-      ship.selectRect(0, xy[0], xy[1], 0, xy[2], xy[3]);
-    return 
+    if (isLocking || !locked.checked)
+      selecting ?
+        ship.selectRect() :
+        ship.selectRect(0, xy[0], xy[1], 0, xy[2], xy[3]);
+    return ship;
   }
   /** @type {Ship|null} */
   var trackPoints = null;
-  function pointsSelected() {
-    return trackPoints = Ship.fromObject({n: "", b: [
+  function getSelectPoints() {
+    trackPoints = Ship.fromObject({n: "", b: [
       new Block("Block", [0, xy[0], xy[1]], [0, !1, 0]),
       new Block("Block", [0, xy[2], xy[3]], [0, !1, 0])
     ]});
+    trackPoints.selectRect();
+    return trackPoints;
   }
-  function updateSelected() {
+  function updateSelectPoints() {
     if (!trackPoints)
       return console.error("trackPoints unset, AT Command.\"Transfrom\"");
     var point0 = trackPoints.blocks[0], point1 = trackPoints.blocks[1];
-    selectY0.value = "" + (xy[0] = point0.position[1]);
-    selectX0.value = "" + (xy[1] = point0.position[2]);
-    selectY1.value = "" + (xy[2] = point1.position[1]);
-    selectX1.value = "" + (xy[3] = point1.position[2]);
+    var units = +defaults.meterPositions + 1;
+    selectX0.value = (xy[0] = point0.position[1]) / units + "";
+    selectY0.value = (xy[1] = point0.position[2]) / units + "";
+    selectX1.value = (xy[2] = point1.position[1]) / units + "";
+    selectY1.value = (xy[3] = point1.position[2]) / units + "";
     trackPoints = null;
   }
   selectX0.oninput = selectY0.oninput = formatSelection;
   selectX1.oninput = selectY1.oninput = formatSelection;
   var selecting = 2;
   select.onclick = function () {
+    var units = +defaults.meterPositions + 1;
     selectX0.value = selectY0.value = "";
     selectX1.value = selectY1.value = "";
     selecting = 2;
@@ -1803,11 +1814,11 @@ Command.push("Transform tool", function (items, collapsed) {
       y = Math.floor((y - vY) / sc);
       if (selecting)
         if (--selecting) {
-          selectX0.value = "" + (xy[0] = xy[2] = x);
-          selectY0.value = "" + (xy[1] = xy[3] = y);
+          selectX0.value = (xy[0] = xy[2] = x) / units + "";
+          selectY0.value = (xy[1] = xy[3] = y) / units + "";
         } else {
-          selectX1.value = "" + (xy[2] = x);
-          selectY1.value = "" + (xy[3] = y);
+          selectX1.value = (xy[2] = x) / units + "";
+          selectY1.value = (xy[3] = y) / units + "";
           press = old_UI;
         }
       render();
@@ -1815,10 +1826,7 @@ Command.push("Transform tool", function (items, collapsed) {
     render();
   };
   locked.type = "checkbox";
-  locked.oninput = function () {
-    if (locked.checked)
-      lockedSelect = ship.getSelection();
-  };
+  locked.oninput = getSelected;
   items.push(
     {name: "Selection X0", inp: selectX0},
     {name: "Selection Y0", inp: selectY0},
@@ -1830,19 +1838,21 @@ Command.push("Transform tool", function (items, collapsed) {
   var move = EL("button"), rotate = EL("button"), flip = EL("button");
   move.appendChild(tN("Move action"));
   move.onclick = function () {
-    var x = +inpX.value || 0, y = +inpY.value || 0;
-    Edit.move(ship, 0, x, y);
-    Edit.move(pointsSelected(), 0, x, y);
-    updateSelected();
+    var units = +defaults.meterPositions + 1;
+    var x = +inpX.value * units || 0, y = +inpY.value * units || 0;
+    Edit.move(getSelected(), 0, x, y);
+    Edit.move(getSelectPoints(), 0, x, y);
+    updateSelectPoints();
     render();
   };
   rotate.appendChild(tN("Rotate action"));
   rotate.onclick = function rotateDBV() {
     // rotation around axis
-    var rx = +inpX.value || +inpY.value || 0;
-    Edit.rotate(ship, rx);
-    Edit.rotate(pointsSelected(), rx);
-    updateSelected();
+    var units = +defaults.meterPositions + 1;
+    var rx = +inpX.value * units || +inpY.value * units || 0;
+    Edit.rotate(getSelected(), rx);
+    Edit.rotate(getSelectPoints(), rx);
+    updateSelectPoints();
     render();
   };
   flip.appendChild(tN("Size action"));
@@ -1851,6 +1861,7 @@ Command.push("Transform tool", function (items, collapsed) {
   var mirror = EL("button"), copy = EL("button"), paste = EL("button");
   mirror.appendChild(tN("Mirror action"));
   mirror.onclick = function () {
+    getSelected();
     selecting ?
       ship.mirror2d() :
       ship.mirror2d(0, xy[0], xy[1], 0, xy[2], xy[3]);
@@ -1859,12 +1870,12 @@ Command.push("Transform tool", function (items, collapsed) {
   /** COPY SELECTION */
   function updateCopied() {
     offset = [Math.max(xy[0], xy[2]), Math.min(xy[1], xy[3])];
-    return "Copied: " + blockSelect.length + " blocks: " +
-      blockSelect.slice(0, 21).map(function (e) {
+    return "Copied: " + copied.length + " blocks: " +
+      copied.slice(0, 21).map(function (e) {
         return e.internalName;
-      }) + (blockSelect.length > 21 ? ", ..." : "");
+      }) + (copied.length > 21 ? ", ..." : "");
   }
-  var copied = tN(updateCopied()), coloring = EL("select");
+  var text = tN(updateCopied()), coloring = EL("select");
   var arr = ["defaults"].concat([].slice.apply(Color.NAME));
   for (var i = 0, l = arr.length; i < l;) {
     var option = EL("option");
@@ -1875,8 +1886,8 @@ Command.push("Transform tool", function (items, collapsed) {
   copy.onclick = function () {
     if (selecting)
       return;
-    blockSelect = ship.selectRect(0, xy[0], xy[1], 0, xy[2], xy[3]);
-    copied.data = updateCopied();
+    copied = ship.selectRect(0, xy[0], xy[1], 0, xy[2], xy[3]);
+    text.data = updateCopied();
     // also deselect the selection
     selecting = 2;
     selectX0.value = selectY0.value = "";
@@ -1888,6 +1899,7 @@ Command.push("Transform tool", function (items, collapsed) {
     if (selecting > 1)
       return;
     //var x = Math.min(x, xy[2]), y = Math.max(, xy[3]);
+    ship.setSelected(copied);
     ship.paste(0, xy[0] - offset[0], xy[1] - offset[1]);
     // also deselect the selection
     selecting = 2;
@@ -1903,15 +1915,7 @@ Command.push("Transform tool", function (items, collapsed) {
   };
   paint.appendChild(tN("Paint action"));
   paint.onclick = function () {
-    ship.getSelection().forEach(coloring.value === "defaults" ?
-      function (e) {
-        e.properties.color = Color.default(e.internalName);
-      } :
-      function (e) {
-        e.properties.color =
-          /** @type {Colors} */
-          (coloring.value);
-      });
+    Edit.paint(getSelected(), Color.ID[coloring.value] || -1);
     render();
   };
   fill.appendChild(tN("Fill action"));
@@ -1923,9 +1927,17 @@ Command.push("Transform tool", function (items, collapsed) {
     defaults.buildReplace = !1;
     render();
   };
+  posUnits.type = "checkbox";
+  posUnits.checked = defaults.meterPositions;
+  posUnits.oninput = function (e) {
+    defaults.meterPositions = posUnits.checked;
+    formatSelection.call(this);
+    saveSettings();
+  };
   items.push(copy, paste, fill, remove, {name: "Axis X", inp: inpX});
   items.push({name: "Axis Y", inp: inpY}, move, rotate, flip, mirror);
-  items.push(tN("Color: "), coloring, paint, copied);
+  items.push(tN("Color: "), coloring, paint, text, EL("br"));
+  items.push({name: "Meter units (db3)", inp: posUnits});
   collapsed.rend_UI = function () {
     if (selecting > 1)
       return;
@@ -1946,31 +1958,32 @@ Command.push("Transform tool", function (items, collapsed) {
   };
 }, "Not yet completed actually. Each action uses some specific inputs to pro\
 vide its function. Values inside inputs are integers that means that full bl\
-ock is 2x2 ad 0.5 by 0.5 is 1x1.\nSelect rectangle:\nThe four inputs togethe\
-r with Select rectangle button are used to select area with blocks, starting\
- with left top point [x0, y0] making rectangle with second right bottom poin\
-t [x1, y1]. Blocks are selected not by collision with selected area or being\
- fully covered by the area, it select blocks of which position is inside the\
- area, which is quite confusing, because there's no collisions detection yet\
-.\nLock selection:\nWhen checkboxes is enabled, actions will be applied to t\
-he same blocks selected at that moment of checkbox getting enabled. When it \
-is disabled, the block positions inside selection at a time of doing one of \
-the actions are used.\nCopy action:\nIt stores current selection of which am\
-ount of blocks and types of few first blocks can be seen at the bottom, at t\
-he \"Copied:\".\nPaste action:\nReplicates copied selection and also logic c\
-onnections to output nodes. In other to prevent accidental blocks stacking t\
-he selection is deselected after both Copy and Paste action.\nFill action:\n\
-Fills the selection with pseudo randomly selected blocks from copied selecti\
-on, by replicating them with all properties except logic connections to outp\
-ut nodes.\nRemove action:\nRemoves all blocks inside selection\nAxis X, Axis\
- Y:\nAre two additional inputs for actions below.\nMove action:\nMove select\
-ed blocks by specified x and y distance.\nRotate action:\nRotates selected b\
-locks by amount in either Axis x or Axis y input around center of editor spa\
-ce [0, 0].\nSize action:\nNot implemented yet.\nMirror action:\nMirrors bloc\
-ks from left to right and from right to left around center of editor space. \
-\nPaint action:\nUses the selected \"Color:\" above to paint selected blocks\
- with it. Custom color option is texture that uses custom hex color. The cus\
-tom hex color can be set in \"Select Color\" Command.");
+ock is 2x2 and 0.5 by 0.5 is 1x1.\n[Select rectangle]:\nThe four inputs toge\
+ther with Select rectangle button are used to select area with blocks, start\
+ing with left top point [x0, y0] making rectangle with second right bottom p\
+oint [x1, y1]. Blocks aren't selected by collision with selected area nor be\
+ing fully covered by the area, it selects blocks of which position is inside\
+ the area. It's' quite confusing indeed, but there was no collisions detecti\
+on back then.\n>Lock selection<:\nWhen checkboxes is enabled, actions will b\
+e applied to the same blocks selected at that moment of checkbox getting ena\
+bled. When it is disabled, the block positions inside selection at a time of\
+ doing one of the actions are used.\n[Copy action]:\nIt stores current selec\
+tion of which amount of blocks and types of few first blocks can be seen at \
+the bottom, at the \"Copied:\".\n[Paste action]:\nReplicates copied selectio\
+n and also logic connections to output nodes. In other to prevent accidental\
+ blocks stacking the selection is deselected after both Copy and Paste actio\
+n.\n[Fill action]:\nFills the selection with pseudo randomly selected blocks\
+ from copied selection, by replicating them with all properties except logic\
+ connections to output nodes.\n[Remove action]:\nRemoves all blocks inside s\
+election\n{Axis X} {Axis Y}:\nAre two additional inputs for actions below.\n\
+[Move action]:\nMove selected blocks by specified x and y distance.\n[Rotate\
+action]:\nRotates selected blocks by amount in either Axis x or Axis y input\
+ around center of editor space [0, 0].\n[Size action]:\nNot implemented yet.\
+\n[Mirror action]:\nMirrors blocks from left to right and from right to left\
+ around center of editor space. \n[Paint action]:\nUses the selected \"Color\
+:\" above to paint selected blocks with it. Custom color option is texture t\
+hat uses custom hex color. The custom hex color can be set in \"Select Color\
+\" Command.");
 
 Command.push("Vehicle stats", function (items, collapsed) {
   function addLine(text) {
@@ -2142,8 +2155,8 @@ Command.push("Rift Drive calculator", function (items, collapsed) {
   items.push({name: "RC", inp: riftCrystals});
   items.push(tN("The vehicle from " + new Date() + " contains " +
     all.length + " blocks of which " + unknown + " have not defined weight. \
-The weight of that vehicle is " + weight + " mass units and with " + drives +
-    " Small Rift Drives it can rift drive distance of "), dist);
+The weight of that vehicle is " + weight + " mass units and with " +
+    drives + " Small Rift Drives it can rift drive distance of "), dist);
 }, "Shows weight and distance the vehicle can travel, it takes amount of Sma\
 ll Rift Drives into account, although in the game you are allowed to buy onl\
 y 1. It also shows ammount of blocks in it and time when the vehicle had the\
@@ -2183,7 +2196,20 @@ Command.push("Editing Mode", function (items) {
     touchdevice = null;
     detectionText.data = "Touch screen is not detected";
   };
-  items.push(touchScreen);
+  var undo = EL("button"), redo = EL("button");
+  function editioning(doo) {
+    return function () {
+      if (ship.getMode().mode !== "Ship")
+        return alert("Functions only in Ship editing mode");
+      doo(ship);
+      render();
+    };
+  };
+  undo.appendChild(tN("Undo"));
+  undo.onclick = editioning(Edit.undo);
+  redo.appendChild(tN("Redo"));
+  redo.onclick = editioning(Edit.redo);
+  items.push(touchScreen, EL("br"), undo, redo);
 }, "Editing modes is the newest feature that is Work In Progress. Be aware t\
 hat non of the older commands were designed to be compatible with other mode\
 s in there. \nYou can use inventoryTile to enable inventory icon item. By en\
@@ -2281,8 +2307,8 @@ Command.push("Set camera view", function (items, collapsed) {
     {name: "View y", inp: viewY},
     {name: "Zoom", inp: zoom});
   elBtn.onclick = function () {
-    viewX.value = "" + vX;
-    viewY.value = "" + vY;
+    viewX.value = vX + "";
+    viewY.value = vY + "";
     zoom.value = "" + sc / 16;
     render();
   };
@@ -2406,23 +2432,23 @@ Command.push("Current version", function(items, collapsed) {
 }, "");
 Command.push("About Commands tab", function (items) {}, "OPENING AND MOVING \
 AROUND\nCommands tab is opened or moved by activating contextmenu, the optio\
-ns, usually from right click or long press on touch screen, not on already op\
-ened Commands tab. The Commands tab them opens and/or moves centered to wher\
-e contextmenu was activated, but it will align with top, right or left edge \
-of the page if it was going to 'display partialy behind them'. This is to cr\
-eate 'grabable' surface for touch screens at any time any time.\nTo move the\
- Commands tab around you can grab it 'with' top part, where changes to point\
-er hand, you can move it slightly behind edges on right and left side.\nCONT\
-EXTMENU NOTES\nSome browsers have option to save or copy image in the canvas\
- in 'rightclick menu', it can be used to make precise image of your vehicle \
-in high quality. When the Commands tab is right clicked the tab dissapears a\
-nd activated contextmenu is able to capture to visual.\n\nMENU\nIn menu ther\
-e is list of Commands, click one of the buttons to open coresponding Command\
-, optionaly sorted in collapsed groups. X sign in top right corner closes th\
-e Commands tab.\n\nCOMMAND\nWhen Command is opened its name displays in 'top\
- part', there's also < sign to return back to menu, X sign won't do that. Ea\
-ch command has some inputs/buttons, their purpouse is explained in descripti\
-on.");
+ns, usually from right click or long press on touch screen, not on already o\
+pened Commands tab. The Commands tab them opens and/or moves centered to whe\
+re contextmenu was activated, but it will align with top, right or left edge\
+ of the page if it was going to 'display partialy behind them'. This is to c\
+reate 'grabable' surface for touch screens at any time any time.\nTo move th\
+e Commands tab around you can grab it 'with' top part, where changes to poin\
+ter hand, you can move it slightly behind edges on right and left side.\nCON\
+TEXTMENU NOTES\nSome browsers have option to save or copy image in the canva\
+s in 'rightclick menu', it can be used to make precise image of your vehicle\
+ in high quality. When the Commands tab is right clicked the tab dissapears \
+and activated contextmenu is able to capture to visual.\n\nMENU\nIn menu the\
+re is list of Commands, click one of the buttons to open coresponding Comman\
+d, optionaly sorted in collapsed groups. X sign in top right corner closes t\
+he Commands tab.\n\nCOMMAND\nWhen Command is opened its name displays in 'to\
+p part', there's also < sign to return back to menu, X sign won't do that. E\
+ach command has some inputs/buttons, their purpouse is explained in descript\
+ion.");
 // DBVE contributors:
 // Thanks to Beau for Deltarealm and Droneboi: Conquest that DBVE is made
 // for.
@@ -2636,7 +2662,7 @@ fee z M3ffec,20027 c0,16a2,-a0,221b,-a0,26cc c0,d1a,-94f,1818,-15dd,1b1c c-2\
 c,-41c,ae,-60f c64,-1b6,2b6f,-d70d,2b9c,-d7c9 c2f1,-c64,e66,-15a2,1c14,-15a2\
  c78f,0,e71,2d2,1395,771 c6c,61,1e3a,1e85,1e42,1e7e c5b73,-5550,d631,-8984,1\
 5d21,-8984 c11abb,0,1ffee,e532,1ffee,1ffee z", function () {
-  DefaultUI.tilesRotation[2] = DefaultUI.tilesRotation[2] =
+  DefaultUI.tilesRotation[2] = DefaultUI.tilesFlippableRotation[2] =
     /** @type {0|1|2|3} */
     (DefaultUI.tilesRotation[2] + 1 & 3);
   setTimeout(function () {
@@ -2695,7 +2721,20 @@ c1,8ff,2c1,dee c0,1420,-1050,2470,-2470,2470 c-898,0,-15ed5,41,-16752,41 z M\
   "$ins; M22770,14947$ins; M22778,224b6$ins; M22770,3002d$ins; M22770,3db79$\
 ins;".replace(/\$ins;/g, " c0,142a,-1059,2483,-2483,2483 c-142a,0,-2483,-105\
 9,-2483,-2483 v-4949 c0,-142a,1059,-2483,2483,-2483 c142a,0,2483,1059,2483,2\
-483 c0,708,0,4316,0,4949 z")));
+483 c0,708,0,4316,0,4949 z"), function () {
+  DefaultUI.tilesRotation[2] = DefaultUI.tilesFlippableRotation[2] =
+    /** @type {0|1|2|3} */
+    (DefaultUI.tilesRotation[2] + 2 & 3);
+  DefaultUI.tilesFlippableRotation[1] =
+    !DefaultUI.tilesFlippableRotation[1];
+  setTimeout(function () {
+    var tile = DefaultUI.getSelectedTile();
+    if (tile instanceof Tool && tile.name === "Flip") {
+      DefaultUI.selectedTile = -1;
+      render();
+    }
+  }, 75);
+}));
 Tool.list.push(new Tool("Clone", "M2ba5a,2bab5 vda5e c0,33ca,-29fc,5dc6,-5dc\
 6,5dc6 h-1fdbd c-33ca,0,-5dc6,-29fc,-5dc6,-5dc6 v-1fd62 c0,-33ca,29fc,-5dc6,\
 5dc6,-5dc6 hda3f l11,-daf0 c0,-33ca,29fc,-5dc6,5dc6,-5dc6 h1fda6 c33ca,0,5dc\
@@ -2713,7 +2752,16 @@ Tool.list.push(new Tool("Undo", "M3f6f3,19ab0 cc15,c15,c15,1fad,0,2bc2 c-c15\
 83c,-8f9 c-6b7,-6b7,-9b3,-fc1,-8f3,-1888 c85,-615,5940,-21dea,599b,-2210e cc\
 3,-6b4,3b8,-d35,8dc,-1259 cc15,-c15,1fad,-c15,2bc2,0 c62,62,733f,733f,733f,7\
 33f c0,0,76,-a5,152,-152 c88c2,-6b53,1cea0,-db12,2f024,5037 z", function () {
-  
+  if (ship.getMode().mode !== "Ship")
+    return alert("Functions only in Ship editing mode");
+  Edit.undo(ship);
+  setTimeout(function () {
+    var tile = DefaultUI.getSelectedTile();
+    if (tile instanceof Tool && tile.name === "Flip") {
+      DefaultUI.selectedTile = -1;
+      render();
+    }
+  }, 75);
 }));
 Tool.list.push(new Tool("Redo", "Mb37,19889 c12184,-12b4a,26761,-bb8b,2f024,\
 -5037 cdb,ac,152,152,152,152 c0,0,72dc,-72dc,733f,-733f cc15,-c15,1fad,-c15,\
@@ -2721,7 +2769,19 @@ Tool.list.push(new Tool("Redo", "Mb37,19889 c12184,-12b4a,26761,-bb8b,2f024,\
 11d0,-8f3,1888 c-6a4,6a4,-f8d,9a2,-183c,8f9 c-626,-77,-21c5f,-58bd,-22309,-5\
 9df c-61a,-109,-bf4,-3e9,-10aa,-89f c-c15,-c15,-c15,-1fad,0,-2bc2 c10d,-10d,\
 307e,-307e,732f,-732f c0,0,-686c,-7ae9,-12d5f,-89d9 c-86f2,-c4d,-ba42,2670,-\
-ba42,2670 c-c15,c15,-1fad,c15,-2bc2,0 c-c15,-c15,-c15,-1fad,0,-2bc2 z", function () {}));
+ba42,2670 c-c15,c15,-1fad,c15,-2bc2,0 c-c15,-c15,-c15,-1fad,0,-2bc2 z",
+function () {
+  if (ship.getMode().mode !== "Ship")
+    return alert("Functions only in Ship editing mode");
+  Edit.redo(ship);
+  setTimeout(function () {
+    var tile = DefaultUI.getSelectedTile();
+    if (tile instanceof Tool && tile.name === "Flip") {
+      DefaultUI.selectedTile = -1;
+      render();
+    }
+  }, 75);
+}));
 Tool.list.push(new Tool("Next", "M10200,0 L10200,40000 L40000,20000 z"));
 Tool.list.push(new Tool("Previous", "M2fc00,0 L0,20000 L2fc00,40000 z"));
 Tool.list.push(new Tool("Stats", "M2e6b3,388fc c0,1052,d3b,1d8e,1d8e,1d8e c1\
@@ -2770,6 +2830,71 @@ function check_contentScript() {
     document.body.appendChild(EL("script")).appendChild(tN(data));
   }
 }
+function test_blocks1_2_10() {
+  var temp = B64Key.decode(B64Key.b64ToU8arr("gIAZDWJsb2Nrc18xLjIuMTCBggoFQJ\
+qtpoC/L0rXJus9jD4A8gYIqBsgOG6AAK0BArMGCMgaIODrIBDoNUCA1wCBXQMEdG0QyLVAANcAgV\
+sDBGwNEKi1QYDWAvwaIFDuLBBIdxYIkJsioO4nILoNAucWCJgbIDBuBsQNENB3EQjQ2yKQ7yoQuD\
+dBwN4EgXkrBPA9BQL1VkDeChz8CwQMDhAoOECA4ACBgQMEBH4GAhuPAgGNAwQyDhDAOEDA4gCBiw\
+MEKg4QoLhAYOIAAYkDBDgOEKBZIDBzgIDMAQL/BQjEHCAAc4DAywECLgcItBwgwHOAAMsBAisHCK\
+gcIJBygADKAQInBwiYHCBQcoAAyQECIwcIiBwgsPMsENA5QCDnAIH/AoBzgMDNAQI2BwjUHCAAXc\
+2T6QcAW1swLDE3LDAsMTddLCJ7XCJjb2xvclwiOlwiV2hpdGVcIn0iXQ=="));
+  typeof temp == "object" && temp.blocks.forEach(function (e) {
+    e.properties = {color: e.properties.color || null};
+    var rot = e.rotation, pos = e.position;
+    e.position = [pos[1] / 2, pos[2] / 2];
+    e.rotation = rot[2];
+    e.flipped = rot[1];
+  });
+  ship = Ship.fromObject(temp);
+  render();
+};
+test_debugbox2collisions = function (rend) {
+  if (rend !== UDF)
+    return;
+  var running = false, rc2d = EL("canvas").getContext("2d") || rc;
+  (test_debugbox2collisions = function (rend) {
+    if (rend === false) {
+      var val = running;
+      running = false;
+      return val;
+    }
+    var oB = test_collbxs, oRC = rend_collisions, oTC = test_collisions;
+    if (rend !== UDF) {
+      if (!running)
+        return;
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalCompositeOperation = "copy";
+      ctx.drawImage(rc2d.canvas, 0, 0);
+      ctx.restore();
+      if (rend instanceof Array && rend[0] instanceof Block.Box2d) {
+        rend_collisions = false;
+        test_collisions = "true";
+        Block.Box2d.visualize(rend,
+          (vX + 99) / sc, -(vY + 99) / sc, true);
+        rend_collisions = oRC;
+        test_collisions = oTC;
+      }
+      return true;
+    }
+    var oDD = devt_debugger;
+    test_collbxs = rend_collisions = false;
+    test_collisions = "";
+    expensiveRenderer();
+    rc2d.globalCompositeOperation = "copy";
+    rc2d.canvas.width = canvas.width;
+    rc2d.canvas.height = canvas.height;
+    rc2d.drawImage(canvas, 0, 0);
+    rend_collisions = devt_debugger = true;
+    running = true;
+    expensiveRenderer();
+    running = false;
+    test_collbxs = oB;
+    rend_collisions = oRC;
+    test_collisions = oTC;
+    devt_debugger = oDD;
+  })();
+};
 
 function devt_bug_testing() {
   // devt_... stands for dev tools functions and variables
@@ -2786,7 +2911,9 @@ function DefaultUI() {
 DefaultUI.tilesRotation =
   /** @type {Rotation} */
   ([0, !1, 0]);
-DefaultUI.tilesFlippableRotation = DefaultUI.tilesRotation;
+DefaultUI.tilesFlippableRotation =
+  /** @type {Rotation} */
+  (DefaultUI.tilesRotation.slice());
 DefaultUI.createTile = function () {
   /** @type {XYZPosition} */
   var pos = [0, 0, 0], id = 0;
@@ -2795,7 +2922,7 @@ DefaultUI.createTile = function () {
     if (typeof val == "number" && typeof Block.NAME[val] == "string")
       var name = Block.NAME[id = val];
     else if (typeof (id = Block.ID["" + val]) == "number")
-      name = "" + val;
+      name = Block.NAME[id];
     if (typeof name == "string")
       return new Block(name, pos, Block.isFlippable(id) ?
           DefaultUI.tilesFlippableRotation :
@@ -2846,10 +2973,7 @@ DefaultUI.inventoryTile = false;
 DefaultUI.toolBar = [
   DefaultUI.createTile("Undo"),
   DefaultUI.createTile("Redo"),
-  DefaultUI.createTile("Rotate"),
-  DefaultUI.createTile("Stats"),
-  DefaultUI.createTile("History"),
-  DefaultUI.createTile("Node")
+  DefaultUI.createTile("Rotate")
 ];
 /** used at @typedef {"@see"} SeeRenderingFolders */
 DefaultUI.offsetsFolders = 0;
@@ -3418,9 +3542,6 @@ function rend_checkColors() {
 };
 var rend_colors = rend_initColors();
 
-/** @type {Block[]} */
-var foundBlocks = [];
-
 DefaultUI.setPixelRatio();
 /** @type {(click?: true | undefined) => void} */
 function init_touchScreen(click) {
@@ -3447,68 +3568,61 @@ var old_UI = DefaultUI.press = press = function (x, y) {
     if (Math.floor((arr[i].position[1]) / 2) === x &&
       Math.floor((arr[i].position[2]) / 2) === y)
         found.unshift(i);
-  found = found.map(function (i) {
-    var e = arr[i];
-    if (placingBlock() === "remove") {
-      Logic.removeLogic(arr[i], ship.prop && ship.prop.nodeList || []);
-      arr[i] = arr.slice(-1)[0];
-      arr.length--;
-    } else if (blockBind.changingColor)
-      //@ts-ignore
-      e.properties.color = placingBlock();
-    else if (blockBind.changingPosition) {
-      var pos = e.position;
-      pos[1] & 1 ?
-        pos[2] & 1 ? --pos[1] : ++pos[2] :
-        pos[2] & 1 ? --pos[2] : ++pos[1];
-    } else {
-      var s = e.internalName, rot = e.rotation[2], pos = e.position;
-      [
-        "Slab Wedge",
-        "Wedge",
-        "Wedge 1x2",
-        "Wedge 1x4",
-        "Smooth Corner",
-        "Smooth Corner 1x2",
-        "Smooth Corner 1x4"
-      ].indexOf(s) < 0 ||
-        rot === 3 && (e.rotation[1] = !e.rotation[1]);
-      //@ts-ignore
-      e.rotation[2] = rot + 1 & 3;
-    }
-    Edit.capture();
-    return e;
-  });
+  var rand = placingBlock();
+  i = 0;
+  if (rand === "remove") {
+    ship.removeBlocks(found);
+    return render();
+  }
+  if (blockBind.changingColor)
+    /** @param {Ship} target */
+    var oldCmd = function oldUIColor(target) {
+      var color = Color.NAME[Color.ID[rand]] || "";
+      for (arr = target.blocks; i < found.length; i++)
+        arr[found[i]].properties.color =
+          /** @type {keyof Color.ID|""} */
+          (OP.call(Color.ID, rand) ? rand : "");
+    };
+  //@ts-ignore
+  else if (blockBind.changingPosition)
+    oldCmd = function oldUIMove(target) {
+      for (arr = target.blocks; i < found.length; i++) {
+        var pos = arr[found[i]].position;
+        pos[1] & 1 ?
+          pos[2] & 1 ? --pos[1] : ++pos[2] :
+          pos[2] & 1 ? --pos[2] : ++pos[1];
+      }
+    };
+  else
+    oldCmd = function oldUIRotate(target) {
+      for (arr = target.blocks; i < found.length; i++) {
+        var o = arr[found[i]], rot = o.rotation[2];
+        if ([
+            "Slab Wedge",
+            "Wedge",
+            "Wedge 1x2",
+            "Wedge 1x4",
+            "Smooth Corner",
+            "Smooth Corner 1x2",
+            "Smooth Corner 1x4"
+          ].indexOf(o.internalName) < 0 || rot === 3)
+          o.rotation[1] = !o.rotation[1];
+        //@ts-ignore
+        o.rotation[2] = rot + 1 & 3;
+      }
+    };
   // placingBlock function executed sets blockBind.changingColor
-  var rand = placingBlock(),
-    logics = ship.prop && ship.prop.nodeList || [];
   if (found.length || blockBind.changingColor) {
-    foundBlocks = found;
+    oldCmd(ship);
+    Edit.capture(oldCmd, ship);
     return render();
   }
   if (rand !== "remove") {
     // BLOK for real!!!
     // TODO: now I could use some unit test for logic,
     // how the hack am I supposed to do that
-    var blok = new Block(rand, [0, x * 2, y * 2], [0, !1, 0],
-      Block.Properties.addProperty(rand, Logic.addLogic(
-        rand,
-        {color: Color.default(rand)},
-        logics,
-        ship.blocks
-      )));
-    if (logics.length)
-      (Logic.nodes =
-        /** @type {(Logic<any>|undefined)[]&{ownerShip:Ship;}} */
-        (((ship.prop || (ship.prop = OC())).nodeList = logics)
-        .concat([]))).ownerShip = ship;
-    (blok.properties.nodeIndex || []).forEach(function (e) {
-      var node = logics[e];
-      node ? node.owner = blok : console.error("no node in temp code");
-    });
-    arr.push(blok);
+    ship.placeBlock(0, x * 2, y * 2, Block.ID[rand]);
   }
-  Edit.capture();
   render();
 };
 
@@ -3599,7 +3713,7 @@ render = function () {
   };
 }();
 
-function rend_rc() {
+function rend_showrc() {
   bd && bd.appendChild(rc.canvas);
   var style = rc.canvas.style;
   style.position = "fixed";
@@ -3607,10 +3721,9 @@ function rend_rc() {
   style.width = style.height = "auto";
 }
 
-var rend_speeeeed = {}, rend_logs = 69, test_cam = "";
+var rend_speeeeed = {}, rend_logs = 69;
 var test_collisions = "", rend_collisions = false;
 /*async*/ function expensiveRenderer() {
-  test_cam = "vX:" + vX + ";vY:" + vY + " " + test_cam.slice(0, 256);
   var t = Date.now(), AT = ", at expensiveRenderer();";
   canvas.width = canvas.width;
   rend_background();
@@ -3777,9 +3890,7 @@ var test_collisions = "", rend_collisions = false;
   if ((test_collbxs) && objs[0])
     Block.Box2d.collisions(objs[0], objs);
   else if (rend_collisions)
-    for (i = objs.length;
-      //, (GE('evil_result') || {}).innerText = ''
-      i-- > 0;)
+    for (i = objs.length; i-- > 0;)
       Block.Box2d.collisions(objs[i], objs);
   DefaultUI.rend();
   if (rend_180 || 0) {
@@ -3834,68 +3945,20 @@ init = function () {
   check_contentScript();
 };
 
-function test_blocks1_2_10() {
-  var temp = B64Key.decode(B64Key.b64ToU8arr("gIAZDWJsb2Nrc18xLjIuMTCBggoFQJ\
-qtpoC/L0rXJus9jD4A8gYIqBsgOG6AAK0BArMGCMgaIODrIBDoNUCA1wCBXQMEdG0QyLVAANcAgV\
-sDBGwNEKi1QYDWAvwaIFDuLBBIdxYIkJsioO4nILoNAucWCJgbIDBuBsQNENB3EQjQ2yKQ7yoQuD\
-dBwN4EgXkrBPA9BQL1VkDeChz8CwQMDhAoOECA4ACBgQMEBH4GAhuPAgGNAwQyDhDAOEDA4gCBiw\
-MEKg4QoLhAYOIAAYkDBDgOEKBZIDBzgIDMAQL/BQjEHCAAc4DAywECLgcItBwgwHOAAMsBAisHCK\
-gcIJBygADKAQInBwiYHCBQcoAAyQECIwcIiBwgsPMsENA5QCDnAIH/AoBzgMDNAQI2BwjUHCAAXc\
-2T6QcAW1swLDE3LDAsMTddLCJ7XCJjb2xvclwiOlwiV2hpdGVcIn0iXQ=="));
-  typeof temp == "object" && temp.blocks.forEach(function (e) {
-    e.properties = {color: e.properties.color || null};
-    var rot = e.rotation, pos = e.position;
-    e.position = [pos[1] / 2, pos[2] / 2];
-    e.rotation = rot[2];
-    e.flipped = rot[1];
-  });
-  ship = Ship.fromObject(temp);
-  render();
-};
-test_debugbox2collisions = function (rend) {
-  if (rend !== UDF)
-    return;
-  var running = false, rc2d = EL("canvas").getContext("2d") || rc;
-  (test_debugbox2collisions = function (rend) {
-    if (rend === false) {
-      var val = running;
-      running = false;
-      return val;
-    }
-    var oB = test_collbxs, oRC = rend_collisions, oTC = test_collisions;
-    if (rend !== UDF) {
-      if (!running)
-        return;
-      ctx.save();
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.globalCompositeOperation = "copy";
-      ctx.drawImage(rc2d.canvas, 0, 0);
-      ctx.restore();
-      if (rend instanceof Array && rend[0] instanceof Block.Box2d) {
-        rend_collisions = false;
-        test_collisions = "true";
-        Block.Box2d.visualize(rend,
-          (vX + 99) / sc, -(vY + 99) / sc, true);
-        rend_collisions = oRC;
-        test_collisions = oTC;
-      }
-      return true;
-    }
-    var oDD = devt_debugger;
-    test_collbxs = rend_collisions = false;
-    test_collisions = "";
-    expensiveRenderer();
-    rc2d.globalCompositeOperation = "copy";
-    rc2d.canvas.width = canvas.width;
-    rc2d.canvas.height = canvas.height;
-    rc2d.drawImage(canvas, 0, 0);
-    rend_collisions = devt_debugger = true;
-    running = true;
-    expensiveRenderer();
-    running = false;
-    test_collbxs = oB;
-    rend_collisions = oRC;
-    test_collisions = oTC;
-    devt_debugger = oDD;
-  })();
-};
+//-// devt_debugger = true;
+//-ship.removeBlocks([7]);
+//-ship.placeBlock(0, 0, -2, Block.ID["Solar Block"]);
+//-ship.setSelected([4]);
+//-Edit.paint(ship, Color.ID["Yellow Hazard Stripes"]);
+//-ship.selectRect();
+//-Edit.paint(ship, Color.ID["Lime"]);
+//-Edit.historyAt(ship, 5);
+
+//-ship.removeBlocks([9,6,3]);
+//-// Edit.capture(function debugHistory() {
+//-//   debugger;
+//-// }, ship);
+//-ship.removeBlocks([0]);
+//-Edit.undo(ship);
+//-render();
+//-// console.log(ship.getHistory().map(function(e,i){return i+":"+e;}).join("\n"));

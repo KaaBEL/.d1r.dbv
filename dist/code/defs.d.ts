@@ -1,4 +1,6 @@
-// v.0.1.53
+// v.0.1.68
+/// <reference path="./editor.html.ts" />
+
 /** defining new property on Console for editor.js */
 declare interface Console {
   err: Console["error"] | undefined;

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.1.67 -->
+<!-- v.0.1.68 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -70,7 +70,13 @@
       position: fixed;
       top: 0;
     }
-    .red {color: #ff3333;}
+    .red {
+      color: #ff3333;
+    }
+    #info .space {
+      visibility: hidden;
+      transform: translate(0, 90px);
+    }
   </style>
   <script>
     (function (h) {
@@ -95,22 +101,19 @@
     <h1>Welcome to the beggining of Droneboi Vehicles editor</h1>
     <h2>What is it?</h2>
     It is a fan made opensource tool for modifying and creating Droneboi
-    Vehicles online. DBC (fourth title of Droneboi games) is the ultimate
+    Vehicles online.
+    <a href="https://rizenplanet.com/droneboi.html">DBC</a>
+    (DB as DroneBoi shortly, is fourth title of DB games) is the ultimate
     open-world sandbox space drone building, exploration, and combat
     mobile game made by Rizen Planet Studios. Compared to the game which
     focuses on gameplay, this webapp is planned to provide rich spaceship
-    editor with many building functions, more powerfull and customizable
-    tools for advanced drone designs. It is currently in development.
-    First thanks to Beau for Droneboi series and its visual graphics,
-    to the DBVE contributors and for feedback from also others.
+    external editor with many building functions, more powerfull and
+    customizable tools for advanced drone designs. It is currently in
+    development. Thanks to Beau for Droneboi series and its visual
+    graphics, to the DBVE contributors and for feedback from also others.
     Most of the icons are made by Freepik from www.flaticon.com.
     <h2 id="info_help">How to use it?</h2>
-    <span class="red">Disclaimer: Vehicles buildead in a way
-    that it cannot be replicated by using only unmodified vanilla in-game
-    editor without exploiting any bugs or with otherwise altered
-    functionality starting from scratch by clearing the build area with
-    designated button, such as with overlapping blocks, can result in
-    ban if used in (multiplayer) 'Conquest' mode.</span> Exporting
+    Exporting
     feature is limited to existing blocks and usuall positions/rotations
     beacause of that. While holding mouse and moving view position is
     grabbed and moves. Scroll to zoom in/out. Open contextmenu, which is
@@ -139,6 +142,7 @@
       </svg><pre>KaaBEL</pre></a>
       <time itemprop="dateModified" content="2024-10-04" datetime="2024-10-04">Last updated, October 4, 2024</time>
     </div>
+    <div class="space" data="bottom_margin_workaround">0</div>
   </footer>
   <!-- v.0.0.27 -->
   <script>
