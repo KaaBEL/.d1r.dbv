@@ -1,5 +1,5 @@
 "use strict";
-// v.0.1.64T13
+// v.0.1.68
 // ^ also the global version of project, the initial source:
 // https://github.com/KaaBEL/Deltarealm-b64-keys/blob/main/service-worker.js
 /** @type {ServiceWorkerGlobalScope} */
@@ -30,9 +30,12 @@ const srcName = /^[^?#]*\/([^?#]*)/, idsMap = {
 };
 /** @param {FetchEvent} ev */
 SW.onfetch = ev => {
+  const url = new URL(ev.request.url);
+  if (url.host !== "kaabel.github.io" && location.host !== url.host)
+    return;
   const response = (async () => {
     let r = null;
-    const s = srcName.exec(new URL(ev.request.url).href)[1] || "";
+    const s = srcName.exec(url.href)[1] || "";
     const id = idsMap[s] || s;
     try {
       r = await fetch(ev.request.url);
@@ -53,7 +56,7 @@ SW.onfetch = ev => {
 };
 
 SW.onactivate = event => {
-// from MNDs: https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker
+// from MDNs: https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker
 // _API/Using_Service_Workers#service_worker_navigation_preload
 //   event.waitUntil(SW.registration?.navigationPreload.enable());
   caches.keys().then(ks => ks.map(e => e !== V && caches.delete(e)));
