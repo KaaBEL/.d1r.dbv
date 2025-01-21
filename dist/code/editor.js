@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.js" />
 "use strict";
-var version_editor_js = "v.0.1.68";
+var version_editor_js = "v.0.1.69";
 /** @TODO check @see {defaults} for setting a setting without saveSettings */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -68,15 +68,15 @@ else if (/https?/.test(location.protocol) && navigator.serviceWorker)
   }
 if (/^http:\/\/(?:\d+\.\d+\.\d+\.\d+|localhost:\d+)/.exec(location.href))
   +function (globalWebSocket) {
-    //try {
-      //sessionStorage = 
+    try {
+      sessionStorage = 
       window.WebSocket =
         /** @type {any} disables VS code live server live reload */
         (function WebSocket() {
           this.onmessage = function juhus() {};
           window.WebSocket = globalWebSocket;
         });
-    //} catch (e) {}
+    } catch (e) {}
   }(WebSocket);
 
 canvas.addEventListener("contextlost", function () {
@@ -131,7 +131,7 @@ var defaults = {
   editorBackgroundColor: "#111111",
   /** (default) 0: dbc, 1: db, ... 63: unassigned */
   editorBackgroundImage: 0,
-  /** mumst be in #xxxxxx hex color format */
+  //** mumst be in #xxxxxx hex color format */
   highlightColor: "#ff0000",
   highlightWidth: 2,
   logicPreviewAlpha: .5,
@@ -145,7 +145,8 @@ var defaults = {
   // not saved ** (default) false */
   renderSharp: false,
   /** (default) true: position inputs use dbc units */
-  meterPositions: true
+  meterPositions: true,
+  editorLaunchpadBorder: false
 },
   /** @type {typeof defaults|null} alternative to original */
   settings = defaults;
@@ -277,6 +278,7 @@ wxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNl0sIntcImNvbG\
       break;
     case "b6f47340":
       console.info("Fun mode 9");
+    case "ae3c8f3b": // ?.html
       init_funMode = function () {
         enableLogicEditing();
         ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr(("gIAEDEFOT05\
@@ -1227,7 +1229,9 @@ Command.push("Setup Properties", function (items, collapsed) {
             (dropdown.item(j) || OC()).selected = !0 :
             console.error("Not existing custom input selected!");
           dropdown.onchange = function () {
-            customParam[dpdwnI] = dropdown.value;
+            customParam[dpdwnI] = block.internalName === "Control Block" ?
+              dropdown.value :
+              +dropdown.value;
           };
         case "Number Inputs":
           if (!(itm instanceof Items["Number Inputs"]))
@@ -1604,7 +1608,6 @@ Command.push("Import/Export DBV", function (items, collapsed) {
     try {
       dbv.id = "saveFile";
       dbv.value = JSON.stringify(Ship.toDBV(Ship.checkDBV(ship)));
-      render();
     } catch (err) {
       error.innerText = "" + err;
       console.error(err);
@@ -1616,6 +1619,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
     error.innerText = "";
     try {
       ship = Ship.fromObject(JSON.parse(dbv.value));
+      ship.fixVersion_1_3();
       render();
     } catch (err) {
       error.innerText = "" + err;
@@ -1750,8 +1754,6 @@ its vehicle in and will refuse to compress too big vehicle. There are also b\
 ugs since I wasn't going down the rabbit hole of debugging every last one.");
 
 Command.push("Transform tool", function (items, collapsed) {
-  //-var blockSelect = ship.selectRect(.1, 0, 0, .1, 0, 0),
-  //-  lockedSelect = ship.selectRect();
   var selectX0 = EL("input"), selectY0 = EL("input");
   var selectX1 = EL("input"), selectY1 = EL("input");
   var select = EL("button"), inpX = EL("input"), inpY = EL("input");
@@ -1999,7 +2001,9 @@ Command.push("Vehicle stats", function (items, collapsed) {
     strenght: 0,
     store: {fuel: 0, energy: 0, cargo: 0},
     use: {fuel: 0, energy: 0, cargo: 0},
-    blocks: [0]
+    blocks: [0],
+    xforce: 0,
+    yforce: 0
   },
     stringify = JSON.stringify(sums),
     /** @type {typeof sums} */
@@ -2034,28 +2038,28 @@ Command.push("Vehicle stats", function (items, collapsed) {
     texts[10].data = "LY ";
     red.data = texts[11].data = "";
     dist ?
-      (sums.blocks[796] || 0) * 4 > crystals ?
-        texts[11].data = "requires " + rcAmount() + ", remember to ta" +
-          "ke more crystals for further travelling and enough for ret" +
-          "urn." :
-        red.data = "you don't have enough Rift Drives to use " +
-          rcAmount() + " for the jump, lighter vehicle needs less RCs." :
-      texts[11].data = riftLY.value ?
+      crystals > (sums.blocks[796] || 0) * 4 ?
+        red.data = " You don't have enough Rift Drives to use " +
+          rcAmount() + ", lighter vehicle needs less RCs." :
+        texts[11].data = " requires " + rcAmount() + ", remember to t" +
+          "ake more crystals for further travelling and enough for re" +
+          "turn." :
+      texts[10].data += riftLY.value ?
         dist === 0 ?
-          "doesn't require any Rift Crystals since you don't seem goi" +
-            "ng anywhere." :
-          "Distance format is not a number." :
-        "Type desired Rift Driving Light Years (LY) distance into the" +
-          " input.";
+          " doesn't require any Rift Crystals since you don't seem go" +
+            "ing anywhere." :
+          " Distance format is not a number." :
+        " Type desired Rift Driving Light Years (LY) distance into th" +
+          "e input.";
     if (sums.blocks[796] > 1)
-      red.data += "You can't buy more then one Small Rift Drive in Co" +
-        "nquest! ";
+      red.data += " You can't buy more then one Small Rift Drive in C" +
+        "onquest! ";
     if (dist < 0)
-      texts[10].data += "Unless you own Time Travel Machine block, yo" +
-        "u can't regain the Rift Crystals by travelling back. ";
+      texts[11].data = " Unless you own Time Travel Machine block, y" +
+        "ou can't regain the Rift Crystals by travelling back. ";
   };
   function updateStats() {
-    var xForce = 0, yForce = 0, forces = 0, xWeight = 0, yWeight = 0;
+    var xForce = 0, yForce = 0, xWeight = 0, yWeight = 0;
     var useVal = 0;
     function anyUse(val) {
       var n = +(prop.customParameter || [])[0];
@@ -2080,9 +2084,7 @@ Command.push("Vehicle stats", function (items, collapsed) {
       var xys = [x, y, -x, -y], position = block.position;
       x = position[1] + (rot & 1 ? h / 32 : w / 32) + xys[rot];
       y = position[2] + (rot & 1 ? w / 32 : h / 32) + xys[rot + 3 & 3];
-      xWeight += x * (Block.WEIGHT[id] || 0);
-      yWeight += y * (Block.WEIGHT[id] || 0);
-      texts[13].data += " id"+id+'x'+x+'y'+y;
+      //texts[13].data += " id"+id+'x'+x+'y'+y;
       checkStat("cost", Block.COST[id], function (val) {
         return val < 0 ? 0 : val;
       });
@@ -2092,43 +2094,68 @@ Command.push("Vehicle stats", function (items, collapsed) {
       checkStat("use.fuel", Block.FUEL_USE[id], anyUse);
       checkStat("store.energy", Block.ENERGY_STORE[id]);
       checkStat("use.energy", Block.ENERGY_USE[id], anyUse);
-      if (id > 737 && id < 747 || id === 70) {
-        forces += useVal;
+      xWeight += x * (Block.WEIGHT[id] || 0);
+      yWeight += y * (Block.WEIGHT[id] || 0);
+      if (id > 737 && id < 746 || id === 70) {
         rot & 1 ?
           yForce += y * useVal :
           xForce += x * useVal;
-        texts[13].data += 'r'+rot+'t';
+        rot & 1 ?
+          sums.yforce += useVal :
+          sums.xforce += useVal;
+        //texts[13].data += 'r'+rot+'t';
       }
       checkStat("store.cargo", Block.CARGO_STORE[id]);
       checkStat("use.cargo", Block.CARGO_USE[id], anyUse);
       sums.blocks[id] ? sums.blocks[id]++ : sums.blocks[id] = 1;
     }
-    texts[0].data = "Blocks amount: " + blocks.length;
-    texts[1].data = "Weight: " + sums.weight + '/' +
-    // why no error from skipped.weigh
-      (blocks.length - skipped.weight);
-    texts[2].data = "Cost: " + sums.cost + "/" +
-      (blocks.length - skipped.cost);
-    texts[3].data = "Fuel capacity: " + sums.store.fuel + "/" +
-      (blocks.length - skipped.store.fuel);
-    texts[4].data = "Fuel use: " + sums.use.fuel + "/" +
-      (blocks.length - skipped.use.fuel);
-    texts[5].data = "Electricity capacity: " + sums.store.energy + "/" +
-      (blocks.length - skipped.store.energy);
-    texts[6].data = "Electricity use: " + sums.use.energy + "/" +
-      (blocks.length - skipped.use.energy);
-    texts[7].data = "Cargo capacity: " + sums.store.cargo + "/" +
-      (blocks.length - skipped.store.cargo);
-    texts[8].data = "Ore mined: " + -sums.use.cargo + "/" +
-      (blocks.length - skipped.use.cargo);
-    texts[12].data = "WIP debugging data: "
-      "(Force: " + forces + ", x: " + xForce + ", y: " +
-      yForce + ", result: " + (xForce / forces) + "; Weight: " +
-      sums.weight + ", x: " + xWeight + ", y: " + yWeight + ", result: " +
-      (xWeight / sums.weight) + ", " + (yWeight / sums.weight) + ")";
+    /** for code compacting and adding more fanciness to stat values
+     * @param {number} index @param {string} name
+     * @param {number} stat @param {number} skipped */
+    function amount(index, name, stat, skipped) {
+      texts[index].data = name + ": " + stat + (skipped ?
+        " (" + (blocks.length - skipped) + "/" + blocks.length + ")" :
+        "");
+    }
+    amount(0, "Blocks amount", blocks.length, 0);
+    amount(1, "Weight", sums.weight, skipped.weight);
+    amount(2, "Cost", sums.cost, skipped.cost);
+    amount(3, "Fuel capacity", sums.store.fuel, skipped.store.fuel);
+    amount(4, "Fuel use", sums.use.fuel, skipped.use.fuel);
+    amount(5, "Electricity capacity", sums.store.energy,
+      skipped.store.energy);
+    amount(6, "Electricity use", sums.use.energy, skipped.use.energy);
+    amount(7, "Cargo capacity", sums.store.cargo, skipped.store.cargo);
+    amount(8, "Ore mined", -sums.use.cargo, skipped.use.cargo);
+    //texts[12].data = "WIP debugging data: " +
+    //  "(Force: " + sums.xforce + ", x: " + xForce + ", y: " +
+    //  yForce + ", result: " + (xForce / sums.xforce) + "; Weight: " +
+    //  sums.weight + ", x: " + xWeight + ", y: " + yWeight + ", result: " +
+    //  (xWeight / sums.weight) + ", " + (yWeight / sums.weight) + ")";
     // correct for typescript
     riftLY.oninput && riftLY.oninput([][0]);
     // after adding more text lines don't forget changing j < <texts.length>
+    utilities.rend_UI = function () {
+      ctx.lineWidth = 1.5;
+      var weight = xWeight / sums.weight || 0,
+        force = xForce / sums.xforce || 0;
+      if (weight !== force) {
+        ctx.strokeStyle = "#33d";
+        ctx.strokeRect(vX + force * sc, 0, 0, canvas.height);
+        ctx.strokeStyle = "#d33";
+      } else
+        ctx.strokeStyle = "#5b5";
+      ctx.strokeRect(vX + weight * sc, 0, 0, canvas.height);
+      weight = yWeight / sums.weight || 0;
+      force = yForce / sums.yforce || 0;
+      if (weight !== force) {
+        ctx.strokeStyle = "#d33";
+        ctx.strokeRect(0, vY + force * sc, canvas.width, 0);
+        ctx.strokeStyle = "#33d";
+      } else
+        ctx.strokeStyle = "#5b5";
+      ctx.strokeRect(0, vY + weight * sc, canvas.width, 0);
+    };
   }
   updateStats();
   Command.listening === -1 ?
@@ -2283,7 +2310,7 @@ lp indetify them.");
 Command.groupName = "";
 Command.push("Set camera view", function (items, collapsed) {
   function setCode() {
-    code.value = "vX" + vX + "vY" + vY + "sc" + sc;
+    code.value = "vX " + vX + " vY " + vY + " sc " + sc;
   }
   /** @param {string} s @param {number} def default */
   function execRegEx(s, def) {
@@ -2448,7 +2475,9 @@ d, optionaly sorted in collapsed groups. X sign in top right corner closes t\
 he Commands tab.\n\nCOMMAND\nWhen Command is opened its name displays in 'to\
 p part', there's also < sign to return back to menu, X sign won't do that. E\
 ach command has some inputs/buttons, their purpouse is explained in descript\
-ion.");
+ion.\nFINISHED READING\nNow so you are familiar with the basic, if Welcome m\
+essage will ever bother you, use https://kaabel.github.io/.d1r.dbv/editor.ht\
+ml?funmode&no=info for example to skip it.");
 // DBVE contributors:
 // Thanks to Beau for Deltarealm and Droneboi: Conquest that DBVE is made
 // for.
@@ -2710,6 +2739,7 @@ v0 c0,12d2,112d,2400,23ff,2400 h1c400 c12d2,0,2400,-112d,2400,-2400 v0 c0,-1\
 2d2,-112d,-2400,-2400,-2400 z M1fe22,38888 c-12d2,0,-2400,112d,-2400,23ff v0\
  c0,12d2,112d,2400,23ff,2400 h19400 c12d2,0,2400,-112d,2400,-2400 v0 c0,-12d\
 2,-112d,-2400,-2400,-2400 z"));
+/** @TODO rotate the icon by 90 degrees to make moresense */
 Tool.list.push(new Tool("Flip", "M2497,3d3e7 c-1420,0,-2470,-1050,-2470,-247\
 0 c0,-4ef,fb,-9a3,2c1,-dee c3fe,-9a4,1662c,-35d83,16900,-362b1 c62e,-b51,123\
 2,-12ff,2000,-12ff c1420,0,2470,1050,2470,2470 c0,5a3,0,351a7,0,35f70 c0,142\
@@ -2722,9 +2752,6 @@ c1,8ff,2c1,dee c0,1420,-1050,2470,-2470,2470 c-898,0,-15ed5,41,-16752,41 z M\
 ins;".replace(/\$ins;/g, " c0,142a,-1059,2483,-2483,2483 c-142a,0,-2483,-105\
 9,-2483,-2483 v-4949 c0,-142a,1059,-2483,2483,-2483 c142a,0,2483,1059,2483,2\
 483 c0,708,0,4316,0,4949 z"), function () {
-  DefaultUI.tilesRotation[2] = DefaultUI.tilesFlippableRotation[2] =
-    /** @type {0|1|2|3} */
-    (DefaultUI.tilesRotation[2] + 2 & 3);
   DefaultUI.tilesFlippableRotation[1] =
     !DefaultUI.tilesFlippableRotation[1];
   setTimeout(function () {
@@ -2821,6 +2848,24 @@ d3,-3260 c6cc,-548,11d1,-548,189d,0 c2e4,23f,48d,517,4fc,805 c33,15f,321c,eb\
 8,0,-1320 c97,-75,1b47,-1532,40cb,-3259 c0,0,-3abc,-35b9,-a986,-3c41 c-4be8,\
 -560,-68c5,10cd,-68c5,10cd c-6cc,548,-11d1,548,-189d,0 c-6cc,-548,-6cc,-dd8,\
 0,-1320 z"));
+Tool.list.push(new Tool("Flip180", "M2c3a,2475 c0,-1420,1050,-2470,2470,-2470 c4ef,0,9a3,fb,dee,2c1 c9a4,3fe,35d83,1662c,362b1,16900 cb51,62e,12ff,1232,12ff,2000 c0,1420,-1050,2470,-2470,2470 c-5a3,0,-351a7,0,-35f70,0 c-1420,0,-2470,-1050,-2470,-2470 c0,-87d,41,-15eba,41,-16752 z \
+M2bf8,27437 c0,-1420,1050,-2470,2470,-2470 cdc8,0,359cd,0,35f70,0 c1420,0,2470,1050,2470,2470 c0,dce,-7ad,19d1,-12ff,2000 c-52e,2d4,-3590c,16502,-362b1,16900 c-44a,1c6,-8ff,2c1,-dee,2c1 c-1420,0,-2470,-1050,-2470,-2470 c0,-898,-41,-15ed5,-41,-16752 z \
+M7476,3a5bd l287d3,-10dfa l-287d7,0 z \
+M39250,2274f$ins; M2b6d9,2274f$ins; M1db6b,22757$ins; Mfff3,2274f$ins; M24a8,22169$ins;".replace(/\$ins;/g, " c-142a,0,-2483,-1059,-2483,-2483 c0,-142a,1059,-2483,2483,-2483 c547,0,422c,0,4949,0 c142a,0,2483,1059,2483,2483 c0,142a,-1059,2483,-2483,2483 c-708,0,-4316,0,-4949,0 z"
+), function () {
+  DefaultUI.tilesRotation[2] = DefaultUI.tilesFlippableRotation[2] =
+    /** @type {0|1|2|3} */
+    (DefaultUI.tilesRotation[2] + 2 & 3);
+  DefaultUI.tilesFlippableRotation[1] =
+    !DefaultUI.tilesFlippableRotation[1];
+  setTimeout(function () {
+    var tile = DefaultUI.getSelectedTile();
+    if (tile instanceof Tool && tile.name === "Flip") {
+      DefaultUI.selectedTile = -1;
+      render();
+    }
+  }, 75);
+}));
 /** May throw error, use asynchronously! @throws {TypeError} */
 function check_contentScript() {
   var contentScript = GE("contentScript"), data = "";
@@ -2849,7 +2894,7 @@ gcIJBygADKAQInBwiYHCBQcoAAyQECIwcIiBwgsPMsENA5QCDnAIH/AoBzgMDNAQI2BwjUHCAAXc\
   render();
 };
 test_debugbox2collisions = function (rend) {
-  if (rend !== UDF)
+  if (rend !== UDF && typeof rend != "function")
     return;
   var running = false, rc2d = EL("canvas").getContext("2d") || rc;
   (test_debugbox2collisions = function (rend) {
@@ -2859,7 +2904,7 @@ test_debugbox2collisions = function (rend) {
       return val;
     }
     var oB = test_collbxs, oRC = rend_collisions, oTC = test_collisions;
-    if (rend !== UDF) {
+    if (typeof rend != "function" && rend !== UDF) {
       if (!running)
         return;
       ctx.save();
@@ -2870,8 +2915,8 @@ test_debugbox2collisions = function (rend) {
       if (rend instanceof Array && rend[0] instanceof Block.Box2d) {
         rend_collisions = false;
         test_collisions = "true";
-        Block.Box2d.visualize(rend,
-          (vX + 99) / sc, -(vY + 99) / sc, true);
+        Block.Box2d.visualize(rend, Infinity, Infinity, true);
+          // (vX + 99) / sc, -(vY + 99) / sc, true);
         rend_collisions = oRC;
         test_collisions = oTC;
       }
@@ -2887,13 +2932,22 @@ test_debugbox2collisions = function (rend) {
     rc2d.drawImage(canvas, 0, 0);
     rend_collisions = devt_debugger = true;
     running = true;
-    expensiveRenderer();
+    typeof rend == "function" ? rend() :
+      Block.Box2d.collisions(function () {
+        var arr =
+          /** @type {Box2dPath} */
+          ([[-8, -14], [-8, 12], [10, 12], [10, -14], [0, 0]].map(
+            function (e) {return new Block.Box2d(e[0], e[1]);
+          }));
+        arr.range = 21;
+        return arr;
+      }(), ship.blocks, true);
     running = false;
     test_collbxs = oB;
     rend_collisions = oRC;
     test_collisions = oTC;
     devt_debugger = oDD;
-  })();
+  })(rend);
 };
 
 function devt_bug_testing() {
@@ -2971,9 +3025,14 @@ DefaultUI.selectedTile = -1;
 DefaultUI.inventoryTile = false;
 /** @type {TileType[]} */
 DefaultUI.toolBar = [
-  DefaultUI.createTile("Undo"),
-  DefaultUI.createTile("Redo"),
-  DefaultUI.createTile("Rotate")
+  null,
+  //DefaultUI.createTile("Undo"),
+  null,
+  //DefaultUI.createTile("Redo"),
+  DefaultUI.createTile("Rotate"),
+  null,
+  DefaultUI.createTile("Flip"),
+  DefaultUI.createTile("Flip180")
 ];
 /** used at @typedef {"@see"} SeeRenderingFolders */
 DefaultUI.offsetsFolders = 0;
@@ -3137,7 +3196,11 @@ function test_juhus(w, h) {
     helpCanvas.width = helpCanvas.height = a;
     var rot = 10 - block.rotation[2] & 3;
     rc.rotate(rot * Math.PI / 2);
-    rc.translate(rot > 1 ? -a : 0, rot && rot < 3 ? -a : 0);
+    if (block.rotation[1]) {
+      rc.scale(-1, 1);
+      rc.translate(rot > 1 ? 0 : -a, rot && rot < 3 ? -a : 0);
+    } else
+      rc.translate(rot > 1 ? -a : 0, rot && rot < 3 ? -a : 0);
     rc.fillStyle = rend_colors[Color.ID[block.properties.color || ""]];
     block.internalName !== "Ghost Block" && rc.fillRect(x, y, w, h);
     rc.globalCompositeOperation = "destination-in";
@@ -3359,8 +3422,10 @@ function enableLogicEditing() {
         return b.position[1] - a.position[1];
       });
       for (var i = blocks.length; i-- > 0;)
-        if (blocks[i].internalName === "__NULL__")
+        if (blocks[i].internalName === "__NULL__") {
           alert("GHOST __NULL__ BLOCK INFECTED YOUR VEHILCE! D:");
+          del.call(blocks, i);
+        }
       render();
     } else
       console.error("edit_logicmove unhandled event type: " +
@@ -3435,6 +3500,8 @@ var rend_backgHangar = F;
     if (xhr.readyState !== 4)
       return;
     try {
+      if (/^<!--# [A-Za-z0-9]+--$/.test(xhr.responseText.slice(0, 48)))
+        return console.clear();
       backgHangarInit.ship = Ship.fromObject(
         JSON.parse(xhr.responseText));
       backgHangarInit.ready++ && backgHangarInit();
@@ -3651,9 +3718,13 @@ function commands(x, y, e) {
 }
 function devt__share(inp) {
   var el = GE("commandsTab");
-  if (el)
-    (el.lastChild instanceof HTMLTextAreaElement ?
-      el.lastChild : el.appendChild(EL("textarea"))).value = inp;
+  if (!el)
+    return;
+  if (typeof inp != "string")
+    return el.lastChild;
+  (el.lastChild instanceof HTMLTextAreaElement ?
+    el.lastChild : el.appendChild(EL("textarea"))).value = inp;
+  
 }
 contextmenu = function (x, y, e) {
   var el = GE("info");
@@ -3720,10 +3791,29 @@ function rend_showrc() {
   style.top = style.left = "0";
   style.width = style.height = "auto";
 }
+/** @param {number|{x:number,y:number}} x @param {number} [y] */
+function rend_vehiclePoint(x, y) {
+  if (typeof Path2D != "function")
+    throw new Error("Path2D is not supported by this user agent.");
+  if (typeof x == "object" && "x" in x && "y" in x) {
+    y = x.y;
+    x = x.x;
+  } else
+    y = y || 0;
+  x = vX - (x - 2) * sc;
+  y = (y + 2) * sc + vY;
+  ctx.strokeStyle = "#000";
+  ctx.stroke(new Path2D("M" + x + "," + (y - 3) + "l3,-18h-6z"));
+  ctx.stroke(new Path2D("M" + (x - 3) + "," + y + "l-18,3v-6z"));
+  ctx.fillStyle = "#fff";
+  ctx.fill(new Path2D("M" + x + "," + (y - 3) + "l3,-18h-6z"));
+  ctx.fill(new Path2D("M" + (x - 3) + "," + y + "l-18,3v-6z"));
+}
 
-var rend_speeeeed = {}, rend_logs = 69;
-var test_collisions = "", rend_collisions = false;
-/*async*/ function expensiveRenderer() {
+var rend_speeeeed = {}, rend_logs = 69, rend_collisions = false;
+/** @type {{[key:string]:ShipBlock|Box2dPath}|null} */
+var test_bugged = null, test_collisions = "";
+function expensiveRenderer() {
   var t = Date.now(), AT = ", at expensiveRenderer();";
   canvas.width = canvas.width;
   rend_background();
@@ -3837,12 +3927,12 @@ var test_collisions = "", rend_collisions = false;
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(-pos[1] * sc + vX - 7, pos[2] * sc + vY - 7, 14, 14);
     }
-    // await new Promise(function (res) {
-    //   var tfn = expensiveRenderer;//@ts-ignore
-    //   clearTimeout(tfn.tOut);tfn.tOut = setTimeout(res, 100);
-    // }); /// ASYNC!!!!!!!!
   }
   ctx.globalAlpha = 1;
+  // if (defaults.editorLaunchpadBorder) {
+  //   ctx.strokeStyle = defaults.highlightColor;
+  //   //Block.Box2d.collisions()
+  // }
   if (Logic.rend) {
     ctx.lineCap = "round";
     for (var j = Logic.nodes.length; j-- > 0;) {
@@ -3923,6 +4013,7 @@ Block.Box2d.visualize = function (path, x, y, green) {
   ctx.lineWidth = green === UDF ? 8 : green ? 4 : 2;
   if (path[0])
     ctx.moveTo(vX - (path[0].x - 2) * sc, (path[0].y + 2) * sc + vY);
+  //-console.log('juhus ', path.length);
   //@ts-ignore
   for (var i = path.length; i-- > 1;)
   //0&&window.onerror(i+'=x:',(path[0].x + x) * sc + vX,'y',(path[i].y + y)
@@ -3943,22 +4034,11 @@ init = function () {
   rend_checkColors();
   init_funMode();
   check_contentScript();
+
+  if (ship.blocks[35]){
+  //@ts-ignore
+  Logic.removeLogic(ship.blocks[35], ship.prop.nodeList);
+  //@ts-ignore
+  Logic.removeLogic(ship.blocks[35], ship.prop.nodeList);
+  del.call(ship.blocks, 35);del.call(ship.blocks, 33);render();}
 };
-
-//-// devt_debugger = true;
-//-ship.removeBlocks([7]);
-//-ship.placeBlock(0, 0, -2, Block.ID["Solar Block"]);
-//-ship.setSelected([4]);
-//-Edit.paint(ship, Color.ID["Yellow Hazard Stripes"]);
-//-ship.selectRect();
-//-Edit.paint(ship, Color.ID["Lime"]);
-//-Edit.historyAt(ship, 5);
-
-//-ship.removeBlocks([9,6,3]);
-//-// Edit.capture(function debugHistory() {
-//-//   debugger;
-//-// }, ship);
-//-ship.removeBlocks([0]);
-//-Edit.undo(ship);
-//-render();
-//-// console.log(ship.getHistory().map(function(e,i){return i+":"+e;}).join("\n"));

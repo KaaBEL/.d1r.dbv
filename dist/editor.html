@@ -1,14 +1,15 @@
 <!DOCTYPE html>
-<!-- v.0.1.68 -->
+<!-- v.0.1.69 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Check out the early state of opensource Droneboi Vehicles editor." />
   <link rel="icon" href="https://kaabel.github.io/.d1r.dbv/favicon.png" type="image/png" />
   <link rel="icon shortcut" href="https://kaabel.github.io/.d1r.dbv/favicon.svg" type="image/svg+xml" />
   <title>Droneboi Vehicles editor</title>
+  <meta name="description" content="Check out the early state of opensource Droneboi Vehicles editor." />
+  <meta property="og:image" content="https://kaabel.github.io/.d1r.dbv/favicon.png">
   <meta name="theme-color" content="#111111"/>
   <link rel="canonical" href="https://kaabel.github.io/.d1r.dbv/editor.html"/>
   <style>
@@ -63,10 +64,10 @@
       margin-top: 25px;
       text-align: center;
     }
-    body.scroll {
+    html:not(.no-info) body.scroll {
       overflow-y: scroll;
     }
-    body.scroll canvas {
+    html:not(.no-info) body.scroll canvas {
       position: fixed;
       top: 0;
     }
@@ -77,12 +78,19 @@
       visibility: hidden;
       transform: translate(0, 90px);
     }
+    .no-info #info {
+      display: none;
+    }
   </style>
   <script>
+    "use strict";
     (function (h) {
       h && h.appendChild(document.createElement("style")).appendChild(
         document.createTextNode(".no-script{display:none;}")
       );
+      if (h && /[?&]no=info$|[?&]no=info&/.test(location.href) &&
+        "className" in (h.parentNode || {}))
+        h.parentNode.className = "no-info";
     })(document.head || document.querySelector("head"));
   </script>
 </head>
@@ -109,8 +117,10 @@
     focuses on gameplay, this webapp is planned to provide rich spaceship
     external editor with many building functions, more powerfull and
     customizable tools for advanced drone designs. It is currently in
-    development. Thanks to Beau for Droneboi series and its visual
-    graphics, to the DBVE contributors and for feedback from also others.
+    development. First thanks to Go that we can enjoy and share interests
+    in such Droneboi community being in care of Beau and incredible thanks
+    to him for upkeeping the game series. Thanks
+    to the DBVE contributors and for feedback from also others.
     Most of the icons are made by Freepik from www.flaticon.com.
     <h2 id="info_help">How to use it?</h2>
     Exporting
@@ -122,7 +132,7 @@
     settings or enable different tools. They show their description when
     they are opened. Click on Welcome message to close it, rightclicking
     around to open commands tab also closes Welcome message.
-    <h2>What's new?</h2>
+    <h2 class="red">What's new?</h2>
     Soon reaching Beta, works on proper UI slowly continue, you can see
     some behind the scene functionalities from development using
     <a href="http://kaabel.github.io/.d1r.dbv/editor.html?logic">
@@ -132,7 +142,7 @@
     <a href="https://discord.gg/Nb2jAgVHm5">
       Deltarealm fanclub
     </a>.
-    <div id="info_auth" itemprop="dateModified" content="2024-10-04" datetime="2024-10-04">Made by:
+    <div id="info_auth" itemprop="dateModified" content="2025-01-21" datetime="2025-01-21">Made by:
       <!-- link is unproperly displayed when whitespace is outside svg and pre -->
       <a href="https://github.com/KaaBEL"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="16" height="16" viewBox="0,0,16,16">
           <g data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill-rule="nonzero" stroke="none" style="mix-blend-mode: normal">
@@ -140,11 +150,11 @@
             <path d="M3,2h5v4h4v-4h1v5h-2l2,7h-1.3l-2,-7h-1.7v7h-5z" fill="#000" />
           </g>
       </svg><pre>KaaBEL</pre></a>
-      <time itemprop="dateModified" content="2024-10-04" datetime="2024-10-04">Last updated, October 4, 2024</time>
+      <time itemprop="dateModified" content="2025-01-21" datetime="2025-01-21">Last updated, January 21, 2025</time>
     </div>
     <div class="space" data="bottom_margin_workaround">0</div>
   </footer>
-  <!-- v.0.0.27 -->
+  <!-- v.0.0.28 -->
   <script>
     "use strict";
     function GE(v){return document.getElementById(+v===v?(GE.i=v+1)-1:v===
@@ -821,15 +831,19 @@
 
       /** also called first touch, used to initiate fullscreen */
       window.ontouchend = function () {
-        if (touchdevice && !document.fullscreenEnabled &&
+        if (touchdevice && !document.fullscreen &&
           !document.webkitIsFullScreen)
           touchdevice();
       };
-      (GE("info") || document.createElement("br")).onclick = function (e) {
+      +function (info, clickHandler) {
+        info ?
+          info.onclick = clickHandler :
+          clickHandler();
+      }(GE("info"), function (e) {
         document.body.classList.remove("scroll");
         this instanceof Node && document.body.removeChild(this);
-        touchdevice && touchdevice(true);
-      };
+        e && touchdevice && touchdevice(true);
+      });
       document.head.appendChild(document.createComment(navigator.userAgent +
         JSON.stringify(navigator.userAgentData || {})));
       for (var i = 0, ch = document.head.childNodes; i < ch.length; i++)
