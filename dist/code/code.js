@@ -1,12 +1,11 @@
 //@ts-check
 /// <reference path="./defs.d.ts" />
 "use strict";
-/** @TODO setup webapp manifest.json */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
 // B) create chrome extensions with custom modifications for live page
 // C) pull requests to main repo on github
-var version_code_js = "v.0.1.69";
+var version_code_js = "v.0.2";
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -267,7 +266,7 @@ Data.blocks =
   cost: 70}, "Dynamo Thruster": {id: 1037, weight: 3, strength: 15,
   cost: 90}, "T1 Rammer": {id: 1043, weight: 1, strength: 20, cost: 70},
   "T1 Nano Healer": {id: 1060, weight: 1, strength: 10, cost: 130},
-  __placeholder6969__: {id: 6969, weight: .101, cost: 6969}});
+  __placeholder969__: {id: 969, weight: .169, cost: 6969}});
 Data.titles =
   /** @type {const} */
   ({
@@ -387,6 +386,7 @@ Data.titles =
   855: "station wedge",
   856: "station foor 2 1x1",
   857: "station floor 3 1x1",
+  969: "Clamp Chan",
   1023: "__NULL__",
   1024: "Core",
   1025: "T1 Block",
@@ -424,8 +424,7 @@ Data.titles =
   1057: "Hinge",
   1058: "Seperator",
   1059: "Camera Block,",
-  1060: "T1 Nano Healer",
-  6969: "Clamp Chan"
+  1060: "T1 Nano Healer"
 });
 // /** @typedef {keyof Data.blocks} BlockDataKeys */
 // /** @typedef {Data.blocks[BlockDataKeys]["id"]} BlockDataIds */
@@ -1096,21 +1095,21 @@ Object.freeze(Object.freeze(Physics).Ship);
 /** letter case of block names doesn't matter when loaded by game,
  * Block name definitions require strict letter cases here */
 /**
- * @typedef {[number,number,number]} XYZPosition
- * @typedef {[0|1|2,boolean,0|1|2|3]} Rotation
+ * @typedef {[x:number,y:number,z:number]} XYZPosition
+ * @typedef {[axis:0|1|2,sign:boolean,rot:0|1|2|3]} Rotation
  * @typedef {keyof typeof Color.ID|""|null} Colors
  * @typedef {{customParameter?:(number|string|[number,number,number,
  * number])[],nodeIndex?:number[],weldGroup?:number}} BlockProps
  * @param {string} name
- * @param {XYZPosition} pos [-: 0, x: p[0] * 2, y: p[1] * 2]
- * @param {Rotation} rot [-: 0, f: f, r: Math.floor(r / 90)]
+ * @param {XYZPosition} pos DBV to DR: [-: 0, x: p[0] * 2, y: p[1] * 2]
+ * @param {Rotation} rot DBV to DR: [-: 0, f: f, r: Math.floor(r / 90)]
  * @param {{[key:string]:unknown}|0} [prop={color:""}]
  * @param {keyof typeof Color.ID|""|null} [color=""] */
 function Block(name, pos, rot, prop, color) {
   this.internalName = name;
-  /** [not-used, x, y] */
+  /** DBV: [not-used, x, y] */
   this.position = pos;
-  /** [not-used, flipped, cunterclockwise] */
+  /** DBV: [not-used, flipped, cunterclockwise] */
   this.rotation = rot;
   prop = prop || {};
   prop.color = color !== UDF ?
@@ -1368,7 +1367,8 @@ Block.generateArray = function generateArray(n, logics) {
 };
 /** for DBV blocks @readonly @param {number} id */
 Block.isFlippable = function (id) {
-  return id < 697 ? id > 691 && id < 695 : id < 700 || id === 703;
+  return id < 697 ? id > 691 && id < 695 : id < 700 || id === 703 ||
+    id === 702;
 };
 /** @typedef {0|1|2|3|number} RA Rotation Axis */
 // not tested or debugged at all
@@ -1495,7 +1495,7 @@ Block.Size.VALUE = Block.Size.genterateSizes([[128], [52], [53]],
   [[179], [180], [181], [134, 2, 2], [164, 1, 2], [165, 1, 2]],
   [[166, 1, 2], [183], [184, 2, 2], [186, 2, 2], [160], [161], [162]],
   [[144, 4, 1], [158, 2, 1], [148, 2, 3], [163], [140, 4, 1], [182]],
-  [[155], [154], [-1, -1, -1], [16], [30], [64], [66], [82]]);
+  [[155], [154], [-1, -1, -1], [333], [16], [30], [64], [66], [82]]);
 /**
  * @typedef {{block:ShipBlock,id:number,x:number,y:number,w:number,
  * h:number}} Block.Selected @see {Block.Size.highlight}
@@ -1882,8 +1882,8 @@ Block.Box2d.VALUE = Block.Box2d.generateBuildBox(
   // def<definition index>: <dimensoins> <shape> "<representative block>"
   // def0: 1x1 block "Block"
   [{x: 0, y: 0}, {x: 0, y: -2}, {x: 2, y: -2}, {x: 2, y: 0}],
-  //-[{x: 0, y: 0}, {x: 0, y: -1}, {x: 0, y: -2}, {x: 2, y: -2},
-  //-{x: 2, y: -1}, {x: 2, y: 0}],
+  // [{x: 0, y: 0}, {x: 0, y: -1}, {x: 0, y: -2}, {x: 2, y: -2},
+  // {x: 2, y: -1}, {x: 2, y: 0}], TODO: maybe make use of it and test this
   "0",
   // def1: 1x1 wedge "Wedge"
   [
@@ -2016,16 +2016,36 @@ Block.Box2d.VALUE = Block.Box2d.generateBuildBox(
   ]
 );
 Block.Box2d.warn = test_collbxs;
+/** @param {[number,number][]} item */
+Block.Box2d.generateGrid = function (item) {
+  var arr =
+    /** @type {Box2dPath} */
+    (item.map(function (e) {
+      return new Block.Box2d(e[0], e[1]);
+    }));
+  arr.range = item.reduce(function (prev, curr) {
+    return [Math.max(
+      Math.abs(prev[0]),
+      Math.abs(prev[1]),
+      Math.abs(curr[0]),
+      Math.abs(curr[1])
+    ), 0];
+  })[0] * 2;
+  return arr;
+};
 Block.Box2d.GRID = Object.freeze({
-  Small: function () {
-    var arr =
-      /** @type {Box2dPath} */
-      ([[-8, 12], [-8, -14], [10, -14], [10, 12], [0, 0]].map(
-        function (e) {return new Block.Box2d(e[0], e[1]);
-      }));
-    arr.range = 21;
-    return arr;
-  }()
+  Small: Block.Box2d.generateGrid(
+    [[-8, 12], [-8, -14], [10, -14], [10, 12], [0, 0]]),
+  Medium: Block.Box2d.generateGrid(
+    [[-14, 20], [-14, -22], [16, -22], [16, 20], [0, 0]]),
+  Large: Block.Box2d.generateGrid(
+    [[-20, 30], [-20, -32], [22, -32], [22, 30], [0, 0]]),
+  Dreambox: Block.Box2d.generateGrid(
+    [[-98, 98], [-98, -100], [100, -100], [100, 98], [0, 0]]),
+  Career: Block.Box2d.generateGrid(
+    [[-10, 10], [-10, -12], [12, -12], [12, 10], [0, 0]]),
+  Sandbox:  Block.Box2d.generateGrid(
+    [[-20, 20], [-20, -22], [22, -22], [22, 20], [0, 0]])
 });
 /**
  * @overload @param {Block.Box2d[]} path @returns {void}
@@ -2040,10 +2060,6 @@ Block.Box2d.visualize = function (path, x, y, isBlock1) {};
  * @param {ShipBlock|Box2dPath} forShape @param {ShipBlock[]} within
  * @param {boolean} [inside] @param {boolean} [inverted] */
 Block.Box2d.collisions = function (forShape, within, inside, inverted) {
-  //-IITT IISS CCOOMMPPLLEETTEELLYY BBRROOKKEENN BBUUTT AATT LLEEAASSTT
-  //-TTHHEE DDIIRREECCTTIIOONNSS OOFF PPAATTHHSS AARREE CCOORRRREECCTT NNOOWW!!
-  //-DUKC I ONLY THOUGHT THEY ALL WERE ^
-  //-IT WAS THE ONES CORRECT THAT TRICKED ME D:
   /** @typedef {{ax:number,by:number,c:number}} VRP */
   /** @param {Block.Box2d} pointA @param {Block.Box2d} pointB */
   function someVRPthing(pointA, pointB) {
@@ -2190,20 +2206,8 @@ Block.Box2d.collisions = function (forShape, within, inside, inverted) {
       // in the direction of path:
       // starting endpoint (pntA) of currently checked
       // line segment is laying on the checker line
-      /** @TODO remove outdated //- comments in v.0.1.70 */
-      //-(wasn't counted with before)
-
-      //- Am I stoopoid?
-      //--if (vertical) {
-      //--  var nextPoint = path[(j + 2) % path.length];
-      //--  // if the next line countinues horizontally on checker line
-      //--  return nextPoint.y === y &&
-      //--    // and if the current line segment makes a boundary
-      //--    (nextPoint.x > pntA.x ? );
-      //--}
       // the nextPoint was correct, but I screwed up actually
       // the entire order (hopefully swapping pntA with pntB's enough)
-      //-var previousPnt = path[(j || path.length) - 1];
       var nextPnt = path[(j + 2) % path.length];
       // if current line segment is laying horizontal on checker line
       return (pntA.y === y ?
@@ -2225,44 +2229,11 @@ Block.Box2d.collisions = function (forShape, within, inside, inverted) {
           ) :
         null;
       // not even this BRUH
-      //-return (vertical ?
-      //-  // current line segment is not horizontal here
-      //-  // if the previous line segment is horizontal
-      //-  previousPnt.y === y &&
-      //-    // and if current line segment makes a boundary (intersection)
-      //-    (pntB.x > previousPnt.x ? pntA.y < y : pntA.y > y) :
-      //-  // current line segment is horizontal here
-      //-  // if the previous line segment makes a boundary (intersection)
-      //-  // (direction to left ? prev points down)
-      //-  pntA.x > pntB.x ? previousPnt.y > y : previousPnt.y < y) ?
-      //-    // starting endpoint (pntB) counts for border, but it also must
-      //-    // be evaluated as intersetion point in continuing script
-      //-    !(pntA = new Block.Box2d(
-      //-      pntA.y + (pntA.x > pntB.x ? 1 : -1),
-      //-      pntB.x
-      //-    )) :
-      //-    // this point doesn't count as side border
-      //-    true;
-        //-true :
-        //-//BUT even if starting endpoint (pntB) counts for border
-        //-//it must be furter evaluated as intersetion point,
-        //-//as horizontal lines y position is same for both points
-        //-//this should do the trick //(It didn't do D:)
-        //-//-done = !(pntA = new Block.Box2d(
-        //-!(pntA = new Block.Box2d(
-        //-  pntA.y + (pntA.x > pntB.x ? 1 : -1),
-        //-  pntB.x
-        //-));
-      //-/** @TODO CONTINUE HERE fix pointIntersects */
-      //- since block touching other have identical y for lines, it may not
-      //- count for intersection when blocks are outside of eachother
     }
-  //-for (var i = checkerPoint.length, done = false; !done && i-- > 0;) {
     var point = checkerPoint[0], pntB = path[0];
     var y = point.y, before = 0, at = 0, after = 0;
     var a1 = new Block.Box2d(point.x - 512, y),
       b1 = new Block.Box2d(point.x + 512, y);
-    //-done = true;
     // checking being inside other block using horizontal checker line
     for (var j = path.length; j-- > 0;) {
       var pntA = path[j];
@@ -2279,14 +2250,7 @@ Block.Box2d.collisions = function (forShape, within, inside, inverted) {
         pntB.y === y ? !pntBIntersect() :
           // WHY ARENT YOU LIKE <= AND >= ???
           yMax <= y || yMin >= y
-        //-// line segment is horizontal, (how do you know? ->) laying on checker line
-        //-yMin === yMax ?
-        //-  noPntBIntersect(false) :
-        //-  yMax < y || yMin > y ||
-        //-    // next segment might be horizontal, laying on checker line
-        //-    (pntB.y === y && noPntBIntersect(true))
       ) {
-        //-apparently such simple mechanic is misundertandable to me
         // second point will be the starting (first) one in next segment
         pntB = pntA;
         continue;
@@ -2308,9 +2272,6 @@ Block.Box2d.collisions = function (forShape, within, inside, inverted) {
         // makes a entering (left) boundary, otherwise its end boundary
         var n = pntA.y < pntB.y ? 1 : -1;
         /** @TODO CONTINUE HERE finish fixing at */
-        //-x < point.x ?
-        //-  before += n :
-        //-  x > point.x ? after += n : done = false;
         x < point.x ? before += n : x > point.x ? after += n : at += n;
         // x < point.x ? before += n : after += n;
         // How to use test_debugbox2collisions:
@@ -2318,12 +2279,10 @@ Block.Box2d.collisions = function (forShape, within, inside, inverted) {
         // console.log("before:", before, "at:, at", "after:", after);
       }
       pntB = pntA;
-    //-}
     }
     // devt_debugger && rend_collisions &&
     //   console.log("before:", before, "at:", at, "after:", after);
     test_message = "before: " + before + " at: " + at + " after: " + after;
-    //-if (done ? before & after & 1 : i === -1) {
     if (before & after & 1) {
       Block.Box2d.visualize(path1.slice(), x1, y1);
       return [];
@@ -2378,12 +2337,10 @@ Block.Box2d.collisions = function (forShape, within, inside, inverted) {
     if (Math.sqrt(x * x + y * y) >= range1 + (path2 = temporary).range)
       continue;
     Block.Box2d.visualize(path2, pos2[1], pos2[2], false);
-    //- for outlines detected: inside mode is !false, collision mode is true
     if (inside) {
       // inside modes dectects outside blocks actaully lol
       // ...it's becuase of blocks needed to be visualised for Ship.check
       result = path2.slice();
-      //- for (var j = path1.length && path2.length; result && j-- > 0;)
       if (/(?:Block|Smooth Corner 1x2) 0,-\d,-1\d/.test(block2.internalName+
        ' '+block2.position+' '+block2.rotation) && devt_debugger)
        debugger;
@@ -2392,11 +2349,7 @@ Block.Box2d.collisions = function (forShape, within, inside, inverted) {
         result = null;
       result && Block.Box2d.visualize(result, x, y);
       result = combineOutlines() || result;
-      //- result && console.log(block.internalName+' '+block.position+' '+
-      //-   block.rotation+"\n"+test_message);
     } else {
-      //- otherwise for insides: inside mode is while(result)&&!true,
-      //- collision mode is while(!result)||true
       // otherwise it's collision mode
       result = combineOutlines();
       //for (var j = path1.length && path2.length; !result && j-- > 0;)
@@ -2405,8 +2358,6 @@ Block.Box2d.collisions = function (forShape, within, inside, inverted) {
     }
     // inverted negates the condition for adding a block
     !inverted === !!result && colliding.push(block2);
-    //-result && console.log(i+' '+result.range+' '+rend_collisi
-    //-+test_collisions+test_collbxs);
     if (!devt_debugger && result && test_bugged)
       test_bugged[block2.internalName + ' ' + block2.position + ' ' +
         block2.rotation] = forShape;
@@ -2747,7 +2698,6 @@ Edit.paint = function (target, color) {
     });
   Edit.capture(Edit.paint, target, color);
 };
-// TODO: appended at the end of methods, might be more logical to be earlier
 // taken from: https://stackoverflow.com/a/47593316
 /** @param {number} seed @see {Ship.dateTime} also (todo for discussion) */
 Edit.randSFC32 = function (seed) {
@@ -2773,7 +2723,8 @@ Data.nameMethods(Edit);
  * BlockSelection is even EditSelection now and is not used at all */
 /**
  * @typedef {{nodeList?:(Logic|undefined)[],nodeConnections?:number[][],
- * customInputs?:Ship.CustomInput[],[key:string]:unknown}} ShipProperties
+ * customInputs?:Ship.CustomInput[],girdSize?:Ship.Grid,
+ * [key:string]:unknown}} ShipProperties
  * @see {Logic} @see {Ship.CustomInput}
  * @typedef {"Ship"|"Logic"|"Save"} EditMode */
 /** class is frozen
@@ -2803,8 +2754,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @readonly @type {30} significantVersion: 30 (integer) */// @ts-ignore
-Ship.VERSION = 30;
+/** @readonly @type {31} significantVersion: 31 (integer) */// @ts-ignore
+Ship.VERSION = 31;
 Ship.prototype.selectRect = (
   /**
    * @overload @returns {ShipBlock[]}
@@ -3172,7 +3123,7 @@ Ship.prototype.fixVersion_1_3 = function () {
       if (blocks[i].properties.color === "Purple")
         blocks[i].properties.color = "Magneta";
   } else
-    for (alert('1.3'); i-- > 0;) {
+    while (i-- > 0) {
       if (blocks[i].properties.color === "Purple")
         blocks[i].properties.color = "Magneta";
       if (blocks[i].internalName === "Hinge") {
@@ -3246,7 +3197,7 @@ Ship.fromObject = function fromObject(object) {
     blocks: object.blocks || object.b,
     props: object.properties || object.prop,
     add: object.ls || object.nc || object.ci ? {
-      grid: object.ls,
+      size: object.ls,
       logic: object.nc,
       inputs: object.ci
     } : null
@@ -3279,7 +3230,12 @@ Ship.fromObject = function fromObject(object) {
   if (o.add) {
     // (v.0.1.68.K1) added fallbacks for launchpadSize and customInputs, not
     // nodeConnections since prsed nodeList is used for "ni" in DBV file
-    (props = props || OC()).launchpadSize = o.add.grid || 0;
+    (props = props || OC()).launchpadSize = o.add.size || 0;
+    for (var i = Ship.Grid.VALUE.length; i-- > 56;) {
+      var grid = Ship.Grid.VALUE[i];
+      if (grid && grid.dbvIndex === props.launchpadSize)
+        props.girdSize = grid;
+    }
     props.nodeConnections = o.add.logic;
     props.customInputs = o.add.inputs || [];
   }
@@ -3473,15 +3429,7 @@ Ship.checkDBV = function (ship) {
     "CONTINUE HERE";
   }
   rend_collisions = true;
-  var gridBox = function () {
-    var arr =
-      /** @type {Box2dPath} */
-      ([[-9, -13], [9, -13], [9, 13], [-9, 13], [0, 0]].map(function (e) {
-        return new Block.Box2d(e[0], e[1]);
-      }));
-    arr.range = Infinity;
-    return arr;
-  }(), classes = Block.Properties.Items, shipProp = ship.prop || OC();
+  var classes = Block.Properties.Items, shipProp = ship.prop || {};
   for (var b = ship.blocks, i = b.length, msg = ""; i-- > 0;) {
     var id = Block.ID[b[i].internalName], pos = b[i].position;
     if (id < 690 && id > 959)
@@ -3524,13 +3472,14 @@ Ship.checkDBV = function (ship) {
           return e.internalName;
         }) + "\""));
   }
-  if ("launchpadSize" in shipProp && shipProp.launchpadSize !== 0)
-    throw new Error("Can do only small grid for now :(");
+  var grid = shipProp.girdSize && shipProp.girdSize.box2d || null;
+  if (!grid)
+    throw new Error("Can do only .DBV grids for now :(");
   if (typeof ship.name != "string")
     throw new Error("ship.name must be of type string.");
   colliding = Block.Box2d.collisions(Block.Box2d.GRID.Small,
     ship.blocks, true);
-  if (colliding)
+  if (colliding && colliding.length)
     throw new Error("Detected block(s) reaching outside small grid: " +
       colliding.map(function (e) {
         return e.internalName;
@@ -3538,8 +3487,6 @@ Ship.checkDBV = function (ship) {
   rend_collisions = false;
   return ship;
 };
-// TODO: appended at the end of methods, might be more logical to be earlier
-// though
 /** timeToString
  * @readonly @param {number} [t=Date.now()] @param {number} [f=1] ?1 */
 Ship.dateTime = function (t, f) {
@@ -3577,7 +3524,7 @@ Ship.CustomInput.prototype.toString = function () {
 };
 /** @param {Block[]} blocks @param {safe} prop ShipProperties */
 Ship.CustomInput.reassemble = function (blocks, prop) {
-  // This Ship.CustomInput.reassemble code feels so ...loading
+  // This Ship.CustomInput.reassemble code feels so ...loading ...brain error
   /** @type {safe} custom input from savefile */
   var old, inputsOld = prop.customInputs instanceof Array ?
     prop.customInputs :
@@ -3600,7 +3547,7 @@ Ship.CustomInput.reassemble = function (blocks, prop) {
     var name = customParam[0];
     if (typeof name != "string")
       return console.warn("ControlBlock check1 not passed.");
-// defs used to check for cunstomInputs not
+// defs used to check for customInputs not
 // found in ship.prop.customInputs
     used.indexOf(name) === -1 &&
       inputs.push(new Ship.CustomInput(name, -1)) &&
@@ -3627,7 +3574,7 @@ Ship.Mode = function (mode, ship) {
 /** @readonly @type {Ship.Mode} *///@ts-ignore
 Ship.Mode.NONE = new Ship.Mode("Ship", new Ship("", [], "", []));
 /** adds a layer for the parser to pass stored global ship in mode
- * to pars functione, next parser calls only return the parse function
+ * to parse function, later parser calls only return the parse function
  * result and not do parsing again (in case it just modifies global
  * ship /the usual case which recycles global @see {ship} object)
  * @param {EditMode} mode
@@ -3642,11 +3589,46 @@ Ship.Mode.useParser = function (mode, globalShip, parse) {
     return globalShip;
   });
 };
+/** insctace is frozen, class is frozen
+ * @class @param {string} game @param {string} name
+ * @param {number|null} dbvIndex @param {Box2dPath|null} box2d */
+Ship.Grid = function Grid(game, name, dbvIndex, box2d) {
+  /** @readonly */
+  this.game = game;
+  /** @readonly */
+  this.name = name;
+  /** @readonly */
+  this.dbvIndex = dbvIndex;
+  /** @readonly */
+  this.box2d = box2d ? Object.freeze(box2d) : null;
+  Object.freeze(this);
+};
+// TODO: https://github.com/microsoft/TypeScript/issues/57523
+Ship.Grid.prototype.beingClass =
+  "Why TF can't ts accept nested class without such prototype property";
+/** GG @param {{[key:number]:[game:string,name:string,dbvId:number]}} data */
+Ship.Grid.generateGrids = function (data) {
+  /** @type {(Ship.Grid|undefined)[]} */
+  var grids = [], e = data[0];
+  for (var p in data)
+    if (OP.call(data, p) && typeof +p == "number" && (e = data[p]))
+      grids[p] = new Ship.Grid(e[0], e[1], e[2], Block.Box2d.GRID[e[1]]);
+  return grids;
+};
+Ship.Grid.VALUE = Ship.Grid.generateGrids({
+  63: ["Droneboi: Conquest", "Small", 0],
+  62: ["Droneboi: Conquest", "Medium", 1],
+  61: ["Droneboi: Conquest", "Large", 2],
+  60: ["Droneboi: Conquest", "Dreambox", 3],
+  55: ["Droneboi", "Carrer", 1],
+  54: ["Droneboi", "Sandbox", 2]
+});
 Data.nameMethods(Ship);
 Object.freeze(Object.freeze(Ship).Mode);
+Object.freeze(Ship.Grid);
 
 // generating Droneboi
-/** global ship that's being rendered and editng */
+/** global ship that's being rendered and edited */
 var ship = Ship.fromObject({name: "Starter Droneboi", ci: []});
 // var block = new Block("Block", [0, 0, 0], [0, !0, 0]),
 //   ship = new Ship("None", [0, 9], "never", [block]);
@@ -4488,162 +4470,3 @@ B64Key.drawBlock = function (rc, block) {
     Tool.drawPathRc(new Tool("", "Ma000,a000" + path + " z"));
   }
 }
-
-// Ship.checkDBV(ship);
-
-// created on the way to fix collisions
-// "use strict";
-// var pntA, pntB, chkPrev, chkCurr, chkNext;
-// function newCollisionsCase77() {
-//   for (var i = 4, arr = []; i-- > 0;)
-//     arr.push(new Block.Box2d(
-//       Math.random() * 700 - 350 | 0,
-//       Math.random() * 700 - 350 | 0
-//     ));
-//   chkPrev = arr[2];
-//   chkNext = arr[3];
-//   var between = Math.random().toFixed(2);
-//   // xd, yd = difference between x/y axis of point A and B
-//   var xd = (pntB = arr[1]).x - (pntA = arr[0]).x, yd = pntB.y - pntA.y;
-//   chkCurr = new Block.Box2d(pntA.x + xd * between, pntA.y + yd * between);
-// }
-// function rendCollisionsCase77() {
-//   expensiveRenderer();
-//   ctx.beginPath();
-//   ctx.arc(pntA.x + canvas.width / 2, pntA.y + canvas.height / 2,
-//     2, 0, Math.PI * 2);
-//   ctx.arc(pntA.x + canvas.width / 2, pntA.y + canvas.height / 2,
-//     4, 0, Math.PI * 2);
-//   ctx.moveTo(pntA.x + canvas.width / 2, pntA.y + canvas.height / 2);
-//   ctx.lineTo(pntB.x + canvas.width / 2, pntB.y + canvas.height / 2);
-//   ctx.lineCap = "round";
-//   ctx.lineWidth = 4;
-//   ctx.strokeStyle = "#000";
-//   ctx.stroke();
-//   ctx.lineWidth = 2;
-//   ctx.strokeStyle = "#fff";
-//   ctx.stroke();
-//   ctx.beginPath();
-//   ctx.arc(chkPrev.x + canvas.width / 2, chkPrev.y + canvas.height / 2,
-//     2, 0, Math.PI * 2);
-//   ctx.moveTo(chkPrev.x + canvas.width / 2, chkPrev.y + canvas.height / 2);
-//   ctx.arc(chkCurr.x + canvas.width / 2, chkCurr.y + canvas.height / 2,
-//     2, 0, Math.PI * 2);
-//   ctx.lineTo(chkCurr.x + canvas.width / 2, chkCurr.y + canvas.height / 2);
-//   ctx.lineTo(chkNext.x + canvas.width / 2, chkNext.y + canvas.height / 2);
-//   ctx.lineWidth = 4;
-//   ctx.strokeStyle = "#000";
-//   ctx.stroke();
-//   ctx.beginPath();
-//   ctx.arc(chkPrev.x + canvas.width / 2, chkPrev.y + canvas.height / 2,
-//     2, 0, Math.PI * 2);
-//   ctx.moveTo(chkPrev.x + canvas.width / 2, chkPrev.y + canvas.height / 2);
-//   ctx.lineTo(chkCurr.x + canvas.width / 2, chkCurr.y + canvas.height / 2);
-//   ctx.lineWidth = 2;
-//   ctx.strokeStyle = "#f9c00f";
-//   ctx.stroke();
-//   ctx.beginPath();
-//   ctx.arc(chkCurr.x + canvas.width / 2, chkCurr.y + canvas.height / 2,
-//     2, 0, Math.PI * 2);
-//   ctx.moveTo(chkCurr.x + canvas.width / 2, chkCurr.y + canvas.height / 2);
-//   ctx.lineTo(chkNext.x + canvas.width / 2, chkNext.y + canvas.height / 2);
-//   ctx.lineWidth = 2;
-//   ctx.strokeStyle = "#42e963";
-//   ctx.stroke();
-// }
-// if (typeof test_data == "undefined")
-//   var test_data = [];
-// /** @param {boolean} result true if inside (same direction non-intrsct) */
-// function noteCollisionCase77(result) {
-//   test_data.push({
-//     result: result, pntA: pntA, pntB: pntB,
-//     chkPrev: chkPrev, chkCurr: chkCurr, chkNext: chkNext
-//   });
-//   sessionStorage.test_data = [JSON.stringify(test_data[0])].concat(
-//     test_data.slice(1).map(function (e) {
-//       return [('' + e.result)[0],
-//         e.pntA, e.pntB, e.chkPrev, e.chkCurr, e.chkNext];
-//     })).join(" ");
-// }
-// function unpackCase77(e) {
-//   var arr = typeof e == "object" ?
-//     [e.pntA, e.pntB, e.chkPrev, e.chkCurr, e.chkNext] :
-//     ("" + e).split(" ").slice(1).map(function (e) {
-//       var res = /x([^y]*)y([^]*)$/.exec(e) || [];
-//       return [res[1], res[2]];
-//     })
-//   pntA = arr[0];
-//   pntB = arr[1];
-//   chkPrev = arr[2];
-//   chkCurr = arr[3];
-//   chkNext = arr[4];
-// }
-// function loadCollisionsCase77s(data) {
-//   var arr = typeof data == "string" ? data.split(";") : [];
-//   if (!arr[0])
-//     return;
-//   var obj = JSON.parse(arr[0]);
-//   test_data = [{
-//     result: obj.result,
-//     pntA: new Block.Box2d(obj.pntA.x, obj.pntA.y),
-//     pntB: new Block.Box2d(obj.pntB.x, obj.pntB.y),
-//     chkPrev: new Block.Box2d(obj.chkPrev.x, obj.chkPrev.y),
-//     chkCurr: new Block.Box2d(obj.chkCurr.x, obj.chkCurr.y),
-//     chkNext: new Block.Box2d(obj.chkNext.x, obj.chkNext.y)
-//   }].concat(arr.slice(1).map(function (e) {
-//     var points = e.split(" ").slice(1).map(function (e) {
-//       var res = /x([^y]*)y([^]*)$/.exec(e) || [];
-//       return new Block.Box2d(+res[1], +res[2]);
-//     });
-//     return {result: e[0] === "t" || e[0] !== "f" && UDF,
-//       pntA: points[0], pntB: points[1], chkPrev: points[2],
-//       chkCurr: points[3], chkNext: points[4]};
-//   }));
-// }
-// newCollisionsCase77();
-// rendCollisionsCase77();
-
-// loadCollisionsCase77s(// Test cases
-// '{"result":false,"pntA":{"x":-22,"y":21},"pntB":{"x":-59,"y":113},"chkPrev":\
-// {"x":-194,"y":-109},"chkCurr":{"x":-57.89,"y":110.24},"chkNext":{"x":-235,"y\
-// ":-78}};f x-273y-132 x-88y-111 x-328y-144 x-99.10000000000002y-112.26 x-188y\
-// -26;f x248y241 x-308y-5 x-46y-102 x-141.2y68.80000000000001 x-235y-173;f x10\
-// 8y91 x344y35 x-39y322 x334.56y37.24 x-192y338;t x-314y-347 x-261y-158 x174y-\
-// 22 x-299.16y-294.08 x198y321;t x3y263 x170y1 x-121y-319 x53.1y184.4 x12y42;f\
-//  x-73y289 x-92y-341 x99y201 x-89.15y-246.5 x-150y18;f x331y153 x-273y142 x-4\
-// 8y-145 x-194.48000000000002y143.43 x-258y-266;f x-299y-33 x63y204 x-68y113 x\
-// -125.24000000000001y80.75999999999999 x81y-345;f x-72y193 x146y100 x-118y-26\
-// 8 x-32.76y176.26 x135y155;f x-182y-98 x-205y23 x308y-20 x-196.72y-20.5600000\
-// 00000002 x36y-89;f x88y-236 x162y40 x82y31 x144.24y-26.24000000000001 x144y3\
-// 04;f x62y-153 x231y304 x-122y17 x72.14y-125.58 x-281y112;t x-36y158 x-22y343\
-//  x-46y-154 x-32.22y207.95 x277y-99;f x48y-240 x-154y-37 x240y1 x-63.10000000\
-// 000001y-128.35 x-244y-222;f x298y51 x220y141 x-249y-18 x240.28y117.6 x191y-1\
-// 48;f x20y307 x-282y343 x-325y-283 x-233.67999999999998y337.24 x305y-337;f x-\
-// 176y150 x61y165 x-337y162 x-126.23y153.15 x223y214;t x215y-294 x-69y-166 x30\
-// 7y275 x-26.400000000000006y-185.2 x-98y273;t x164y-98 x-334y-317 x-336y-5 x-\
-// 154.72000000000003y-238.16 x-303y-235;t x187y-39 x271y-264 x-234y308 x201.28\
-// y-77.25 x-77y-114;f x12y-235 x111y144 x112y155 x59.519999999999996y-53.08000\
-// 000000001 x254y50;t x-245y135 x156y52 x-115y-265 x-80.59y100.97 x-95y-335;f \
-// x-314y-125 x-99y-345 x262y-139 x-195.75y-246 x299y277;t x-160y-40 x-81y124 x\
-// 291y225 x-119.71000000000001y43.64 x101y203');
-// if (1) {
-//   console.log("'i: pntA x:    y:  |pntB x:    y:  |chkPrev x:  y: " +
-//     "|chkCurr x:  y: |chkNext x:  y:  result:'\n" +
-//     test_data.map(function (e, i) {
-//       function fit(l, val, separator) {
-//         var s = (typeof val == "string" ?
-//           val :
-//           (+val).toFixed(3)).slice(0, l);
-//         for (var spaces = ""; s.length < l--;)
-//           spaces += " ";
-//         return spaces + s + (separator || "|");
-//       }
-//       return fit(3, "" + i) + fit(7, e.pntA.x, "^") + fit(7, e.pntA.y) +
-//         fit(7, e.pntB.x, "^") + fit(7, e.pntB.y) +
-//         fit(7, e.chkPrev.x, "^") + fit(7, e.chkPrev.y) +
-//         fit(7, e.chkCurr.x, "^") + fit(7, e.chkCurr.y) +
-//         fit(7, e.chkNext.x, "^") + fit(7, e.chkNext.y) + e.result;
-//     }).join("\n"));
-// }
-
-// void 0;

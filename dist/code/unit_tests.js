@@ -1,6 +1,6 @@
 //@ts-nocheck
 "use strict";
-// v.0.1.65 (global version of project when last changes were done)
+// v.0.2 (global version of project when last changes were done)
 var error = Error, utst_ = true;
 Error = function (message) {
   console.error(this.message = message);
@@ -28,7 +28,7 @@ try {
 press = F;
 try {
   enableShipEditing();
-  if (press !== old_UI || ship.getMode().mode !== "Ship")
+  if (press !== edit_ship || ship.getMode().mode !== "Ship")
     throw new Error("did not pass the test");
 } catch (e) {utst_ =
   console.error("enableShipEditing:");console.error(e);}

@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.js" />
 "use strict";
-var version_editor_js = "v.0.1.69";
+var version_editor_js = "v.0.2";
 /** @TODO check @see {defaults} for setting a setting without saveSettings */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -123,7 +123,7 @@ canvas.addEventListener("contextrestored", function () {
   "{background-color: #000;color: #bbb;border: 1px solid #888;}"
 );
 
-/** original settings variable, defines type for settings */
+/** originally settings variable, defines type for settings */
 var defaults = {
   /** (default) true: image pattern, false: color */
   editorBackground: typeof DOMMatrix != "undefined",
@@ -148,7 +148,7 @@ var defaults = {
   meterPositions: true,
   editorLaunchpadBorder: false
 },
-  /** @type {typeof defaults|null} alternative to original */
+  /** @type {typeof defaults|null} nullable alternative to original */
   settings = defaults;
 // naming may change? + meaningless comment
 function saveSettings() {
@@ -975,34 +975,7 @@ Command.initItem = function (cmd) {
 Object.seal(Command);
 
 Command.push("Select Block", function (items, collapsed) {
-  var bcks = {
-      776: "TNT",
-      834: "station wall 4 sides LBRU",
-      835: "station wall 2 sides corner LB",
-      836: "station wall 1 side B",
-      837: "station wall 0 sides",
-      838: "station wall 3 sides LBR",
-      839: "station wall 2 sides opposite LR",
-      840: "station solar block",
-      841: "station launchpad door casing",
-      842: "station launchpad door middle",
-      843: "station launchpad door ending",
-      844: "station floor 1 1x1",
-      845: "station floor 1 2x2",
-      846: "station floor 2 2x2",
-      847: "station door casing",
-      848: "station door middle",
-      849: "station door ending",
-      850: "station launch terminal",
-      851: "station bench",
-      852: "station wardrobe",
-      853: "station telescope",
-      854: "station market terminal",
-      855: "station wedge",
-      856: "station floor 2 1x1",
-      857: "station floor 3 1x1"
-    },
-    tags = [
+  var tags = [
       "Core and Basic",
       "Core and Basic",
       "Core and Basic",
@@ -1020,7 +993,7 @@ Command.push("Select Block", function (items, collapsed) {
       "",
       "",
       "",
-      "",
+      "Juhus",
       "",
       "",
       "",
@@ -1037,19 +1010,20 @@ Command.push("Select Block", function (items, collapsed) {
       "Misc": collapsed("Misc"),
       "Logic": collapsed("Logic"),
       "Station parts": collapsed("Station parts"),
-      "Droneboi (classic)": collapsed("Droneboi (classic)")
+      "Droneboi (classic)": collapsed("Droneboi (classic)"),
+      "Juhus": collapsed("Juhus")
     }, btn = EL("button");
   btn.appendChild(tN("remove block"));
   btn.onclick = blockBind("remove", !1);
   items.push(btn);
-  for (var i = 690, s = ""; i < Block.NAME.length; i++)
-    if (s = bcks[i] || Block.NAME[i])
-      if (!/__(?:placeholder\d+|NULL)__/.test(s)) {
-        btn = EL("button");
-        btn.appendChild(tN(s));
-        btn.onclick = blockBind("" + Block.NAME[i], !1);
-        groups[tags[i - 690 >> 4]][1].appendChild(btn);
-      }
+  for (var i = 690, s = ""; i < 1092; i++)
+    if (s = Data.titles[i] || "") {
+      btn = EL("button");
+      btn.appendChild(tN(s));
+      btn.onclick = blockBind("" + Block.NAME[i], !1);
+      var one = groups[tags[i - 690 >> 4]];
+      one && one[1].appendChild(btn);
+    }
   /** @type {(...args:HTMLElement[][])=>void} */
   function pushCollapsed() {
     for (var i = 0; i < arguments.length;)
@@ -1058,7 +1032,7 @@ Command.push("Select Block", function (items, collapsed) {
   pushCollapsed(groups["Core and Basic"], groups.Movement);
   pushCollapsed(groups.Storage, groups["Drills and Weapons"]);
   pushCollapsed(groups.Misc, groups.Logic, groups["Station parts"]);
-  pushCollapsed(groups["Droneboi (classic)"]);
+  pushCollapsed(groups["Droneboi (classic)"], groups.Juhus, groups.Bruh);
   var opt = EL("input");
   opt.type = "checkbox";
   opt.checked = blockBind.changingPosition;
@@ -1601,8 +1575,29 @@ Inputs not yet with tags are listed with option field to select logic output\
 
 Command.push("Import/Export DBV", function (items, collapsed) {
   var dbv = EL("input"), elBtn = EL("button"), error = EL();
-  var grid = EL("select");
-  // TODO: launchpadSize items.push(tN("Grid size: "), grid, EL("br"));
+  var gridCheck = EL("input"), grid = EL("select");
+  gridCheck.type = "checkbox";
+  gridCheck.oninput = function () {
+    defaults.editorLaunchpadBorder = gridCheck.checked;
+    render();
+  };
+  for (var i = Ship.Grid.VALUE.length; i-- > 0;) {
+    var gridValue = Ship.Grid.VALUE[i];
+    if (!gridValue)
+      continue;
+    var option = grid.appendChild(EL("option"));
+    option.value = "" + i;
+    option.appendChild(tN(gridValue.name));
+  }
+  grid.onchange = function () {
+    var gridValue = Ship.Grid.VALUE[+grid.value];
+    if (!gridValue)
+      return;
+    (ship.prop || (ship.prop = {})).girdSize = gridValue;
+    ship.prop.launchpadSize = gridValue.dbvIndex;
+    defaults.editorLaunchpadBorder && render();
+  };
+  items.push(tN("Grid size: "), gridCheck, grid, EL("br"));
   elBtn.onclick = function () {
     error.innerText = "";
     try {
@@ -2161,7 +2156,14 @@ Command.push("Vehicle stats", function (items, collapsed) {
   Command.listening === -1 ?
     Command.listening = Edit.listeners.push(updateStats) - 1 :
     Edit.listeners[Command.listening] = updateStats;
-}, "TODO: create Vehicle stats descriptions when command gets released.");
+  render();
+}, "Lists all kind of vehicle stats, number captures resulting sum of blocks\
+ values next in parenthesis it shows amount of blocks for which the stat can\
+ be calculated. Usage stats are counted as units/items per second. Rift driv\
+e distance requires target distance values and gives relevant information fo\
+r vehicles travel distance. There are also lines displaying center of mass (\
+red) and center of thrust (blue). If vehicle is balanced in a direction, the\
+re line will be one green line.");
 Command.push("Rift Drive calculator", function (items, collapsed) {
   var weight = 0, drives = 0, unknown = 0, all = ship.blocks;
   for (var i = all.length; i-- > 0;) {
@@ -2584,7 +2586,12 @@ var cmdsHeader = EL(), cmds = (function () {
 function Tool(name, icon, exec) {
   this.name = name;
   this.icon = icon;
-  this.exec = exec || F;
+  this.exec = Tool.execClick(exec || F);
+  /** used to determim whether (true) the tile gets enebled instantly
+   * (for DefaultUI it's selectedClickTile property) or
+   * (false) the tile is enabled until deselected (selected in
+   * DefaultUI.selectedTile property) */
+  this.clickType = true;
   Object.seal(this);
 }
 /** @type {Tool[]} */
@@ -2639,6 +2646,20 @@ Tool.drawPathRc = function (tool, size) {
   });
   rc.fill();
 }
+Tool.execClick = function (execMain) {
+  /** @this {Tool} */
+  return function () {
+    execMain();
+    var thisTile = this;
+    setTimeout(function () {
+      var tile = DefaultUI.getSelectedTile(DefaultUI.selectedClickTile);
+      if (tile instanceof Tool && tile === thisTile) {
+        DefaultUI.selectedClickTile = -1;
+        render();
+      }
+    }, 75);
+  };
+};
 
 Tool.list.push(new Tool("Tune", "M4a4,24265 c51,2f0,273,ad3,931,f85 c8da,714\
 ,103d,642,13d7,615 c1ea0,-178,3dbe,974,552e,20cc c2c36,2c08,2c5b,7392,53,9fc\
@@ -2673,7 +2694,7 @@ b0,37fa c-aa,2277,294,3088,486,4273 z M2fd6e,297fb c0,0,-80e5,-8034,-80e5,-8\
 2ed8,-4a8,43c8,-d1d l8497,8218 c-2dcd,1d59,-6443,2e5d,-9eb3,2e5d c-a2ac,0,-1\
 268b,-83df,-1268b,-1268b c0,-a2ac,83df,-1268b,1268b,-1268b ca2ac,0,1268b,83d\
 f,1268b,1268b c0,36c5,-ef3,6a0d,-28fe,95fc z"));
-Tool.list.push(new Tool("Rotate", "M13,1ffd8 c0,-16a2,a0,-221b,a0,-26cc c0,-\
+Tool.list.push(new Tool("Rotate90", "M13,1ffd8 c0,-16a2,a0,-221b,a0,-26cc c0,-\
 d1a,94f,-1818,15dd,-1b1c c239,-88,3bbb,-cf6,41df,-e1c c1c6,-54,39b,-81,57a,-\
 81 cfe9,0,1cd0,c80,1cd0,1bed c0,c8,-13e,173b,-1c4,290a c-1d,3e3,-2c,7cb,-2c,\
 bb6 c0,d80e,af26,18734,18734,18734 c65d9,0,c29c,-26ec,10837,-66b4 c0,0,-2288\
@@ -2694,13 +2715,6 @@ c,-41c,ae,-60f c64,-1b6,2b6f,-d70d,2b9c,-d7c9 c2f1,-c64,e66,-15a2,1c14,-15a2\
   DefaultUI.tilesRotation[2] = DefaultUI.tilesFlippableRotation[2] =
     /** @type {0|1|2|3} */
     (DefaultUI.tilesRotation[2] + 1 & 3);
-  setTimeout(function () {
-    var tile = DefaultUI.getSelectedTile();
-    if (tile instanceof Tool && tile.name === "Rotate") {
-      DefaultUI.selectedTile = -1;
-      render();
-    }
-  }, 75);
 }));
 Tool.list.push(new Tool("Skin", "M2b144,2d362 c0,0,-4d72,4e17,-4d7d,4e21 c-6\
 e7,65c,-1048,a45,-1a9c,a45 c-ab5,0,-1464,-433,-1b5c,-afc c-520,-4fd,-454c,-4\
@@ -2739,7 +2753,6 @@ v0 c0,12d2,112d,2400,23ff,2400 h1c400 c12d2,0,2400,-112d,2400,-2400 v0 c0,-1\
 2d2,-112d,-2400,-2400,-2400 z M1fe22,38888 c-12d2,0,-2400,112d,-2400,23ff v0\
  c0,12d2,112d,2400,23ff,2400 h19400 c12d2,0,2400,-112d,2400,-2400 v0 c0,-12d\
 2,-112d,-2400,-2400,-2400 z"));
-/** @TODO rotate the icon by 90 degrees to make moresense */
 Tool.list.push(new Tool("Flip", "M2497,3d3e7 c-1420,0,-2470,-1050,-2470,-247\
 0 c0,-4ef,fb,-9a3,2c1,-dee c3fe,-9a4,1662c,-35d83,16900,-362b1 c62e,-b51,123\
 2,-12ff,2000,-12ff c1420,0,2470,1050,2470,2470 c0,5a3,0,351a7,0,35f70 c0,142\
@@ -2754,13 +2767,6 @@ ins;".replace(/\$ins;/g, " c0,142a,-1059,2483,-2483,2483 c-142a,0,-2483,-105\
 483 c0,708,0,4316,0,4949 z"), function () {
   DefaultUI.tilesFlippableRotation[1] =
     !DefaultUI.tilesFlippableRotation[1];
-  setTimeout(function () {
-    var tile = DefaultUI.getSelectedTile();
-    if (tile instanceof Tool && tile.name === "Flip") {
-      DefaultUI.selectedTile = -1;
-      render();
-    }
-  }, 75);
 }));
 Tool.list.push(new Tool("Clone", "M2ba5a,2bab5 vda5e c0,33ca,-29fc,5dc6,-5dc\
 6,5dc6 h-1fdbd c-33ca,0,-5dc6,-29fc,-5dc6,-5dc6 v-1fd62 c0,-33ca,29fc,-5dc6,\
@@ -2782,13 +2788,6 @@ Tool.list.push(new Tool("Undo", "M3f6f3,19ab0 cc15,c15,c15,1fad,0,2bc2 c-c15\
   if (ship.getMode().mode !== "Ship")
     return alert("Functions only in Ship editing mode");
   Edit.undo(ship);
-  setTimeout(function () {
-    var tile = DefaultUI.getSelectedTile();
-    if (tile instanceof Tool && tile.name === "Flip") {
-      DefaultUI.selectedTile = -1;
-      render();
-    }
-  }, 75);
 }));
 Tool.list.push(new Tool("Redo", "Mb37,19889 c12184,-12b4a,26761,-bb8b,2f024,\
 -5037 cdb,ac,152,152,152,152 c0,0,72dc,-72dc,733f,-733f cc15,-c15,1fad,-c15,\
@@ -2801,13 +2800,6 @@ function () {
   if (ship.getMode().mode !== "Ship")
     return alert("Functions only in Ship editing mode");
   Edit.redo(ship);
-  setTimeout(function () {
-    var tile = DefaultUI.getSelectedTile();
-    if (tile instanceof Tool && tile.name === "Flip") {
-      DefaultUI.selectedTile = -1;
-      render();
-    }
-  }, 75);
 }));
 Tool.list.push(new Tool("Next", "M10200,0 L10200,40000 L40000,20000 z"));
 Tool.list.push(new Tool("Previous", "M2fc00,0 L0,20000 L2fc00,40000 z"));
@@ -2848,23 +2840,45 @@ d3,-3260 c6cc,-548,11d1,-548,189d,0 c2e4,23f,48d,517,4fc,805 c33,15f,321c,eb\
 8,0,-1320 c97,-75,1b47,-1532,40cb,-3259 c0,0,-3abc,-35b9,-a986,-3c41 c-4be8,\
 -560,-68c5,10cd,-68c5,10cd c-6cc,548,-11d1,548,-189d,0 c-6cc,-548,-6cc,-dd8,\
 0,-1320 z"));
-Tool.list.push(new Tool("Flip180", "M2c3a,2475 c0,-1420,1050,-2470,2470,-2470 c4ef,0,9a3,fb,dee,2c1 c9a4,3fe,35d83,1662c,362b1,16900 cb51,62e,12ff,1232,12ff,2000 c0,1420,-1050,2470,-2470,2470 c-5a3,0,-351a7,0,-35f70,0 c-1420,0,-2470,-1050,-2470,-2470 c0,-87d,41,-15eba,41,-16752 z \
-M2bf8,27437 c0,-1420,1050,-2470,2470,-2470 cdc8,0,359cd,0,35f70,0 c1420,0,2470,1050,2470,2470 c0,dce,-7ad,19d1,-12ff,2000 c-52e,2d4,-3590c,16502,-362b1,16900 c-44a,1c6,-8ff,2c1,-dee,2c1 c-1420,0,-2470,-1050,-2470,-2470 c0,-898,-41,-15ed5,-41,-16752 z \
-M7476,3a5bd l287d3,-10dfa l-287d7,0 z \
-M39250,2274f$ins; M2b6d9,2274f$ins; M1db6b,22757$ins; Mfff3,2274f$ins; M24a8,22169$ins;".replace(/\$ins;/g, " c-142a,0,-2483,-1059,-2483,-2483 c0,-142a,1059,-2483,2483,-2483 c547,0,422c,0,4949,0 c142a,0,2483,1059,2483,2483 c0,142a,-1059,2483,-2483,2483 c-708,0,-4316,0,-4949,0 z"
-), function () {
+Tool.list.push(new Tool("Flip180", "M2c3a,2475 c0,-1420,1050,-2470,2470,-247\
+0 c4ef,0,9a3,fb,dee,2c1 c9a4,3fe,35d83,1662c,362b1,16900 cb51,62e,12ff,1232,\
+12ff,2000 c0,1420,-1050,2470,-2470,2470 c-5a3,0,-351a7,0,-35f70,0 c-1420,0,-\
+2470,-1050,-2470,-2470 c0,-87d,41,-15eba,41,-16752 z M2bf8,27437 c0,-1420,10\
+50,-2470,2470,-2470 cdc8,0,359cd,0,35f70,0 c1420,0,2470,1050,2470,2470 c0,dc\
+e,-7ad,19d1,-12ff,2000 c-52e,2d4,-3590c,16502,-362b1,16900 c-44a,1c6,-8ff,2c\
+1,-dee,2c1 c-1420,0,-2470,-1050,-2470,-2470 c0,-898,-41,-15ed5,-41,-16752 z \
+M7476,3a5bd l287d3,-10dfa l-287d7,0 z M39250,2274f$ins; M2b6d9,2274f$ins; M1\
+db6b,22757$ins; Mfff3,2274f$ins; M24a8,22169$ins;".replace(/\$ins;/g, " c-14\
+2a,0,-2483,-1059,-2483,-2483 c0,-142a,1059,-2483,2483,-2483 c547,0,422c,0,49\
+49,0 c142a,0,2483,1059,2483,2483 c0,142a,-1059,2483,-2483,2483 c-708,0,-4316\
+,0,-4949,0 z"), function () {
   DefaultUI.tilesRotation[2] = DefaultUI.tilesFlippableRotation[2] =
     /** @type {0|1|2|3} */
     (DefaultUI.tilesRotation[2] + 2 & 3);
   DefaultUI.tilesFlippableRotation[1] =
     !DefaultUI.tilesFlippableRotation[1];
-  setTimeout(function () {
-    var tile = DefaultUI.getSelectedTile();
-    if (tile instanceof Tool && tile.name === "Flip") {
-      DefaultUI.selectedTile = -1;
-      render();
-    }
-  }, 75);
+}));
+Tool.list.push(new Tool("Rotate", "M3ffec,1ffd8 c0,11abb,-e532,1ffee,-1ff\
+ee,1ffee c-86ef,0,-101ad,-3434,-15d21,-8984 c-7,-7,-1dd5,1e1c,-1e42,1e7e c-5\
+23,49e,-c05,771,-1395,771 c-dae,0,-1922,-93d,-1c14,-15a2 c-2c,-bc,-2b38,-d61\
+3,-2b9c,-d7c9 c-72,-1f3,-ae,-3fa,-ae,-60f c0,-f6c,ce6,-1bed,1cd0,-1bed c3ac,\
+0,730,aa,a6b,1e1 c64a,25d,bcde,3da5,bf45,3e46 cc42,335,1548,e10,1548,1af6 c0\
+,802,-37a,f3b,-90d,1453 c-112,fa,-239b,2445,-239b,2445 c459b,3fc8,a25d,66b4,\
+10837,66b4 cd80e,0,18734,-af26,18734,-18734 c0,-3ea,-e,-7d2,-2c,-bb6 c-86,-1\
+1ce,-1c4,-2841,-1c4,-290a c0,-f6c,ce6,-1bed,1cd0,-1bed c1df,0,3b4,2c,57a,81 \
+c624,125,3fa5,d93,41df,e1c cc8e,303,15dd,e02,15dd,1b1c c0,4b0,a0,102a,a0,26c\
+c z M13,20027 c0,-11abb,e532,-1ffee,1ffee,-1ffee c86ef,0,101ad,3434,15d21,89\
+84 c7,7,1dd5,-1e1c,1e42,-1e7e c523,-49e,c05,-771,1395,-771 cdae,0,1922,93d,1\
+c14,15a2 c2c,bc,2b38,d613,2b9c,d7c9 c72,1f3,ae,3fa,ae,60f c0,f6c,-ce6,1bed,-\
+1cd0,1bed c-3ac,0,-730,-aa,-a6b,-1e1 c-64a,-25d,-bcde,-3da5,-bf45,-3e46 c-c4\
+2,-335,-1548,-e10,-1548,-1af6 c0,-802,37a,-f3b,90d,-1453 c112,-fa,239b,-2445\
+,239b,-2445 c-459b,-3fc8,-a25d,-66b4,-10837,-66b4 c-d80e,0,-18734,af26,-1873\
+4,18734 c0,3ea,e,7d2,2c,bb6 c86,11ce,1c4,2841,1c4,290a c0,f6c,-ce6,1bed,-1cd\
+0,1bed c-1df,0,-3b4,-2c,-57a,-81 c-624,-125,-3fa5,-d93,-41df,-e1c c-c8e,-303\
+,-15dd,-e02,-15dd,-1b1c c0,-4b0,-a0,-102a,-a0,-26cc z", function () {
+  DefaultUI.tilesRotation[2] = DefaultUI.tilesFlippableRotation[2] =
+    /** @type {0|1|2|3} */
+    (DefaultUI.tilesRotation[2] + 3 & 3);
 }));
 /** May throw error, use asynchronously! @throws {TypeError} */
 function check_contentScript() {
@@ -2933,15 +2947,9 @@ test_debugbox2collisions = function (rend) {
     rend_collisions = devt_debugger = true;
     running = true;
     typeof rend == "function" ? rend() :
-      Block.Box2d.collisions(function () {
-        var arr =
-          /** @type {Box2dPath} */
-          ([[-8, -14], [-8, 12], [10, 12], [10, -14], [0, 0]].map(
-            function (e) {return new Block.Box2d(e[0], e[1]);
-          }));
-        arr.range = 21;
-        return arr;
-      }(), ship.blocks, true);
+      Block.Box2d.collisions(Block.Box2d.GRID.Small
+      // does this work? (v.0.1.69.K1)
+      , ship.blocks, true);
     running = false;
     test_collbxs = oB;
     rend_collisions = oRC;
@@ -2957,10 +2965,12 @@ function devt_bug_testing() {
   document.body.appendChild(scr);
 }
 var devt_debugger = false;
+
 function DefaultUI() {
   throw new TypeError("Illegal constructor");
   this.mode = "any";
 }
+/** @typedef {Block|LogicBlock|Tool|null} TileType */
 /** used in DefaultUI.createTile for rotatable blocks */
 DefaultUI.tilesRotation =
   /** @type {Rotation} */
@@ -2968,6 +2978,23 @@ DefaultUI.tilesRotation =
 DefaultUI.tilesFlippableRotation =
   /** @type {Rotation} */
   (DefaultUI.tilesRotation.slice());
+//- what was this supposed to store? 
+//- DefaultUI.TILE = {};
+DefaultUI.rend = F;
+/** @type {(TileType[]&{type:TileType})[]} */
+DefaultUI.blockBars = [];
+DefaultUI.selectedFolder = 0;
+/** value & 3: 0 = selected in toolBar, 1 = selected in BlockBar,
+ * 2 = selected inventoryTile, 3 = reserved for selected in inventory
+ * value >> 2: index of selected tile
+ * value === -1: no tile selected */
+DefaultUI.selectedTile = -1;
+/** value & 3: 0 = selected in toolBar, 1 = selected in BlockBar,
+ * 2 = selected inventoryTile, 3 = reserved for selected in inventory
+ * value >> 2: index of selected tile
+ * value === -1: no tile selected */
+DefaultUI.selectedClickTile = -1;
+DefaultUI.inventoryTile = false;
 DefaultUI.createTile = function () {
   /** @type {XYZPosition} */
   var pos = [0, 0, 0], id = 0;
@@ -2990,47 +3017,12 @@ DefaultUI.createTile = function () {
     return null;
   };
 }();
-/** @typedef {Block|LogicBlock|Tool|null} TileType */
-/** @param {number|string} type @param {unknown[]} [tiles=[]] */
-DefaultUI.createFolder = function (type, tiles) {
-  var folder =
-    /** @type {TileType[]&{type:TileType}} */
-    ((tiles || []).map(DefaultUI.createTile));
-  folder.type = DefaultUI.createTile(type);
-  return folder;
-};
-DefaultUI.TILE = {};
-DefaultUI.rend = F;
-/** @type {(TileType[]&{type:TileType})[]} */
-DefaultUI.blockBars = [
-  DefaultUI.createFolder("Core", [739, 746, 757]),
-  DefaultUI.createFolder(739, [738, 739, 740, 741, 742, 743]),
-  DefaultUI.createFolder("Small Hydrogen Thruster", [744, 745, 746]),
-  DefaultUI.createFolder("Small Hydrogen Tank", [757, 758, 759]),
-  DefaultUI.createFolder("Cannon", [771, 772, 773, 774, 775]),
-  DefaultUI.createFolder("Small Hydraulic Drill", [770]),
-  DefaultUI.createFolder(791, [789, 791]),
-  DefaultUI.createFolder("Separator", [790, 792, 795]),
-  DefaultUI.createFolder(804, [802, 803, 804, 805, 805 + 1, 807, 808]),
-  DefaultUI.createFolder(804, [809, 810, 811, 812, 828, 813, 814]),
-  DefaultUI.createFolder(804, [815, 816, 817, null, 818, 819, 820]),
-  DefaultUI.createFolder(804, [821, 822, 823, 824, 825, 826, 827])
-];
-DefaultUI.selectedFolder = 0;
-/** value & 3: 0 = selected in toolBar, 1 = selected in BlockBar,
- * 2 = selected inventoryTile, 3 = reserved for selected in inventory
- * value >> 2: index of selected tile
- * value === -1: no tile selected */
-DefaultUI.selectedTile = -1;
-DefaultUI.inventoryTile = false;
 /** @type {TileType[]} */
 DefaultUI.toolBar = [
-  null,
-  //DefaultUI.createTile("Undo"),
-  null,
-  //DefaultUI.createTile("Redo"),
+  DefaultUI.createTile("Undo"),
+  DefaultUI.createTile("Redo"),
+  DefaultUI.createTile("Rotate90"),
   DefaultUI.createTile("Rotate"),
-  null,
   DefaultUI.createTile("Flip"),
   DefaultUI.createTile("Flip180")
 ];
@@ -3046,44 +3038,73 @@ DefaultUI.move = move;
 DefaultUI.contextmenu = contextmenu;
 DefaultUI.over = over;
 /** @see {DefaultUI.createTile} @see {DefaultUI.createFolder} */
-/** @TODO @SOCKS */
+DefaultUI.defaultFoldersData = [
+  {type: "Core", tiles: [690, 691, 692, 739, 746, 754, 757], range: []},
+  {type: "Wedge", tiles: [703], range: [692, 703]},
+  {type: "Small Hydrogen Thruster", tiles: [], range: [738, 747]},
+  {type: "Small Hydrogen Tank", tiles: [], range: [754, 763]},
+  {type: "Cannon", tiles: [], range: [771, 777]},
+  {type: "Small Hydraulic Drill", tiles: [770], range: []},
+  {type: "Separator", tiles: [796, -1], range: [786, 790]},
+  {type: "Separator", tiles: [791, 790], range: [792, 796]},
+  {type: "AND Gate", tiles: [], range: [802, 813]},
+  {type: "AND Gate", tiles: [828], range: [813, 817]},
+  {type: "AND Gate", tiles: [-1, 817, -1], range: [818, 828]},
+  {type: "__placeholder853__", tiles: [], range: [834, 858]},
+  {type: "Afterburner", tiles: [1035, 1037, 1043, 1060], range: []}
+];
+/** @param {number|string} type @param {unknown[]} [tiles=[]] */
+DefaultUI.createFolder = function (type, tiles) {
+  var folder =
+    /** @type {TileType[]&{type:TileType}} */
+    ((tiles || []).map(DefaultUI.createTile));
+  folder.type = DefaultUI.createTile(type);
+  return folder;
+};
 /** selctively finds which UI area was interacted with
  * @param {number} x @param {number} y @returns {boolean} over GUI area */
 DefaultUI.actionArea = function (x, y) {
+  var tile = -1;
   if (x < 277) {
     // toolBar side of canvas: static tile slots
     var row = (canvas.height - y - 13) / 87 | 0,
       column = (x - 10) / 87 | 0;
+    /** @see {DefaultUI.selectedTile} for tile indexing */
     if (y > canvas.height - 277)
-      DefaultUI.selectedTile = (row > 2 ? 2 : row) * 3 +
+      tile = (row > 2 ? 2 : row) * 3 +
         (column > 2 ? 2 : column) << 2;
     else
       return false;
   } else if (y > canvas.height - 103) {
-    // items for blockBar rect part of canvas: dynamic resizing to canvas
+    // items for blockBar rect part of canvas: dynamic   canvas
     if (DefaultUI.inventoryTile && x > canvas.width - 103)
-      DefaultUI.selectedTile = 2;
+      tile = 2;
     else if (x - 277 < (DefaultUI.blockBars[DefaultUI.selectedFolder] ||
       []).length * 87)
-      DefaultUI.selectedTile = (x - 283) / 87 << 2 | 1;
+      tile = (x - 283) / 87 << 2 | 1;
+      // STOPPED HERE
   } else if (x - 277 + DefaultUI.offsetsFolders <
     DefaultUI.blockBars.length * 57 && y > canvas.height - 170) {
     // folders for blockBar rect part of canvas:
     // resizes with folders amount changed
-    var selected = (x - 277 + DefaultUI.offsetsFolders) / 57 | 0;
+    var folder = (x - 277 + DefaultUI.offsetsFolders) / 57 | 0;
     if (DefaultUI.previousFolders && x < 333)
       DefaultUI.offsetsFolders -= 57;
     else if (DefaultUI.nextFolders && x > canvas.width - 61)
       DefaultUI.offsetsFolders += 57;
-    else if ((DefaultUI.selectedTile & 3) === 1 && selected !==
-      DefaultUI.selectedFolder) {
-      DefaultUI.selectedFolder = selected;
-      DefaultUI.selectedTile = -1;
-    } else
-      DefaultUI.selectedFolder = selected;
+    else if ((DefaultUI.selectedTile & 3) === 1 && folder !==
+      DefaultUI.selectedFolder)
+      DefaultUI.selectedFolder = folder;
+    else
+      DefaultUI.selectedFolder = folder;
   } else
     // the rest of canvas area is handled for building area
     return false;
+  /** @type {{clickType?:boolean}} */
+  (DefaultUI.getSelectedTile(tile) || {}).clickType ?
+    // currently this place is dictates the clickType like properties of Tool
+    DefaultUI.selectedClickTile = tile :
+    DefaultUI.selectedTile = tile;
   render();
   return true;
 }
@@ -3149,11 +3170,16 @@ DefaultUI.reflowBlockBars = function (w) {
 // live expression used for debugging:
 // https://github.com/KaaBEL/.d1r.dbv/blob/fb90bf5/code/editor.js#L2706-L2726
 // (fb90bf5e0ce42dd2bcbcb00f8a6e64b4a2242da7)
-DefaultUI.getSelectedTile = function () {
-  var select = DefaultUI.selectedTile;
+/** gives selectedTile on default
+ * @param {number} [tileIndex] pass DefaultUI.selectedClickTile
+ * to get selectedClickTile (for single exec inventoryTiles) */
+DefaultUI.getSelectedTile = function (tileIndex) {
+  var select = tileIndex === UDF ? DefaultUI.selectedTile : tileIndex;
   return (select & 3) === 1 ?
     (DefaultUI.blockBars[DefaultUI.selectedFolder] || [])[select >> 2] :
-    (select & 3) === 0 ? DefaultUI.toolBar[select >> 2] : null;
+    (select & 3) === 0 ?
+      DefaultUI.toolBar[select >> 2] :
+      select === 2 ? DefaultUI.createTile("Inventory") : null;
 };
 DefaultUI.setPixelRatio = function () {
   var n = window.devicePixelRatio;
@@ -3163,16 +3189,20 @@ DefaultUI.setPixelRatio = function () {
     (onresize || F)();
   }
 };
-
-function enableShipEditing() {
-  var mode = ship.getMode();
-  ship = mode.getShip();
-  DefaultUI.press = press = old_UI;
-  DefaultUI.move = move = function (x, y, z) {
-    return false;
-  };
-  DefaultUI.rend = F;
-  render();
+/** Warning: resets DefaultUI.selectedTile!, ...you know, ... (xD)
+ * @param {boolean} logicOnly */
+DefaultUI.getDefaultFolders = function (logicOnly) {
+  DefaultUI.selectedTile = -1;
+  for (var i = DefaultUI.defaultFoldersData.length, yk = []; i-- > 0;) {
+    var the = DefaultUI.defaultFoldersData[i], tiles = [];
+    for (var j = 0; j < the.tiles.length; j++)
+      (!logicOnly || Logic.VALUE[the.tiles[j]] || the.tiles[j] === -1) &&
+        tiles.push(the.tiles[j] > -1 ? the.tiles[j] : null);
+    for (j = the.range[0]; the.range.length && j < the.range[1]; j++)
+      (!logicOnly || Logic.VALUE[j]) && tiles.push(j);
+    yk[i] = DefaultUI.createFolder(the.type || "unknown", tiles);
+  }
+  return yk;
 };
 
 /** @param {number} w @param {number} h */
@@ -3302,21 +3332,47 @@ function test_juhus(w, h) {
   for (var j = 0, tx = -72; j < DefaultUI.toolBar.length; j++) {
     drawItemCtx(
       DefaultUI.toolBar[j],
-      DefaultUI.selectedTile === (j << 2
-    ));
+      DefaultUI.selectedTile === (j << 2) ||
+        DefaultUI.selectedClickTile === (j << 2)
+    );
     if (tx > 123) {
       ty -= 87;
       tx = -72;
     }
   }
-  if (DefaultUI.inventoryTile) {
+  if (DefaultUI.inventoryTile) { 
     ty = h;
     tx = w - 94 - 87;
     drawItemCtx(
       DefaultUI.createTile("Inventory"),
-      (DefaultUI.selectedTile & 3) === 2
+      (DefaultUI.selectedClickTile & 3) === 2
     );
   }
+};
+
+function enableShipEditing() {
+  var mode = ship.getMode();
+  ship = mode.getShip();
+  /** @TODO create lucky block icon for old_UI (day1, oldschool fmode) */
+  DefaultUI.press = press = edit_ship;
+  DefaultUI.move = move = function (x, y, e) {
+    if (e.type === "mousedown" || e.type === "touchstart" ||
+      e.type === "mouseenter")
+      // #compactDownToExecTiel
+      if (DefaultUI.actionArea(x, y)) {
+        var tile = DefaultUI.getSelectedTile(DefaultUI.selectedClickTile);
+        if (tile instanceof Tool)
+          tile.exec();
+        return true;
+      }
+    return false;
+  };
+  DefaultUI.rend = function () {
+    DefaultUI.reflowBlockBars(canvas.width);
+    test_juhus(canvas.width, canvas.height);
+  };
+  DefaultUI.blockBars = DefaultUI.getDefaultFolders(false);
+  render();
 };
 function enableLogicEditing() {
   var oX = 0, oY = 0, mode = ship.getMode();
@@ -3380,8 +3436,9 @@ function enableLogicEditing() {
   DefaultUI.move = move = edit_logicmove = function (x, y, e) {
     if (e.type === "mousedown" || e.type === "touchstart" ||
       e.type === "mouseenter") {
+      // #compactDownToExecTiel
       if (DefaultUI.actionArea(x, y)) {
-        var tile = DefaultUI.getSelectedTile();
+        var tile = DefaultUI.getSelectedTile(DefaultUI.selectedClickTile);
         if (tile instanceof Tool)
           tile.exec();
         return !(found = null);
@@ -3443,26 +3500,49 @@ function enableLogicEditing() {
     DefaultUI.reflowBlockBars(canvas.width);
     test_juhus(canvas.width, canvas.height);
   };
+  DefaultUI.blockBars = DefaultUI.getDefaultFolders(true);
   render();
 };
 
 /** @param {number} x @param {number} y */
-function edit_logic(x, y) {
+function edit_ship(x, y) {
+  // #compactDownToExecTiel DefaultUI.execTiles ...maybe
   if (DefaultUI.actionArea(x, y)) {
-    var tile = DefaultUI.getSelectedTile();
-    if (tile instanceof Tool)
-      tile.exec();
+    var tile = DefaultUI.getSelectedTile(DefaultUI.selectedClickTile);
+    tile instanceof Tool && tile.exec();
     return true;
-  }
-  tile = DefaultUI.getSelectedTile();
-  if (tile instanceof Block) {
-    ship.placeBlock(0, (vX - x) / sc + 2, (y - vY) / sc, tile);
-    render();
-  }
+  } else
+    var tile = DefaultUI.getSelectedTile();
+    if (tile instanceof Block) {
+      ship.placeBlock(
+        0,
+        Math.floor((vX - x) / sc + 2),
+        Math.floor((y - vY) / sc),
+        tile
+      );
+      render();
+    } else
+      old_UI(x, y);
+  return false;
+}
+/** @param {number} x @param {number} y */
+function edit_logic(x, y) {
+  // #compactDownToExecTiel
+  var interactedGUI = DefaultUI.actionArea(x, y),
+    tile = DefaultUI.getSelectedTile();
+  if (interactedGUI) {
+    tile instanceof Tool && tile.exec();
+    return true;
+  } else
+    if (tile instanceof Block) {
+      ship.placeBlock(0, (vX - x) / sc + 2, (y - vY) / sc, tile);
+      render();
+    }
   return false;
 }
 /** @param {number} x @param {number} y @param {TemporaryEventParam} e */
 var edit_logicmove = function (x, y, e) {
+  //?? #compactDownToExecTiel
   return e.type === "mousedown" ? DefaultUI.actionArea(x, y) : false;
 };
 
@@ -3513,7 +3593,7 @@ var rend_backgHangar = F;
 }();
 function backgHangarInit() {
   var obackground = rend_background;
-  var defRend = DefaultUI.rend, hgw = 544, hgh = 654;
+  var orend = DefaultUI.rend, hgw = 544, hgh = 654;
   DefaultUI.rend = rend_background = F;
   var octx = ctx, osc = sc, oxV = vX, oyV = vY, oship = ship;
   /** @type {HTMLImageElement|null} */
@@ -3532,7 +3612,7 @@ function backgHangarInit() {
   } catch (e) {
     hangarImg = null;
   }
-  DefaultUI.rend = defRend;
+  DefaultUI.rend = orend;
   canvas = (ctx = octx).canvas;
   sc = osc;
   vX = oxV;
@@ -3671,14 +3751,15 @@ var old_UI = DefaultUI.press = press = function (x, y) {
             "Wedge 1x4",
             "Smooth Corner",
             "Smooth Corner 1x2",
-            "Smooth Corner 1x4"
+            "Smooth Corner 1x4",
+            "Glass Wedge"
           ].indexOf(o.internalName) < 0 || rot === 3)
           o.rotation[1] = !o.rotation[1];
         //@ts-ignore
         o.rotation[2] = rot + 1 & 3;
       }
     };
-  // placingBlock function executed sets blockBind.changingColor
+  // placingBlock function modified blockBind.changingColor at beggining
   if (found.length || blockBind.changingColor) {
     oldCmd(ship);
     Edit.capture(oldCmd, ship);
@@ -3687,7 +3768,7 @@ var old_UI = DefaultUI.press = press = function (x, y) {
   if (rand !== "remove") {
     // BLOK for real!!!
     // TODO: now I could use some unit test for logic,
-    // how the hack am I supposed to do that
+    // but... how the hack am I supposed to do that
     ship.placeBlock(0, x * 2, y * 2, Block.ID[rand]);
   }
   render();
@@ -3695,9 +3776,6 @@ var old_UI = DefaultUI.press = press = function (x, y) {
 
 /** @type {(x:number,y:number,e:TemporaryEventParam)=>void} */
 function commands(x, y, e) {
-  /** also problem initial low resolution on touchscreen devices...
-   * @TODO since I've just found out it's not a bug, but a matter
-   * of different devicePixelRatio update for this is coming */
   if (e.target instanceof HTMLInputElement ||
     e.target instanceof HTMLTextAreaElement)
     return;
@@ -3771,7 +3849,7 @@ DefaultUI.over = over = function (e) {
 
 /** should serve its purpouse by providing up to date rendering function
  * however to meet requirements of many various uses, and be aware of
- * possible optimisations, a system of global and local (single use)
+ * possible optimizations, a system of global and local (single use)
  * settings to provide interface with multiple rendering methods */
 render = function () {
   var rq = -1;
@@ -3929,10 +4007,16 @@ function expensiveRenderer() {
     }
   }
   ctx.globalAlpha = 1;
-  // if (defaults.editorLaunchpadBorder) {
-  //   ctx.strokeStyle = defaults.highlightColor;
-  //   //Block.Box2d.collisions()
-  // }
+  if (defaults.editorLaunchpadBorder) {
+    ctx.strokeStyle = defaults.highlightColor;
+    ctx.lineWidth = 2;
+    var grid = (ship.prop && ship.prop.girdSize || OC()).box2d,
+      box2d = grid instanceof Array ? grid : Block.Box2d.GRID.Small;
+    x = (2 - box2d[1].x) * sc + vX;
+    y = (box2d[1].y + 2) * sc + vY;
+    w = (box2d[1].x - box2d[3].x) * sc;
+    ctx.strokeRect(x, y, w, (box2d[3].y - box2d[1].y) * sc);
+  }
   if (Logic.rend) {
     ctx.lineCap = "round";
     for (var j = Logic.nodes.length; j-- > 0;) {
@@ -4013,7 +4097,6 @@ Block.Box2d.visualize = function (path, x, y, green) {
   ctx.lineWidth = green === UDF ? 8 : green ? 4 : 2;
   if (path[0])
     ctx.moveTo(vX - (path[0].x - 2) * sc, (path[0].y + 2) * sc + vY);
-  //-console.log('juhus ', path.length);
   //@ts-ignore
   for (var i = path.length; i-- > 1;)
   //0&&window.onerror(i+'=x:',(path[0].x + x) * sc + vX,'y',(path[i].y + y)
@@ -4035,10 +4118,10 @@ init = function () {
   init_funMode();
   check_contentScript();
 
-  if (ship.blocks[35]){
-  //@ts-ignore
-  Logic.removeLogic(ship.blocks[35], ship.prop.nodeList);
-  //@ts-ignore
-  Logic.removeLogic(ship.blocks[35], ship.prop.nodeList);
-  del.call(ship.blocks, 35);del.call(ship.blocks, 33);render();}
+  // if (ship.blocks[35]){
+  // //@ts-ignore
+  // Logic.removeLogic(ship.blocks[35], ship.prop.nodeList);
+  // //@ts-ignore
+  // Logic.removeLogic(ship.blocks[35], ship.prop.nodeList);
+  // del.call(ship.blocks, 35);del.call(ship.blocks, 33);render();}
 };
