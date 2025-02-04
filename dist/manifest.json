@@ -1,0 +1,30 @@
+{
+  ".D1R.DBV-VERSION": "v.0.2",
+  "dir": "ltr",
+  "lang": "en",
+  "name": "DroneBoi Vehicles Editor",
+  "short_name": "D1R DBV editor",
+  "start_url": "./editor.html?app=true",
+  "id": "./",
+  "scope": "./",
+  "theme_color": "#111111",
+  "background_color": "#333333",
+  "display": "standalone",
+  "icons": [
+    {
+      "src": "./favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./favicon.svg",
+      "sizes": "16x16",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "orientation": "any",
+  "categories": ["games", "development"],
+  "description": "Powerfull tool to edit drones, space ships, vehicles of Droneboi games series."
+}
