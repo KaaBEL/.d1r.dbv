@@ -1,7 +1,7 @@
 //@ts-check
 /// <reference path="./code.js" />
 "use strict";
-var version_editor_js = "v.0.2";
+var version_editor_js = "v.0.2.1";
 /** @TODO check @see {defaults} for setting a setting without saveSettings */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -99,17 +99,24 @@ canvas.addEventListener("contextrestored", function () {
   "{position:fixed;width: 350px;height: " +
   (innerHeight > 500 ? 500 : innerHeight) + "px;border-radius: 10px;" +
   "background-color: #000000db;}" +
-  "#commandsTab, #commandsTab button{color: #999;" +
-  "font-size: 16px;font-family:monospace,sans-serif,Courier,Consolas;}" +
+  "#commandsTab, #commandsTab button, #commandsTab .loading" +
+  "{color: #999;font-size: 16px;" +
+  "font-family:monospace,sans-serif,Courier,Consolas;}" +
   "#commandsTab header:first-child" +
   "{display: flex;flex-direction: row;border-bottom: 1px solid #777;}" +
   "#commandsTab header:first-child div{padding: 5px;}" +
   "#commandsTab button{border: 2px solid #0000;" +
   "background-color: inherit;-webkit-user-select: text;}" +
   "#commandsTab header:first-child button{font-weight: bold;}" +
-  "#commandsTab button:hover, #commandsTab button:focus" +
-  "{border: 2px solid #777;}" +
+  "#commandsTab button:hover, #commandsTab button:focus," +
+  " #commandsTab .loading{border: 2px solid #777;}" +
   "#commandsTab button:active{background-color: #333;color: #bbb;}" +
+  "#commandsTab .loading{width: 300px;height: fit-content;position: relative;}" +
+  "" +
+  "#commandsTab .loading div:nth-child(1){height: 100%;padding: 0;" +
+  "position: absolute;top: 0;left: 0;transition: .2s;}" +
+  "#commandsTab .loading div:nth-child(2){position: relative;" +
+  "z-index: 1;background-color: #0000;text-align: center;}" +
   "#commandsTab header div{flex-grow: 1;cursor: pointer;}" +
   "#commandsTab header div:active{cursor: grab;}" +
   "#commandsTab .content button, #commandsTab .items button" +
@@ -736,8 +743,9 @@ function fileOpener(f_exec, error, f_final, loadBar, mode) {
       try {
         //@ts-expect-error
         var ar = new Uint8Array(this.result),
+        /** @see {fileExecute} returns true for succes, continue otherwise */
         //@ts-expect-error
-          next = f_exec(ar, mode, file.files[fl_i]);
+          next = !f_exec(ar, mode, file.files[fl_i]);
       } catch (e) {
         next = !!+console.error(e && e instanceof Error ?
             e.message || e :
@@ -746,7 +754,7 @@ function fileOpener(f_exec, error, f_final, loadBar, mode) {
             e.stack + "" :
             "");
       }
-      barE(fl_i / file.open.length, succ |= +!next);
+      barE((fl_i + 1) / file.files.length, succ |= +!next);
       if (next || mode)
         if (nextCLi())
           return readFile();
@@ -768,14 +776,16 @@ function fileOpener(f_exec, error, f_final, loadBar, mode) {
     fill.className = "loading";
     var bar = fill.appendChild(EL());
     (btn.parentNode || EL()).insertBefore(fill, btn);
-    fill.appendChild(tN(btn.innerText));
+    fill.appendChild(EL()).appendChild(tN(btn.innerText));
     btn.style.display = "none";
-    (st = bar.style).width = "0";
+    (st = bar.style).width = "1%";
     st.backgroundColor = "#474";
+    // require styles for: .loading; .loading div:nth-child(1);
+    // .loading div:nth-child(1);
     // <btn.parentNode>
     //   <fill(div) class="loading">
     //     <bar(div) style="width:0;background-color:#474;"></bar>
-    //     #btn.innerText
+    //     <(variableless)div>#btn.innerText</div>
     //   </fill>
     //   <btn(button) style="display:none;">#btn.innerText</btn>
     // </btn.parentNode>
@@ -1597,6 +1607,8 @@ Command.push("Import/Export DBV", function (items, collapsed) {
     ship.prop.launchpadSize = gridValue.dbvIndex;
     defaults.editorLaunchpadBorder && render();
   };
+  i = Number(((ship.prop || {}).girdSize || {}).gridIndex);
+  grid.value = isNaN(i) ? "null" : "" + i;
   items.push(tN("Grid size: "), gridCheck, grid, EL("br"));
   elBtn.onclick = function () {
     error.innerText = "";
@@ -1615,6 +1627,8 @@ Command.push("Import/Export DBV", function (items, collapsed) {
     try {
       ship = Ship.fromObject(JSON.parse(dbv.value));
       ship.fixVersion_1_3();
+      i = Number(((ship.prop || {}).girdSize || {}).gridIndex);
+      grid.value = isNaN(i) ? "null" : "" + i;
       render();
     } catch (err) {
       error.innerText = "" + err;
@@ -1678,6 +1692,8 @@ Command.push("Import/Export DBV", function (items, collapsed) {
       var obj = JSON.parse(json.value);
       ship = Ship.fromObject(obj);
       !(obj.significantVersion > 15) && ship.fixPositionAdjustment(!0);
+      i = Number(((ship.prop || {}).girdSize || {}).gridIndex);
+      grid.value = isNaN(i) ? "null" : "" + i;
       render();
     } catch (err) {
       error.innerText = "" + err;
@@ -1752,6 +1768,8 @@ Command.push("Transform tool", function (items, collapsed) {
   var selectX0 = EL("input"), selectY0 = EL("input");
   var selectX1 = EL("input"), selectY1 = EL("input");
   var select = EL("button"), inpX = EL("input"), inpY = EL("input");
+  selectX0.type = selectY0.type = selectX1.type = "number";
+  selectY1.type = inpX.type = inpY.type = "number";
   /** for copied in blockSelect selection */
   var offset = [0, 0], copied = Block.arrayFromObjects([]);
   select.appendChild(tN("Select rectangle"));
@@ -2020,6 +2038,7 @@ Command.push("Vehicle stats", function (items, collapsed) {
     red = items[items.length - l * 2 + 21] = EL("span");
   red.style.color = "red";
   red = red.appendChild(tN(""));
+  riftLY.type = "number";
   riftLY.oninput = function () {
     if (!(red instanceof Text))
       return;
@@ -2332,6 +2351,7 @@ Command.push("Set camera view", function (items, collapsed) {
   items.push({name: "View key", inp: code}, set, get)
   var viewX = EL("input"), viewY = EL("input"), zoom = EL("input");
   var elBtn = EL("button");
+  viewX.type = viewY.type = zoom.type = "number";
   items.push({name: "View x", inp: viewX},
     {name: "View y", inp: viewY},
     {name: "Zoom", inp: zoom});
@@ -2582,8 +2602,9 @@ var cmdsHeader = EL(), cmds = (function () {
 })();
 
 /** instance is sealed
- * @param {string} name @param {string} icon @param {()=>void} [exec] */
-function Tool(name, icon, exec) {
+ * @param {string} name @param {string} icon @param {()=>void} [exec]
+ * @param {boolean} [permanent] slected until reselected or deselected */
+function Tool(name, icon, exec, permanent) {
   this.name = name;
   this.icon = icon;
   this.exec = Tool.execClick(exec || F);
@@ -2591,7 +2612,7 @@ function Tool(name, icon, exec) {
    * (for DefaultUI it's selectedClickTile property) or
    * (false) the tile is enabled until deselected (selected in
    * DefaultUI.selectedTile property) */
-  this.clickType = true;
+  this.clickType = !permanent;
   Object.seal(this);
 }
 /** @type {Tool[]} */
@@ -2694,24 +2715,24 @@ b0,37fa c-aa,2277,294,3088,486,4273 z M2fd6e,297fb c0,0,-80e5,-8034,-80e5,-8\
 2ed8,-4a8,43c8,-d1d l8497,8218 c-2dcd,1d59,-6443,2e5d,-9eb3,2e5d c-a2ac,0,-1\
 268b,-83df,-1268b,-1268b c0,-a2ac,83df,-1268b,1268b,-1268b ca2ac,0,1268b,83d\
 f,1268b,1268b c0,36c5,-ef3,6a0d,-28fe,95fc z"));
-Tool.list.push(new Tool("Rotate90", "M13,1ffd8 c0,-16a2,a0,-221b,a0,-26cc c0,-\
-d1a,94f,-1818,15dd,-1b1c c239,-88,3bbb,-cf6,41df,-e1c c1c6,-54,39b,-81,57a,-\
-81 cfe9,0,1cd0,c80,1cd0,1bed c0,c8,-13e,173b,-1c4,290a c-1d,3e3,-2c,7cb,-2c,\
-bb6 c0,d80e,af26,18734,18734,18734 c65d9,0,c29c,-26ec,10837,-66b4 c0,0,-2288\
-,-234b,-239b,-2445 c-592,-517,-90d,-c50,-90d,-1453 c0,-ce5,905,-17c1,1548,-1\
-af6 c266,-a0,b8fb,-3be8,bf45,-3e46 c33b,-137,6bf,-1e1,a6b,-1e1 cfe9,0,1cd0,c\
-80,1cd0,1bed c0,214,-3c,41c,-ae,60f c-64,1b6,-2b6f,d70d,-2b9c,d7c9 c-2f1,c64\
-,-e66,15a2,-1c14,15a2 c-78f,0,-e71,-2d2,-1395,-771 c-6c,-61,-1e3a,-1e85,-1e4\
-2,-1e7e c-5b73,5550,-d631,8984,-15d21,8984 c-11abb,0,-1ffee,-e532,-1ffee,-1f\
-fee z M3ffec,20027 c0,16a2,-a0,221b,-a0,26cc c0,d1a,-94f,1818,-15dd,1b1c c-2\
-39,88,-3bbb,cf6,-41df,e1c c-1c6,54,-39b,81,-57a,81 c-fe9,0,-1cd0,-c80,-1cd0,\
--1bed c0,-c8,13e,-173b,1c4,-290a c1d,-3e3,2c,-7cb,2c,-bb6 c0,-d80e,-af26,-18\
-734,-18734,-18734 c-65d9,0,-c29c,26ec,-10837,66b4 c0,0,2288,234b,239b,2445 c\
-592,517,90d,c50,90d,1453 c0,ce5,-905,17c1,-1548,1af6 c-266,a0,-b8fb,3be8,-bf\
-45,3e46 c-33b,137,-6bf,1e1,-a6b,1e1 c-fe9,0,-1cd0,-c80,-1cd0,-1bed c0,-214,3\
-c,-41c,ae,-60f c64,-1b6,2b6f,-d70d,2b9c,-d7c9 c2f1,-c64,e66,-15a2,1c14,-15a2\
- c78f,0,e71,2d2,1395,771 c6c,61,1e3a,1e85,1e42,1e7e c5b73,-5550,d631,-8984,1\
-5d21,-8984 c11abb,0,1ffee,e532,1ffee,1ffee z", function () {
+Tool.list.push(new Tool("Rotate90", "M13,1ffd8 c0,-16a2,a0,-221b,a0,-26cc c0\
+,-d1a,94f,-1818,15dd,-1b1c c239,-88,3bbb,-cf6,41df,-e1c c1c6,-54,39b,-81,57a\
+,-81 cfe9,0,1cd0,c80,1cd0,1bed c0,c8,-13e,173b,-1c4,290a c-1d,3e3,-2c,7cb,-2\
+c,bb6 c0,d80e,af26,18734,18734,18734 c65d9,0,c29c,-26ec,10837,-66b4 c0,0,-22\
+88,-234b,-239b,-2445 c-592,-517,-90d,-c50,-90d,-1453 c0,-ce5,905,-17c1,1548,\
+-1af6 c266,-a0,b8fb,-3be8,bf45,-3e46 c33b,-137,6bf,-1e1,a6b,-1e1 cfe9,0,1cd0\
+,c80,1cd0,1bed c0,214,-3c,41c,-ae,60f c-64,1b6,-2b6f,d70d,-2b9c,d7c9 c-2f1,c\
+64,-e66,15a2,-1c14,15a2 c-78f,0,-e71,-2d2,-1395,-771 c-6c,-61,-1e3a,-1e85,-1\
+e42,-1e7e c-5b73,5550,-d631,8984,-15d21,8984 c-11abb,0,-1ffee,-e532,-1ffee,-\
+1ffee z M3ffec,20027 c0,16a2,-a0,221b,-a0,26cc c0,d1a,-94f,1818,-15dd,1b1c c\
+-239,88,-3bbb,cf6,-41df,e1c c-1c6,54,-39b,81,-57a,81 c-fe9,0,-1cd0,-c80,-1cd\
+0,-1bed c0,-c8,13e,-173b,1c4,-290a c1d,-3e3,2c,-7cb,2c,-bb6 c0,-d80e,-af26,-\
+18734,-18734,-18734 c-65d9,0,-c29c,26ec,-10837,66b4 c0,0,2288,234b,239b,2445\
+ c592,517,90d,c50,90d,1453 c0,ce5,-905,17c1,-1548,1af6 c-266,a0,-b8fb,3be8,-\
+bf45,3e46 c-33b,137,-6bf,1e1,-a6b,1e1 c-fe9,0,-1cd0,-c80,-1cd0,-1bed c0,-214\
+,3c,-41c,ae,-60f c64,-1b6,2b6f,-d70d,2b9c,-d7c9 c2f1,-c64,e66,-15a2,1c14,-15\
+a2 c78f,0,e71,2d2,1395,771 c6c,61,1e3a,1e85,1e42,1e7e c5b73,-5550,d631,-8984\
+,15d21,-8984 c11abb,0,1ffee,e532,1ffee,1ffee z", function () {
   DefaultUI.tilesRotation[2] = DefaultUI.tilesFlippableRotation[2] =
     /** @type {0|1|2|3} */
     (DefaultUI.tilesRotation[2] + 1 & 3);
@@ -2858,28 +2879,36 @@ db6b,22757$ins; Mfff3,2274f$ins; M24a8,22169$ins;".replace(/\$ins;/g, " c-14\
   DefaultUI.tilesFlippableRotation[1] =
     !DefaultUI.tilesFlippableRotation[1];
 }));
-Tool.list.push(new Tool("Rotate", "M3ffec,1ffd8 c0,11abb,-e532,1ffee,-1ff\
-ee,1ffee c-86ef,0,-101ad,-3434,-15d21,-8984 c-7,-7,-1dd5,1e1c,-1e42,1e7e c-5\
-23,49e,-c05,771,-1395,771 c-dae,0,-1922,-93d,-1c14,-15a2 c-2c,-bc,-2b38,-d61\
-3,-2b9c,-d7c9 c-72,-1f3,-ae,-3fa,-ae,-60f c0,-f6c,ce6,-1bed,1cd0,-1bed c3ac,\
-0,730,aa,a6b,1e1 c64a,25d,bcde,3da5,bf45,3e46 cc42,335,1548,e10,1548,1af6 c0\
-,802,-37a,f3b,-90d,1453 c-112,fa,-239b,2445,-239b,2445 c459b,3fc8,a25d,66b4,\
-10837,66b4 cd80e,0,18734,-af26,18734,-18734 c0,-3ea,-e,-7d2,-2c,-bb6 c-86,-1\
-1ce,-1c4,-2841,-1c4,-290a c0,-f6c,ce6,-1bed,1cd0,-1bed c1df,0,3b4,2c,57a,81 \
-c624,125,3fa5,d93,41df,e1c cc8e,303,15dd,e02,15dd,1b1c c0,4b0,a0,102a,a0,26c\
-c z M13,20027 c0,-11abb,e532,-1ffee,1ffee,-1ffee c86ef,0,101ad,3434,15d21,89\
-84 c7,7,1dd5,-1e1c,1e42,-1e7e c523,-49e,c05,-771,1395,-771 cdae,0,1922,93d,1\
-c14,15a2 c2c,bc,2b38,d613,2b9c,d7c9 c72,1f3,ae,3fa,ae,60f c0,f6c,-ce6,1bed,-\
-1cd0,1bed c-3ac,0,-730,-aa,-a6b,-1e1 c-64a,-25d,-bcde,-3da5,-bf45,-3e46 c-c4\
-2,-335,-1548,-e10,-1548,-1af6 c0,-802,37a,-f3b,90d,-1453 c112,-fa,239b,-2445\
-,239b,-2445 c-459b,-3fc8,-a25d,-66b4,-10837,-66b4 c-d80e,0,-18734,af26,-1873\
-4,18734 c0,3ea,e,7d2,2c,bb6 c86,11ce,1c4,2841,1c4,290a c0,f6c,-ce6,1bed,-1cd\
-0,1bed c-1df,0,-3b4,-2c,-57a,-81 c-624,-125,-3fa5,-d93,-41df,-e1c c-c8e,-303\
-,-15dd,-e02,-15dd,-1b1c c0,-4b0,-a0,-102a,-a0,-26cc z", function () {
+Tool.list.push(new Tool("Rotate", "M3ffec,1ffd8 c0,11abb,-e532,1ffee,-1ffee,\
+1ffee c-86ef,0,-101ad,-3434,-15d21,-8984 c-7,-7,-1dd5,1e1c,-1e42,1e7e c-523,\
+49e,-c05,771,-1395,771 c-dae,0,-1922,-93d,-1c14,-15a2 c-2c,-bc,-2b38,-d613,-\
+2b9c,-d7c9 c-72,-1f3,-ae,-3fa,-ae,-60f c0,-f6c,ce6,-1bed,1cd0,-1bed c3ac,0,7\
+30,aa,a6b,1e1 c64a,25d,bcde,3da5,bf45,3e46 cc42,335,1548,e10,1548,1af6 c0,80\
+2,-37a,f3b,-90d,1453 c-112,fa,-239b,2445,-239b,2445 c459b,3fc8,a25d,66b4,108\
+37,66b4 cd80e,0,18734,-af26,18734,-18734 c0,-3ea,-e,-7d2,-2c,-bb6 c-86,-11ce\
+,-1c4,-2841,-1c4,-290a c0,-f6c,ce6,-1bed,1cd0,-1bed c1df,0,3b4,2c,57a,81 c62\
+4,125,3fa5,d93,41df,e1c cc8e,303,15dd,e02,15dd,1b1c c0,4b0,a0,102a,a0,26cc z\
+ M13,20027 c0,-11abb,e532,-1ffee,1ffee,-1ffee c86ef,0,101ad,3434,15d21,8984 \
+c7,7,1dd5,-1e1c,1e42,-1e7e c523,-49e,c05,-771,1395,-771 cdae,0,1922,93d,1c14\
+,15a2 c2c,bc,2b38,d613,2b9c,d7c9 c72,1f3,ae,3fa,ae,60f c0,f6c,-ce6,1bed,-1cd\
+0,1bed c-3ac,0,-730,-aa,-a6b,-1e1 c-64a,-25d,-bcde,-3da5,-bf45,-3e46 c-c42,-\
+335,-1548,-e10,-1548,-1af6 c0,-802,37a,-f3b,90d,-1453 c112,-fa,239b,-2445,23\
+9b,-2445 c-459b,-3fc8,-a25d,-66b4,-10837,-66b4 c-d80e,0,-18734,af26,-18734,1\
+8734 c0,3ea,e,7d2,2c,bb6 c86,11ce,1c4,2841,1c4,290a c0,f6c,-ce6,1bed,-1cd0,1\
+bed c-1df,0,-3b4,-2c,-57a,-81 c-624,-125,-3fa5,-d93,-41df,-e1c c-c8e,-303,-1\
+5dd,-e02,-15dd,-1b1c c0,-4b0,-a0,-102a,-a0,-26cc z", function () {
   DefaultUI.tilesRotation[2] = DefaultUI.tilesFlippableRotation[2] =
     /** @type {0|1|2|3} */
     (DefaultUI.tilesRotation[2] + 3 & 3);
 }));
+Tool.list.push(new Tool("Erease", "M21cbd,3933e c-fa8,c27,-2353,1363,-38af,1\
+363 l-affd,11 c-16fe,0,-2c08,-863,-3c37,-1645 l-de68,-da2c c-f83,-108c,-1904\
+,-26cd,-1904,-3f47 c0,-19f4,aaf,-316a,1be6,-4238 l2182b,-219f0 c10ae,-104b,2\
+77f,-1a57,40a9,-1a57 c17a9,0,2d40,8e1,3d9d,177e l13941,13b1d cd12,ff5,14eb,2\
+45d,14eb,3a9a c0,16b2,-82c,2b7d,-15bc,3b96 z M1e360,34780 l96a9,-935f l-1297\
+9,-12ae9 l-eff8,ee4e ld536,d073 z", function () {
+
+}, true));
 /** May throw error, use asynchronously! @throws {TypeError} */
 function check_contentScript() {
   var contentScript = GE("contentScript"), data = "";
@@ -3024,7 +3053,8 @@ DefaultUI.toolBar = [
   DefaultUI.createTile("Rotate90"),
   DefaultUI.createTile("Rotate"),
   DefaultUI.createTile("Flip"),
-  DefaultUI.createTile("Flip180")
+  DefaultUI.createTile("Flip180"),
+  DefaultUI.createTile("Erease")
 ];
 /** used at @typedef {"@see"} SeeRenderingFolders */
 DefaultUI.offsetsFolders = 0;
@@ -3361,7 +3391,7 @@ function enableShipEditing() {
       // #compactDownToExecTiel
       if (DefaultUI.actionArea(x, y)) {
         var tile = DefaultUI.getSelectedTile(DefaultUI.selectedClickTile);
-        if (tile instanceof Tool)
+        if (tile instanceof Tool && tile.clickType)
           tile.exec();
         return true;
       }
@@ -3439,7 +3469,7 @@ function enableLogicEditing() {
       // #compactDownToExecTiel
       if (DefaultUI.actionArea(x, y)) {
         var tile = DefaultUI.getSelectedTile(DefaultUI.selectedClickTile);
-        if (tile instanceof Tool)
+        if (tile instanceof Tool && tile.clickType)
           tile.exec();
         return !(found = null);
       }
@@ -3509,7 +3539,7 @@ function edit_ship(x, y) {
   // #compactDownToExecTiel DefaultUI.execTiles ...maybe
   if (DefaultUI.actionArea(x, y)) {
     var tile = DefaultUI.getSelectedTile(DefaultUI.selectedClickTile);
-    tile instanceof Tool && tile.exec();
+    tile instanceof Tool && tile.clickType && tile.exec();
     return true;
   } else
     var tile = DefaultUI.getSelectedTile();
@@ -3531,7 +3561,7 @@ function edit_logic(x, y) {
   var interactedGUI = DefaultUI.actionArea(x, y),
     tile = DefaultUI.getSelectedTile();
   if (interactedGUI) {
-    tile instanceof Tool && tile.exec();
+    tile instanceof Tool && tile.clickType && tile.exec();
     return true;
   } else
     if (tile instanceof Block) {

@@ -5,7 +5,7 @@
 // A) download and edit source files localy
 // B) create chrome extensions with custom modifications for live page
 // C) pull requests to main repo on github
-var version_code_js = "v.0.2";
+var version_code_js = "v.0.2.1";
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -795,10 +795,10 @@ Logic.VALUE = Object.freeze(Logic.generateLogic(
   // def7
   [{k: 3, x: 0, y: 0}],
   Logic.execUnimplemented,
+  "7", "7", "7",
   // GPS Sensor
   // def8
   [{k: 3, x: -1, y: 0}, {k: 3, x: 1, y: 0}],
-  "7", "7", "7",
   Logic.execNumericalInverter,
   // def9
   [{k: 1, x: -1, y: 0}, {k: 3, x: 1, y: 0}],
@@ -2722,9 +2722,10 @@ Data.nameMethods(Edit);
  * a Blueprint with deep copied logics should be used instead
  * BlockSelection is even EditSelection now and is not used at all */
 /**
- * @typedef {{nodeList?:(Logic|undefined)[],nodeConnections?:number[][],
- * customInputs?:Ship.CustomInput[],girdSize?:Ship.Grid,
- * [key:string]:unknown}} ShipProperties
+ * @typedef {{nodeList:(Logic|undefined)[],nodeConnections:number[][],
+ * customInputs:Ship.CustomInput[],girdSize:Ship.Grid}} KnownShipProperties
+ * @typedef {{[key:string]:unknown}&{[K in keyof KnownShipProperties]?:
+ *   KnownShipProperties[K]}} ShipProperties
  * @see {Logic} @see {Ship.CustomInput}
  * @typedef {"Ship"|"Logic"|"Save"} EditMode */
 /** class is frozen
@@ -2754,8 +2755,22 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @readonly @type {31} significantVersion: 31 (integer) */// @ts-ignore
-Ship.VERSION = 31;
+/** @readonly @type {32} significantVersion: 32 (integer) */// @ts-ignore
+Ship.VERSION = 32;
+Ship.propertyNames = new RegExp("^(?:nodeList|nodeConnections|customI" +
+  "nputs|girdSize)$");
+// Ship.PROPERTIES = {
+//   // nodeList?:(Logic|undefined)[]
+//   nodeList: Logic.VALUE[0] ? Logic.VALUE[0].map(function (e) {
+//     return +"0" ? e : undefined;
+//   }) : undefined,
+//   // nodeConnections?:number[][]
+//   nodeConnections: +"0" ? [[0]] : undefined,
+//   // customInputs?:Ship.CustomInput[]
+//   customInputs: +"0" ? [new Ship.CustomInput("", 0)] : undefined,
+//   // girdSize?:Ship.Grid
+//   girdSize: +"0" ? new Ship.Grid("", "", null, null) : undefined
+// };
 Ship.prototype.selectRect = (
   /**
    * @overload @returns {ShipBlock[]}
@@ -3186,7 +3201,8 @@ Ship.prototype.removeBlocks = function removeBlocks(ids) {
     blocks[ids[i]] = blocks.slice(-1)[0];
     blocks.length--;
   }
-  Edit.capture(this, removeBlocks, JSON.parse(JSON.stringify(ids)));
+  // (v.0.2.1) is JSON.parse(JSON.stringify(ids)) necessary here?
+  Edit.capture(this, removeBlocks, ids);
 };
 /** @readonly @param {any} object @see {Block.arrayFromObjects} */
 Ship.fromObject = function fromObject(object) {
@@ -3511,7 +3527,29 @@ Ship.dateTime = function (t, f) {
   s = "." + (++i > 9 ? i : "0" + i) + s;
   t += 1 + +(n % 1461 === 789);
   return (t > 9 ? "" : "0") + t + s;
-}
+};
+// /**
+//  * @template {string} T @param {Ship} ship @param {T} property
+//  * @returns {T extends keyof KnownShipProperties?KnownShipProperties[T]:null} */
+// Ship.getProperty = function (ship, property) {
+//   var shipProp = ship.prop || {};
+//   switch (property) {
+//     case "nodeList": return shipProp.nodeList || null;
+//     case "nodeConnections": return shipProp.nodeConnections || null;
+//     case "customInputs": return shipProp.customInputs || null;
+//     case "girdSize": return shipProp.girdSize || null;
+//   }
+//   return null;
+// }
+//   /** @typedef {KnownShipProperties} Knowns */
+//   /** @template {keyof KnownShipProperties} B */
+//   var kownProperty =
+//     /** @type {T extends "gridSize"?Knowns[B]:null} */
+//     (Ship.propertyNames.test(property) &&
+//       ship.prop && ship.prop[property] || null);
+//   return kownProperty;
+// };
+// var hello = Ship.getProperty(new Ship("", [], "", []), "gridSize");
 /** @param {string} name @param {number} type */
 Ship.CustomInput = function CustomInput(name, type) {
   this.name = name;
@@ -3590,17 +3628,19 @@ Ship.Mode.useParser = function (mode, globalShip, parse) {
   });
 };
 /** insctace is frozen, class is frozen
- * @class @param {string} game @param {string} name
- * @param {number|null} dbvIndex @param {Box2dPath|null} box2d */
-Ship.Grid = function Grid(game, name, dbvIndex, box2d) {
+ * @param {{dbv?:number,grid?:number}} indexes @param {string} game
+ * @param {string} name @param {Box2dPath|null} box2d */
+Ship.Grid = function Grid(game, name, box2d, indexes) {
   /** @readonly */
   this.game = game;
   /** @readonly */
   this.name = name;
   /** @readonly */
-  this.dbvIndex = dbvIndex;
+  this.dbvIndex = indexes.dbv;
   /** @readonly */
   this.box2d = box2d ? Object.freeze(box2d) : null;
+  /** @readonly */
+  this.gridIndex = indexes.grid;
   Object.freeze(this);
 };
 // TODO: https://github.com/microsoft/TypeScript/issues/57523
@@ -3611,8 +3651,10 @@ Ship.Grid.generateGrids = function (data) {
   /** @type {(Ship.Grid|undefined)[]} */
   var grids = [], e = data[0];
   for (var p in data)
-    if (OP.call(data, p) && typeof +p == "number" && (e = data[p]))
-      grids[p] = new Ship.Grid(e[0], e[1], e[2], Block.Box2d.GRID[e[1]]);
+    if (OP.call(data, p) && typeof +p == "number" && (e = data[p])) {
+      var opt = {grid: +p, dbv: e[2]};
+      grids[p] = new Ship.Grid(e[0], e[1], Block.Box2d.GRID[e[1]], opt);
+    }
   return grids;
 };
 Ship.Grid.VALUE = Ship.Grid.generateGrids({
@@ -3620,7 +3662,7 @@ Ship.Grid.VALUE = Ship.Grid.generateGrids({
   62: ["Droneboi: Conquest", "Medium", 1],
   61: ["Droneboi: Conquest", "Large", 2],
   60: ["Droneboi: Conquest", "Dreambox", 3],
-  55: ["Droneboi", "Carrer", 1],
+  55: ["Droneboi", "Career", 1],
   54: ["Droneboi", "Sandbox", 2]
 });
 Data.nameMethods(Ship);
@@ -3854,7 +3896,8 @@ B64Key.wVersion = function (arr) {
   }
 };
 
-/** @param {Ship} ship base64 key prototype */
+/** base64 key prototype
+  @param {Ship} ship sensitive to dbv grid since v.0.2.1 */
 B64Key.encode = function encodeCmprsShip(ship) {
   // version 0.0.significantVersion
   // versions 16 and further will significantVersion of Db Vehicle editor
@@ -3891,6 +3934,9 @@ B64Key.encode = function encodeCmprsShip(ship) {
   // data block: blocks
   B64Key.sortShip();
   b = ship.blocks;
+  var isDBVehicle = (((ship.prop || {}).girdSize || {}).game ||
+      "").slice(0, 8) === "Droneboi",
+    dbvVehicle = isDBVehicle ? Ship.toDBV(ship) : {b: [], nc: []};
   // blocks length
   B64Key.wBit(n = (l = b.length) > 8191);
   B64Key.wBitsMSBfFast(n ? 21 : 13, l);
@@ -3935,7 +3981,7 @@ B64Key.encode = function encodeCmprsShip(ship) {
     var r = block.rotation;
     B64Key.wBitsMSBfFast(5, r = r[2] | +r[1] << 2 | r[0] << 3);
     // are properties?
-    checkProperties(block.properties);
+    checkProperties(block.properties, block);
     rotations[id] = r;
     if (B64Key.j) {
       B64Key.i++;
@@ -3977,7 +4023,14 @@ B64Key.encode = function encodeCmprsShip(ship) {
       kB.push(buffer);
     }
   }
-  function checkProperties(prpt) {
+  function checkProperties(prpt, block) {
+    isDBVehicle && function (e) {
+      prpt = JSON.parse(JSON.stringify(e));
+      delete prpt.n;
+      delete prpt.p;
+      delete prpt.r;
+      delete prpt.f;
+    }(dbvVehicle.b[ship.blocks.indexOf(block)]);
     var p, s = JSON.stringify(prpt);
     // Has properties
     B64Key.wBit(s !== "{}");
@@ -4042,7 +4095,7 @@ B64Key.encode = function encodeCmprsShip(ship) {
     if (s)
       B64Key.wBitsMSBfFast(5, n);
     rotations[id] = n;
-    checkProperties(b[l].properties);
+    checkProperties(b[l].properties, b[l]);
     endings();
   }
   if (B64Key.j)
@@ -4054,7 +4107,10 @@ B64Key.encode = function encodeCmprsShip(ship) {
   // data block: properties
   if (propertiesRef.length) {
     // just indexes and lengths of JSON strings
-    s = JSON.stringify([propertiesRef, propertiesStr]);
+    var nodes = isDBVehicle && dbvVehicle.nc.map(function (e) {
+      return [e.Item1, e.Item2];
+    });
+    s = JSON.stringify([propertiesRef, propertiesStr, 0, nodes]);
     for (n = 0; n < s.length;) {
       buffer[B64Key.i++] = s.charCodeAt(n++);
       if (B64Key.i > 1023) {
@@ -4137,9 +4193,9 @@ B64Key.gBlockRotation = function (n) {
   ) * 90;
   return arr;
 };
-/** @param {Uint8Array|undefined} [cmprsShip] */
+/** @param {Uint8Array|undefined} [cmprsShip] last updated in v.0.2.1  */
 B64Key.decode = function decodeCmprsShip(cmprsShip) {
-  // version 0.0.1! the existing prototype specification is for v.0.0
+  // ? version 0.0.1! the existing prototype specification is for v.0.0
   var n = 0, l, pl, chunkEnd, id, IDLEN, BLEN, s = "", arr = [];
   var prev = [], b = [], min = [],  max = [], size = [], sizeB = [];
   var rot = [], properties = [], obj, ship = {}, p_i, num = 0;
@@ -4221,6 +4277,8 @@ B64Key.decode = function decodeCmprsShip(cmprsShip) {
     obj.internalName = Block.NAME[id = B64Key.gBitsMSBfFast(IDLEN)];
     // relative x position
     obj.position = arr = [prev[0], prev[1], prev[2]];
+    if (isDBVehicle)
+      obj.position = [prev[1], prev[2]];
     arr[2] += B64Key.gBit() ? B64Key.gBitsMSBfFast(sizeB[2]) + 2 : 1;
     if (arr[n = 2] > max[2]) {
       arr[2] -= size[2];
@@ -4252,7 +4310,7 @@ B64Key.decode = function decodeCmprsShip(cmprsShip) {
     return "";
   }
   function chunkEnding() {
-  // handles chunk ends
+    // handles chunk ends
     var n_0, n_1, buf_0;
     if (n_0 = B64Key.i + +!!B64Key.j > chunkEnd) {
       B64Key.i = chunkEnd;
@@ -4335,11 +4393,20 @@ B64Key.decode = function decodeCmprsShip(cmprsShip) {
     if (typeof arr[2] == "string")
       "Parse the compressed properties.";
     s = arr[1];
+    var isDBVehicle = arr[3] instanceof Array;
+    if (isDBVehicle)
+      ship.prop = {nc: arr[3]};
     arr = arr[0];
     for (B64Key.i = l - 1 << 1; l-- > 0; B64Key.i -= 2) {
       obj = JSON.parse(s.slice(arr[B64Key.i],
         arr[B64Key.i] + arr[B64Key.i | 1]));
-      b[properties[l]].properties = obj;
+      if (isDBVehicle) {
+        var block = b[properties[l]];
+        for (var p in obj)
+          if (OP.call(obj, p) && p !== "__proto__")
+            block[p] = obj[p];
+      } else
+        b[properties[l]].properties = obj;
       // (v.0.1.55) compatibility with old keys for control property
       if ("control" in obj && !("customParameter" in obj))
         obj.customParameter = obj.control;
