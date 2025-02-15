@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.2.1 -->
+<!-- v.0.2.2 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -107,7 +107,7 @@
     <a class="no-script" href="https://www.enable-javascript.com/">
       Enable javascript to view all of this page's content.
     </a>
-    <h1>Welcome to the development of Droneboi Vehicles editor</h1>
+    <h1>Welcome to ded Droneboi Vehicles editor</h1>
     <h2>What is it?</h2>
     It is a fan made opensource tool for modifying and creating Droneboi
     Vehicles online.
@@ -134,16 +134,12 @@
     they are opened. Click on Welcome message to close it, rightclicking
     around to open commands tab also closes Welcome message.
     <h2 class="red">What's new?</h2>
-    The Beta phase is here! Use "Enable Ship Editing" for proper UI,
-    you can see some behind the scene functionalities from development
-    <a href="http://kaabel.github.io/.d1r.dbv/editor.html?logic">
-      using ?logic
-    </a> fun mode. You can find out more about the project or just discuss
-    and suggest features, report bugs in dicord server dedicated to DBVE:
+    You can find out more about the dead project or just discuss
+    and suggest features, report bugs in Discord server dedicated to DBVE:
     <a href="https://discord.gg/Nb2jAgVHm5">
       Deltarealm fanclub
     </a>.
-    <div id="info_auth" itemprop="dateModified" content="2025-02-11" datetime="2025-02-11">Made by:
+    <div id="info_auth" itemprop="dateModified" content="2025-02-14" datetime="2025-02-14">Made by:
       <!-- link is unproperly displayed when whitespace is outside svg and pre -->
       <a href="https://github.com/KaaBEL"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="16" height="16" viewBox="0,0,16,16">
           <g data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill-rule="nonzero" stroke="none" style="mix-blend-mode: normal">
@@ -151,7 +147,7 @@
             <path d="M3,2h5v4h4v-4h1v5h-2l2,7h-1.3l-2,-7h-1.7v7h-5z" fill="#000" />
           </g>
       </svg><pre>KaaBEL</pre></a>
-      <time itemprop="dateModified" content="2025-02-11" datetime="2025-02-11">Last updated, February 11, 2025</time>
+      <time itemprop="dateModified" content="2025-02-14" datetime="2025-02-14">Last updated, February 14, 2025</time>
     </div>
     <div class="space" data="bottom_margin_workaround">0</div>
   </footer>
@@ -204,9 +200,10 @@
       return;
     };
     
+    /** @readonly */
     var UDF = void 0, F = function () {};
     try {
-      /** @type {TouchEvent} */
+      /** @readonly @type {TouchEvent} */
       var TCH = new TouchEvent("ontouchcancel");
     } catch (e) {
       TCH = {};
@@ -599,7 +596,6 @@
         mouseStamp = e.buttons === 1 ? Date.now() : 0;
         pX = gX = x;
         pY = gY = y;
-        //-render();
       };
       bd.onmouseenter = function (e) {
         foreign = taken = !1;
@@ -609,7 +605,6 @@
           y = (e.pageY - canvas.offsetTop) * pR;
         pX = gX = x;
         pY = gY = y;
-        //-render();
         // there's still some weird in OBS's interact with browser
       };
       bd.onmousemove = function (e) {
@@ -837,14 +832,18 @@
           touchdevice();
       };
       +function (info, clickHandler) {
+        (GE("info") || document.createElement("br")).onclick = clickHandler;
         info ?
           info.onclick = clickHandler :
           clickHandler();
-      }(GE("info"), function (e) {
-        document.body.classList.remove("scroll");
-        this instanceof Node && document.body.removeChild(this);
-        e && touchdevice && touchdevice(true);
-      });
+      }(GE("info"),
+        /** @this {GlobalEventHandlers|void} @param {MouseEvent} [e] */
+        (function (e) {
+          document.body.classList.remove("scroll");
+          this instanceof Node && document.body.removeChild(this);
+          e && touchdevice && touchdevice(true);
+        })
+      );
       document.head.appendChild(document.createComment(navigator.userAgent +
         JSON.stringify(navigator.userAgentData || {})));
       for (var i = 0, ch = document.head.childNodes; i < ch.length; i++)

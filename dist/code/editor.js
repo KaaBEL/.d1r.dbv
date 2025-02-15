@@ -1,7 +1,8 @@
 //@ts-check
 /// <reference path="./code.js" />
 "use strict";
-var version_editor_js = "v.0.2.1";
+/** @readonly */
+var version_editor_js = "v.0.2.2";
 /** @TODO check @see {defaults} for setting a setting without saveSettings */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -2018,6 +2019,7 @@ Command.push("Vehicle stats", function (items, collapsed) {
     xforce: 0,
     yforce: 0
   },
+    /** @readonly */
     stringify = JSON.stringify(sums),
     /** @type {typeof sums} */
     skipped = JSON.parse(stringify);
@@ -2601,13 +2603,14 @@ var cmdsHeader = EL(), cmds = (function () {
   return (bd || EL()).appendChild(nav);
 })();
 
+/** @callback ToolExec @param {number} x @param {number} y @returns {void} */
 /** instance is sealed
- * @param {string} name @param {string} icon @param {()=>void} [exec]
+ * @param {string} name @param {string} icon @param {ToolExec} [exec]
  * @param {boolean} [permanent] slected until reselected or deselected */
 function Tool(name, icon, exec, permanent) {
   this.name = name;
   this.icon = icon;
-  this.exec = Tool.execClick(exec || F);
+  this.exec = permanent ? exec || F : Tool.execClick(exec);
   /** used to determim whether (true) the tile gets enebled instantly
    * (for DefaultUI it's selectedClickTile property) or
    * (false) the tile is enabled until deselected (selected in
@@ -2667,10 +2670,13 @@ Tool.drawPathRc = function (tool, size) {
   });
   rc.fill();
 }
+/** @param {ToolExec} [execMain] */
 Tool.execClick = function (execMain) {
-  /** @this {Tool} */
-  return function () {
-    execMain();
+  if (!execMain)
+    return F;
+  /** @this {Tool} @type {ToolExec} */
+  return function (x, y) {
+    execMain(x, y);
     var thisTile = this;
     setTimeout(function () {
       var tile = DefaultUI.getSelectedTile(DefaultUI.selectedClickTile);
@@ -2901,13 +2907,17 @@ bed c-1df,0,-3b4,-2c,-57a,-81 c-624,-125,-3fa5,-d93,-41df,-e1c c-c8e,-303,-1\
     /** @type {0|1|2|3} */
     (DefaultUI.tilesRotation[2] + 3 & 3);
 }));
-Tool.list.push(new Tool("Erease", "M21cbd,3933e c-fa8,c27,-2353,1363,-38af,1\
-363 l-affd,11 c-16fe,0,-2c08,-863,-3c37,-1645 l-de68,-da2c c-f83,-108c,-1904\
-,-26cd,-1904,-3f47 c0,-19f4,aaf,-316a,1be6,-4238 l2182b,-219f0 c10ae,-104b,2\
-77f,-1a57,40a9,-1a57 c17a9,0,2d40,8e1,3d9d,177e l13941,13b1d cd12,ff5,14eb,2\
-45d,14eb,3a9a c0,16b2,-82c,2b7d,-15bc,3b96 z M1e360,34780 l96a9,-935f l-1297\
-9,-12ae9 l-eff8,ee4e ld536,d073 z", function () {
-
+Tool.list.push(new Tool("Erase", "M21cbd,3933e c-fa8,c27,-2353,1363,-38af,13\
+63 l-affd,11 c-16fe,0,-2c08,-863,-3c37,-1645 l-de68,-da2c c-f83,-108c,-1904,\
+-26cd,-1904,-3f47 c0,-19f4,aaf,-316a,1be6,-4238 l2182b,-219f0 c10ae,-104b,27\
+7f,-1a57,40a9,-1a57 c17a9,0,2d40,8e1,3d9d,177e l13941,13b1d cd12,ff5,14eb,24\
+5d,14eb,3a9a c0,16b2,-82c,2b7d,-15bc,3b96 z M1e360,34780 l96a9,-935f l-12979\
+,-12ae9 l-eff8,ee4e ld536,d073 z", function (x, y) {
+  var found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
+  if (!found)
+    return;
+  ship.removeBlocks([found.id]);
+  render();
 }, true));
 /** May throw error, use asynchronously! @throws {TypeError} */
 function check_contentScript() {
@@ -3054,7 +3064,7 @@ DefaultUI.toolBar = [
   DefaultUI.createTile("Rotate"),
   DefaultUI.createTile("Flip"),
   DefaultUI.createTile("Flip180"),
-  DefaultUI.createTile("Erease")
+  DefaultUI.createTile("Erase")
 ];
 /** used at @typedef {"@see"} SeeRenderingFolders */
 DefaultUI.offsetsFolders = 0;
@@ -3101,8 +3111,7 @@ DefaultUI.actionArea = function (x, y) {
       column = (x - 10) / 87 | 0;
     /** @see {DefaultUI.selectedTile} for tile indexing */
     if (y > canvas.height - 277)
-      tile = (row > 2 ? 2 : row) * 3 +
-        (column > 2 ? 2 : column) << 2;
+      tile = (row > 2 ? 2 : row) * 3 + (column > 2 ? 2 : column) << 2;
     else
       return false;
   } else if (y > canvas.height - 103) {
@@ -3134,7 +3143,8 @@ DefaultUI.actionArea = function (x, y) {
   (DefaultUI.getSelectedTile(tile) || {}).clickType ?
     // currently this place is dictates the clickType like properties of Tool
     DefaultUI.selectedClickTile = tile :
-    DefaultUI.selectedTile = tile;
+    DefaultUI.selectedTile =
+      DefaultUI.selectedTile === tile ? -1 : tile;
   render();
   return true;
 }
@@ -3392,7 +3402,7 @@ function enableShipEditing() {
       if (DefaultUI.actionArea(x, y)) {
         var tile = DefaultUI.getSelectedTile(DefaultUI.selectedClickTile);
         if (tile instanceof Tool && tile.clickType)
-          tile.exec();
+          tile.exec(x, y);
         return true;
       }
     return false;
@@ -3470,7 +3480,7 @@ function enableLogicEditing() {
       if (DefaultUI.actionArea(x, y)) {
         var tile = DefaultUI.getSelectedTile(DefaultUI.selectedClickTile);
         if (tile instanceof Tool && tile.clickType)
-          tile.exec();
+          tile.exec(x, y);
         return !(found = null);
       }
       if (!(found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc)))
@@ -3539,7 +3549,7 @@ function edit_ship(x, y) {
   // #compactDownToExecTiel DefaultUI.execTiles ...maybe
   if (DefaultUI.actionArea(x, y)) {
     var tile = DefaultUI.getSelectedTile(DefaultUI.selectedClickTile);
-    tile instanceof Tool && tile.clickType && tile.exec();
+    tile instanceof Tool && tile.clickType && tile.exec(x, y);
     return true;
   } else
     var tile = DefaultUI.getSelectedTile();
@@ -3551,6 +3561,8 @@ function edit_ship(x, y) {
         tile
       );
       render();
+    } else if (tile instanceof Tool) {
+      tile.exec(x, y);
     } else
       old_UI(x, y);
   return false;
@@ -3561,7 +3573,7 @@ function edit_logic(x, y) {
   var interactedGUI = DefaultUI.actionArea(x, y),
     tile = DefaultUI.getSelectedTile();
   if (interactedGUI) {
-    tile instanceof Tool && tile.clickType && tile.exec();
+    tile instanceof Tool && tile.clickType && tile.exec(x, y);
     return true;
   } else
     if (tile instanceof Block) {
@@ -3724,7 +3736,10 @@ DefaultUI.setPixelRatio();
 function init_touchScreen(click) {
   if (click && !defaults.fullscreenInitialized)
     return;
-  var max = 3, logging = alert;
+  var max = 3, logging = function (m, s, l, c, e) {
+    /** @type {Function} */
+    (window.onerror)(m, s === UDF ? " for Fulscreen." : s, l, c, e);
+  };
   if (typeof document.body.requestFullscreen == "function")
     (touchdevice = function () {
       if (!defaults.fullscreenDisabled)

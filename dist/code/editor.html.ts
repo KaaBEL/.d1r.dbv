@@ -1,4 +1,4 @@
-// v.0.1.65
+// v.0.2.2
 function GE(v:any){return document.getElementById(+v===v?(GE.i=v+1)-1:
   v===void 0?v=GE.i++:v)}GE.i=0;
 
@@ -56,7 +56,7 @@ var bd: HTMLElement & {onmousewheel?: (
   ev: WheelEvent & {wheelDelta?: number}
 ) => any} | null;
 
-var UDF: undefined, F: () => void, TCH: TouchEvent;
+const UDF = undefined, F = function () {}, TCH = {} as TouchEvent;
 
 /** @TODO check the definitions for new changes at some point */
 type TchDArr = (TouchDat | null)[];
@@ -271,7 +271,6 @@ function test_touches(targ: HTMLElement, calls: handler[],
   return {a: a, tch: t};
 }
 
-/** errorHandlers are  */
 function touchesInit(src: HTMLElement,
   hardHandl?: hardH,
   softHandl?: [softH, softH, softH, softH],
@@ -294,12 +293,8 @@ function touchesInit(src: HTMLElement,
       return arr;
     }(),
     identifiers: number[] = [-1],
-    handlers: [handler, handler, handler, handler] = [
-      onstart,
-      onmove,
-      onend,
-      oncancel
-    ];
+    handlers: [handler, handler, handler, handler] =
+      [onstart, onmove, onend, oncancel];
   [events, temp, added, removed, touches, identifiers].map(function (e) {
     e.length = 0;
   });
@@ -431,17 +426,22 @@ function mouseInit() {
     if (e.target !== canvas || !(e instanceof WheelSroll ||
       e instanceof MouseWheelEvent))
       return;
-    test_debug && console.log("onwheel", +new Date / 100 | 0, e.deltaY ||
-      -(e.wheelDelta || 0), +new Date, sc);
+    test_debug && console.log("onwheel", +new Date / 100 | 0,
+      e.deltaY || -(e.wheelDelta || 0), +new Date, sc);
     var prev = sc, w = canvas.width / 2, h = canvas.height / 2;
     sc -= sc / (e.deltaY || -(e.wheelDelta || 0)) * 10;
     vX = (vX - w) * sc / prev + w;
     vY = (vY - h) * sc / prev + h;
     render();
   };
+  // maybe the first step in refining could be making all boolean states
+  // into one better understandable enum for different states (:TODO)
+  // pX/pY = prev x, y (previous press position)
   var foreign = !1, pX = 0, pY = 0, moving = !1, taken = !1;
+  // fix for mouseleave and mouseenter after fixing ghost __NULL__ blocks
+  var left = !1;
   bd.onmousedown = function (e) {
-    moving = taken = !1;
+    left = moving = taken = !1;
     var x = (e.pageX - canvas.offsetLeft) * pR,
       y = (e.pageY - canvas.offsetTop) * pR;
     if (foreign = e.target !== canvas)
@@ -452,6 +452,16 @@ function mouseInit() {
     pX = gX = x;
     pY = gY = y;
   };
+  bd.onmouseenter = function (e) {
+    foreign = taken = !1;
+    if (left = !(moving && e.buttons & 5))
+      return moving = !1;
+    var x = (e.pageX - canvas.offsetLeft) * pR,
+      y = (e.pageY - canvas.offsetTop) * pR;
+    pX = gX = x;
+    pY = gY = y;
+    // there's still some weird in OBS's interact with browser
+  };
   bd.onmousemove = function (e) {
     if (foreign)
       return over(e);
@@ -461,8 +471,11 @@ function mouseInit() {
       y = (e.pageY - canvas.offsetTop) * pR;
     if (!moving && (Date.now() < mouseStamp + mouseInit.time &&
       Math.abs(gX - x) < mouseInit.move &&
-      Math.abs(gY - y) < mouseInit.move || taken))
-      return taken && move(x, y, e);
+      Math.abs(gY - y) < mouseInit.move || left)) {
+        return;
+      }
+      if (taken)
+        return move(x, y, e);
     moving = !0;
     // works on add difference basis to not fight with other movement
     vX += x - pX || 0;
@@ -471,21 +484,28 @@ function mouseInit() {
     pY = y;
     render();
   };
-  bd.onmouseup = function (e) {
+  bd.onmouseleave = bd.onmouseup = function (e) {
     if (foreign)
       return over(e);
     var x = (e.pageX - canvas.offsetLeft) * pR,
       y = (e.pageY - canvas.offsetTop) * pR;
     if (Date.now() < mouseStamp + mouseInit.time &&
       Math.abs(gX - x) < mouseInit.move &&
-      Math.abs(gY - y) < mouseInit.move && !taken && !moving)
+      Math.abs(gY - y) < mouseInit.move &&
+      e.type === "mouseup" && !taken && !moving) {
       return press(x, y);
-    else if (taken || !moving)
-      return taken && move(x, y, e);
+    }
+    if (taken) {
+      taken = !1;
+      return move(x, y, e);
+    }
+    if (!moving || left)
+      return;
     vX += x - pX || 0;
     vY += y - pY || 0;
     pX = x;
     pY = y;
+    moving = e.type === "mouseleave";
   };
   window.oncontextmenu = function (e) {
     for (var el = e.target; el instanceof Node;)
@@ -670,11 +690,17 @@ document.body.onload = function initDoc() {
       !document.webkitIsFullScreen)
       touchdevice();
   };
-  (GE("info") || document.createElement("br")).onclick = function (e) {
+  +function (info, clickHandler) {
+    (GE("info") || document.createElement("br")).onclick = clickHandler;
+    info ?
+      info.onclick = clickHandler :
+      clickHandler();
+  }(GE("info"),
+  (function (e) {
     document.body.classList.remove("scroll");
     this instanceof Node && document.body.removeChild(this);
-    touchdevice && touchdevice(true);
-  };
+    e && touchdevice && touchdevice(true);
+  }) as (this: GlobalEventHandlers|void, e?: MouseEvent) => void);
   document.head.appendChild(document.createComment(navigator.userAgent +
     JSON.stringify(navigator.userAgentData || {})));
   for (var i = 0, ch = document.head.childNodes; i < ch.length; i++)

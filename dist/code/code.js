@@ -5,7 +5,8 @@
 // A) download and edit source files localy
 // B) create chrome extensions with custom modifications for live page
 // C) pull requests to main repo on github
-var version_code_js = "v.0.2.1";
+/** @readonly */
+var version_code_js = "v.0.2.2";
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -55,95 +56,58 @@ Data.colors =
   "Festive Duck": 65, "[custom color]": 127
 });
 Data.paths = [
-  ["m,hv", 8, -8, -16, 32],
-  ["m,hv", -8, -8, 16, 32],
-  ["m,hv", -8, 8, 16, -16],
-  ["m,hvh", -8, -8, 16, 16, -16],
-  ["m,hvh", -8, -8, 16, 32, -16],
-  ["m,hv", 8, -8, -16, 16],
-  ["m,hv", -8, -8, 16, 16],
-  ["m,vhvh", 8, 0, -8, -16, 16, 8],
-  ["m,vhvh", -8, 0, -8, 16, 16, -8],
-  ["m,vhvh", -8, 0, 8, 16, -16, -8],
-  ["m,vhvh", 8, 8, -16, -16, 32, 8],
-  ["m,vhvh", -8, 8, -16, 16, 32, -8],
-  ["m,hvhm,hvh", -8, -8, 16, 3, -16, 0, 10, 16, 3, -16],
-  ["m,hvhm,", -8, -5, 16, 10, -16, 4, -8],
-  ["vhvhvhvhvhvm,vhvhvhvhvhvh", 5, 1, -2, 1, 2, 1, -5, -1, 2, -1, -2, 3,
-    1, 1, 2, 1, -2, 3, 3, -1, -2, -1, 2, -3, -3],
-  ["m,", -4, -3],
-  ["vhvhvhvhvhvhm,hvhvhvhvhvh", 4, 2, 1, -2, 1, 3, -3, -2, -1, 2, -1, -3,
-    4, 4, 1, -2, 1, 2, 1, -5, -1, 2, -1, -2, -1],
-  ["m,vl,hl,vl,hm,", -8, 6, -12, 2, -2, 12, 2, 2, 12, -2, 2, -12, 1, -5],
-  ["vhvm,vhvm,vhvm,vhv", 2, 10, -2, 0, -1, -2, -10, 2, 0, -5,
-    2, 10, -2, 0, -1, -1, -10, 1],
-  ["m,", -5, 3],
-  ["m,hvhm,", -8, -8, 16, 16, -16, 0, -8],
-  ["c, , ,c, , ,c, , ,c, , ,", 0, -4.18, 3.81, -8, 8, -8, 4.18, 0, 8,
-    3.81, 8, 8, 0, 4.18, -3.81, 8, -8, 8, -4.18, 0, -8, -3.81, -8, -8],
-  ["m,", -8, 0],
-  ["hvhv", 8, 8, -16, -8],
-  ["hl,hl,", -6, -2, -8, 16, -2, 8],
-  ["m,hl,h", 6, -8, -12, -2, -16, 16],
-  ["m,hvhl,", -24, -24, 32, 64, -16, 16, -32, 0],
-  ["m,hl,z", -40, -24, 16, -8, 24, 0],
-  ["m,l,l,l,", -24, -24, 32, 32, -16, 32, -24, -40, 0],
-  ["m,vhm,vh", -24, 8, 32, 16, 32, -32, 32, -16, 0],
-  ["m,vl,vm,vl,v", -24, 8, -32, 16, 24, 40, 16, 0, -40, 16, -24, 32, 0],
-  ["m,hl,vhv", -24, -24, 48, -16, 24, 40, -16, -40, 0],
-  ["m,hl,h", -24, -8, 48, -16, 16, -16, 0],
-  ["m,vl,vm,vl,v", 8, 40, -32, 16, -16, 32, -48, 0, -32, 16, 16, 32],
-  ["m,hvh", -24, -24, 48, 64, -48, 0],
-  ["m,hl,vhv", -8, -40, 16, 16, 16, 32, -48, -32, 0],
-  ["m,hvh", -8, -24, 16, 48, -16],
-  ["m,vl,", 8, 24, -16, 32, -16],
-  ["m,hvl,", 8, -24, 32, 16, -32, 16],
-  ["m,vl,m,hv", -24, 24, -16, 16, 16, 16, 0, 16, -16],
-  ["m,", 0, 16],
-  ["m,vl,m,l,v", -24, -8, 16, 16, 16, 16, 0, 16, -16, -16],
-  ["m,vl,hl,v", -24, -24, 16, 16, 32, 16, 16, -32, -16],
-  ["m,hvm,vh", -40, 24, 32, -16, 0, -16, -16, -32],
-  ["m,l,vl,", -40, 24, 32, -16, -16, -32, -16],
-  ["m,vhv", -24, -24, 48, 48, -48]
+  ["m,hv", 8, -8, -16, 32], ["m,hv", -8, -8, 16, 32], ["m,hv", -8, 8, 16,
+  -16], ["m,hvh", -8, -8, 16, 16, -16], ["m,hvh", -8, -8, 16, 32, -16],
+  ["m,hv", 8, -8, -16, 16], ["m,hv", -8, -8, 16, 16], ["m,vhvh", 8, 0, -8,
+  -16, 16, 8], ["m,vhvh", -8, 0, -8, 16, 16, -8], ["m,vhvh", -8, 0, 8, 16,
+  -16, -8], ["m,vhvh", 8, 8, -16, -16, 32, 8], ["m,vhvh", -8, 8, -16, 16,
+  32, -8], ["m,hvhm,hvh", -8, -8, 16, 3, -16, 0, 10, 16, 3, -16],
+  ["m,hvhm,", -8, -5, 16, 10, -16, 4, -8], ["vhvhvhvhvhvm,vhvhvhvhvhvh",
+  5, 1, -2, 1, 2, 1, -5, -1, 2, -1, -2, 3, 1, 1, 2, 1, -2, 3, 3, -1, -2,
+  -1, 2, -3, -3], ["m,", -4, -3], ["vhvhvhvhvhvhm,hvhvhvhvhvh", 4, 2, 1,
+  -2, 1, 3, -3, -2, -1, 2, -1, -3, 4, 4, 1, -2, 1, 2, 1, -5, -1, 2, -1,
+  -2, -1], ["m,vl,hl,vl,hm,", -8, 6, -12, 2, -2, 12, 2, 2, 12, -2, 2, -12,
+  1, -5], ["vhvm,vhvm,vhvm,vhv", 2, 10, -2, 0, -1, -2, -10, 2, 0, -5, 2,
+  10, -2, 0, -1, -1, -10, 1], ["m,", -5, 3], ["m,hvhm,", -8, -8, 16, 16,
+  -16, 0, -8], ["c, , ,c, , ,c, , ,c, , ,", 0, -4.18, 3.81, -8, 8, -8,
+  4.18, 0, 8, 3.81, 8, 8, 0, 4.18, -3.81, 8, -8, 8, -4.18, 0, -8, -3.81,
+  -8, -8], ["m,", -8, 0], ["hvhv", 8, 8, -16, -8], ["hl,hl,", -6, -2, -8,
+  16, -2, 8], ["m,hl,h", 6, -8, -12, -2, -16, 16], ["m,hvhl,", -24, -24,
+  32, 64, -16, 16, -32, 0], ["m,hl,z", -40, -24, 16, -8, 24, 0],
+  ["m,l,l,l,", -24, -24, 32, 32, -16, 32, -24, -40, 0], ["m,vhm,vh", -24,
+  8, 32, 16, 32, -32, 32, -16, 0], ["m,vl,vm,vl,v", -24, 8, -32, 16, 24,
+  40, 16, 0, -40, 16, -24, 32, 0], ["m,hl,vhv", -24, -24, 48, -16, 24, 40,
+  -16, -40, 0], ["m,hl,h", -24, -8, 48, -16, 16, -16, 0], ["m,vl,vm,vl,v",
+  8, 40, -32, 16, -16, 32, -48, 0, -32, 16, 16, 32], ["m,hvh", -24, -24,
+  48, 64, -48, 0], ["m,hl,vhv", -8, -40, 16, 16, 16, 32, -48, -32, 0],
+  ["m,hvh", -8, -24, 16, 48, -16], ["m,vl,", 8, 24, -16, 32, -16],
+  ["m,hvl,", 8, -24, 32, 16, -32, 16], ["m,vl,m,hv", -24, 24, -16, 16, 16,
+  16, 0, 16, -16], ["m,", 0, 16], ["m,vl,m,l,v", -24, -8, 16, 16, 16, 16,
+  0, 16, -16, -16], ["m,vl,hl,v", -24, -24, 16, 16, 32, 16, 16, -32, -16],
+  ["m,hvm,vh", -40, 24, 32, -16, 0, -16, -16, -32], ["m,l,vl,", -40, 24,
+  32, -16, -16, -32, -16], ["m,vhv", -24, -24, 48, 48, -48]
 ];
 Data.groups = [
-  "[[14,15],255,187,132,[14,13],255,215,175,[12],128,128,128,1,0]",
-  "[[16,15],255,187,132,[16,13],255,215,175,[12],128,128,128,3,0]",
-  "[[16,15],255,187,132,[16,13],255,215,175,[12],128,128,128,0,0]",
-  "[[18,19],64,64,64,[18,17],128,128,128,0,0]",
-  "[[14,15],255,187,132,[14,13],255,215,175,[12],128,128,128,0,0]",
-  "[[3],96,96,96,0,0]",
-  "[[21,22],32,32,32,[21,20],96,96,96,0,0]",
-  "[[24],32,32,32,[23],96,96,96,0,0]",
-  "[[25],32,32,32,[3],96,96,96,0,0]",
-  "[[28],29,0,0,[27],18,0,0,[26],128,128,128,2,1]",
-  "[[31],29,0,0,[30],21,0,0,[29],128,128,128,0,0]",
-  "[[33],29,0,0,[4,40],21,0,0,[32],128,128,128,2,0]",
-  "[[34],128,128,128,0,0]",
-  "[[35],128,128,128,0,0]",
-  "[[3],128,128,128,0,0]",
-  "[[5],128,128,128,0,0]",
-  "[[6],128,128,128,0,0]",
-  "[[2],128,128,128,0,0]",
-  "[[8],128,128,128,0,0]",
-  "[[9],128,128,128,0,0]",
-  "[[0],128,128,128,0,0]",
-  "[[1],128,128,128,0,0]",
-  "[[7],128,128,128,0,0]",
-  "[[10],128,128,128,0,0]",
-  "[[4],128,128,128,0,0]",
-  "[[11],128,128,128,0,0]",
-  "[[38],29,0,0,[37],18,0,0,[36],128,128,128,0,0]",
-  "[[42],29,0,0,[41],18,0,0,[39],128,128,128,0,0]",
-  "[[44],29,0,0,[43],18,0,0,[36],128,128,128,1,0]",
-  "[[45],128,128,128,0,0]",
-  "[[45,40],128,128,128,2,0]",
-  "[[10],0,0,128,0,0]",
-  "[[11],0,0,128,0,0]",
-  "[[9],0,0,128,0,0]",
-  "[[4],128,0,0,0,0]",
-  "[[3],128,0,0,0,0]",
-  "[[28],0,29,0,[27],0,18,0,[26],96,164,96,2,1]"
+  "[[14,15],255,187,132,[14,13],255,215,175,[12],128,128,128,1,0]", "[[" +
+  "16,15],255,187,132,[16,13],255,215,175,[12],128,128,128,3,0]", "[[16" +
+  ",15],255,187,132,[16,13],255,215,175,[12],128,128,128,0,0]", "[[18,1" +
+  "9],64,64,64,[18,17],128,128,128,0,0]", "[[14,15],255,187,132,[14,13]" +
+  ",255,215,175,[12],128,128,128,0,0]", "[[3],96,96,96,0,0]", "[[21,22]" +
+  ",32,32,32,[21,20],96,96,96,0,0]", "[[24],32,32,32,[23],96,96,96,0,0]",
+  "[[25],32,32,32,[3],96,96,96,0,0]", "[[28],29,0,0,[27],18,0,0,[26],12" +
+  "8,128,128,2,1]", "[[31],29,0,0,[30],21,0,0,[29],128,128,128,0,0]", "" +
+  "[[33],29,0,0,[4,40],21,0,0,[32],128,128,128,2,0]", "[[34],128,128,12" +
+  "8,0,0]", "[[35],128,128,128,0,0]", "[[3],128,128,128,0,0]", "[[5],12" +
+  "8,128,128,0,0]", "[[6],128,128,128,0,0]", "[[2],128,128,128,0,0]", "" +
+  "[[8],128,128,128,0,0]", "[[9],128,128,128,0,0]", "[[0],128,128,128,0" +
+  ",0]", "[[1],128,128,128,0,0]", "[[7],128,128,128,0,0]", "[[10],128,1" +
+  "28,128,0,0]", "[[4],128,128,128,0,0]", "[[11],128,128,128,0,0]", "[[" +
+  "38],29,0,0,[37],18,0,0,[36],128,128,128,0,0]", "[[42],29,0,0,[41],18" +
+  ",0,0,[39],128,128,128,0,0]", "[[44],29,0,0,[43],18,0,0,[36],128,128," +
+  "128,1,0]", "[[45],128,128,128,0,0]", "[[45,40],128,128,128,2,0]", "[" +
+  "[10],0,0,128,0,0]", "[[11],0,0,128,0,0]", "[[9],0,0,128,0,0]", "[[4]" +
+  ",128,0,0,0,0]", "[[3],128,0,0,0,0]", "[[28],0,29,0,[27],0,18,0,[26]," +
+  "96,164,96,2,1]"
 ];
 /**
  * @typedef {number|[number,number]} UseData
@@ -426,24 +390,6 @@ Data.titles =
   1059: "Camera Block,",
   1060: "T1 Nano Healer"
 });
-// /** @typedef {keyof Data.blocks} BlockDataKeys */
-// /** @typedef {Data.blocks[BlockDataKeys]["id"]} BlockDataIds */
-// /** @typedef {Data.colors[keyof Data.colors]} ColorDataIds */
-// /** @template {object} T @typedef {T&{lenght:number}} DataList */
-// /** @typedef {keyof BlockDataKeys} BlockDataValueKeys */
-// /**
-//  * @template {BlockDataKeys} K
-//  * @typedef {Data.blocks[K]["id"]} BlockIdByKey
-//  */
-// /**
-//  * @typedef {{[K in keyof Data.blocks as Data.blocks[K]["id"]]:K}&
-//  * {length:number}} DataBlockNames
-//  */
-// /**
-//  * @typedef {{[K in keyof Data.colors as number]:K extends keyof Data.colors[K] ? K : undefined}&
-//  * {length:number}} DataColorNames
-//  */
-// /** @template {"colors"|"blocks"} T @typedef {Exclude<number,keyof typeof Data[T]>} keyai */
 /** @template {"colors"|"blocks"} T @param {T} src */
 Data.generateNames = function (src) {
   var names =
@@ -522,6 +468,8 @@ Data.getFunctionName = function (fn) {
     (Data.estimateIdentifier.exec(
       Function.prototype.toString.call(fn)) || ["", ""])[1];
 };
+// remove Object.freeze(Data); in case of causing issues
+Object.freeze(Data);
 
 /** @typedef {Block|LogicBlock} ShipBlock */
 /**
@@ -1027,6 +975,14 @@ function Color() {
 Color.NAME = Object.freeze(Data.generateNames("colors"));
 /** object is frozen */
 Color.ID = Object.freeze(Data.colors);
+/** 10:Lololipop replacement, 15:Steel replacement */
+Color.db1ToDb3 = Object.freeze({
+  0: "White", 1: "Dark Gray", 3: "Light Blue", 4: "Orange", 5: "Red",
+  6: "Lime", 7: "Yellow", 8: "Festive Red", 9: "Light Gray",
+  10: "Red Hazard Stripes", 11:  "Yellow Hazard Stripes", 12: "Fuel",
+  13: "Wine", 14: "Wood", 15: "White Hazard Stripes", 16: "Purple",
+  17: "Pink", 18: "Festive Green", 19: "Festive Duck"
+});
 /** @param {string} name @return {Colors} */
 Color.default = function getColor(name) {
   if (/Hydrogen Thruster/.test(name))
@@ -1169,6 +1125,23 @@ Block.CARGO_STORE = Data.generateValues("cargo_store");
  * @readonly @type {{[key:number]:number|undefined}} (MarketValue) */
 //@ts-ignore
 Block.COST = Data.generateValues("cost");
+/** @readonly *///@ts-ignore
+Block.db1ToDb3 = Object.freeze({
+  "T1 Block": "Block", "T1 Wedge": "Wedge", "T2 Wedge": "Wedge",
+  "T1 Wedge 1x2": "Wedge 1x2", "Structure Block": "Struct",
+  "Simple Thruster": "Small Hydrogen Thruster", "Ion Thruster": "Small Ion" +
+  " Thruster", "Momentum Wheel": "Reaction Wheel", "Small Fuel Tank": "Sma" +
+  "ll Hydrogen Tank", "Medium Fuel Tank": "Medium Hydrogen Tank",
+  // There seems to be older "T2 Battery" name version, T1 is a guess
+  "T1 Battery": "Small Battery", "T2 Battery": "Small Battery",
+  "Small Crate": "Small Storage Rack", "Medium Crate": "Medium Storage Rack",
+  "T1 Drill": "Small Hydraulic Drill", "T1 Gatling Gun": "Rotary Cannon",
+  "T1 Blaster": "Plasma Cannon", "T1 Pulse Laser": "Pulse Laser",
+  "T2 Block": "Armor Block", "T1 Solar Panel": "Small Solar Panel",
+  "T2 Solar Panel": "Small Solar Panel", Seperator: "Separator",
+  Connector: "Dock", Explosive: "__placeholder776__",
+  "Station Block": "__placeholder846__"
+});
 /** @readonly *///@ts-ignore
 Block.creator = {warns: 3};
 /**
@@ -1495,24 +1468,14 @@ Block.Size.VALUE = Block.Size.genterateSizes([[128], [52], [53]],
   [[179], [180], [181], [134, 2, 2], [164, 1, 2], [165, 1, 2]],
   [[166, 1, 2], [183], [184, 2, 2], [186, 2, 2], [160], [161], [162]],
   [[144, 4, 1], [158, 2, 1], [148, 2, 3], [163], [140, 4, 1], [182]],
-  [[155], [154], [-1, -1, -1], [333], [16], [30], [64], [66], [82]]);
+  [[155], [154], [82], [-1, -1, -1], [16], [30], [64], [66]]);
 /**
  * @typedef {{block:ShipBlock,id:number,x:number,y:number,w:number,
  * h:number}} Block.Selected @see {Block.Size.highlight}
 */
 /** creates what earilear was instance of Block.Selected
  * @param {ShipBlock} block @param {number} id @param {number} x
- * @param {number} y @param {number} w @param {number} h *
-Block.Selected = function (block, id, x, y, w, h) {
-  this.block = block;
-  this.id = id;
-  this.x = x;
-  this.y = y;
-  this.w = w;
-  this.h = h;
-  Object.freeze(this);
-};
-/**  */
+ * @param {number} y @param {number} w @param {number} h */
 Block.Size.highlight = function (block, id, x, y, w, h) {
   return Object.freeze({block: block, id: id, x: x, y: y, w: w, h: h});
 };
@@ -3318,67 +3281,17 @@ Ship.toDBV = function toDBV(ship) {
     significantVersion: Ship.VERSION
   };
 };
-/** @readonly @param {string} key */
+/** @readonly @param {string} key reads Droneboi bas64 keys */
 Ship.fromDBKey = function (key) {
   var blocks = [], arr = key.split("|").slice(-1)[0].split(":");
-  var convertName = {
-    "T1 Block": "Block",
-    "T1 Wedge": "Wedge",
-    "T2 Wedge": "Wedge",
-    "T1 Wedge 1x2": "Wedge 1x2",
-    "Structure Block": "Struct",
-    "Simple Thruster": "Small Hydrogen Thruster",
-    "Ion Thruster": "Small Ion Thruster",
-    "Momentum Wheel": "Reaction Wheel",
-    "Small Fuel Tank": "Small Hydrogen Tank",
-    "Medium Fuel Tank": "Medium Hydrogen Tank",
-    // There seems to be older "T2 Battery" name version, T1 is a guess
-    "T1 Battery": "Small Battery",
-    "T2 Battery": "Small Battery",
-    "Small Crate": "Small Storage Rack",
-    "Medium Crate": "Medium Storage Rack",
-    "T1 Drill": "Small Hydraulic Drill",
-    "T1 Gatling Gun": "Rotary Cannon",
-    "T1 Blaster": "Plasma Cannon",
-    "T1 Pulse Laser": "Pulse Laser",
-    "T2 Block": "Armor Block",
-    "T1 Solar Panel": "Small Solar Panel",
-    "T2 Solar Panel": "Small Solar Panel",
-    Seperator: "Separator",
-    Connector: "Dock",
-    Explosive: "__placeholder776__",
-    "Station Block": "__placeholder846__"
-  }, convertColor = [
-    "White",
-    "Dark Gray",
-    "Light Blue",
-    "Orange",
-    "Red",
-    "Lime",
-    "Yellow",
-    "Festive Red",
-    "Light Gray",
-    // Lololipop replacement
-    "Red Hazard Stripes",
-    "Yellow Hazard Stripes",
-    "Fuel",
-    "Wine",
-    "Wood",
-    // Steel replacement
-    "White Hazard Stripes",
-    "Purple",
-    "Pink",
-    "Festive Green",
-    "Festive Duck"
-  ];
   for (var i = arr.length - 1, logics = []; i-- > 0;) {
-    var o = arr[i].split(";"), name = convertName[o[0]] || o[0];
+    var o = arr[i].split(";"), name = Block.db1ToDb3[o[0]] || o[0];
     // o[1] position, used below to replace contents of array o
     var rot = +(o[2] + "").replace(",", ".") / 90 || 0 & 3;
     // o[4] controll groups not used
     var ctrl = [+o[3] || 0],
       color = +o[5] === +o[5] ?
-        convertColor[+o[5]] :
+        Color.db1ToDb3[+o[5]] :
         Color.default(name) || "White",
     // o[6] [Use rotation, Up, Down, Left, Right]
       flip = !!+o[7];
