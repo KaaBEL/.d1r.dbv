@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.2";
+var version_editor_js = "v.0.2.3";
 /** @TODO check @see {defaults} for setting a setting without saveSettings */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -112,8 +112,8 @@ canvas.addEventListener("contextrestored", function () {
   "#commandsTab button:hover, #commandsTab button:focus," +
   " #commandsTab .loading{border: 2px solid #777;}" +
   "#commandsTab button:active{background-color: #333;color: #bbb;}" +
-  "#commandsTab .loading{width: 300px;height: fit-content;position: relative;}" +
-  "" +
+  "#commandsTab .loading" +
+  "{width: 300px;height: fit-content;position: relative;}" +
   "#commandsTab .loading div:nth-child(1){height: 100%;padding: 0;" +
   "position: absolute;top: 0;left: 0;transition: .2s;}" +
   "#commandsTab .loading div:nth-child(2){position: relative;" +
@@ -128,7 +128,11 @@ canvas.addEventListener("contextrestored", function () {
   "{overflow-x: hidden;max-height: " +
   (innerHeight > 500 ? 470 : innerHeight - 40) + "px;}" +
   "#commandsTab input, #commandsTab textarea, #commandsTab select" +
-  "{background-color: #000;color: #bbb;border: 1px solid #888;}"
+  "{background-color: #000;color: #bbb;border: 1px solid #888;}" +
+  "#commandsTab header span, #commandsTab.used .content," +
+  "#commandsTab:not(.used) .items{display: none;}" +
+  "#commandsTab.used span.back, #commandsTab:not(.used) header div" +
+  " :last-child{display: initial;}"
 );
 
 /** originally settings variable, defines type for settings */
@@ -633,7 +637,7 @@ var imgBackg = document.createElement("img");
 var helpCanvas = document.createElement("canvas"),
   rc = function (rc) {
     return rc instanceof CanvasRenderingContext2D ?
-       rc : new CanvasRenderingContext2D();
+       rc : new CanvasRenderingContext2D;
   }(helpCanvas.getContext("2d",
     // shut up chromium browsers
     {willReadFrequently: true}));
@@ -1604,11 +1608,11 @@ Command.push("Import/Export DBV", function (items, collapsed) {
     var gridValue = Ship.Grid.VALUE[+grid.value];
     if (!gridValue)
       return;
-    (ship.prop || (ship.prop = {})).girdSize = gridValue;
+    (ship.prop || (ship.prop = {})).gridSize = gridValue;
     ship.prop.launchpadSize = gridValue.dbvIndex;
     defaults.editorLaunchpadBorder && render();
   };
-  i = Number(((ship.prop || {}).girdSize || {}).gridIndex);
+  i = Number(((ship.prop || {}).gridSize || {}).gridIndex);
   grid.value = isNaN(i) ? "null" : "" + i;
   items.push(tN("Grid size: "), gridCheck, grid, EL("br"));
   elBtn.onclick = function () {
@@ -1628,7 +1632,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
     try {
       ship = Ship.fromObject(JSON.parse(dbv.value));
       ship.fixVersion_1_3();
-      i = Number(((ship.prop || {}).girdSize || {}).gridIndex);
+      i = Number(((ship.prop || {}).gridSize || {}).gridIndex);
       grid.value = isNaN(i) ? "null" : "" + i;
       render();
     } catch (err) {
@@ -1693,7 +1697,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
       var obj = JSON.parse(json.value);
       ship = Ship.fromObject(obj);
       !(obj.significantVersion > 15) && ship.fixPositionAdjustment(!0);
-      i = Number(((ship.prop || {}).girdSize || {}).gridIndex);
+      i = Number(((ship.prop || {}).gridSize || {}).gridIndex);
       grid.value = isNaN(i) ? "null" : "" + i;
       render();
     } catch (err) {
@@ -2458,6 +2462,8 @@ exadecimal format #111133 for example, the setting will update.");
 Command.push("Current version", function(items, collapsed) {
   var version_sw = tN(""), s = "data";
   items.push(
+    tN("Ship.VERSION: " + Ship.VERSION),
+    EL("br"),
     tN("[editor.html]: " + (document.childNodes[1][s] || "")),
     EL("br"),
     tN("[code.js]: " + version_code_js),
@@ -2480,7 +2486,11 @@ Command.push("Current version", function(items, collapsed) {
     }
   };
   xhr.send();
-}, "");
+}, "Gives information about versions of loaded source code components. For e\
+xample Ship.VERSION is significantVersion number attached to vehicle savefil\
+es encoded by D1R DBV editor, this number is increased by 1 when public webp\
+age update messes with vehicle editing funtionalities to allow for backward \
+compatibility in case of bug causing corrupted savefiles.");
 Command.push("About Commands tab", function (items) {}, "OPENING AND MOVING \
 AROUND\nCommands tab is opened or moved by activating contextmenu, the optio\
 ns, usually from right click or long press on touch screen, not on already o\
@@ -2513,39 +2523,37 @@ ml?funmode&no=info for example to skip it.");
 // code in Discord, you all for using DBVE, your feedback, and db
 // suggestions to take inspiration from.
 
-var cmdsHeader = EL(), cmds = (function () {
+var cmdsName = EL(), cmds = (function () {
   /** for #commandsTab styles @see {addingStyles} */
   /** navigation element returned to set cmds variable */
   var nav = EL("nav");
   nav.id = "commandsTab";
   nav.style.display = "none";
+  var header = EL("header"), back = header.appendChild(EL("button"));
   /** @type {HTMLElement} */
-  var e0 = nav.appendChild(EL("header")),
-    /** @type {HTMLElement} */
-    e1 = e0.appendChild(EL("button")),
-    back = e1.style;
-  e1.appendChild(tN("<"));
-  back.visibility = "hidden";
-  e1.onclick = function () {
-    content.style.display = cmdsHeader.innerText = "";
-    items.style.display = "none";
-    back.visibility = "hidden";
+  var el = header.appendChild(EL());
+  el.appendChild(cmdsName);
+  el.appendChild(EL("span")).appendChild(tN("[Commands Tab]"));
+  el = nav.appendChild(header).appendChild(EL("button"));
+  var content = nav.appendChild(EL()), items = nav.appendChild(EL());
+  el.appendChild(tN("X"));
+  el.onclick = function () {
+    nav.style.display = "none";
+  };
+  back.appendChild(tN("<"));
+  back.onclick = function () {
+    cmds.className = "";
     utilities.rend_UI = F;
     press = DefaultUI.press;
     move = DefaultUI.move;
     render();
   };
-  e0.appendChild(cmdsHeader);
-  e1 = e0.appendChild(EL("button"));
-  e1.appendChild(tN("X"));
-  e1.onclick = function () {
-    nav.style.display = "none";
-  };
-  var content = nav.appendChild(EL()), items = nav.appendChild(EL());
+  back.className = "back";
+  cmdsName.className = "back";
   content.className = "content";
   items.className = "items";
-  (e1 = nav.appendChild(EL())).style.display = items.style.display = "none";
-  e1.appendChild(tN("Search commads... coming spoon"));
+  (el = nav.appendChild(EL())).style.display = "none";
+  el.appendChild(tN("Search commads... coming spoon"));
   /** @param {Command} item */
   function initItems(item) {
     function ending() {
@@ -2554,10 +2562,8 @@ var cmdsHeader = EL(), cmds = (function () {
       el.style.color = "#879b90";
     }
     return function () {
-      cmdsHeader.innerText = item.name;
-      content.style.display = "none";
-      items.style.display = "";
-      back.visibility = "visible";
+      cmdsName.innerText = item.name;
+      cmds.className = "used";
       for (; items.firstChild;)
         items.removeChild(items.firstChild);
       var arr = item.items;
@@ -2584,10 +2590,10 @@ var cmdsHeader = EL(), cmds = (function () {
       content.appendChild(group[0]);
       content.appendChild(group[1]);
     }
-    (item.group ? group[1] : content).appendChild(e0 = EL("button"));
-    e0.appendChild(tN(item.name));
-    e0.onclick = initItems(item);
-    e0.appendChild(EL()).appendChild(tN(">"));
+    (item.group ? group[1] : content).appendChild(el = EL("button"));
+    el.appendChild(tN(item.name));
+    el.onclick = initItems(item);
+    el.appendChild(EL()).appendChild(tN(">"));
     return item;
   };
   for (var i = 0, groupName = ""; i < Command.list.length; i++)
@@ -2919,6 +2925,38 @@ Tool.list.push(new Tool("Erase", "M21cbd,3933e c-fa8,c27,-2353,1363,-38af,13\
   ship.removeBlocks([found.id]);
   render();
 }, true));
+Tool.list.push(new Tool("Classic", "M4030e,2bac1 c-1838,-80aa,-8930,-e200,-1\
+10e4,-e200 c-7669,0,-db83,4a1d,-10372,b27c l-a7c8,-a v-2884d h1fd7a c693b,0,\
+be8b,554f,be8b,be8b z M33a,c1a9 l0,0 c0,-693b,554f,-be8b,be8b,-be8b h3299 l-\
+5,288a5 h-5dd5 c-382a,0,-6b90,146c,-932a,3640 z M2d3df,40281 c-8b1d,-f18,-f7\
+65,-84ee,-f765,-1140f c0,-4b5,1e,-963,59,-e0a l-14939,f c-5016,0,-9102,40ec,\
+-9102,9102 c0,5016,40ec,9102,9102,9102 z M22bf9,2ee91 c0,-6e03,57d3,-c732,c4\
+2a,-c732 c6c57,0,c42a,592e,c42a,c732 c0,6e03,-57d3,c732,-c42a,c732 c-6c57,0,\
+-c42a,-592e,-c42a,-c732 z M3061d,29da1 c0,-1657,-121c,-2873,-2873,-2873 c-16\
+57,0,-2873,121c,-2873,2873 v6982 c0,1657,121c,2873,2873,2873 h5090 c1657,0,2\
+873,-121c,2873,-2873 c0,-1657,-121c,-2873,-2873,-2873 h-282b z"));
+Tool.list.push(new Tool("Oldschool", "M105e7,3d210 c-3a97,3a97,-9997,3a97,-d42\
+f,0 c-3a97,-3a97,-3a97,-9997,0,-d42f l1b0b,-1b0b ld429,d429 z M803a,2adde l7\
+e92,-7e92 ld429,d429 l-7e8b,7e96 z M22c1b,101fd l8428,-8428 ld429,d429 l-842\
+0,842b z M3ecd6,eb15 l-3144,314e l-d430,-d42e l314a,-314a lcc78,-e09 ccdd,0,\
+174a,a6d,174a,174a z M696f,13e22 c-3391,-3391,-5e3f,-5e3f,-5e3f,-5e3f c-90d,\
+-90d,-90d,-17bb,0,-20c9 lb458,-b458 c90d,-90d,17bb,-90d,20c9,0 l318fa,318fa \
+c90d,90d,90d,17bb,0,20c9 l-b458,b458 c-90d,90d,-17bb,90d,-20c9,0 c0,0,-2586,\
+-2592,-5e74,-5e8c l2c8a,-2c8e ccd8,-cd8,cd8,-21ab,0,-2e83 c-cd8,-cd8,-21ab,-\
+cd8,-2e83,0 l-2c94,2c7b c-e96,-e99,-1de9,-1dee,-2dc4,-2dcb l492c,-48fb ccd8,\
+-cd8,cd8,-21ab,0,-2e83 c-cd8,-cd8,-21ab,-cd8,-2e83,0 l-491e,4903 c-f80,-f82,\
+-1f4e,-1f51,-2f41,-2f44 l2c7b,-2c83 ccd8,-cd8,cd8,-21ab,0,-2e83 c-cd8,-cd8,-\
+21ab,-cd8,-2e83,0 l-2c89,2c74 c-f73,-f73,-1f2f,-1efc,-2e79,-2e46 l489f,-4879\
+ ccd8,-cd8,cd8,-21ab,0,-2e83 c-cd8,-cd8,-21ab,-cd8,-2e83,0 l-48ad,486b c-102\
+a,-102a,-1ffb,-1ffb,-2f43,-2f43 l2c0c,-2bed ccd8,-cd8,cd8,-21ab,0,-2e83 c-cd\
+8,-cd8,-21ab,-cd8,-2e83,0 l-2c1a,2bde c-fd3,-fd3,-1eb7,-1eb7,-2c66,-2c66 l49\
+26,-4929 ccd8,-cd8,cd8,-21ab,0,-2e83 c-cd8,-cd8,-21ab,-cd8,-2e83,0 l-4934,49\
+1a c-f12,-f12,-1f19,-1f19,-2f2f,-2f2f l2c80,-2caf ccd8,-cd8,cd8,-21ab,0,-2e8\
+3 c-cd8,-cd8,-21ab,-cd8,-2e83,0 z"));
+
+// db3 styled icon (cardboard box)
+// https://www.flaticon.com/free-icon/package_7625482?term=time+product&page=2&position=30&origin=search&related_id=7625482
+
 /** May throw error, use asynchronously! @throws {TypeError} */
 function check_contentScript() {
   var contentScript = GE("contentScript"), data = "";
@@ -3064,7 +3102,9 @@ DefaultUI.toolBar = [
   DefaultUI.createTile("Rotate"),
   DefaultUI.createTile("Flip"),
   DefaultUI.createTile("Flip180"),
-  DefaultUI.createTile("Erase")
+  DefaultUI.createTile("Erase"),
+  DefaultUI.createTile("Classic"),
+  DefaultUI.createTile("Oldschool")
 ];
 /** used at @typedef {"@see"} SeeRenderingFolders */
 DefaultUI.offsetsFolders = 0;
@@ -3244,9 +3284,9 @@ DefaultUI.getDefaultFolders = function (logicOnly) {
   }
   return yk;
 };
-
-/** @param {number} w @param {number} h */
-function test_juhus(w, h) {
+/** render toolBar side of canvas: static tile slots
+ * @param {number} w @param {number} h */
+DefaultUI.renderToolBar = function (w, h) {
   var radius = defaults.renderSharp ? 0 : 5;
   /** @param {Block|LogicBlock} block */
   function drawBlockRc(block) {
@@ -3389,12 +3429,46 @@ function test_juhus(w, h) {
     );
   }
 };
+/** @type {ToolExec} */
+DefaultUI.defaultPress = function (_x, _y) {};
+/** generator for press action bind handling
+ * @param {(x:number,y:number,tile:ShipBlock)=>void} [blockPlacing]
+ * @param {ToolExec} [defaultPress] @returns {typeof press} */
+DefaultUI.basePress = function (blockPlacing, defaultPress) {
+  var placing = blockPlacing || function (x, y, tile) {
+    ship.placeBlock(
+      0,
+      Math.floor((vX - x) / sc + 2),
+      Math.floor((y - vY) / sc),
+      tile
+    );
+    render();
+  };
+  DefaultUI.defaultPress = defaultPress || function (_x, _y) {};
+  return function (x, y) {
+    if (DefaultUI.actionArea(x, y)) {
+      var tile = DefaultUI.getSelectedTile(DefaultUI.selectedClickTile);
+      tile instanceof Tool && tile.clickType && tile.exec(x, y);
+      return true;
+    } else
+      var tile = DefaultUI.getSelectedTile();
+      if (tile instanceof Block) 
+        placing(x, y, tile);
+      else if (tile instanceof Tool) {
+        tile.exec(x, y);
+      } else
+        DefaultUI.defaultPress(x, y);
+  };
+};
+DefaultUI.baseMove = function () {};
+DefaultUI.baseContextmenu = function () {};
+DefaultUI.baseOver = function () {};
 
 function enableShipEditing() {
   var mode = ship.getMode();
   ship = mode.getShip();
   /** @TODO create lucky block icon for old_UI (day1, oldschool fmode) */
-  DefaultUI.press = press = edit_ship;
+  DefaultUI.press = press = DefaultUI.basePress(UDF, old_UI);
   DefaultUI.move = move = function (x, y, e) {
     if (e.type === "mousedown" || e.type === "touchstart" ||
       e.type === "mouseenter")
@@ -3409,7 +3483,7 @@ function enableShipEditing() {
   };
   DefaultUI.rend = function () {
     DefaultUI.reflowBlockBars(canvas.width);
-    test_juhus(canvas.width, canvas.height);
+    DefaultUI.renderToolBar(canvas.width, canvas.height);
   };
   DefaultUI.blockBars = DefaultUI.getDefaultFolders(false);
   render();
@@ -3472,7 +3546,10 @@ function enableLogicEditing() {
   ));
   /** @type {Block.Selected|null} */
   var found = null, movingId = -1;
-  DefaultUI.press = press = edit_logic;
+  DefaultUI.press = press = DefaultUI.basePress(function (x, y, tile) {
+    ship.placeBlock(0, (vX - x) / sc + 2, (y - vY) / sc, tile);
+    render();
+  });
   DefaultUI.move = move = edit_logicmove = function (x, y, e) {
     if (e.type === "mousedown" || e.type === "touchstart" ||
       e.type === "mouseenter") {
@@ -3538,50 +3615,12 @@ function enableLogicEditing() {
       ctx.strokeRect(dx, dy, found.w * sc, found.h * sc);
     }
     DefaultUI.reflowBlockBars(canvas.width);
-    test_juhus(canvas.width, canvas.height);
+    DefaultUI.renderToolBar(canvas.width, canvas.height);
   };
   DefaultUI.blockBars = DefaultUI.getDefaultFolders(true);
   render();
 };
 
-/** @param {number} x @param {number} y */
-function edit_ship(x, y) {
-  // #compactDownToExecTiel DefaultUI.execTiles ...maybe
-  if (DefaultUI.actionArea(x, y)) {
-    var tile = DefaultUI.getSelectedTile(DefaultUI.selectedClickTile);
-    tile instanceof Tool && tile.clickType && tile.exec(x, y);
-    return true;
-  } else
-    var tile = DefaultUI.getSelectedTile();
-    if (tile instanceof Block) {
-      ship.placeBlock(
-        0,
-        Math.floor((vX - x) / sc + 2),
-        Math.floor((y - vY) / sc),
-        tile
-      );
-      render();
-    } else if (tile instanceof Tool) {
-      tile.exec(x, y);
-    } else
-      old_UI(x, y);
-  return false;
-}
-/** @param {number} x @param {number} y */
-function edit_logic(x, y) {
-  // #compactDownToExecTiel
-  var interactedGUI = DefaultUI.actionArea(x, y),
-    tile = DefaultUI.getSelectedTile();
-  if (interactedGUI) {
-    tile instanceof Tool && tile.clickType && tile.exec(x, y);
-    return true;
-  } else
-    if (tile instanceof Block) {
-      ship.placeBlock(0, (vX - x) / sc + 2, (y - vY) / sc, tile);
-      render();
-    }
-  return false;
-}
 /** @param {number} x @param {number} y @param {TemporaryEventParam} e */
 var edit_logicmove = function (x, y, e) {
   //?? #compactDownToExecTiel
@@ -3862,7 +3901,8 @@ DefaultUI.over = over = function (e) {
   if (e instanceof TouchEvent)
     return;
   if ((e.type === "mousedown" || e.type === "touchstart") &&
-    e.target === cmdsHeader) {
+    e.target instanceof Node &&
+    (cmdsName.parentNode || EL()).contains(e.target)) {
     var st = cmds.style,
       x = Number(st.left.slice(0, -2)) || 0,
       y = Number(st.top.slice(0, -2)) || 0;
@@ -4055,7 +4095,7 @@ function expensiveRenderer() {
   if (defaults.editorLaunchpadBorder) {
     ctx.strokeStyle = defaults.highlightColor;
     ctx.lineWidth = 2;
-    var grid = (ship.prop && ship.prop.girdSize || OC()).box2d,
+    var grid = (ship.prop && ship.prop.gridSize || OC()).box2d,
       box2d = grid instanceof Array ? grid : Block.Box2d.GRID.Small;
     x = (2 - box2d[1].x) * sc + vX;
     y = (box2d[1].y + 2) * sc + vY;
@@ -4170,3 +4210,178 @@ init = function () {
   // Logic.removeLogic(ship.blocks[35], ship.prop.nodeList);
   // del.call(ship.blocks, 35);del.call(ship.blocks, 33);render();}
 };
+
+// "use stict";
+// var toolicons = 1;
+// /** SVG svg stuff @typedef {{c:number,d:Array<number>}} SVGCmd */
+// /** 
+//  * @callback parsePath
+//  * @param {Array<number>} o object
+//  * @param {number} p property
+//  * @param {boolean} c letter upper case
+//  * @returns {void} */
+// /** @param {Array<SVGCmd>} path  */
+// function SVGPath(path) {
+//   this.path = path instanceof Array ? path : [];
+//   Object.seal(this);
+// }
+// SVGPath.prototype.toString = function toString() {
+//   return this.path.map(function (e) {
+//     for (var i = e.d.length, s = "", a = e.d; --i > 0;)
+//       s = (i & 1 ? "," : " ") + a[i] + s;
+//     return String.fromCharCode(e.c) + (i === 0 ? a[0] : "") + s;
+//   }).join("");
+// };
+// /** @param {parsePath} cbX @param {parsePath} cbY @returns {SVGPath} */
+// SVGPath.prototype.transform = function transform(cbX, cbY) {
+//   for (var b = !0, i = 0, p = this.path; i < p.length; i++) {
+//     b = (p[i].c & 32) === 0;
+//     if (p[i].c !== 86)
+//       for (var j = p[i].d.length; j > 0; cbY(p[i].d, j + 1, b))
+//         (j -= 2) >= 0 && cbX(p[i].d, j, b);
+//     else
+//       cbY(p[i].d, 0, b);
+//   }
+//   return this;
+// };
+// SVGPath.prototype.move = function (x, y) {
+//   return this.transform(function (o, p, c) {
+//     c && (o[p] += x);
+//   }, function (o, p, c) {
+//     c && (o[p] += y);
+//   });
+// };
+// function path2dEdit(pth, em) {
+//   var C = /^[A-Za-z]/,
+//     ARG = /^[-+]?(?:\.\d|\d+\.|\d)\d*([Ee][-+]?\d+)?/,
+//     SPC = /^[^A-Za-z0-9+\-.]*/;
+//   var l = 0, s = "", arr = [0], r = new SVGPath();
+//   function regExec(reg) {
+//     var res = reg.exec(pth.slice(l, Math.min(l + 256, pth.length)));
+//     res ? l += res[0].length : res = [];
+//     return res;
+//   }
+//   regExec(SPC);
+//   for (em = em || 6969; em--;) {
+//     if (!(s = regExec(C)[0]))
+//       break;
+//     r.path.push({c: s.charCodeAt(0), d: arr = []});
+//     for (regExec(SPC); s = regExec(ARG)[0]; regExec(SPC))
+//       arr.push(Number(s));
+//   }
+//   return r;
+// }
+// function arcMax90d(x_begin, y_begin, x_center, y_center, angle) {
+//   var xB, yB, xC, yC, xD, yD, y, x, n, sqrt, a, arr;
+//   a = angle * Math.PI / 180 || 0;
+//   x = x_center - x_begin; // 0, 100
+//   y = y_begin - y_center; // -100, 0
+//   if (x_begin > x_center)
+//     n = Math.tanh(y / x) + a;
+//   else if (x_center > x_begin)
+//     n = Math.tanh(y / x) + a + Math.PI;
+//   else
+//     n = Math.PI / (y_begin > y_center ? -2 : 2) + a; // 0, 90
+//   sqrt = Math.sqrt(x * x + y * y); // 100
+//   xC = Math.cos(n) * sqrt; // 100, 0
+//   yC = Math.sin(n) * sqrt; // 0, 100
+//   if (angle >= 90)
+//     n = 1;
+//   else if (angle <= -90)
+//     n = -1; // -1, -1
+//   else
+//     n = angle % 90 / 90;
+//   n *= 0.52284749831; // -0.52284,- 0.52284
+//   xB = y * n; // 52.284, 0
+//   yB = x * n; // 0, -52.284
+//   xD = yC * n; // 0, -52.284
+//   yD = xC * n; // -52.284, 0
+//   xD += xC = x + xC; // yC: 100 xD: 100, yC: -100 xD: (47.15)
+//   yD += yC = -yC - y; // xC: -100 yD:  , xC: 100 yD: ()
+//   arr = [xB, yB, xD, yD, xC, yC];
+//   //console.log("c " + arr.join(" ") + " x, y - B, C, D: " + arr.join(", "));
+//   return "c" + arr.join(" ");
+// }
+// function roundBox(x, y, w, h, r) {
+//   var mw = w - r - r, mh = h - r - r;
+//   return "M"+(x+r)+","+y+arcMax90d(x+r,y,x+r,y+r,90)+"v"+mh+
+//     arcMax90d(x,y+h-r,x+r,y+h-r,90)+"h"+mw+
+//     arcMax90d(x+w-r,y+h,x+w-r,y+h-r,90)+"v"+-mh+
+//     arcMax90d(x+w,y+r,x+w-r,y+r,90)+"z";
+// }
+// typeof render == "function" || WH(ctx, 256, 256);
+// ctx.beginPath();
+// var ctxCommands = {
+//   M: ctx.moveTo,
+//   L: ctx.lineTo,
+//   C: ctx.bezierCurveTo,
+//   Z: ctx.closePath,
+//   H: function (n) {
+//     this.lineTo(n, rY);
+//   },
+//   V: function (n) {
+//     this.lineTo(x = rX, rY = n);
+//   }
+// };
+// var rX = 0, rY = 0, x = 0, y = 0, tmp_n = 256 / 60 * 17;
+// function parseParam(s) {
+//   return (s[0] === "-" ? -("0x" + s.slice(1)) : +("0x" + s)) / 1024;
+// }
+// function tmp_f(o, p, c) {
+//   o[p] = (+o[p] * 1024 | 0).toString(16);
+// }
+// ""+function (s) {
+//   var pth = path2dEdit(s).move(
+//    -112,-52
+//   ).transform(tmp_f, tmp_f).path.map(function (e) {
+//     return String.fromCharCode(e.c) + e.d.join()
+//   }).join(" ") ||
+//     "M2ba5a,2bab5 vda5e c0,33ca,-29fc,5dc6,-5dc\
+// 6,5dc6 h-1fdbd c-33ca,0,-5dc6,-29fc,-5dc6,-5dc6 v-1fd62 c0,-33ca,29fc,-5dc6,5dc6,-5dc6 hda3f l11,-daf0 c0,-33ca,29\
+// fc,-5dc6,5dc6,-5dc6 h1fda6 c33ca,0,5dc6,29fc,5dc6,5dc6 v1fdf3 c0,33ca,-29fc,5dc6,-5dc6,5dc6 z M25a7a,18270 c-5e82,30,-1b\
+// fcd,e4,-1f71e,d4 c-f11,-4,-180c,a9e,-1815,19ce c-3a,5fa0,-10c,1baf6,-b6,1f33\
+// 5 c16,edc,8e7,18b9,1948,18b7 l1f71e,-37 cc02,-1,15a5,-862,\
+// 15a8,-1707 l83,-1f5a7 c6,-de2,-7ef,-19b0,-16a8,-19a9 z M3\
+// 94a4,4b8f l-1fa26,-1ac c-e4d,70,-169d,c12,-16a6,1820 l-a3,d63a \
+// ld185,67 c3c14,9,66ad,2841,6729,5855 l-33,def3 ld5ec,1a6 cba6,-76,175b,-a4c,17d6,-19\
+// 35 l-61,-1f52a c-5,-f8c,-a81,-17f3,-146b,-17a5 z"
+//     ||
+// 'M3511,1111 c-12d2,0,-2400,112d,-2400,23ff vc911 c0,12d2,112d,2400,23ff,2400 hc911 c12d2,0,2400,-112d,2400,-2400 v-c911 c0,-12d2,-112d,-2400,-2400,-2400 z M19b77,1111 c-12d2,0,-2400,112d,-2400,23ff vc911 c0,12d2,112d,2400,23ff,2400 hc911 c12d2,0,2400,-112d,2400,-2400 v-c911 c0,-12d2,-112d,-2400,-2400,-2400 z M3511,17777 c-12d2,0,-2400,112d,-2400,23ff vc911 c0,12d2,112d,2400,23ff,2400 hc911 c12d2,0,2400,-112d,2400,-2400 v-c911 c0,-12d2,-112d,-2400,-2400,-2400 z M19b77,17777 c-12d2,0,-2400,112d,-2400,23ff vc911 c0,12d2,112d,2400,23ff,2400 hc911 c12d2,0,2400,-112d,2400,-2400 v-c911 c0,-12d2,-112d,-2400,-2400,-2400 z M3511,2dddd c-12d2,0,-2400,112d,-2400,23ff vc911 c0,12d2,112d,2400,23ff,2400 hc911 c12d2,0,2400,-112d,2400,-2400 v-c911 c0,-12d2,-112d,-2400,-2400,-2400 z M19b77,2dddd c-12d2,0,-2400,112d,-2400,23ff vc911 c0,12d2,112d,2400,23ff,2400 hc911 c12d2,0,2400,-112d,2400,-2400 v-c911 c0,-12d2,-112d,-2400,-2400,-2400 z M301dd,1111 c-12d2,0,-2400,112d,-2400,23ff vc911 c0,12d2,112d,2400,23ff,2400 hc911 c12d2,0,2400,-112d,2400,-2400 v-c911 c0,-12d2,-112d,-2400,-2400,-2400 z M301dd,17777 c-12d2,0,-2400,112d,-2400,23ff vc911 c0,12d2,112d,2400,23ff,2400 hc911 c12d2,0,2400,-112d,2400,-2400 v-c911 c0,-12d2,-112d,-2400,-2400,-2400 z M301dd,2dddd c-12d2,0,-2400,112d,-2400,23ff vc911 c0,12d2,112d,2400,23ff,2400 hc911 c12d2,0,2400,-112d,2400,-2400 v-c911 c0,-12d2,-112d,-2400,-2400,-2400 z'
+//     ||
+// 'M2400,0 c-12d2,0,-2400,112d,-2400,23ff vda22 c0,12d2,112d,2400,23ff,2400 hda22 c12d2,0,2400,-112d,2400,-2400 v-da22 c0,-12d2,-112d,-2400,-2400,-2400 z M2400,16666 c-12d2,0,-2400,112d,-2400,23ff vda22 c0,12d2,112d,2400,23ff,2400 hda22 c12d2,0,2400,-112d,2400,-2400 v-da22 c0,-12d2,-112d,-2400,-2400,-2400 z M2400,2cccc c-12d2,0,-2400,112d,-2400,23ff vda22 c0,12d2,112d,2400,23ff,2400 hda22 c12d2,0,2400,-112d,2400,-2400 v-da22 c0,-12d2,-112d,-2400,-2400,-2400 z M27155,2222 c-ea3,0,-1bff,d5c,-1c00,1bff v94cc c0,ea3,d5c,1bff,1bff,1c00 h94cc cea3,0,1c00,-d5c,1c00,-1c00 v-94cc c0,-ea3,-d5c,-1c00,-1c00,-1c00 z M1ee22,16666 c-12d2,0,-2400,112d,-2400,23ff v0 c0,12d2,112d,2400,23ff,2400 h1b400 c12d2,0,2400,-112d,2400,-2400 v0 c0,-12d2,-112d,-2400,-2400,-2400 z M1ba22,1eeee c-12d2,0,-2400,112d,-2400,2400 v0 c0,12d2,112d,2400,23ff,2400 h21c00 c12d2,0,2400,-112d,2400,-2400 v0 c0,-12d2,-112d,-2400,-2400,-2400 z M21a22,27777 c-12d2,0,-2400,112d,-2400,23ff v0 c0,12d2,112d,2400,23ff,2400 h13c00 c12d2,0,2400,-112d,2400,-2400 v0 c0,-12d2,-112d,-2400,-2400,-2400 z M1e622,30000 c-12d2,0,-2400,112d,-2400,23ff v0 c0,12d2,112d,2400,23ff,2400 h1c400 c12d2,0,2400,-112d,2400,-2400 v0 c0,-12d2,-112d,-2400,-2400,-2400 z M1fe22,38888 c-12d2,0,-2400,112d,-2400,23ff v0 c0,12d2,112d,2400,23ff,2400 h19400 c12d2,0,2400,-112d,2400,-2400 v0 c0,-12d2,-112d,-2400,-2400,-2400 z'
+//     ;
+  
+//   if(toolicons)
+//     console.log("\"" + (pth + "\"").replace(/([ -~])M/g, "$1\\\nM"));
+//   if (typeof Tool == "function" && Tool.list instanceof Array
+//     && Tool.list.length > 2) {
+//     Tool.list[3].icon = pth;
+//   }
+//   return pth;
+// }("M177.47579,296.51569c-14.64832,14.64832 -38.39794,14.64832 -53.04627,0c-14.64832,-14.64832 -14.64832,-38.39795 -0.00001,-53.04627l6.76125,-6.76125l53.041,53.041zM144.05665,223.4672l31.64337,-31.64337l53.041,53.041l-31.63621,31.64675zM251.02655,116.4973l33.03916,-33.03916l53.041,53.041l-33.03191,33.04245zM363.20992,110.77102l-12.31648,12.32702l-53.04701,-53.04553l12.32248,-12.32248l51.11814,-3.50932c3.21603,0 5.82313,2.60711 5.82313,5.82314zM138.35911,131.53405c-12.89222,-12.89222 -23.56167,-23.56167 -23.56167,-23.56167c-2.26353,-2.26353 -2.26353,-5.93341 0,-8.19694l45.08673,-45.08672c2.26352,-2.26353 5.93342,-2.26353 8.19695,0l198.24491,198.24491c2.26353,2.26352 2.26353,5.93342 0,8.19695l-45.08672,45.08673c-2.26353,2.26353 -5.93341,2.26353 -8.19694,0c0,0 -9.38183,-9.39308 -23.61376,-23.63676l11.13502,-11.13872c3.21118,-3.21118 3.21118,-8.41753 0,-11.6287c-3.21118,-3.21118 -8.41753,-3.21118 -11.62871,0l-11.14478,11.12014c-3.6472,-3.64972 -7.47784,-7.48276 -11.44198,-11.44909l18.29315,-18.24552c3.21118,-3.21117 3.21118,-8.41753 0,-11.62871c-3.21118,-3.21117 -8.41753,-3.21117 -11.62871,0l-18.27987,18.25328c-3.87586,-3.87738 -7.82699,-7.82974 -11.81374,-11.81734l11.12046,-11.12822c3.21118,-3.21117 3.21118,-8.41752 0,-11.6287c-3.21117,-3.21117 -8.41753,-3.21117 -11.6287,0l-11.13399,11.11342c-3.86247,-3.86247 -7.79627,-7.74693 -11.6182,-11.56886l18.15548,-18.11904c3.21117,-3.21117 3.21117,-8.41753 0,-11.6287c-3.21117,-3.21117 -8.41752,-3.21117 -11.6287,0l-18.16965,18.10487c-4.04176,-4.04176 -7.99547,-7.99547 -11.81553,-11.81553l11.01203,-10.98162c3.21117,-3.21117 3.21117,-8.41753 0,-11.6287c-3.21117,-3.21117 -8.41753,-3.21117 -11.6287,0l-11.0262,10.96746c-3.95683,-3.95683 -7.67912,-7.67913 -11.10019,-11.10019l18.28741,-18.2902c3.21117,-3.21117 3.21117,-8.41753 0,-11.6287c-3.21117,-3.21117 -8.41753,-3.21117 -11.6287,0l-18.30157,18.27604c-3.76854,-3.76854 -7.77449,-7.77449 -11.79674,-11.79675l11.12516,-11.17158c3.21117,-3.21117 3.21117,-8.41753 0,-11.6287c-3.21117,-3.21117 -8.41753,-3.21117 -11.6287,0z").split(" ").forEach(function (e) {
+//   var c = e[0].toUpperCase();
+//   var params = e.slice(1).split(",").map(e.charCodeAt(0) & 32 ?
+//     function (e, i) {
+//         var n = parseParam(e);
+//         return i & 1 || c === "V" ? y = rY + n : x = rX + n;
+//       } :
+//     function (e, i) {
+//         var n = parseParam(e);
+//         return i & 1 ? y = n : x = n;
+//       });
+//   if (!ctxCommands[c])
+//     return console.error("Missing command " + c);
+//   ctxCommands[c].apply(ctx, params);
+//   rX = x;
+//   rY = y;
+// });
+// if(toolicons){
+// ctx.fillStyle = "#ffffff";
+// ctx.fill();
+// }
+// // typeof render == "function" && render();
+// // if (typeof DefaultUI == "function" && DefaultUI.blockBars instanceof Array)
+// //   // DefaultUI.blockBars = (DefaultUI.selectedFolder = 0,[
+// //     DefaultUI.createFolder(690, ["Tune", "Rotate", "Skin", "Inventory"])
+// //   // ]);
+// void 0;

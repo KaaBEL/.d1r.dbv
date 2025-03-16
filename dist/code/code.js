@@ -6,7 +6,7 @@
 // B) create chrome extensions with custom modifications for live page
 // C) pull requests to main repo on github
 /** @readonly */
-var version_code_js = "v.0.2.2";
+var version_code_js = "v.0.2.3";
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -42,7 +42,7 @@ function Data() {
   throw new TypeError("Illegal constructor");
   this.data = null;
 }
-/** is moving color ids terrible idea? It reaľy matters too little so far */
+/** is moving color ids terrible idea? It realy matters too little so far */
 Data.colors =
   /** @type {const} */
   ({"White": 0, "Light Gray": 1, "Dark Gray": 2, "Black": 3,
@@ -2686,7 +2686,7 @@ Data.nameMethods(Edit);
  * BlockSelection is even EditSelection now and is not used at all */
 /**
  * @typedef {{nodeList:(Logic|undefined)[],nodeConnections:number[][],
- * customInputs:Ship.CustomInput[],girdSize:Ship.Grid}} KnownShipProperties
+ * customInputs:Ship.CustomInput[],gridSize:Ship.Grid}} KnownShipProperties
  * @typedef {{[key:string]:unknown}&{[K in keyof KnownShipProperties]?:
  *   KnownShipProperties[K]}} ShipProperties
  * @see {Logic} @see {Ship.CustomInput}
@@ -2721,7 +2721,7 @@ function Ship(name, version, time, blocks, properties, mode) {
 /** @readonly @type {32} significantVersion: 32 (integer) */// @ts-ignore
 Ship.VERSION = 32;
 Ship.propertyNames = new RegExp("^(?:nodeList|nodeConnections|customI" +
-  "nputs|girdSize)$");
+  "nputs|gridSize)$");
 // Ship.PROPERTIES = {
 //   // nodeList?:(Logic|undefined)[]
 //   nodeList: Logic.VALUE[0] ? Logic.VALUE[0].map(function (e) {
@@ -2731,8 +2731,8 @@ Ship.propertyNames = new RegExp("^(?:nodeList|nodeConnections|customI" +
 //   nodeConnections: +"0" ? [[0]] : undefined,
 //   // customInputs?:Ship.CustomInput[]
 //   customInputs: +"0" ? [new Ship.CustomInput("", 0)] : undefined,
-//   // girdSize?:Ship.Grid
-//   girdSize: +"0" ? new Ship.Grid("", "", null, null) : undefined
+//   // gridSize?:Ship.Grid
+//   gridSize: +"0" ? new Ship.Grid("", "", null, null) : undefined
 // };
 Ship.prototype.selectRect = (
   /**
@@ -3213,7 +3213,7 @@ Ship.fromObject = function fromObject(object) {
     for (var i = Ship.Grid.VALUE.length; i-- > 56;) {
       var grid = Ship.Grid.VALUE[i];
       if (grid && grid.dbvIndex === props.launchpadSize)
-        props.girdSize = grid;
+        props.gridSize = grid;
     }
     props.nodeConnections = o.add.logic;
     props.customInputs = o.add.inputs || [];
@@ -3350,11 +3350,12 @@ Ship.checkDBV = function (ship) {
           " integer value at index: " + (n - 1)));
     }
     var n0 = arr[n - 1];
-    if ("max" in item && "min" in item && typeof n0 == "number")
+    if ("max" in item && "min" in item && typeof n0 == "number") {
       if (n0 > item.max || n0 < item.min)
         throw at(new Error("Only values in range: " + item.min + " " +
           item.max + " are allowed at index: " + (n - 1) +
           " of \"c\" property"));
+    }
     "CONTINUE HERE";
   }
   rend_collisions = true;
@@ -3401,7 +3402,7 @@ Ship.checkDBV = function (ship) {
           return e.internalName;
         }) + "\""));
   }
-  var grid = shipProp.girdSize && shipProp.girdSize.box2d || null;
+  var grid = shipProp.gridSize && shipProp.gridSize.box2d || null;
   if (!grid)
     throw new Error("Can do only .DBV grids for now :(");
   if (typeof ship.name != "string")
@@ -3450,7 +3451,7 @@ Ship.dateTime = function (t, f) {
 //     case "nodeList": return shipProp.nodeList || null;
 //     case "nodeConnections": return shipProp.nodeConnections || null;
 //     case "customInputs": return shipProp.customInputs || null;
-//     case "girdSize": return shipProp.girdSize || null;
+//     case "gridSize": return shipProp.gridSize || null;
 //   }
 //   return null;
 // }
@@ -3662,7 +3663,7 @@ B64Key.u8arrToB64 = function uint8arrayToBase64(uint8array) {
 // https://github.com/KaaBEL/Deltarealm-b64-keys/blob/main/index.html#LC827
 /** @param {[number,number,number]} r @returns {Rotation} */
 B64Key.rotateBlock = function (r) {
-  /** @type {0|1|2|3} rotation, (angle → of axis) */
+  /** @type {0|1|2|3} rotation, (angle => of axis) */
   var rot = 0, i = 3, angle = 0, tmp = [];
   /** @type {0|1|2} other/mirored side */
   var face = 1, order, o_side = !1;
@@ -3829,9 +3830,10 @@ B64Key.encode = function encodeCmprsShip(ship) {
   // data block: compression version
   B64Key.wVersion([0, 0, Ship.VERSION]);
   // data block: name
-  buffer[B64Key.i++] = l = ship.name.length;
-  if (l > 255)
+  if ((l = ship.name.length) > 255)
     console.warn("too long name (" + l + ") set to: " + (l = 255));
+  // for the stupid that put this before l check, the check is for a reason
+  buffer[B64Key.i++] = l;
   for (n = 0; n < l;) {
     s = ship.name.charCodeAt(n++);
     buffer[B64Key.i++] = s > 31 && s < 127 || s > 8 && s < 11 ? s : 63;
@@ -3847,7 +3849,7 @@ B64Key.encode = function encodeCmprsShip(ship) {
   // data block: blocks
   B64Key.sortShip();
   b = ship.blocks;
-  var isDBVehicle = (((ship.prop || {}).girdSize || {}).game ||
+  var isDBVehicle = (((ship.prop || {}).gridSize || {}).game ||
       "").slice(0, 8) === "Droneboi",
     dbvVehicle = isDBVehicle ? Ship.toDBV(ship) : {b: [], nc: []};
   // blocks length
@@ -3933,7 +3935,7 @@ B64Key.encode = function encodeCmprsShip(ship) {
       B64Key.i -= 1024;
       for (n = 0; n < 16; n++)
         buffer[n] = prev[n | 1024];
-      kB.push(buffer);
+      kB.push(B64Key.buffer = buffer);
     }
   }
   function checkProperties(prpt, block) {
