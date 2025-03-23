@@ -1,6 +1,6 @@
 //@ts-nocheck
 "use strict";
-// v.0.2 (global version of project when last changes were done)
+// v.0.2.4 (global version of project when last changes were done)
 var error = Error, utst_ = true;
 Error = function (message) {
   console.error(this.message = message);
@@ -14,8 +14,6 @@ press = F;
 try {
   ship = Ship.fromObject({});
   enableLogicEditing();
-  if (press !== edit_logic)
-    throw new Error("press not set to edit_logic");
   if (ship.getMode().mode !== "Logic")
     throw new Error("ship.prop not in correct mode");
   ship.blocks.forEach(function (e) {
@@ -28,7 +26,7 @@ try {
 press = F;
 try {
   enableShipEditing();
-  if (press !== edit_ship || ship.getMode().mode !== "Ship")
+  if (ship.getMode().mode !== "Ship")
     throw new Error("did not pass the test");
 } catch (e) {utst_ =
   console.error("enableShipEditing:");console.error(e);}
@@ -97,6 +95,23 @@ AWQAQA4IRawCAkiYWQQhUABUAAQaEQiAwBBoBAoxSIDyABKAAIlTviFogQ=")));
 }
 // TEST: Ship.toDBV //
 /** @TODO the test for ^ */
+// TEST: Edit.historyAt //
+try {
+  ship = Ship.fromObject({n: "UndoRedoTest", "ls": 0});
+  ship.getHistory = __private([
+    new Edit(Ship.prototype.placeBlock, "[0,0,4,853]", 2),
+    new Edit(Edit.undo, "[0]", 3),
+    new Edit(Ship.prototype.removeBlocks, "[[3]]", 2),
+    new Edit(Ship.prototype.removeBlocks, "[[4]]", 2),
+    new Edit(Ship.prototype.removeBlocks, "[[5]]", 2),
+    new Edit(Edit.undo, "[0]", 3),
+    new Edit(Ship.prototype.removeBlocks,"[[8]]", 2),
+    new Edit(Edit.oldUIColor,"[[9],13]", 2),
+    new Edit(Edit.oldUIColor,"[[8],13]", 2)
+  ]);
+  Edit.historyAt(ship, 8);
+} catch (e) {utst_ =
+  console.error("Edit.historyAt:");console.error(e);}
 // TEST: Ship.fromObject //
 utst_arr1 = ["ControlBlock check1"];
 try {

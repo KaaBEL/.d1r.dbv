@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.3";
+var version_editor_js = "v.0.2.4";
 /** @TODO check @see {defaults} for setting a setting without saveSettings */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -105,7 +105,6 @@ canvas.addEventListener("contextrestored", function () {
   "font-family:monospace,sans-serif,Courier,Consolas;}" +
   "#commandsTab header:first-child" +
   "{display: flex;flex-direction: row;border-bottom: 1px solid #777;}" +
-  "#commandsTab header:first-child div{padding: 5px;}" +
   "#commandsTab button{border: 2px solid #0000;" +
   "background-color: inherit;-webkit-user-select: text;}" +
   "#commandsTab header:first-child button{font-weight: bold;}" +
@@ -118,7 +117,8 @@ canvas.addEventListener("contextrestored", function () {
   "position: absolute;top: 0;left: 0;transition: .2s;}" +
   "#commandsTab .loading div:nth-child(2){position: relative;" +
   "z-index: 1;background-color: #0000;text-align: center;}" +
-  "#commandsTab header div{flex-grow: 1;cursor: pointer;}" +
+  "#commandsTab header div" +
+  "{padding: 5px;flex-grow: 1;cursor: pointer;text-align: center;}" +
   "#commandsTab header div:active{cursor: grab;}" +
   "#commandsTab .content button, #commandsTab .items button" +
   "{display: block;position: relative;width: 333px;}" +
@@ -128,11 +128,7 @@ canvas.addEventListener("contextrestored", function () {
   "{overflow-x: hidden;max-height: " +
   (innerHeight > 500 ? 470 : innerHeight - 40) + "px;}" +
   "#commandsTab input, #commandsTab textarea, #commandsTab select" +
-  "{background-color: #000;color: #bbb;border: 1px solid #888;}" +
-  "#commandsTab header span, #commandsTab.used .content," +
-  "#commandsTab:not(.used) .items{display: none;}" +
-  "#commandsTab.used span.back, #commandsTab:not(.used) header div" +
-  " :last-child{display: initial;}"
+  "{background-color: #000;color: #bbb;border: 1px solid #888;}"
 );
 
 /** originally settings variable, defines type for settings */
@@ -2523,92 +2519,6 @@ ml?funmode&no=info for example to skip it.");
 // code in Discord, you all for using DBVE, your feedback, and db
 // suggestions to take inspiration from.
 
-var cmdsName = EL(), cmds = (function () {
-  /** for #commandsTab styles @see {addingStyles} */
-  /** navigation element returned to set cmds variable */
-  var nav = EL("nav");
-  nav.id = "commandsTab";
-  nav.style.display = "none";
-  var header = EL("header"), back = header.appendChild(EL("button"));
-  /** @type {HTMLElement} */
-  var el = header.appendChild(EL());
-  el.appendChild(cmdsName);
-  el.appendChild(EL("span")).appendChild(tN("[Commands Tab]"));
-  el = nav.appendChild(header).appendChild(EL("button"));
-  var content = nav.appendChild(EL()), items = nav.appendChild(EL());
-  el.appendChild(tN("X"));
-  el.onclick = function () {
-    nav.style.display = "none";
-  };
-  back.appendChild(tN("<"));
-  back.onclick = function () {
-    cmds.className = "";
-    utilities.rend_UI = F;
-    press = DefaultUI.press;
-    move = DefaultUI.move;
-    render();
-  };
-  back.className = "back";
-  cmdsName.className = "back";
-  content.className = "content";
-  items.className = "items";
-  (el = nav.appendChild(EL())).style.display = "none";
-  el.appendChild(tN("Search commads... coming spoon"));
-  /** @param {Command} item */
-  function initItems(item) {
-    function ending() {
-      var el = items.appendChild(EL());
-      el.innerText = "Description:\n" + item.description;
-      el.style.color = "#879b90";
-    }
-    return function () {
-      cmdsName.innerText = item.name;
-      cmds.className = "used";
-      for (; items.firstChild;)
-        items.removeChild(items.firstChild);
-      var arr = item.items;
-      if (typeof arr == "function")
-        return arr(items), ending();
-      for (var i = 0; i < arr.length; i++) {
-        var s = arr[i].type, isBtn = s === "button";
-        var isChck = s === "checkbox", e = EL(isChck ? "input" : s);
-        if (isChck && e instanceof HTMLInputElement)
-          e.type = "checkbox";
-        e[isBtn ? "onclick" : isChck ? "onchange" : "oninput"] = arr[i].fn;
-        (isBtn ? e : items).appendChild(tN(
-          arr[i].name + (isBtn ? "" : ": ")));
-        items.appendChild(e);
-        !isBtn && items.appendChild(EL("br"));
-      }
-      ending();
-    }
-  }
-  var group = utilities("");
-  Command.initItem = function (item) {
-    if (item.group && item.group !== groupName) {
-      group = utilities(groupName = item.group);
-      content.appendChild(group[0]);
-      content.appendChild(group[1]);
-    }
-    (item.group ? group[1] : content).appendChild(el = EL("button"));
-    el.appendChild(tN(item.name));
-    el.onclick = initItems(item);
-    el.appendChild(EL()).appendChild(tN(">"));
-    return item;
-  };
-  for (var i = 0, groupName = ""; i < Command.list.length; i++)
-    Command.initItem(Command.list[i]);
-  window.onerror = function (m,s,l,c,e) {
-    var pre = content.appendChild(EL("div"));
-    pre.style.overflowWrap = "break-word";
-    pre.style.wordBreak = "break-all";
-    pre.appendChild(tN(e && e.stack ?
-      "" + m + "\n" + e.stack :
-      "" + m + "\n\t" + s + ":" + l + ":" + c));
-  }
-  return (bd || EL()).appendChild(nav);
-})();
-
 /** @callback ToolExec @param {number} x @param {number} y @returns {void} */
 /** instance is sealed
  * @param {string} name @param {string} icon @param {ToolExec} [exec]
@@ -2934,7 +2844,10 @@ be8b,554f,be8b,be8b z M33a,c1a9 l0,0 c0,-693b,554f,-be8b,be8b,-be8b h3299 l-\
 2a,-c732 c6c57,0,c42a,592e,c42a,c732 c0,6e03,-57d3,c732,-c42a,c732 c-6c57,0,\
 -c42a,-592e,-c42a,-c732 z M3061d,29da1 c0,-1657,-121c,-2873,-2873,-2873 c-16\
 57,0,-2873,121c,-2873,2873 v6982 c0,1657,121c,2873,2873,2873 h5090 c1657,0,2\
-873,-121c,2873,-2873 c0,-1657,-121c,-2873,-2873,-2873 h-282b z"));
+873,-121c,2873,-2873 c0,-1657,-121c,-2873,-2873,-2873 h-282b z",
+function (x, y) {
+  old_UI(x, y);
+}, true));
 Tool.list.push(new Tool("Oldschool", "M105e7,3d210 c-3a97,3a97,-9997,3a97,-d42\
 f,0 c-3a97,-3a97,-3a97,-9997,0,-d42f l1b0b,-1b0b ld429,d429 z M803a,2adde l7\
 e92,-7e92 ld429,d429 l-7e8b,7e96 z M22c1b,101fd l8428,-8428 ld429,d429 l-842\
@@ -3043,11 +2956,11 @@ function devt_bug_testing() {
 }
 var devt_debugger = false;
 
+/** @typedef {Block|LogicBlock|Tool|null} TileType */
 function DefaultUI() {
   throw new TypeError("Illegal constructor");
   this.mode = "any";
 }
-/** @typedef {Block|LogicBlock|Tool|null} TileType */
 /** used in DefaultUI.createTile for rotatable blocks */
 DefaultUI.tilesRotation =
   /** @type {Rotation} */
@@ -3061,15 +2974,17 @@ DefaultUI.rend = F;
 /** @type {(TileType[]&{type:TileType})[]} */
 DefaultUI.blockBars = [];
 DefaultUI.selectedFolder = 0;
-/** value & 3: 0 = selected in toolBar, 1 = selected in BlockBar,
- * 2 = selected inventoryTile, 3 = reserved for selected in inventory
- * value >> 2: index of selected tile
- * value === -1: no tile selected */
+/** The value of selected tile consists of:
+ * enum `value & 3` where 0 = selected in toolBar, 1 = selected in BlockBar,
+ * 2 = selected inventoryTile, 3 = reserved for selected in inventory,
+ * `value >> 2` gives index of selected tile,
+ * if `value === -1` it means no tile is selected; */
 DefaultUI.selectedTile = -1;
-/** value & 3: 0 = selected in toolBar, 1 = selected in BlockBar,
- * 2 = selected inventoryTile, 3 = reserved for selected in inventory
- * value >> 2: index of selected tile
- * value === -1: no tile selected */
+/** The value of selected tile consists of:
+ * enum `value & 3` where 0 = selected in toolBar, 1 = selected in BlockBar,
+ * 2 = selected inventoryTile, 3 = reserved for selected in inventory,
+ * `value >> 2` gives index of selected tile,
+ * if `value === -1` it means no tile is selected; */
 DefaultUI.selectedClickTile = -1;
 DefaultUI.inventoryTile = false;
 DefaultUI.createTile = function () {
@@ -3103,8 +3018,7 @@ DefaultUI.toolBar = [
   DefaultUI.createTile("Flip"),
   DefaultUI.createTile("Flip180"),
   DefaultUI.createTile("Erase"),
-  DefaultUI.createTile("Classic"),
-  DefaultUI.createTile("Oldschool")
+  DefaultUI.createTile("Classic")
 ];
 /** used at @typedef {"@see"} SeeRenderingFolders */
 DefaultUI.offsetsFolders = 0;
@@ -3133,6 +3047,9 @@ DefaultUI.defaultFoldersData = [
   {type: "__placeholder853__", tiles: [], range: [834, 858]},
   {type: "Afterburner", tiles: [1035, 1037, 1043, 1060], range: []}
 ];
+/** @type {ToolExec} */
+DefaultUI.defaultPress = function (_x, _y) {};
+DefaultUI.canDefaultPress = true;
 /** @param {number|string} type @param {unknown[]} [tiles=[]] */
 DefaultUI.createFolder = function (type, tiles) {
   var folder =
@@ -3155,7 +3072,7 @@ DefaultUI.actionArea = function (x, y) {
     else
       return false;
   } else if (y > canvas.height - 103) {
-    // items for blockBar rect part of canvas: dynamic   canvas
+    // items for blockBar rect part of canvas: dynamic tile slots
     if (DefaultUI.inventoryTile && x > canvas.width - 103)
       tile = 2;
     else if (x - 277 < (DefaultUI.blockBars[DefaultUI.selectedFolder] ||
@@ -3195,8 +3112,8 @@ DefaultUI.getCode = function tileCode(tile) {
     tile instanceof Block ?
       tile.internalName :
       NaN;
-};
-/** @param {number} w */
+}; 
+/** usually used before @see {DefaultUI.renderHotBars} @param {number} w */
 DefaultUI.reflowBlockBars = function (w) {
   function pushToSame() {
     sameTypes = sameTypes.concat(bars[i] || []);
@@ -3284,9 +3201,9 @@ DefaultUI.getDefaultFolders = function (logicOnly) {
   }
   return yk;
 };
-/** render toolBar side of canvas: static tile slots
+/** render both toolBar and blockBar: all hotbar tile slots
  * @param {number} w @param {number} h */
-DefaultUI.renderToolBar = function (w, h) {
+DefaultUI.renderHotBars = function (w, h) {
   var radius = defaults.renderSharp ? 0 : 5;
   /** @param {Block|LogicBlock} block */
   function drawBlockRc(block) {
@@ -3429,12 +3346,10 @@ DefaultUI.renderToolBar = function (w, h) {
     );
   }
 };
-/** @type {ToolExec} */
-DefaultUI.defaultPress = function (_x, _y) {};
 /** generator for press action bind handling
  * @param {(x:number,y:number,tile:ShipBlock)=>void} [blockPlacing]
- * @param {ToolExec} [defaultPress] @returns {typeof press} */
-DefaultUI.basePress = function (blockPlacing, defaultPress) {
+ * @param {boolean} [canDefault=true] @returns {typeof press} */
+DefaultUI.basePress = function (blockPlacing, canDefault) {
   var placing = blockPlacing || function (x, y, tile) {
     ship.placeBlock(
       0,
@@ -3444,7 +3359,7 @@ DefaultUI.basePress = function (blockPlacing, defaultPress) {
     );
     render();
   };
-  DefaultUI.defaultPress = defaultPress || function (_x, _y) {};
+  DefaultUI.canDefaultPress = canDefault !== UDF ? canDefault : false;
   return function (x, y) {
     if (DefaultUI.actionArea(x, y)) {
       var tile = DefaultUI.getSelectedTile(DefaultUI.selectedClickTile);
@@ -3457,18 +3372,107 @@ DefaultUI.basePress = function (blockPlacing, defaultPress) {
       else if (tile instanceof Tool) {
         tile.exec(x, y);
       } else
-        DefaultUI.defaultPress(x, y);
+      DefaultUI.canDefaultPress && DefaultUI.defaultPress(x, y);
   };
 };
 DefaultUI.baseMove = function () {};
 DefaultUI.baseContextmenu = function () {};
 DefaultUI.baseOver = function () {};
 
+var cmdsName = EL(), cmds = (function () {
+  /** for #commandsTab styles @see {addingStyles} */
+  function goHome() {
+    cmdsName.innerText = "[Commands tab]";
+    content.style.display = "";
+    items.style.display = "none";
+    back.style.visibility = "hidden";
+    utilities.rend_UI = F;
+    press = DefaultUI.press;
+    move = DefaultUI.move;
+    render();
+  };
+  /** navigation element returned to set cmds variable */
+  var nav = EL("nav");
+  nav.id = "commandsTab";
+  nav.style.display = "none";
+  var el = nav.appendChild(EL("header")),
+    back = el.appendChild(EL("button"));
+  back.appendChild(tN("<"));
+  back.onclick = goHome;
+  el.appendChild(cmdsName);
+  el = el.appendChild(EL("button"));
+  el.appendChild(tN("X"));
+  el.onclick = function () {
+    nav.style.display = "none";
+  };
+  var content = nav.appendChild(EL()), items = nav.appendChild(EL());
+  content.className = "content";
+  items.className = "items";
+  goHome();
+  (el = nav.appendChild(EL())).style.display = "none";
+  el.appendChild(tN("Search commads... coming spoon"));
+  /** @param {Command} item */
+  function initItems(item) {
+    function ending() {
+      var el = items.appendChild(EL());
+      el.innerText = "Description:\n" + item.description;
+      el.style.color = "#879b90";
+    }
+    return function () {
+      cmdsName.innerText = item.name;
+      content.style.display = "none";
+      items.style.display = "";
+      back.style.visibility = "visible";
+      for (; items.firstChild;)
+        items.removeChild(items.firstChild);
+      var arr = item.items;
+      if (typeof arr == "function")
+        return arr(items), ending();
+      for (var i = 0; i < arr.length; i++) {
+        var s = arr[i].type, isBtn = s === "button";
+        var isChck = s === "checkbox", e = EL(isChck ? "input" : s);
+        if (isChck && e instanceof HTMLInputElement)
+          e.type = "checkbox";
+        e[isBtn ? "onclick" : isChck ? "onchange" : "oninput"] = arr[i].fn;
+        (isBtn ? e : items).appendChild(tN(
+          arr[i].name + (isBtn ? "" : ": ")));
+        items.appendChild(e);
+        !isBtn && items.appendChild(EL("br"));
+      }
+      ending();
+    }
+  }
+  var group = utilities("");
+  Command.initItem = function (item) {
+    if (item.group && item.group !== groupName) {
+      group = utilities(groupName = item.group);
+      content.appendChild(group[0]);
+      content.appendChild(group[1]);
+    }
+    (item.group ? group[1] : content).appendChild(el = EL("button"));
+    el.appendChild(tN(item.name));
+    el.onclick = initItems(item);
+    el.appendChild(EL()).appendChild(tN(">"));
+    return item;
+  };
+  for (var i = 0, groupName = ""; i < Command.list.length; i++)
+    Command.initItem(Command.list[i]);
+  window.onerror = function (m,s,l,c,e) {
+    var pre = content.appendChild(EL("div"));
+    pre.style.overflowWrap = "break-word";
+    pre.style.wordBreak = "break-all";
+    pre.appendChild(tN(e && e.stack ?
+      "" + m + "\n" + e.stack :
+      "" + m + "\n\t" + s + ":" + l + ":" + c));
+  }
+  return (bd || EL()).appendChild(nav);
+})();
+
 function enableShipEditing() {
   var mode = ship.getMode();
   ship = mode.getShip();
   /** @TODO create lucky block icon for old_UI (day1, oldschool fmode) */
-  DefaultUI.press = press = DefaultUI.basePress(UDF, old_UI);
+  DefaultUI.press = press = DefaultUI.basePress(UDF);
   DefaultUI.move = move = function (x, y, e) {
     if (e.type === "mousedown" || e.type === "touchstart" ||
       e.type === "mouseenter")
@@ -3483,7 +3487,7 @@ function enableShipEditing() {
   };
   DefaultUI.rend = function () {
     DefaultUI.reflowBlockBars(canvas.width);
-    DefaultUI.renderToolBar(canvas.width, canvas.height);
+    DefaultUI.renderHotBars(canvas.width, canvas.height);
   };
   DefaultUI.blockBars = DefaultUI.getDefaultFolders(false);
   render();
@@ -3615,7 +3619,7 @@ function enableLogicEditing() {
       ctx.strokeRect(dx, dy, found.w * sc, found.h * sc);
     }
     DefaultUI.reflowBlockBars(canvas.width);
-    DefaultUI.renderToolBar(canvas.width, canvas.height);
+    DefaultUI.renderHotBars(canvas.width, canvas.height);
   };
   DefaultUI.blockBars = DefaultUI.getDefaultFolders(true);
   render();
@@ -3794,59 +3798,25 @@ touchdevice = init_touchScreen;
 var old_UI = DefaultUI.press = press = function (x, y) {
   x = Math.floor((vX - x) / 2 / sc + 1);
   y = Math.floor((y - vY) / 2 / sc);
-  var found = [];
+  var found = [0].slice(1);
   for (var i = 0, arr = ship.blocks; i < arr.length; i++)
     if (Math.floor((arr[i].position[1]) / 2) === x &&
       Math.floor((arr[i].position[2]) / 2) === y)
         found.unshift(i);
   var rand = placingBlock();
-  i = 0;
   if (rand === "remove") {
     ship.removeBlocks(found);
     return render();
   }
   if (blockBind.changingColor)
-    /** @param {Ship} target */
-    var oldCmd = function oldUIColor(target) {
-      var color = Color.NAME[Color.ID[rand]] || "";
-      for (arr = target.blocks; i < found.length; i++)
-        arr[found[i]].properties.color =
-          /** @type {keyof Color.ID|""} */
-          (OP.call(Color.ID, rand) ? rand : "");
-    };
-  //@ts-ignore
+    var oldCmd = Edit.oldUIColor.bind(ship, found, Color.ID[rand]);
   else if (blockBind.changingPosition)
-    oldCmd = function oldUIMove(target) {
-      for (arr = target.blocks; i < found.length; i++) {
-        var pos = arr[found[i]].position;
-        pos[1] & 1 ?
-          pos[2] & 1 ? --pos[1] : ++pos[2] :
-          pos[2] & 1 ? --pos[2] : ++pos[1];
-      }
-    };
+    oldCmd = Edit.oldUIMove.bind(ship, found);
   else
-    oldCmd = function oldUIRotate(target) {
-      for (arr = target.blocks; i < found.length; i++) {
-        var o = arr[found[i]], rot = o.rotation[2];
-        if ([
-            "Slab Wedge",
-            "Wedge",
-            "Wedge 1x2",
-            "Wedge 1x4",
-            "Smooth Corner",
-            "Smooth Corner 1x2",
-            "Smooth Corner 1x4",
-            "Glass Wedge"
-          ].indexOf(o.internalName) < 0 || rot === 3)
-          o.rotation[1] = !o.rotation[1];
-        //@ts-ignore
-        o.rotation[2] = rot + 1 & 3;
-      }
-    };
+    oldCmd = Edit.oldUIRotate.bind(ship, found);
   // placingBlock function modified blockBind.changingColor at beggining
   if (found.length || blockBind.changingColor) {
-    oldCmd(ship);
-    Edit.capture(oldCmd, ship);
+    oldCmd();
     return render();
   }
   if (rand !== "remove") {
@@ -3901,8 +3871,7 @@ DefaultUI.over = over = function (e) {
   if (e instanceof TouchEvent)
     return;
   if ((e.type === "mousedown" || e.type === "touchstart") &&
-    e.target instanceof Node &&
-    (cmdsName.parentNode || EL()).contains(e.target)) {
+    e.target === cmdsName) {
     var st = cmds.style,
       x = Number(st.left.slice(0, -2)) || 0,
       y = Number(st.top.slice(0, -2)) || 0;
@@ -3981,19 +3950,11 @@ function expensiveRenderer() {
   canvas.width = canvas.width;
   rend_background();
   ctx.imageSmoothingEnabled = ctx.msImageSmoothingEnabled = !1;
-  var objs = ship.blocks, n = 0;
-  if (
-    Logic.rend &&
-      (Logic.nodes = function (current) {
-        var logics =
-          /** @type {(Logic|undefined)[]&{ownerShip:Ship}} */
-          (current || [UDF]);
-        logics.ownerShip = ship;
-        return logics;
-      }(ship.prop && ship.prop.nodeList))
-  ) {
+  var objs = ship.blocks, n = 0, logics =
+    /** @type {(Logic|undefined)[]&{ownerShip:Ship}} */
+    (ship.prop && ship.prop.nodeList || [UDF]);
+  if (Logic.rend)
     ctx.globalAlpha = defaults.logicPreviewAlpha;
-  }
   var mult = sc / 16;
   for (var i = 0, id = 0, pos = [0, 0, 0]; i < objs.length; i++) {
     pos = objs[i].position;
@@ -4027,7 +3988,7 @@ function expensiveRenderer() {
       (w - 32) * sc / 16 :
       rot === 3 ? (h - 32) * sc / 16 : 0;
     // update logic nodes render posiotions
-    /** @type {typeof Logic.nodes[number]} */
+    /** @type {typeof logics[number]} */
     var node, indexes = objs[i].properties.nodeIndex;
     if (Logic.rend && indexes instanceof Array)
       for (var j = indexes.length; j-- > 0;) {
@@ -4037,7 +3998,7 @@ function expensiveRenderer() {
             i + "]: " + JSON.stringify(objs[i]) + AT);
           break;
         }
-        if (!(node = Logic.nodes[n = indexes[j]])) {
+        if (!(node = logics[n = indexes[j]])) {
           console.error("Logic node: " + n + " missing of ship.blocks[" +
             i + "]: " + JSON.stringify(objs[i]) + " is missing in Logic." +
             "nodes" + AT);
@@ -4104,8 +4065,8 @@ function expensiveRenderer() {
   }
   if (Logic.rend) {
     ctx.lineCap = "round";
-    for (var j = Logic.nodes.length; j-- > 0;) {
-      if (!(node = Logic.nodes[j]) || (n = node.type) < 2)
+    for (var j = logics.length; j-- > 0;) {
+      if (!(node = logics[j]) || (n = node.type) < 2)
         continue;
       n = node.type;
       ctx.beginPath();
@@ -4119,20 +4080,20 @@ function expensiveRenderer() {
     }
     ctx.lineWidth = 4;
     ctx.lineDashOffset = Logic.dashOff = Logic.dashOff + 1 || 1;
-    for (j = Logic.nodes.length; j-- > 0;) {
-      if (!(node = Logic.nodes[j]) || node.pairs instanceof Array)
+    for (j = logics.length; j-- > 0;) {
+      if (!(node = logics[j]) || node.pairs instanceof Array)
         continue;
       ctx.strokeStyle = node.type & 1 ? "#3e4" : "#e23";
       ctx.beginPath();
       ctx.moveTo(node.x, node.y);
-      (node = Logic.nodes[node.pairs]) ?
+      (node = logics[node.pairs]) ?
         ctx.lineTo(node.x, node.y) : 0;
       ctx.setLineDash([sc, sc / 2]);
       ctx.stroke();
     }
     ctx.setLineDash([]);
-    for (j = Logic.nodes.length; j-- > 0;) {
-      if (!(node = Logic.nodes[j]) || (n = node.type) > 1)
+    for (j = logics.length; j-- > 0;) {
+      if (!(node = logics[j]) || (n = node.type) > 1)
         continue;
       n = node.type;
       ctx.beginPath();
@@ -4199,6 +4160,8 @@ Block.Box2d.visualize = function (path, x, y, green) {
 };
 
 init = function () {
+  enableShipEditing();
+  DefaultUI.selectedTile = (7 << 2) | 0;
   rend_checkColors();
   init_funMode();
   check_contentScript();
@@ -4210,178 +4173,3 @@ init = function () {
   // Logic.removeLogic(ship.blocks[35], ship.prop.nodeList);
   // del.call(ship.blocks, 35);del.call(ship.blocks, 33);render();}
 };
-
-// "use stict";
-// var toolicons = 1;
-// /** SVG svg stuff @typedef {{c:number,d:Array<number>}} SVGCmd */
-// /** 
-//  * @callback parsePath
-//  * @param {Array<number>} o object
-//  * @param {number} p property
-//  * @param {boolean} c letter upper case
-//  * @returns {void} */
-// /** @param {Array<SVGCmd>} path  */
-// function SVGPath(path) {
-//   this.path = path instanceof Array ? path : [];
-//   Object.seal(this);
-// }
-// SVGPath.prototype.toString = function toString() {
-//   return this.path.map(function (e) {
-//     for (var i = e.d.length, s = "", a = e.d; --i > 0;)
-//       s = (i & 1 ? "," : " ") + a[i] + s;
-//     return String.fromCharCode(e.c) + (i === 0 ? a[0] : "") + s;
-//   }).join("");
-// };
-// /** @param {parsePath} cbX @param {parsePath} cbY @returns {SVGPath} */
-// SVGPath.prototype.transform = function transform(cbX, cbY) {
-//   for (var b = !0, i = 0, p = this.path; i < p.length; i++) {
-//     b = (p[i].c & 32) === 0;
-//     if (p[i].c !== 86)
-//       for (var j = p[i].d.length; j > 0; cbY(p[i].d, j + 1, b))
-//         (j -= 2) >= 0 && cbX(p[i].d, j, b);
-//     else
-//       cbY(p[i].d, 0, b);
-//   }
-//   return this;
-// };
-// SVGPath.prototype.move = function (x, y) {
-//   return this.transform(function (o, p, c) {
-//     c && (o[p] += x);
-//   }, function (o, p, c) {
-//     c && (o[p] += y);
-//   });
-// };
-// function path2dEdit(pth, em) {
-//   var C = /^[A-Za-z]/,
-//     ARG = /^[-+]?(?:\.\d|\d+\.|\d)\d*([Ee][-+]?\d+)?/,
-//     SPC = /^[^A-Za-z0-9+\-.]*/;
-//   var l = 0, s = "", arr = [0], r = new SVGPath();
-//   function regExec(reg) {
-//     var res = reg.exec(pth.slice(l, Math.min(l + 256, pth.length)));
-//     res ? l += res[0].length : res = [];
-//     return res;
-//   }
-//   regExec(SPC);
-//   for (em = em || 6969; em--;) {
-//     if (!(s = regExec(C)[0]))
-//       break;
-//     r.path.push({c: s.charCodeAt(0), d: arr = []});
-//     for (regExec(SPC); s = regExec(ARG)[0]; regExec(SPC))
-//       arr.push(Number(s));
-//   }
-//   return r;
-// }
-// function arcMax90d(x_begin, y_begin, x_center, y_center, angle) {
-//   var xB, yB, xC, yC, xD, yD, y, x, n, sqrt, a, arr;
-//   a = angle * Math.PI / 180 || 0;
-//   x = x_center - x_begin; // 0, 100
-//   y = y_begin - y_center; // -100, 0
-//   if (x_begin > x_center)
-//     n = Math.tanh(y / x) + a;
-//   else if (x_center > x_begin)
-//     n = Math.tanh(y / x) + a + Math.PI;
-//   else
-//     n = Math.PI / (y_begin > y_center ? -2 : 2) + a; // 0, 90
-//   sqrt = Math.sqrt(x * x + y * y); // 100
-//   xC = Math.cos(n) * sqrt; // 100, 0
-//   yC = Math.sin(n) * sqrt; // 0, 100
-//   if (angle >= 90)
-//     n = 1;
-//   else if (angle <= -90)
-//     n = -1; // -1, -1
-//   else
-//     n = angle % 90 / 90;
-//   n *= 0.52284749831; // -0.52284,- 0.52284
-//   xB = y * n; // 52.284, 0
-//   yB = x * n; // 0, -52.284
-//   xD = yC * n; // 0, -52.284
-//   yD = xC * n; // -52.284, 0
-//   xD += xC = x + xC; // yC: 100 xD: 100, yC: -100 xD: (47.15)
-//   yD += yC = -yC - y; // xC: -100 yD:  , xC: 100 yD: ()
-//   arr = [xB, yB, xD, yD, xC, yC];
-//   //console.log("c " + arr.join(" ") + " x, y - B, C, D: " + arr.join(", "));
-//   return "c" + arr.join(" ");
-// }
-// function roundBox(x, y, w, h, r) {
-//   var mw = w - r - r, mh = h - r - r;
-//   return "M"+(x+r)+","+y+arcMax90d(x+r,y,x+r,y+r,90)+"v"+mh+
-//     arcMax90d(x,y+h-r,x+r,y+h-r,90)+"h"+mw+
-//     arcMax90d(x+w-r,y+h,x+w-r,y+h-r,90)+"v"+-mh+
-//     arcMax90d(x+w,y+r,x+w-r,y+r,90)+"z";
-// }
-// typeof render == "function" || WH(ctx, 256, 256);
-// ctx.beginPath();
-// var ctxCommands = {
-//   M: ctx.moveTo,
-//   L: ctx.lineTo,
-//   C: ctx.bezierCurveTo,
-//   Z: ctx.closePath,
-//   H: function (n) {
-//     this.lineTo(n, rY);
-//   },
-//   V: function (n) {
-//     this.lineTo(x = rX, rY = n);
-//   }
-// };
-// var rX = 0, rY = 0, x = 0, y = 0, tmp_n = 256 / 60 * 17;
-// function parseParam(s) {
-//   return (s[0] === "-" ? -("0x" + s.slice(1)) : +("0x" + s)) / 1024;
-// }
-// function tmp_f(o, p, c) {
-//   o[p] = (+o[p] * 1024 | 0).toString(16);
-// }
-// ""+function (s) {
-//   var pth = path2dEdit(s).move(
-//    -112,-52
-//   ).transform(tmp_f, tmp_f).path.map(function (e) {
-//     return String.fromCharCode(e.c) + e.d.join()
-//   }).join(" ") ||
-//     "M2ba5a,2bab5 vda5e c0,33ca,-29fc,5dc6,-5dc\
-// 6,5dc6 h-1fdbd c-33ca,0,-5dc6,-29fc,-5dc6,-5dc6 v-1fd62 c0,-33ca,29fc,-5dc6,5dc6,-5dc6 hda3f l11,-daf0 c0,-33ca,29\
-// fc,-5dc6,5dc6,-5dc6 h1fda6 c33ca,0,5dc6,29fc,5dc6,5dc6 v1fdf3 c0,33ca,-29fc,5dc6,-5dc6,5dc6 z M25a7a,18270 c-5e82,30,-1b\
-// fcd,e4,-1f71e,d4 c-f11,-4,-180c,a9e,-1815,19ce c-3a,5fa0,-10c,1baf6,-b6,1f33\
-// 5 c16,edc,8e7,18b9,1948,18b7 l1f71e,-37 cc02,-1,15a5,-862,\
-// 15a8,-1707 l83,-1f5a7 c6,-de2,-7ef,-19b0,-16a8,-19a9 z M3\
-// 94a4,4b8f l-1fa26,-1ac c-e4d,70,-169d,c12,-16a6,1820 l-a3,d63a \
-// ld185,67 c3c14,9,66ad,2841,6729,5855 l-33,def3 ld5ec,1a6 cba6,-76,175b,-a4c,17d6,-19\
-// 35 l-61,-1f52a c-5,-f8c,-a81,-17f3,-146b,-17a5 z"
-//     ||
-// 'M3511,1111 c-12d2,0,-2400,112d,-2400,23ff vc911 c0,12d2,112d,2400,23ff,2400 hc911 c12d2,0,2400,-112d,2400,-2400 v-c911 c0,-12d2,-112d,-2400,-2400,-2400 z M19b77,1111 c-12d2,0,-2400,112d,-2400,23ff vc911 c0,12d2,112d,2400,23ff,2400 hc911 c12d2,0,2400,-112d,2400,-2400 v-c911 c0,-12d2,-112d,-2400,-2400,-2400 z M3511,17777 c-12d2,0,-2400,112d,-2400,23ff vc911 c0,12d2,112d,2400,23ff,2400 hc911 c12d2,0,2400,-112d,2400,-2400 v-c911 c0,-12d2,-112d,-2400,-2400,-2400 z M19b77,17777 c-12d2,0,-2400,112d,-2400,23ff vc911 c0,12d2,112d,2400,23ff,2400 hc911 c12d2,0,2400,-112d,2400,-2400 v-c911 c0,-12d2,-112d,-2400,-2400,-2400 z M3511,2dddd c-12d2,0,-2400,112d,-2400,23ff vc911 c0,12d2,112d,2400,23ff,2400 hc911 c12d2,0,2400,-112d,2400,-2400 v-c911 c0,-12d2,-112d,-2400,-2400,-2400 z M19b77,2dddd c-12d2,0,-2400,112d,-2400,23ff vc911 c0,12d2,112d,2400,23ff,2400 hc911 c12d2,0,2400,-112d,2400,-2400 v-c911 c0,-12d2,-112d,-2400,-2400,-2400 z M301dd,1111 c-12d2,0,-2400,112d,-2400,23ff vc911 c0,12d2,112d,2400,23ff,2400 hc911 c12d2,0,2400,-112d,2400,-2400 v-c911 c0,-12d2,-112d,-2400,-2400,-2400 z M301dd,17777 c-12d2,0,-2400,112d,-2400,23ff vc911 c0,12d2,112d,2400,23ff,2400 hc911 c12d2,0,2400,-112d,2400,-2400 v-c911 c0,-12d2,-112d,-2400,-2400,-2400 z M301dd,2dddd c-12d2,0,-2400,112d,-2400,23ff vc911 c0,12d2,112d,2400,23ff,2400 hc911 c12d2,0,2400,-112d,2400,-2400 v-c911 c0,-12d2,-112d,-2400,-2400,-2400 z'
-//     ||
-// 'M2400,0 c-12d2,0,-2400,112d,-2400,23ff vda22 c0,12d2,112d,2400,23ff,2400 hda22 c12d2,0,2400,-112d,2400,-2400 v-da22 c0,-12d2,-112d,-2400,-2400,-2400 z M2400,16666 c-12d2,0,-2400,112d,-2400,23ff vda22 c0,12d2,112d,2400,23ff,2400 hda22 c12d2,0,2400,-112d,2400,-2400 v-da22 c0,-12d2,-112d,-2400,-2400,-2400 z M2400,2cccc c-12d2,0,-2400,112d,-2400,23ff vda22 c0,12d2,112d,2400,23ff,2400 hda22 c12d2,0,2400,-112d,2400,-2400 v-da22 c0,-12d2,-112d,-2400,-2400,-2400 z M27155,2222 c-ea3,0,-1bff,d5c,-1c00,1bff v94cc c0,ea3,d5c,1bff,1bff,1c00 h94cc cea3,0,1c00,-d5c,1c00,-1c00 v-94cc c0,-ea3,-d5c,-1c00,-1c00,-1c00 z M1ee22,16666 c-12d2,0,-2400,112d,-2400,23ff v0 c0,12d2,112d,2400,23ff,2400 h1b400 c12d2,0,2400,-112d,2400,-2400 v0 c0,-12d2,-112d,-2400,-2400,-2400 z M1ba22,1eeee c-12d2,0,-2400,112d,-2400,2400 v0 c0,12d2,112d,2400,23ff,2400 h21c00 c12d2,0,2400,-112d,2400,-2400 v0 c0,-12d2,-112d,-2400,-2400,-2400 z M21a22,27777 c-12d2,0,-2400,112d,-2400,23ff v0 c0,12d2,112d,2400,23ff,2400 h13c00 c12d2,0,2400,-112d,2400,-2400 v0 c0,-12d2,-112d,-2400,-2400,-2400 z M1e622,30000 c-12d2,0,-2400,112d,-2400,23ff v0 c0,12d2,112d,2400,23ff,2400 h1c400 c12d2,0,2400,-112d,2400,-2400 v0 c0,-12d2,-112d,-2400,-2400,-2400 z M1fe22,38888 c-12d2,0,-2400,112d,-2400,23ff v0 c0,12d2,112d,2400,23ff,2400 h19400 c12d2,0,2400,-112d,2400,-2400 v0 c0,-12d2,-112d,-2400,-2400,-2400 z'
-//     ;
-  
-//   if(toolicons)
-//     console.log("\"" + (pth + "\"").replace(/([ -~])M/g, "$1\\\nM"));
-//   if (typeof Tool == "function" && Tool.list instanceof Array
-//     && Tool.list.length > 2) {
-//     Tool.list[3].icon = pth;
-//   }
-//   return pth;
-// }("M177.47579,296.51569c-14.64832,14.64832 -38.39794,14.64832 -53.04627,0c-14.64832,-14.64832 -14.64832,-38.39795 -0.00001,-53.04627l6.76125,-6.76125l53.041,53.041zM144.05665,223.4672l31.64337,-31.64337l53.041,53.041l-31.63621,31.64675zM251.02655,116.4973l33.03916,-33.03916l53.041,53.041l-33.03191,33.04245zM363.20992,110.77102l-12.31648,12.32702l-53.04701,-53.04553l12.32248,-12.32248l51.11814,-3.50932c3.21603,0 5.82313,2.60711 5.82313,5.82314zM138.35911,131.53405c-12.89222,-12.89222 -23.56167,-23.56167 -23.56167,-23.56167c-2.26353,-2.26353 -2.26353,-5.93341 0,-8.19694l45.08673,-45.08672c2.26352,-2.26353 5.93342,-2.26353 8.19695,0l198.24491,198.24491c2.26353,2.26352 2.26353,5.93342 0,8.19695l-45.08672,45.08673c-2.26353,2.26353 -5.93341,2.26353 -8.19694,0c0,0 -9.38183,-9.39308 -23.61376,-23.63676l11.13502,-11.13872c3.21118,-3.21118 3.21118,-8.41753 0,-11.6287c-3.21118,-3.21118 -8.41753,-3.21118 -11.62871,0l-11.14478,11.12014c-3.6472,-3.64972 -7.47784,-7.48276 -11.44198,-11.44909l18.29315,-18.24552c3.21118,-3.21117 3.21118,-8.41753 0,-11.62871c-3.21118,-3.21117 -8.41753,-3.21117 -11.62871,0l-18.27987,18.25328c-3.87586,-3.87738 -7.82699,-7.82974 -11.81374,-11.81734l11.12046,-11.12822c3.21118,-3.21117 3.21118,-8.41752 0,-11.6287c-3.21117,-3.21117 -8.41753,-3.21117 -11.6287,0l-11.13399,11.11342c-3.86247,-3.86247 -7.79627,-7.74693 -11.6182,-11.56886l18.15548,-18.11904c3.21117,-3.21117 3.21117,-8.41753 0,-11.6287c-3.21117,-3.21117 -8.41752,-3.21117 -11.6287,0l-18.16965,18.10487c-4.04176,-4.04176 -7.99547,-7.99547 -11.81553,-11.81553l11.01203,-10.98162c3.21117,-3.21117 3.21117,-8.41753 0,-11.6287c-3.21117,-3.21117 -8.41753,-3.21117 -11.6287,0l-11.0262,10.96746c-3.95683,-3.95683 -7.67912,-7.67913 -11.10019,-11.10019l18.28741,-18.2902c3.21117,-3.21117 3.21117,-8.41753 0,-11.6287c-3.21117,-3.21117 -8.41753,-3.21117 -11.6287,0l-18.30157,18.27604c-3.76854,-3.76854 -7.77449,-7.77449 -11.79674,-11.79675l11.12516,-11.17158c3.21117,-3.21117 3.21117,-8.41753 0,-11.6287c-3.21117,-3.21117 -8.41753,-3.21117 -11.6287,0z").split(" ").forEach(function (e) {
-//   var c = e[0].toUpperCase();
-//   var params = e.slice(1).split(",").map(e.charCodeAt(0) & 32 ?
-//     function (e, i) {
-//         var n = parseParam(e);
-//         return i & 1 || c === "V" ? y = rY + n : x = rX + n;
-//       } :
-//     function (e, i) {
-//         var n = parseParam(e);
-//         return i & 1 ? y = n : x = n;
-//       });
-//   if (!ctxCommands[c])
-//     return console.error("Missing command " + c);
-//   ctxCommands[c].apply(ctx, params);
-//   rX = x;
-//   rY = y;
-// });
-// if(toolicons){
-// ctx.fillStyle = "#ffffff";
-// ctx.fill();
-// }
-// // typeof render == "function" && render();
-// // if (typeof DefaultUI == "function" && DefaultUI.blockBars instanceof Array)
-// //   // DefaultUI.blockBars = (DefaultUI.selectedFolder = 0,[
-// //     DefaultUI.createFolder(690, ["Tune", "Rotate", "Skin", "Inventory"])
-// //   // ]);
-// void 0;

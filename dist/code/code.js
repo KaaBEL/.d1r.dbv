@@ -6,7 +6,7 @@
 // B) create chrome extensions with custom modifications for live page
 // C) pull requests to main repo on github
 /** @readonly */
-var version_code_js = "v.0.2.3";
+var version_code_js = "v.0.2.4";
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -454,7 +454,7 @@ Data.nameMethods = function (namespace) {
   }
   for (var p in namespace)
     p in {} || setMethodName(namespace[p]);
-  name += "proptotype.";
+  name += "prototype.";
   for (var p in namespace.prototype)
     p in {} || setMethodName(namespace.prototype[p]);
 };
@@ -499,10 +499,6 @@ function Logic(type, x, y) {
 Logic.dashOff = 0;
 /** specifies when logic nodes and connections should be rendered */
 Logic.rend = !1;
-/** global (logics) nodeList */
-Logic.nodes =
-  /** @type {(Logic|undefined)[]&{ownerShip:Ship}} */
-  ([UDF]);
 /**
  * @callback LExec @param {Logic<2|3>[]} arg
  * @param {LogicBlock} block @param {Ship} ship @returns {void} */
@@ -1142,7 +1138,7 @@ Block.db1ToDb3 = Object.freeze({
   Connector: "Dock", Explosive: "__placeholder776__",
   "Station Block": "__placeholder846__"
 });
-/** @readonly *///@ts-ignore
+/** @readonly settings for @see {Block.arrayFromObjects} *///@ts-ignore
 Block.creator = {warns: 3};
 /**
  * @readonly @param {any[]|any} blocks
@@ -2379,6 +2375,15 @@ __extends(LogicBlock, Block);
 
 /** @typedef {0|1|2|3} Edit.Type commands enum @typedef {0} Edit.Save */
 /** @typedef {1} Edit.Target @typedef {2} Edit.This @typedef {3} Edit.Undo */
+/** @typedef {Edit.save} Ship.clone set second param (copy) to 1 */
+/**
+ * @typedef {((slab?:boolean)=>any)|((ids:number[])=>any)} EditSomeCommand
+ * @typedef {(x:number,y:number,z:number,block:any)=>any} EditBlockCommand
+ * @typedef {(...args:number[])=>any} EditNumberCommand
+ * @typedef {(ids:number[],color:number)=>any} EditColorCommand
+ * @typedef {EditBlockCommand|EditNumberCommand|EditSomeCommand|
+ * EditColorCommand} EditThisCommand
+ * @typedef {(target:Ship,...args:number[])=>any} EditTargetCommand */
 // A concept for undo redo history implementation
 /**
  * @param {((...args:any[])=>any)&{methodName?:string}} command
@@ -2408,7 +2413,6 @@ Edit.prototype.toString = function () {
   var s = Data.getFunctionName(this.command) || "(anonymous)";
   return "[" + this.type + ",\"" + s + "\"," + this.args + "]";
 };
-/** @typedef {Edit.save} Ship.clone set second param (copy) to 1 */
 // @param {Ship} target @param {number} [copy] ? get clone : pass target
 /** @param {Ship} target and also used to reset setting history */
 Edit.save = function (target) {
@@ -2470,13 +2474,6 @@ Edit.save = function (target) {
   ));
   return target;
 };
-/**
- * @typedef {((slab?:boolean)=>any)|((ids:number[])=>any)} EditSomeCommand
- * @typedef {(x:number,y:number,z:number,block:any)=>any} EditBlockCommand
- * @typedef {(...args:number[])=>any} EditNumberCommand
- * @typedef {EditBlockCommand|EditNumberCommand|EditSomeCommand
- * } EditThisCommand
- * @typedef {(target:Ship,...args:number[])=>any} EditTargetCommand */
 Edit.capture = (
   /** Finally reliazed how the overloads work with JSDoc
    * @overload @param {Ship} target @param {EditThisCommand} cmd
@@ -2553,8 +2550,9 @@ Edit.historyAt = function (target, index) {
           /** @type {any} */
           (target)
         ].concat(args));
-      if (last.temp)
-        i = last.temp;
+      if (last.temp > i)
+        // this was an interesting to find what bug it is bug v.0.2.4
+        i = last.temp - 1;
     }
   } catch (e) {
     console.error("Executing Edit commands failed misserably, " +
@@ -2677,6 +2675,44 @@ Edit.randSFC32 = function (seed) {
   }
 };
 // end of taken
+/** @this {Ship} @param {number[]} ids @param {number} color */
+Edit.oldUIColor = function (ids, color) {
+  /** @type {keyof Color.ID|""} */
+  var name = Color.NAME[color] || "";
+  for (var i = 0, arr = this.blocks; i < ids.length; i++)
+    arr[ids[i]].properties.color = name;
+  Edit.capture(this, Edit.oldUIColor, ids, color);
+};
+/** @this {Ship} @param {number[]} ids */
+Edit.oldUIMove = function (ids) {
+  for (var i = 0, arr = this.blocks; i < ids.length; i++) {
+    var pos = arr[ids[i]].position;
+    pos[1] & 1 ?
+      pos[2] & 1 ? --pos[1] : ++pos[2] :
+      pos[2] & 1 ? --pos[2] : ++pos[1];
+  }
+  Edit.capture(this, Edit.oldUIMove, ids);
+};
+/** @this {Ship} @param {number[]} ids */
+Edit.oldUIRotate = function (ids) {
+  for (var i = 0, arr = this.blocks; i < ids.length; i++) {
+    var o = arr[ids[i]], rot = o.rotation[2];
+    if ([
+        "Slab Wedge",
+        "Wedge",
+        "Wedge 1x2",
+        "Wedge 1x4",
+        "Smooth Corner",
+        "Smooth Corner 1x2",
+        "Smooth Corner 1x4",
+        "Glass Wedge"
+      ].indexOf(o.internalName) < 0 || rot === 3)
+      o.rotation[1] = !o.rotation[1];
+    //@ts-ignore
+    o.rotation[2] = rot + 1 & 3;
+  }
+  Edit.capture(this, Edit.oldUIRotate, ids);
+};
 Data.nameMethods(Edit);
 
 /**
@@ -2718,8 +2754,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @readonly @type {32} significantVersion: 32 (integer) */// @ts-ignore
-Ship.VERSION = 32;
+/** @readonly @type {33} significantVersion: 33 (integer) */// @ts-ignore
+Ship.VERSION = 33;
 Ship.propertyNames = new RegExp("^(?:nodeList|nodeConnections|customI" +
   "nputs|gridSize)$");
 // Ship.PROPERTIES = {

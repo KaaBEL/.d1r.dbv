@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.2.3 -->
+<!-- v.0.2.4 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -92,6 +92,11 @@
       if (h && /[?&]no=info$|[?&]no=info&/.test(location.href) &&
         "className" in (h.parentNode || {}))
         h.parentNode.className = "no-info";
+      var i = +/bot\.html|Google-Inspect/.test(navigator.userAgent) && NaN;
+      for (var ch = document.head.childNodes; i < ch.length; i++)
+        if (ch[i].nodeName === "TITLE")
+          /** @type {HTMLTitleElement} */
+          (ch[i]).text = "D1R DBV editor";
     })(document.head || document.querySelector("head"));
   </script>
 </head>
@@ -112,7 +117,7 @@
     It is a fan made opensource tool for modifying and creating Droneboi
     Vehicles online.
     <a href="https://rizenplanet.com/droneboi.html">DBC</a>
-    (DB as DroneBoi shortly, is fourth title of DB games) is the ultimate
+    (DB as DroneBoi shortly, a fourth title of DB series) is the ultimate
     open-world sandbox space drone building, exploration, and combat
     mobile game made by Rizen Planet Studios. Compared to the game which
     focuses on gameplay, this webapp is planned to provide rich spaceship
@@ -122,29 +127,28 @@
     in such Droneboi community being in care of Beau and incredible thanks
     to him for upkeeping the game series. Thanks
     to the DBVE contributors and for feedback from also others.
-    Most of the icons are made by Freepik from www.flaticon.com.
-    <a href="https://www.flaticon.com/free-icons/refresh" title="refresh icons">
-      Refresh icons created by Freepik - Flaticon
-    </a><!-- https://www.flaticon.com/free-icon/refresh_1330172?term=rotate+arrows&page=1&position=2&origin=search&related_id=1330172 -->
-    <a href="https://www.flaticon.com/free-icons/paint" title="paint icons">
-      Paint icons created by Freepik - Flaticon
-    </a><!-- https://www.flaticon.com/free-icon/paintbrush_129817?related_id=129817 -->
-    <a href="https://www.flaticon.com/free-icons/clone" title="clone icons">
-      Clone icons created by NickyLimYeanFen - Flaticon
-    </a><!-- https://www.flaticon.com/free-icon/clone_4013405?term=clone&page=1&position=17&origin=search&related_id=4013405 -->
-    <a href="https://www.flaticon.com/free-icons/anchor-tool" title="anchor tool icons">
-      Anchor tool icons created by riajulislam - Flaticon
-    </a><!-- https://www.flaticon.com/free-icon/line_8848085?term=node+line&page=1&position=50&origin=search&related_id=8848085 -->
-        <!-- https://www.flaticon.com/free-icon/line-segment_5043325?term=line&page=1&position=1&origin=style&related_id=5043325 -->
-    <a href="https://www.flaticon.com/free-icons/eraser" title="eraser icons">
-      Eraser icons created by Those Icons - Flaticon
-    </a><!-- https://www.flaticon.com/free-icon/line_8848085?term=node+line&page=1&position=50&origin=search&related_id=8848085 -->
-    <a href="https://www.flaticon.com/free-icons/book-timer" title="book timer icons">
-      Book timer icons created by Fhmrvi94 - Flaticon
-    </a><!-- https://www.flaticon.com/free-icon/book-timer_16678686?term=book+timer&page=1&position=21&origin=search&related_id=16678686 -->
-    <a href="https://www.flaticon.com/free-icons/school" title="school icons">
-      School icons created by Yogi Aprelliyanto - Flaticon
-    </a><!-- https://www.flaticon.com/free-icon/school-material_3371665?term=back-to-school&page=1&position=76&origin=search&related_id=3371665 -->
+    Most of the icons are made by Freepik from www.flaticon.com:
+    <a href="https://www.flaticon.com/free-icon/refresh_1330172?page=1&position=2&related_id=1330172" title="refresh icon by Freepik">
+      Refresh,
+    </a>
+    <a href="https://www.flaticon.com/free-icon/paintbrush_129817?related_id=129817" title="paint icon by Freepik">
+      Paint created by Freepik,
+    </a>
+    <a href="https://www.flaticon.com/free-icon/clone_4013405?page=1&position=17&related_id=4013405" title="clone icon by NickyLimYeanFen">
+      Clone created by NickyLimYeanFen,
+    </a>
+    <a href="https://www.flaticon.com/free-icon/line_8848085?page=1&position=50&related_id=8848085" title="anchor tool icon by riajulislam">
+      Anchor tool created by riajulislam,
+    </a>
+    <a href="https://www.flaticon.com/free-icon/line_8848085?page=1&position=50&related_id=8848085" title="eraser icon by Those Icons">
+      Eraser created by Those Icons
+    </a>
+    <a href="https://www.flaticon.com/free-icon/book-timer_16678686?page=1&position=21&related_id=16678686" title="book timer icon by Fhmrvi94">
+      Book timer created by Fhmrvi94
+    </a>
+    <a href="https://www.flaticon.com/free-icon/school-material_3371665?page=1&position=76&related_id=3371665" title="school icon by Yogi Aprelliyanto">
+      School icon created by Yogi Aprelliyanto
+    </a>
     <a href="https://www.flaticon.com/free-icons/save" title="save icons">
       Save icons created by Freepik - Flaticon
     </a>
@@ -162,12 +166,12 @@
     they are opened. Click on Welcome message to close it, rightclicking
     around to open commands tab also closes Welcome message.
     <h2 class="red">What's new?</h2>
-    You can find out more about the dead project or just discuss
-    and suggest features, report bugs in Discord server dedicated to DBVE:
+    You may be able to reive the dead project, report bugs, suggest
+    or just discuss features in Discord server dedicated to DBVE:
     <a href="https://discord.gg/Nb2jAgVHm5">
       Deltarealm fanclub
     </a>.
-    <div id="info_auth" itemprop="dateModified" content="2025-03-16" datetime="2025-03-16">Made by:
+    <div id="info_auth" itemprop="dateModified" content="2025-03-23" datetime="2025-03-23">Made by:
       <!-- link is unproperly displayed when whitespace is outside svg and pre -->
       <a href="https://github.com/KaaBEL"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="16" height="16" viewBox="0,0,16,16">
           <g data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill-rule="nonzero" stroke="none" style="mix-blend-mode: normal">
@@ -175,7 +179,7 @@
             <path d="M3,2h5v4h4v-4h1v5h-2l2,7h-1.3l-2,-7h-1.7v7h-5z" fill="#000" />
           </g>
       </svg><pre>KaaBEL</pre></a>
-      <time itemprop="dateModified" content="2025-03-16" datetime="2025-03-16">Last updated, March 16, 2025</time>
+      <time itemprop="dateModified" content="2025-03-23" datetime="2025-03-23">Last updated March 23, 2025</time>
     </div>
     <div class="space" data="bottom_margin_workaround">0</div>
   </footer>
@@ -874,10 +878,6 @@
       );
       document.head.appendChild(document.createComment(navigator.userAgent +
         JSON.stringify(navigator.userAgentData || {})));
-      for (var i = 0, ch = document.head.childNodes; i < ch.length; i++)
-        if (ch[i].nodeName === "TITLE")
-          /** @type {HTMLTitleElement} */
-          (ch[i]).text = "D1R DBV editor";
 
       init();
 
