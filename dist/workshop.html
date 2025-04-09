@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<!-- v.0.1.68 -->
+<!-- v.0.2.5 -->
 <html>
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=2.0" id="viewport" />
     <meta name="description" content="An example of html frontend for External Droneboi Workshop." />
-    <link rel="icon" href="https://kaabel.github.io/favicon.png" type="image/png" />
-    <link rel="icon shortcut" href="https://kaabel.github.io/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="https://kaabel.github.io/favicon.ico" type="image/png" />
+    <link rel="icon shortcut" href="https://kaabel.github.io/.d1r.dbv/favicon.svg" type="image/svg+xml" />
     <title>Droneboi external workshop</title>
     <link rel="canonical" href="https://kaabel.github.io/.d1r.dbv/workshop.html" />
     <style>
@@ -180,6 +180,7 @@ div.blank {
 }
 #vehicle_description {
   margin-bottom: 10px;
+  white-space: break-spaces;
 }
 /* body.ratio2 {
   width: 200%;
@@ -219,9 +220,8 @@ html:has(body.ratio2) {
         </button>
         <div>
           <img id="vehicle_thumbnail" alt="[vehicle.thubnail]" />
-          <article id="vehicle_description">
-            <h2>Description:</h2>
-          </article>
+          <!-- whitespace inside vehicle_description uses break-spaces -->
+          <article id="vehicle_description"><h2>Description:</h2></article>
           <button>Edit</button>
           <button>Like</button>
           <button>Trash</button>
@@ -237,117 +237,6 @@ html:has(body.ratio2) {
         </div>
       </section>
     </div>
-    <script>
-      var vehicleList = document.getElementById("vehicleList");
-      var menu_close = document.getElementById("menu_close");
-      var fallbackEl = document.createElement("div");
-      var menu = document.getElementById("menu") || fallbackEl;
-      var input = document.getElementById("input") || fallbackEl;
-      if (!vehicleList)
-        throw new Error("vehicleList is missing");
-
-      /** @param {string} id */
-      function textNodeToElementById(id) {
-        var alt = "[" + id.toLocaleLowerCase().replace(/_/g, ".");
-        return (document.getElementById(id) ||
-          fallbackEl).appendChild(document.createTextNode(alt + "]"));
-      }
-      var vehicle = {
-        name: textNodeToElementById("vehicle_name"),
-        creator: textNodeToElementById("vehicle_creator"),
-        thubnail: 
-          /** @type {HTMLImageElement} */
-          (document.getElementById("vehicle_thumbnail") || fallbackEl),
-        description: textNodeToElementById("vehicle_description"),
-        class: textNodeToElementById("vehicle_class"),
-        subclass: textNodeToElementById("vehicle_subclass")
-      }
-      if (menu_close)
-        menu_close.onclick = function () {
-          menu.style.display = "";
-        };
-      function workshopItemOnclick(data) {
-        return function () {
-          if (!/workshop[^]*dev/.test(location.href))
-            return;
-          menu.style.display = "unset";
-          vehicle.name.data = data.name;
-          vehicle.thubnail.src = data.thubnail;
-          vehicle.description.data = data.description;
-          vehicle.creator.data = data.creator;
-        };
-      }
-      function addWorkshopItem(thubnail, size, name, description, creator) {
-        var section = document.createElement("section");
-        span = document.createElement("span");
-        span.appendChild(document.createTextNode(size || "Small"))
-        section.appendChild(span);
-        thubnail ? 
-          section.appendChild(document.createElement("img")).src = thubnail :
-          section.appendChild(document.createElement("div")).className =
-            "blank";
-        var div = document.createElement("div");
-        div.appendChild(document.createElement("h1")).appendChild(
-          document.createTextNode("" + name));
-        div.appendChild(document.createElement("p")).appendChild(
-          document.createTextNode("" + description));
-        div.appendChild(document.createElement("footer")).appendChild(
-          document.createTextNode("Made by " + creator));
-        section.appendChild(div).className = "content";
-        section.onclick = workshopItemOnclick({
-          name: name,
-          thubnail: thubnail,
-          description: description,
-          creator: creator
-        });
-        vehicleList.appendChild(section).className = "cell";
-      }
-      /** @param {unknown} list */
-      function handleVehiclesJSON(list) {
-        if (!(list instanceof Array))
-          return;
-        while (vehicleList.lastChild)
-          vehicleList.removeChild(vehicleList.lastChild);
-        for (var i = 0, few = 256, item; i < list.length; i++) {
-          /** @type {unknown} */
-          if (typeof (item = list[i]) !== "object")
-            continue;
-          addWorkshopItem(
-            item.id && few ? "https://exa.toastyx.dev/api/workshop/" +
-              item.id + "/thumbnail" : "",
-            "grid",
-            item.name || "",
-            item.description || "",
-            item.creator || ""
-          );
-          few && few--;
-        }
-        for (var i = 7; i-- > 0;)
-          vehicleList.appendChild(
-            document.createElement("div")).className = "spacer";
-      }
-      /** @type {(this: GlobalEventHandlers, ev: KeyboardEvent) => any} */
-      function inputEneterHandler(e) {
-        if (e.key !== "Enter")
-          return;
-        /** @type {unknown} */
-        var res, xhr = new XMLHttpRequest();
-        xhr.open("GET", "https://exa.toastyx.dev/api/workshop/search?q=" +
-          (input instanceof HTMLInputElement ? input.value : "Frog"));
-        xhr.onreadystatechange = function () {
-          if (xhr.readyState !== 4)
-            return;
-          try {
-            res = JSON.parse(xhr.responseText);
-          } catch (e) {
-            console.error(xhr.responseText ? e : "xhr empty response");
-            return;
-          }
-          handleVehiclesJSON(res);
-        };
-        xhr.send();
-      };
-      input.onkeyup = inputEneterHandler;
-    </script>
+    <script type="text/javascript" src="./code/workshop.js"></script>
   </body>
 </html>

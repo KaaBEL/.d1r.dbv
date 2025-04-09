@@ -1,3 +1,4 @@
+<!-- v.0.2.5 -->
 I don't know what to put here at the moment :trollface:
 
 Let me know (on Discord or) by creating issue in case you are interested in custom modification of editor or contributing to the project. 
@@ -40,7 +41,7 @@ https://discord.com/channels/749233290241769473/1230046786631237632
 \+ turning moment and speed  
 https://discord.com/channels/749233290241769473/1225047342357549066  
 \- available rift driving distance  
-\- weapons range, DPS
+\- weapons range, DPS  
 ? acceleration time  
 
 **Logic connections tool**: (work in progress)  
