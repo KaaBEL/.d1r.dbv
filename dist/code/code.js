@@ -42,19 +42,23 @@ function Data() {
   throw new TypeError("Illegal constructor");
   this.data = null;
 }
-/** is moving color ids terrible idea? It realy matters too little so far */
+/** Changing original values for color IDs breaks rendering and Commands
+ * tab, newer property "now" is used for consistent order with games */
 Data.colors =
   /** @type {const} */
-  ({"White": 0, "Light Gray": 1, "Dark Gray": 2, "Black": 3,
-  "Yellow": 4, "Orange": 5, "Red": 6, "Wine": 7, "Pink": 8,
-  "Purple": 9, "Light Blue": 10, "Dark Blue": 11, "Navy": 12,
-  "Lime": 13, "Green": 14, "Fuel": 15, "Yellow Hazard Stripes": 16,
-  "Red Hazard Stripes": 17, "White Hazard Stripes": 18,
-  "Festive Red": 19, "Festive Green": 20, "Teal": 21, "Magneta": 22,
-  "Station Floor 2": 29, "Station Floor 0": 31,
-  "Station Floor 1": 30, "Gonb": 62, "BREAD": 63, "Wood": 64,
-  "Festive Duck": 65, "[custom color]": 127
-});
+  ({
+    "White": 0, "Light Gray": 1, "Dark Gray": 2, "Black": 3,
+    "Yellow": 4, "Orange": 5, "Red": 6, "Wine": 7, "Pink": 8,
+    "Purple": 9, "Light Blue": 10, "Dark Blue": 11, "Navy": 12,
+    "Lime": 13, "Green": 14, "Fuel": 15, "Yellow Hazard Stripes": 16,
+    "Red Hazard Stripes": 17, "White Hazard Stripes": 18,
+    "Festive Red": 19, "Festive Green": 20, "Teal": {id: 29, now: 21},
+    "Magneta": {id: 30, now: 22}, "Station Floor 2": {id: 25, now: 29},
+    "Station Floor 1": {id: 24, now: 30}, "Station Floor 0": {id: 23,
+    now: 31}, "Gonb": {id: 28, now: 62}, "BREAD": {id: 21, now: 63},
+    "Wood": {id: 26, now: 64}, "Festive Duck": {id: 27, now: 65},
+    "[custom color]": {id: 22, now: 127}
+  });
 Data.paths = [
   ["m,hv", 8, -8, -16, 32], ["m,hv", -8, -8, 16, 32], ["m,hv", -8, 8, 16,
   -16], ["m,hvh", -8, -8, 16, 16, -16], ["m,hvh", -8, -8, 16, 32, -16],
@@ -114,11 +118,11 @@ Data.groups = [
  * @typedef {{id:number,weight?:number,strength?:number,cost?:number,
  * energy_use?:UseData,energy_store?:number,fuel_use?:UseData,
  * fuel_store?:number,cargo_use?:UseData,cargo_store?:number,
- * draw?:number[]}} BlockData
- * @typedef {{id:number,draw?:number[],weight?:number,strength?:number,
- * cost?:number,energy_use?:number|number[],energy_store?:number,
+ * draw?:number[],now?:number}} BlockData
+ * @typedef {{id:number,weight?:number,strength?:number,cost?:number,
+ * energy_use?:number|number[],energy_store?:number,
  * fuel_use?:number|number[],fuel_store?:number,cargo_use?:number|number[],
- * cargo_store?:number}} BlockDataSimple
+ * cargo_store?:number,draw?:number[],now?:number}} BlockDataSimple
  */
 Data.blocks =
   /** @type {const} */
@@ -970,7 +974,9 @@ function Color() {
 /** object is frozen */
 Color.NAME = Object.freeze(Data.generateNames("colors"));
 /** object is frozen */
-Color.ID = Object.freeze(Data.colors);
+Color.ID = Object.freeze(Data.generateIDs("colors"));
+/** object is frozen */
+Color.NOW = Object.freeze(Data.generateValues("now"));
 /** 10:Lololipop replacement, 15:Steel replacement */
 Color.db1ToDb3 = Object.freeze({
   0: "White", 1: "Dark Gray", 3: "Light Blue", 4: "Orange", 5: "Red",

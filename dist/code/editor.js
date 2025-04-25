@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.4";
+var version_editor_js = "v.0.2.6";
 /** @TODO check @see {defaults} for setting a setting without saveSettings */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -154,7 +154,9 @@ var defaults = {
   renderSharp: false,
   /** (default) true: position inputs use dbc units */
   meterPositions: true,
-  editorLaunchpadBorder: false
+  editorLaunchpadBorder: false,  
+  /** (default) false: displayed, true: not used */
+  hideInventoryTile: false
 },
   /** @type {typeof defaults|null} nullable alternative to original */
   settings = defaults;
@@ -169,8 +171,9 @@ function saveSettings() {
   arr[2] = defaults.editorBackgroundImage >> 1 & 31;
   arr[2] += +defaults.fullscreenInitialized << 5
   arr[2] += +defaults.fullscreenDisabled << 6;
-  arr[2] += +defaults.editorBackgroundStage << 7;
+  arr[2] += defaults.editorBackgroundStage << 7;
   arr[2] += +defaults.meterPositions << 12;
+  arr[2] += +defaults.hideInventoryTile << 13;
   storage.setItem("D1R_DBV_editor", String.fromCharCode.apply(String, arr));
 }
 function loadSettings() {
@@ -191,6 +194,7 @@ function loadSettings() {
   defaults.fullscreenDisabled = !!(arr[2] >> (5 + 1) & 1);
   defaults.editorBackgroundStage = (arr[2] >> 7 & 31);
   defaults.meterPositions = !!(arr[2] >> 12 & 1);
+  defaults.hideInventoryTile = !!(arr[2] >> 13 & 17);
 }
 loadSettings();
 
@@ -2002,13 +2006,6 @@ hat uses custom hex color. The custom hex color can be set in \"Select Color\
 \" Command.");
 
 Command.push("Vehicle stats", function (items, collapsed) {
-  function addLine(text) {
-    items.push(tN(text), EL("br"));
-  }
-  // var blocks = ship.blocks, cost = 0, weight = 0, integrity = 0;
-  // var fuelCap = 0, energyCap = 0, cargoCap = 0;
-  // var fuelUse = 0, energyUse = 0, cargoUse = 0;
-  // stats counter dictionaries
   var sums = {
     cost: 0,
     weight: 0,
@@ -2074,6 +2071,9 @@ Command.push("Vehicle stats", function (items, collapsed) {
       texts[11].data = " Unless you own Time Travel Machine block, y" +
         "ou can't regain the Rift Crystals by travelling back. ";
   };
+  texts[12].data = "Rift drive distances within the same star system" +
+    " are measured in Mega Meters (Mm), assume cost for those travel" +
+    "s to be always one RC.";
   function updateStats() {
     var xForce = 0, yForce = 0, xWeight = 0, yWeight = 0;
     var useVal = 0;
@@ -2211,8 +2211,10 @@ The weight of that vehicle is " + weight + " mass units and with " +
 ll Rift Drives into account, although in the game you are allowed to buy onl\
 y 1. It also shows ammount of blocks in it and time when the vehicle had the\
 se stats, because it doesn't update after this command have been opened, onl\
-y changing amount of RC recalculates distance.\nThanks to catcat9999 for sha\
-ring block capacity/use stats from source code in Discord.");
+y changing amount of RC recalculates distance. Rift drive distances within t\
+he same star system are measured in Mega Meters (Mm), assume cost for those \
+travels to be always one RC.\nThanks to catcat9999 for sharing block capacit\
+y/use stats from source code in Discord.");
 Command.push("Editing Mode", function (items) {
   var button0 = EL("button"), button1 = EL("button");
   button0.appendChild(tN("Enable Logic Editing"));
@@ -2223,7 +2225,9 @@ Command.push("Editing Mode", function (items) {
   inventory.type = "checkbox";
   inventory.checked = DefaultUI.inventoryTile;
   inventory.oninput = function () {
-    DefaultUI.inventoryTile = inventory.checked;
+    defaults.hideInventoryTile =
+      !(DefaultUI.inventoryTile = inventory.checked);
+    saveSettings();
     render();
   };
   items.push(button1, button0, inventory);
@@ -2441,7 +2445,7 @@ Command.push("Change editor background", function (items, collapsed) {
     if (!(this instanceof HTMLInputElement))
       return;
     defaults.editorBackgroundStage = +this.checked;
-    saveSettings()
+    saveSettings();
     render();
   };
   items.push(
@@ -2497,36 +2501,44 @@ reate 'grabable' surface for touch screens at any time any time.\nTo move th\
 e Commands tab around you can grab it 'with' top part, where changes to poin\
 ter hand, you can move it slightly behind edges on right and left side.\nCON\
 TEXTMENU NOTES\nSome browsers have option to save or copy image in the canva\
-s in 'rightclick menu', it can be used to make precise image of your vehicle\
- in high quality. When the Commands tab is right clicked the tab dissapears \
-and activated contextmenu is able to capture to visual.\n\nMENU\nIn menu the\
-re is list of Commands, click one of the buttons to open coresponding Comman\
-d, optionaly sorted in collapsed groups. X sign in top right corner closes t\
-he Commands tab.\n\nCOMMAND\nWhen Command is opened its name displays in 'to\
-p part', there's also < sign to return back to menu, X sign won't do that. E\
-ach command has some inputs/buttons, their purpouse is explained in descript\
-ion.\nFINISHED READING\nNow so you are familiar with the basic, if Welcome m\
-essage will ever bother you, use https://kaabel.github.io/.d1r.dbv/editor.ht\
-ml?funmode&no=info for example to skip it.");
+s in 'rightclick options', it can be used to make precise image of your vehi\
+cle in high quality. When the Commands tab is right clicked the tab dissapea\
+rs and activated contextmenu is able to capture to visual.\n\nMENU\nIn menu \
+there is list of Commands, click one of the buttons to open coresponding Com\
+mand, optionaly sorted in collapsed groups. X sign in top right corner close\
+s the Commands tab.\n\nCOMMAND\nWhen Command is opened its name displays in \
+'top part', there's also < sign to return back to menu, X sign won't do that\
+. Each command has some inputs/buttons, their purpouse is explained in descr\
+iption.\nFINISHED READING\nNow so you are familiar with the basic, if Welcom\
+e message will ever bother you, use https://kaabel.github.io/.d1r.dbv/editor\
+.html?funmode&no=info for example to skip it.\n");
 // DBVE contributors:
 // Thanks to Beau for Deltarealm and Droneboi: Conquest that DBVE is made
 // for.
 // Thanks to contributors:
 //   KKJKJH for blocks texture sources
 //   Brothernova for being the alpha tester
-//   Potentially Larmbs as first sourcode contributor
 // Also thank to cacat9999 for sharing block capacity/use stats from source
 // code in Discord, you all for using DBVE, your feedback, and db
 // suggestions to take inspiration from.
 
 /** @callback ToolExec @param {number} x @param {number} y @returns {void} */
+/** @typedef {ToolExec|Tool.Tab} ToolMethods */
 /** instance is sealed
- * @param {string} name @param {string} icon @param {ToolExec} [exec]
+ * @param {string} name @param {string} icon @param {ToolMethods} [exec]
  * @param {boolean} [permanent] slected until reselected or deselected */
 function Tool(name, icon, exec, permanent) {
+  /** subclass @see {Tool.Tab} is defined further below */
+  if (exec instanceof Tool.Tab) {
+    var execute = exec.exec, init = exec.init;
+  } else {
+    execute = exec || F;
+    init = F;
+  }
   this.name = name;
   this.icon = icon;
-  this.exec = permanent ? exec || F : Tool.execClick(exec);
+  this.exec = permanent ? execute : Tool.execClick(execute);
+  this.init = init;
   /** used to determim whether (true) the tile gets enebled instantly
    * (for DefaultUI it's selectedClickTile property) or
    * (false) the tile is enabled until deselected (selected in
@@ -2602,6 +2614,122 @@ Tool.execClick = function (execMain) {
       }
     }, 75);
   };
+};
+/**
+ * @typedef Tool.Tab.Options
+ * @type {{[key:string]:unknown,text?:string}} */
+/** @callback @param {Tool.Tab} setup @returns {void} */
+/** @param {ToolExec} initialise @param {ToolExec} execute */
+Tool.Tab = function (initialise, execute) {
+  this.init = initialise;
+  this.exec = execute;
+  /** @type {Node[]} */
+  this.elements = [];
+  Object.seal(this);
+};
+/** Uses global flag! */
+Tool.Tab.cssEscapeRegExp = (/\\[0-9A-Fa-f]{1,5} |\\[0-9A-Fa-f]{6}/g);
+Tool.Tab.cssQueryRegExp = function (name, escape) {
+  return new RegExp(/(<name>)?(#<name>)?((?:\.<name>)+)/.source.replace(
+    /<name>/g, name.source.replace(/<esc>/g, escape.source)));
+}(/(?:[^#.:\[\]= +<>]|<esc>)+/, Tool.Tab.cssEscapeRegExp);
+/** @param {Node} element @param {Tool.Tab.Options} options */
+Tool.Tab.prototype.setElementProperties = function (element, options) {
+  if (options.text)
+    element.appendChild(document.createTextNode("" + options.text));
+  delete options.text;
+  for (var property in options)
+    if (OP.call(options, property))
+      element[property] = options[property];
+};
+//* @param {Node|string} element @param {any} query @param {any} [handler]
+//* @param {{[P in string]:P extends "text"?string:unknown}} [options] */
+Tool.Tab.prototype.append = (
+/** append element to tool tab menu (Tab utility, no use of global constants)
+ * @template {string} P @overload append from node @param {Node} node
+ * @param {string} query @param {function&{name:string}} handler
+ * @param {Tool.Tab.Options} [options]
+ * @overload no css selector @param {keyof HTMLElementTagNameMap} element
+ * @param {function&{name:string}} handler
+ * @param {Tool.Tab.Options} [options]
+ * @overload using css selector only for compact arguments list
+ * @param {string} query @param {function&{name:string}} handler
+ * @param {Tool.Tab.Options} [options]
+ * @overload @param {Node|keyof HTMLElementTagNameMap} [element]
+ * @param {string} [query] @param {function&{name:string}} [handler]
+ * @param {Tool.Tab.Options} [options] */
+ function (element, query, handler, options) {
+  var handlerNext = false, argsCopy = [].slice.call(arguments);
+  if (argsCopy[0] instanceof Node)
+    element = argsCopy[0];
+  else if (typeof argsCopy[0] == "string") {
+    element = "";
+    handlerNext = typeof argsCopy[1] != "string";
+    handlerNext ? query = argsCopy[0] : element = argsCopy[0];
+  } else
+    throw new TypeError("Invalid arg0: element/query");
+  if (!handlerNext) {
+    if (typeof argsCopy[1] != "string")
+       throw new TypeError("Invalid arg1: query");
+    query = argsCopy[1];
+  }
+  var n = handlerNext ? 1 : 2;
+  if (typeof argsCopy[n] != "function")
+    throw new TypeError("Invalid arg" + n + ": handler");
+  handler = argsCopy[n++];
+  options = typeof argsCopy[n] == "object" ? argsCopy[n] : void 0;
+
+  var result = query && Tool.Tab.cssQueryRegExp.exec(query) || [];
+  /** @param {"name"|"id"|"className"} property @param {unknown} value */
+  function setFromQuery(property, value) {
+    if (typeof value != "string")
+      return "";
+    var isName = property === "name", string = value;
+    Tool.Tab.cssEscapeRegExp.lastIndex = 0;
+    if (property === "className")
+      string = string.replace(/\./g, " ");
+    string = string.slice(+!isName).replace(Tool.Tab.cssEscapeRegExp,
+      function (match) {
+        match[0] !== "\\" && console.error("CSS escape sequence");
+        return String.fromCharCode(+("0x" + match.trim().slice(1)));
+      });
+    return isName ? string : el[property] = string;
+  }
+  // return JSON.stringify(result);
+  var el = element instanceof Node ?
+    element :
+    document.createElement(element || setFromQuery("name", result[1]));
+  setFromQuery("id", result[2]);
+  setFromQuery("className", result[3]);
+  var event = Data.getFunctionName(handler) ||
+    (el instanceof HTMLButtonElement ? "onclick" : "oninput");
+  if (event)
+    el[event] = handler;
+  if (options)
+    Tool.Tab.prototype.setElementProperties(el, options);
+  //console.log(JSON.stringify({name: el.nodeName, id: el.id, class: el.class
+  //Name, fn: handler}));
+  return el;
+});
+/** @TODO comment out before update v.0.2.6 */
+//var test_evil = "Tool.Tab.prototype.append('div#\\\\31 0.nice.fool.mwwwwwww
+//ww.wwwing - hard.none', function () {});";var test_evil = 'JSON.stringify(T
+//ool.Tab.cssQueryRegExp.exec("textarea#i-d.nice.fool")); ';
+Tool.Tab.cssQueryTest = function (regExp) {
+  function test(example, result) {
+    var correct = JSON.stringify(regExp.exec(example)) === result;
+    correct || console.error(example + " !=> " + result);
+    pass &= +correct;
+  }
+  var pass = 1;
+  return !!pass;
+};
+/** @callback ToolSetup @param {Tool.Tab} methods */
+/** @param {string} name @param {ToolSetup} setup @param {string} icon */
+Tool.Tab.addItem = function (name, setup, icon) {
+  var methods = new Tool.Tab(F, F);
+  setup(methods);
+  Tool.list.push(new Tool(name, icon, methods));
 };
 
 Tool.list.push(new Tool("Tune", "M4a4,24265 c51,2f0,273,ad3,931,f85 c8da,714\
@@ -2695,7 +2823,11 @@ f v0 c0,12d2,112d,2400,23ff,2400 h13c00 c12d2,0,2400,-112d,2400,-2400 v0 c0,\
 v0 c0,12d2,112d,2400,23ff,2400 h1c400 c12d2,0,2400,-112d,2400,-2400 v0 c0,-1\
 2d2,-112d,-2400,-2400,-2400 z M1fe22,38888 c-12d2,0,-2400,112d,-2400,23ff v0\
  c0,12d2,112d,2400,23ff,2400 h19400 c12d2,0,2400,-112d,2400,-2400 v0 c0,-12d\
-2,-112d,-2400,-2400,-2400 z"));
+2,-112d,-2400,-2400,-2400 z", function () {
+  cmds.style.display = cmds.style.display ? "" : "none";
+  if (!cmds.style.top)
+    cmds.style.top = "0px";
+}));
 Tool.list.push(new Tool("Flip", "M2497,3d3e7 c-1420,0,-2470,-1050,-2470,-247\
 0 c0,-4ef,fb,-9a3,2c1,-dee c3fe,-9a4,1662c,-35d83,16900,-362b1 c62e,-b51,123\
 2,-12ff,2000,-12ff c1420,0,2470,1050,2470,2470 c0,5a3,0,351a7,0,35f70 c0,142\
@@ -2848,24 +2980,24 @@ be8b,554f,be8b,be8b z M33a,c1a9 l0,0 c0,-693b,554f,-be8b,be8b,-be8b h3299 l-\
 function (x, y) {
   old_UI(x, y);
 }, true));
-Tool.list.push(new Tool("Oldschool", "M105e7,3d210 c-3a97,3a97,-9997,3a97,-d42\
-f,0 c-3a97,-3a97,-3a97,-9997,0,-d42f l1b0b,-1b0b ld429,d429 z M803a,2adde l7\
-e92,-7e92 ld429,d429 l-7e8b,7e96 z M22c1b,101fd l8428,-8428 ld429,d429 l-842\
-0,842b z M3ecd6,eb15 l-3144,314e l-d430,-d42e l314a,-314a lcc78,-e09 ccdd,0,\
-174a,a6d,174a,174a z M696f,13e22 c-3391,-3391,-5e3f,-5e3f,-5e3f,-5e3f c-90d,\
--90d,-90d,-17bb,0,-20c9 lb458,-b458 c90d,-90d,17bb,-90d,20c9,0 l318fa,318fa \
-c90d,90d,90d,17bb,0,20c9 l-b458,b458 c-90d,90d,-17bb,90d,-20c9,0 c0,0,-2586,\
--2592,-5e74,-5e8c l2c8a,-2c8e ccd8,-cd8,cd8,-21ab,0,-2e83 c-cd8,-cd8,-21ab,-\
-cd8,-2e83,0 l-2c94,2c7b c-e96,-e99,-1de9,-1dee,-2dc4,-2dcb l492c,-48fb ccd8,\
--cd8,cd8,-21ab,0,-2e83 c-cd8,-cd8,-21ab,-cd8,-2e83,0 l-491e,4903 c-f80,-f82,\
--1f4e,-1f51,-2f41,-2f44 l2c7b,-2c83 ccd8,-cd8,cd8,-21ab,0,-2e83 c-cd8,-cd8,-\
-21ab,-cd8,-2e83,0 l-2c89,2c74 c-f73,-f73,-1f2f,-1efc,-2e79,-2e46 l489f,-4879\
- ccd8,-cd8,cd8,-21ab,0,-2e83 c-cd8,-cd8,-21ab,-cd8,-2e83,0 l-48ad,486b c-102\
-a,-102a,-1ffb,-1ffb,-2f43,-2f43 l2c0c,-2bed ccd8,-cd8,cd8,-21ab,0,-2e83 c-cd\
-8,-cd8,-21ab,-cd8,-2e83,0 l-2c1a,2bde c-fd3,-fd3,-1eb7,-1eb7,-2c66,-2c66 l49\
-26,-4929 ccd8,-cd8,cd8,-21ab,0,-2e83 c-cd8,-cd8,-21ab,-cd8,-2e83,0 l-4934,49\
-1a c-f12,-f12,-1f19,-1f19,-2f2f,-2f2f l2c80,-2caf ccd8,-cd8,cd8,-21ab,0,-2e8\
-3 c-cd8,-cd8,-21ab,-cd8,-2e83,0 z"));
+Tool.list.push(new Tool("Oldschool", "M105e7,3d210 c-3a97,3a97,-9997,3a97,-d\
+42f,0 c-3a97,-3a97,-3a97,-9997,0,-d42f l1b0b,-1b0b ld429,d429 z M803a,2adde \
+l7e92,-7e92 ld429,d429 l-7e8b,7e96 z M22c1b,101fd l8428,-8428 ld429,d429 l-8\
+420,842b z M3ecd6,eb15 l-3144,314e l-d430,-d42e l314a,-314a lcc78,-e09 ccdd,\
+0,174a,a6d,174a,174a z M696f,13e22 c-3391,-3391,-5e3f,-5e3f,-5e3f,-5e3f c-90\
+d,-90d,-90d,-17bb,0,-20c9 lb458,-b458 c90d,-90d,17bb,-90d,20c9,0 l318fa,318f\
+a c90d,90d,90d,17bb,0,20c9 l-b458,b458 c-90d,90d,-17bb,90d,-20c9,0 c0,0,-258\
+6,-2592,-5e74,-5e8c l2c8a,-2c8e ccd8,-cd8,cd8,-21ab,0,-2e83 c-cd8,-cd8,-21ab\
+,-cd8,-2e83,0 l-2c94,2c7b c-e96,-e99,-1de9,-1dee,-2dc4,-2dcb l492c,-48fb ccd\
+8,-cd8,cd8,-21ab,0,-2e83 c-cd8,-cd8,-21ab,-cd8,-2e83,0 l-491e,4903 c-f80,-f8\
+2,-1f4e,-1f51,-2f41,-2f44 l2c7b,-2c83 ccd8,-cd8,cd8,-21ab,0,-2e83 c-cd8,-cd8\
+,-21ab,-cd8,-2e83,0 l-2c89,2c74 c-f73,-f73,-1f2f,-1efc,-2e79,-2e46 l489f,-48\
+79 ccd8,-cd8,cd8,-21ab,0,-2e83 c-cd8,-cd8,-21ab,-cd8,-2e83,0 l-48ad,486b c-1\
+02a,-102a,-1ffb,-1ffb,-2f43,-2f43 l2c0c,-2bed ccd8,-cd8,cd8,-21ab,0,-2e83 c-\
+cd8,-cd8,-21ab,-cd8,-2e83,0 l-2c1a,2bde c-fd3,-fd3,-1eb7,-1eb7,-2c66,-2c66 l\
+4926,-4929 ccd8,-cd8,cd8,-21ab,0,-2e83 c-cd8,-cd8,-21ab,-cd8,-2e83,0 l-4934,\
+491a c-f12,-f12,-1f19,-1f19,-2f2f,-2f2f l2c80,-2caf ccd8,-cd8,cd8,-21ab,0,-2\
+e83 c-cd8,-cd8,-21ab,-cd8,-2e83,0 z"));
 
 // db3 styled icon (cardboard box)
 // https://www.flaticon.com/free-icon/package_7625482?term=time+product&page=2&position=30&origin=search&related_id=7625482
@@ -2986,7 +3118,7 @@ DefaultUI.selectedTile = -1;
  * `value >> 2` gives index of selected tile,
  * if `value === -1` it means no tile is selected; */
 DefaultUI.selectedClickTile = -1;
-DefaultUI.inventoryTile = false;
+DefaultUI.inventoryTile = !defaults.hideInventoryTile;
 DefaultUI.createTile = function () {
   /** @type {XYZPosition} */
   var pos = [0, 0, 0], id = 0;
@@ -3018,7 +3150,8 @@ DefaultUI.toolBar = [
   DefaultUI.createTile("Flip"),
   DefaultUI.createTile("Flip180"),
   DefaultUI.createTile("Erase"),
-  DefaultUI.createTile("Classic")
+  DefaultUI.createTile("Classic"),
+  DefaultUI.createTile("Node")
 ];
 /** used at @typedef {"@see"} SeeRenderingFolders */
 DefaultUI.offsetsFolders = 0;
@@ -3346,6 +3479,17 @@ DefaultUI.renderHotBars = function (w, h) {
     );
   }
 };
+/**  new namings for action binds
+ * @typedef ActionBind protoping of new simplified UI interface
+ * @property {function} forceAction prevents default editor movement and
+ * handles forced action instead
+ * @property {function} moveAction
+ * @property {function} pressAction
+ * @property {function} longAction
+ * @property {function} doubleAction
+ * @property {function} hoverAction
+ * @property {function} contextmenuAction
+ **/
 /** generator for press action bind handling
  * @param {(x:number,y:number,tile:ShipBlock)=>void} [blockPlacing]
  * @param {boolean} [canDefault=true] @returns {typeof press} */
@@ -3423,17 +3567,26 @@ var cmdsName = EL(), cmds = (function () {
       content.style.display = "none";
       items.style.display = "";
       back.style.visibility = "visible";
+      var i = 0, classic = DefaultUI.createTile("Classic");
+      i = DefaultUI.blockBars[DefaultUI.selectedFolder].indexOf(classic);
+      if (i !== -1)
+        // should it render(); in these?
+        DefaultUI.selectedTile = i << 2 | 1;
+      else if ((i = DefaultUI.toolBar.indexOf(classic)) !== 1)
+        DefaultUI.selectedTile = i << 2 | 0;
       for (; items.firstChild;)
         items.removeChild(items.firstChild);
       var arr = item.items;
       if (typeof arr == "function")
         return arr(items), ending();
-      for (var i = 0; i < arr.length; i++) {
+      for (i = 0; i < arr.length; i++) {
         var s = arr[i].type, isBtn = s === "button";
         var isChck = s === "checkbox", e = EL(isChck ? "input" : s);
         if (isChck && e instanceof HTMLInputElement)
           e.type = "checkbox";
-        e[isBtn ? "onclick" : isChck ? "onchange" : "oninput"] = arr[i].fn;
+        e[isBtn ?
+          "onclick" :
+          isChck ? "onchange" : "oninput"] = arr[i].fn;
         (isBtn ? e : items).appendChild(tN(
           arr[i].name + (isBtn ? "" : ": ")));
         items.appendChild(e);
@@ -3878,7 +4031,7 @@ DefaultUI.over = over = function (e) {
     cmdsX = x - e.pageX - canvas.offsetLeft;
     cmdsY = y - e.pageY - canvas.offsetTop;
     cmdsMove = !0;
-    cmds.style.webkitUserSelect = cmds.style.userSelect = "none";
+    cmds.style["" + "webkitUserSelect"] = cmds.style.userSelect = "none";
   } else if (cmdsMove && (e.type === "mousemove" ||
     e.type === "touchmove")) {
     if (e instanceof MouseEvent && !e.buttons && !e.button) {
@@ -3895,7 +4048,7 @@ DefaultUI.over = over = function (e) {
     e.type === "touchend" || e.type === "touchcancel")
     cmdsMove = !1;
   else
-    cmds.style.webkitUserSelect = cmds.style.userSelect = "";
+    cmds.style["" + "webkitUserSelect"] = cmds.style.userSelect = "";
   // TODO: some nice system to account for end/'hoverleave'
   // ^ will hopefully inherit final form which also "doublepress" and
   // other advanced gestures will be provided with
@@ -4165,11 +4318,4 @@ init = function () {
   rend_checkColors();
   init_funMode();
   check_contentScript();
-
-  // if (ship.blocks[35]){
-  // //@ts-ignore
-  // Logic.removeLogic(ship.blocks[35], ship.prop.nodeList);
-  // //@ts-ignore
-  // Logic.removeLogic(ship.blocks[35], ship.prop.nodeList);
-  // del.call(ship.blocks, 35);del.call(ship.blocks, 33);render();}
 };
