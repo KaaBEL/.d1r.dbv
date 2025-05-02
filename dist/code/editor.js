@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.6";
+var version_editor_js = "v.0.2.7";
 /** @TODO check @see {defaults} for setting a setting without saveSettings */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -229,8 +229,9 @@ var init_funMode = F;
         break;
       (img = EL("img")).src = "./assets/just_use_common_sense.png";
       while ((nxt = el.nextSibling) && !(nxt instanceof Element &&
-        nxt.getAttribute("itemprop")))
+        nxt.getAttribute("itemprop"))) {
         parent.removeChild(nxt);
+      }
       nxt && parent.appendChild(img) && parent.appendChild(nxt);
       break;
     case "3a613b4c":
@@ -252,7 +253,9 @@ var init_funMode = F;
       console.info("Fun mode 3.1");
       setTimeout(function () {
         ship = Ship.fromObject({n: "", dt: "", b: []});
-        placingBlock = function () {return "__unknown__";};
+        placingBlock = function () {
+          return "__unknown__";
+        };
       });
       break;
     case "47f76cb8":
@@ -290,7 +293,8 @@ wxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNl0sIntcImNvbG\
       break;
     case "b6f47340":
       console.info("Fun mode 9");
-    case "ae3c8f3b": // ?.html
+    // ?.html
+    case "ae3c8f3b":
       init_funMode = function () {
         enableLogicEditing();
         ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr(("gIAEDEFOT05\
@@ -1334,7 +1338,7 @@ Command.push("Setup Properties", function (items, collapsed) {
   }
   weldGroup.onchange = function () {
     ship.blocks[idx].properties.weldGroup = Number(weldGroup.value);
-  }
+  };
   collapsed.rend_UI = function () {
     var block = ship.blocks[idx], s = block.internalName, pos;
     if (!(pos = block.position))
@@ -1520,7 +1524,7 @@ Command.push("Display Logic", function (items, collapsed) {
     if (!(this instanceof HTMLButtonElement || isInit))
       return;
     var custom = new Ship.CustomInput("Button", 0),
-      prop = isInit ? OC() : ship.prop || (ship.prop = OC())
+      prop = isInit ? OC() : ship.prop || (ship.prop = OC());
     isInit || (prop.customInputs instanceof Array ?
       (inputs = prop.customInputs).push(custom) :
       prop.customInputs = inputs = []);
@@ -2393,7 +2397,7 @@ Command.push("Change editor background", function (items, collapsed) {
       (defaults.editorBackground = this.checked) ?
         rend_backgPattern :
         rend_backgColor;
-    saveSettings()
+    saveSettings();
     render();
   };
   var select = EL("select"), option = EL("option");
@@ -2597,7 +2601,7 @@ Tool.drawPathRc = function (tool, size) {
     rY = y;
   });
   rc.fill();
-}
+};
 /** @param {ToolExec} [execMain] */
 Tool.execClick = function (execMain) {
   if (!execMain)
@@ -2625,14 +2629,15 @@ Tool.Tab = function (initialise, execute) {
   this.exec = execute;
   /** @type {Node[]} */
   this.elements = [];
+  this.reuse = true;
   Object.seal(this);
 };
 /** Uses global flag! */
 Tool.Tab.cssEscapeRegExp = (/\\[0-9A-Fa-f]{1,5} |\\[0-9A-Fa-f]{6}/g);
-Tool.Tab.cssQueryRegExp = function (name, escape) {
+Tool.Tab.cssQueryRegExp = (function (name, escape) {
   return new RegExp(/(<name>)?(#<name>)?((?:\.<name>)+)/.source.replace(
     /<name>/g, name.source.replace(/<esc>/g, escape.source)));
-}(/(?:[^#.:\[\]= +<>]|<esc>)+/, Tool.Tab.cssEscapeRegExp);
+})(/(?:[^#.:\[\]= +<>]|<esc>)+/, Tool.Tab.cssEscapeRegExp);
 /** @param {Node} element @param {Tool.Tab.Options} options */
 Tool.Tab.prototype.setElementProperties = function (element, options) {
   if (options.text)
@@ -2642,28 +2647,29 @@ Tool.Tab.prototype.setElementProperties = function (element, options) {
     if (OP.call(options, property))
       element[property] = options[property];
 };
-//* @param {Node|string} element @param {any} query @param {any} [handler]
-//* @param {{[P in string]:P extends "text"?string:unknown}} [options] */
+ //* @param {Node|string} arg0 @param {any} arg1 @param {any} [arg2]
+ //* @param {{[P in string]:P extends "text"?string:unknown}} [arg3]
 Tool.Tab.prototype.append = (
 /** append element to tool tab menu (Tab utility, no use of global constants)
- * @template {string} P @overload append from node @param {Node} node
- * @param {string} query @param {function&{name:string}} handler
+ * @template {string} P
+ * @overload append from node @param {Node} node
+ * @param {string} query @param {Function&{name?:string}} handler
  * @param {Tool.Tab.Options} [options]
  * @overload no css selector @param {keyof HTMLElementTagNameMap} element
- * @param {function&{name:string}} handler
+ * @param {Function&{name?:string}} handler
  * @param {Tool.Tab.Options} [options]
  * @overload using css selector only for compact arguments list
- * @param {string} query @param {function&{name:string}} handler
- * @param {Tool.Tab.Options} [options]
- * @overload @param {Node|keyof HTMLElementTagNameMap} [element]
- * @param {string} [query] @param {function&{name:string}} [handler]
+ * @param {string} query @param {Function&{name?:string}} handler
+ * @param {Tool.Tab.Options} [options] @returns
+ * @this {Tool.Tab} @param {Node|string} [element]
+ * @param {string} [query] @param {Function&{name?:string}} [handler]
  * @param {Tool.Tab.Options} [options] */
  function (element, query, handler, options) {
   var handlerNext = false, argsCopy = [].slice.call(arguments);
   if (argsCopy[0] instanceof Node)
     element = argsCopy[0];
   else if (typeof argsCopy[0] == "string") {
-    element = "";
+    element = void 0;
     handlerNext = typeof argsCopy[1] != "string";
     handlerNext ? query = argsCopy[0] : element = argsCopy[0];
   } else
@@ -2674,11 +2680,10 @@ Tool.Tab.prototype.append = (
     query = argsCopy[1];
   }
   var n = handlerNext ? 1 : 2;
-  if (typeof argsCopy[n] != "function")
+  if (typeof argsCopy[n] == "function")
     throw new TypeError("Invalid arg" + n + ": handler");
   handler = argsCopy[n++];
   options = typeof argsCopy[n] == "object" ? argsCopy[n] : void 0;
-
   var result = query && Tool.Tab.cssQueryRegExp.exec(query) || [];
   /** @param {"name"|"id"|"className"} property @param {unknown} value */
   function setFromQuery(property, value) {
@@ -2695,41 +2700,54 @@ Tool.Tab.prototype.append = (
       });
     return isName ? string : el[property] = string;
   }
-  // return JSON.stringify(result);
+  /** @type {Node} */
   var el = element instanceof Node ?
     element :
     document.createElement(element || setFromQuery("name", result[1]));
   setFromQuery("id", result[2]);
   setFromQuery("className", result[3]);
-  var event = Data.getFunctionName(handler) ||
+  var event = handler && Data.getFunctionName(handler) ||
     (el instanceof HTMLButtonElement ? "onclick" : "oninput");
   if (event)
     el[event] = handler;
   if (options)
     Tool.Tab.prototype.setElementProperties(el, options);
-  //console.log(JSON.stringify({name: el.nodeName, id: el.id, class: el.class
-  //Name, fn: handler}));
+  this.elements.push(el);
   return el;
 });
-/** @TODO comment out before update v.0.2.6 */
-//var test_evil = "Tool.Tab.prototype.append('div#\\\\31 0.nice.fool.mwwwwwww
-//ww.wwwing - hard.none', function () {});";var test_evil = 'JSON.stringify(T
-//ool.Tab.cssQueryRegExp.exec("textarea#i-d.nice.fool")); ';
-Tool.Tab.cssQueryTest = function (regExp) {
-  function test(example, result) {
-    var correct = JSON.stringify(regExp.exec(example)) === result;
-    correct || console.error(example + " !=> " + result);
-    pass &= +correct;
-  }
-  var pass = 1;
-  return !!pass;
+Tool.Tab.cssQueryTest = "unimplemented from version v.0.2.6";
+//-Tool.Tab.openTab = function () {
+//-  return ;
+//-};
+/** @param {Tool.Tab} tab @param {ToolSetup} setup */
+Tool.Tab.bindInit = function (tab, setup) {
+  /** assignTab @type {ToolExec&{originalInit:ToolExec}} */
+  function tabAssign(x, y) {
+    console.log('tabAssign');
+    setup(tab);
+    var main = GE(8), nav = GE(9);
+    if (!main)
+      throw new Error("can not initialize Tab, main#8 is missing");
+    if (!tab.reuse || !nav)
+      nav = main.appendChild(EL("nav"));
+    while (nav.lastChild)
+      nav.removeChild(nav.lastChild);
+    if (tab.reuse)
+      nav.id = "9";
+    nav.className = "tool-tab";
+    for (var i = 0; i < tab.elements.length; i++)
+      nav.appendChild(tab.elements[i]);
+    tabAssign.originalInit(x, y);
+  };
+  tabAssign.originalInit = tab.init;
+  return tabAssign;
 };
-/** @callback ToolSetup @param {Tool.Tab} methods */
+/** @callback ToolSetup @param {Tool.Tab} setup */
 /** @param {string} name @param {ToolSetup} setup @param {string} icon */
 Tool.Tab.addItem = function (name, setup, icon) {
-  var methods = new Tool.Tab(F, F);
-  setup(methods);
-  Tool.list.push(new Tool(name, icon, methods));
+  var tab = new Tool.Tab(F, F);
+  tab.init = Tool.Tab.bindInit(tab, setup);
+  Tool.list.push(new Tool(name, icon, tab, true));
 };
 
 Tool.list.push(new Tool("Tune", "M4a4,24265 c51,2f0,273,ad3,931,f85 c8da,714\
@@ -2888,11 +2906,17 @@ e c0,-5a6,0,-35d59,0,-3643c c0,-1052,d3b,-1d8e,1d8e,-1d8e c88f,0,db66,0,de2d\
 c-6b6,0,-d69e,0,-de2d,0 c-1052,0,-1d8e,d3b,-1d8e,1d8e c0,80c,0,1b1a5,0,1b629\
  c0,1052,d3b,1d8e,1d8e,1d8e c5e9,0,d9f1,0,de2d,0 c1052,0,1d8e,-d3b,1d8e,-1d8\
 e c0,-754,0,-1b5c7,0,-1b629 z"));
-Tool.list.push(new Tool("Node", "Mf70a,34a28 c0,f1b,0,7296,0,8060 c0,1e09,-1\
-859,3663,-3663,3663 c-fa9,0,-73b3,0,-8944,0 c-1e09,0,-3663,-1859,-3663,-3663\
- c0,-bcb,0,-7be7,0,-89f4 c0,-1e09,1859,-3663,3663,-3663 h81d1 l251bf,-250eb \
-v-81e2 c0,-1e09,1859,-3663,3663,-3663 cb18,0,7b71,0,8944,0 c1e09,0,3663,1859\
-,3663,3663 c0,eac,0,7ff7,0,89f4 c0,1e09,-1859,3663,-3663,3663 h-81b3 z"));
+Tool.Tab.addItem("Node", function (methods) {
+  methods.init = console.log;
+  methods.exec = function (x, y) {
+    console.log('exec', x, ' ', y);
+  };
+  console.log('initialize tst');
+}, "Mf70a,34a28 c0,f1b,0,7296,0,8060 c0,1e09,-1859,3663,-3663,3663 c-fa9,0,-\
+73b3,0,-8944,0 c-1e09,0,-3663,-1859,-3663,-3663 c0,-bcb,0,-7be7,0,-89f4 c0,-\
+1e09,1859,-3663,3663,-3663 h81d1 l251bf,-250eb v-81e2 c0,-1e09,1859,-3663,36\
+63,-3663 cb18,0,7b71,0,8944,0 c1e09,0,3663,1859,3663,3663 c0,eac,0,7ff7,0,89\
+f4 c0,1e09,-1859,3663,-3663,3663 h-81b3 z");
 Tool.list.push(new Tool("History", "Mc400,0 c-238d,0,-4400,2072,-4400,4400 v\
 37800 c0,238d,2072,4400,4400,4400 h27800 c238d,0,4400,-2072,4400,-4400 v-378\
 00 c0,-238d,-2072,-4400,-4400,-4400 z M31beb,a445 c6cc,548,6cc,dd8,0,1320 c-\
@@ -3069,9 +3093,9 @@ test_debugbox2collisions = function (rend) {
     rend_collisions = devt_debugger = true;
     running = true;
     typeof rend == "function" ? rend() :
-      Block.Box2d.collisions(Block.Box2d.GRID.Small
-      // does this work? (v.0.1.69.K1)
-      , ship.blocks, true);
+      Block.Box2d.collisions(Block.Box2d.GRID.Small,
+        // does this work? (v.0.1.69.K1)
+        ship.blocks, true);
     running = false;
     test_collbxs = oB;
     rend_collisions = oRC;
@@ -3191,9 +3215,9 @@ DefaultUI.createFolder = function (type, tiles) {
   folder.type = DefaultUI.createTile(type);
   return folder;
 };
-/** selctively finds which UI area was interacted with
+/** handles interactions with DefaultUI hotbars and inventoryTile
  * @param {number} x @param {number} y @returns {boolean} over GUI area */
-DefaultUI.actionArea = function (x, y) {
+DefaultUI.handleGUIArea = function (x, y) {
   var tile = -1;
   if (x < 277) {
     // toolBar side of canvas: static tile slots
@@ -3209,9 +3233,9 @@ DefaultUI.actionArea = function (x, y) {
     if (DefaultUI.inventoryTile && x > canvas.width - 103)
       tile = 2;
     else if (x - 277 < (DefaultUI.blockBars[DefaultUI.selectedFolder] ||
-      []).length * 87)
-      tile = (x - 283) / 87 << 2 | 1;
-      // STOPPED HERE
+      []).length * 87) {
+        tile = (x - 283) / 87 << 2 | 1;
+      }
   } else if (x - 277 + DefaultUI.offsetsFolders <
     DefaultUI.blockBars.length * 57 && y > canvas.height - 170) {
     // folders for blockBar rect part of canvas:
@@ -3222,22 +3246,22 @@ DefaultUI.actionArea = function (x, y) {
     else if (DefaultUI.nextFolders && x > canvas.width - 61)
       DefaultUI.offsetsFolders += 57;
     else if ((DefaultUI.selectedTile & 3) === 1 && folder !==
-      DefaultUI.selectedFolder)
+      DefaultUI.selectedFolder) {
       DefaultUI.selectedFolder = folder;
-    else
+    } else
       DefaultUI.selectedFolder = folder;
   } else
     // the rest of canvas area is handled for building area
     return false;
   /** @type {{clickType?:boolean}} */
   (DefaultUI.getSelectedTile(tile) || {}).clickType ?
-    // currently this place is dictates the clickType like properties of Tool
+    // currently this place dictates the clickType like properties of Tool
     DefaultUI.selectedClickTile = tile :
     DefaultUI.selectedTile =
       DefaultUI.selectedTile === tile ? -1 : tile;
   render();
   return true;
-}
+};
 /** @param {TileType} tile */
 DefaultUI.getCode = function tileCode(tile) {
   return tile instanceof Tool ?
@@ -3505,17 +3529,18 @@ DefaultUI.basePress = function (blockPlacing, canDefault) {
   };
   DefaultUI.canDefaultPress = canDefault !== UDF ? canDefault : false;
   return function (x, y) {
-    if (DefaultUI.actionArea(x, y)) {
+    if (DefaultUI.handleGUIArea(x, y)) {
       var tile = DefaultUI.getSelectedTile(DefaultUI.selectedClickTile);
-      tile instanceof Tool && tile.clickType && tile.exec(x, y);
+      if (tile instanceof Tool)
+        tile.clickType && tile.exec(x, y);
       return true;
     } else
       var tile = DefaultUI.getSelectedTile();
-      if (tile instanceof Block) 
-        placing(x, y, tile);
-      else if (tile instanceof Tool) {
-        tile.exec(x, y);
-      } else
+    if (tile instanceof Block) 
+      placing(x, y, tile);
+    else if (tile instanceof Tool)
+      tile.exec(x, y);
+    else
       DefaultUI.canDefaultPress && DefaultUI.defaultPress(x, y);
   };
 };
@@ -3534,7 +3559,7 @@ var cmdsName = EL(), cmds = (function () {
     press = DefaultUI.press;
     move = DefaultUI.move;
     render();
-  };
+  }
   /** navigation element returned to set cmds variable */
   var nav = EL("nav");
   nav.id = "commandsTab";
@@ -3617,20 +3642,19 @@ var cmdsName = EL(), cmds = (function () {
     pre.appendChild(tN(e && e.stack ?
       "" + m + "\n" + e.stack :
       "" + m + "\n\t" + s + ":" + l + ":" + c));
-  }
+  };
   return (bd || EL()).appendChild(nav);
 })();
 
 function enableShipEditing() {
   var mode = ship.getMode();
   ship = mode.getShip();
-  /** @TODO create lucky block icon for old_UI (day1, oldschool fmode) */
   DefaultUI.press = press = DefaultUI.basePress(UDF);
   DefaultUI.move = move = function (x, y, e) {
     if (e.type === "mousedown" || e.type === "touchstart" ||
       e.type === "mouseenter")
       // #compactDownToExecTiel
-      if (DefaultUI.actionArea(x, y)) {
+      if (DefaultUI.handleGUIArea(x, y)) {
         var tile = DefaultUI.getSelectedTile(DefaultUI.selectedClickTile);
         if (tile instanceof Tool && tile.clickType)
           tile.exec(x, y);
@@ -3711,11 +3735,12 @@ function enableLogicEditing() {
     if (e.type === "mousedown" || e.type === "touchstart" ||
       e.type === "mouseenter") {
       // #compactDownToExecTiel
-      if (DefaultUI.actionArea(x, y)) {
+      if (DefaultUI.handleGUIArea(x, y)) {
         var tile = DefaultUI.getSelectedTile(DefaultUI.selectedClickTile);
         if (tile instanceof Tool && tile.clickType)
           tile.exec(x, y);
-        return !(found = null);
+        found = null;
+        return true;
       }
       if (!(found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc)))
         return !1;
@@ -3739,8 +3764,9 @@ function enableLogicEditing() {
         return !1;
       if ((blocks[movingId] === found.block ?
         movingId :
-        movingId = blocks.indexOf(found.block)) === -1)
+        movingId = blocks.indexOf(found.block)) === -1) {
         throw new Error("Block found not found, at edit_logicmove.");
+      }
       if ((blocks[found.id] || {}).internalName === "__NULL__") {
         blocks[found.id] = found.block;
         del.call(blocks, movingId);
@@ -3781,7 +3807,7 @@ function enableLogicEditing() {
 /** @param {number} x @param {number} y @param {TemporaryEventParam} e */
 var edit_logicmove = function (x, y, e) {
   //?? #compactDownToExecTiel
-  return e.type === "mousedown" ? DefaultUI.actionArea(x, y) : false;
+  return e.type === "mousedown" ? DefaultUI.handleGUIArea(x, y) : false;
 };
 
 function rend_backgPattern() {
@@ -3869,8 +3895,8 @@ function backgHangarInit() {
   };
   rend_background = obackground;
   render();
-};
-backgHangarInit.ship = Ship.fromObject({b:[]});
+}
+backgHangarInit.ship = Ship.fromObject({b: []});
 backgHangarInit.ready = 0;
 /** @type {(()=>void)&{primary?:()=>void}} */
 var rend_background = defaults.editorBackground ?
@@ -3924,7 +3950,7 @@ function rend_checkColors() {
     rend_initialized.forEach(function (e) {
       e();
     });
-};
+}
 var rend_colors = rend_initColors();
 
 DefaultUI.setPixelRatio();
@@ -3945,7 +3971,7 @@ function init_touchScreen(click) {
   defaults.fullscreenInitialized = true;
   saveSettings();
   DefaultUI.setPixelRatio();
-};
+}
 touchdevice = init_touchScreen;
 
 var old_UI = DefaultUI.press = press = function (x, y) {
@@ -3954,8 +3980,9 @@ var old_UI = DefaultUI.press = press = function (x, y) {
   var found = [0].slice(1);
   for (var i = 0, arr = ship.blocks; i < arr.length; i++)
     if (Math.floor((arr[i].position[1]) / 2) === x &&
-      Math.floor((arr[i].position[2]) / 2) === y)
+      Math.floor((arr[i].position[2]) / 2) === y) {
         found.unshift(i);
+    }
   var rand = placingBlock();
   if (rand === "remove") {
     ship.removeBlocks(found);
@@ -3984,8 +4011,9 @@ var old_UI = DefaultUI.press = press = function (x, y) {
 /** @type {(x:number,y:number,e:TemporaryEventParam)=>void} */
 function commands(x, y, e) {
   if (e.target instanceof HTMLInputElement ||
-    e.target instanceof HTMLTextAreaElement)
+    e.target instanceof HTMLTextAreaElement) {
     return;
+  }
   var w = innerWidth - 175, ih = innerHeight - 255, st = cmds.style;
   st.left = (x > 178 ? x < w ? x - 175 : w - 180 : 5) + "px";
   st.top = (y > 45 && y > (ih < 250 ? ih : 255) ? y - 250 : 5) + "px";
@@ -4032,8 +4060,8 @@ DefaultUI.over = over = function (e) {
     cmdsY = y - e.pageY - canvas.offsetTop;
     cmdsMove = !0;
     cmds.style["" + "webkitUserSelect"] = cmds.style.userSelect = "none";
-  } else if (cmdsMove && (e.type === "mousemove" ||
-    e.type === "touchmove")) {
+  } else if (cmdsMove && (e.type === "mousemove" || e.type ===
+    "touchmove")) {
     if (e instanceof MouseEvent && !e.buttons && !e.button) {
       cmdsMove = !1;
       return;
@@ -4044,10 +4072,10 @@ DefaultUI.over = over = function (e) {
       w = innerWidth - 86;
     st.left = (x > -269 ? x < w ? x : w : -269) + "px";
     st.top = (y > 5 ? y : 5) + "px";
-  } else if (e.type === "mouseup" ||
-    e.type === "touchend" || e.type === "touchcancel")
+  } else if (e.type === "mouseup" || e.type === "touchend" ||
+    e.type === "touchcancel") {
     cmdsMove = !1;
-  else
+  } else
     cmds.style["" + "webkitUserSelect"] = cmds.style.userSelect = "";
   // TODO: some nice system to account for end/'hoverleave'
   // ^ will hopefully inherit final form which also "doublepress" and
@@ -4275,7 +4303,7 @@ function expensiveRenderer() {
   var t = Date.now() - t | 0;
   rend_speeeeed[t] = rend_speeeeed[t] + 1 || 0;
 }
-/** @type {typeof Block.Box2d.visualize} */
+/** @type {Block.Box2d.Visualize} */
 Block.Box2d.visualize = function (path, x, y, green) {
   //try{
   var visuals = test_collisions || (test_collbxs && green !== UDF) ||
@@ -4319,3 +4347,118 @@ init = function () {
   init_funMode();
   check_contentScript();
 };
+/** @TODO remove in v.0.2.8 */
+// // .d1r.dbv DBVE icon v3
+// var size = 512, maskable = 192;
+// WH(ctx, size, size);
+// ctx.scale(size / 16, size / 16);
+// ctx.imageSmoothingEnabled = false;
+// // WH(ctx, 16, 16);
+// ctx.fillStyle = "#ffffff";
+// ctx.fillRect(0, 0, 16, 16);
+// ctx.fillStyle = "#" + (16737894).toString(16);
+// ctx.fillStyle = "#ff3333";
+// ctx.fillRect(5, 5, 6, 6);
+// // ctx.globalAlpha = 51 / 255;
+// ctx.strokeStyle = "#191919";
+// ctx.strokeStyle = "#cccccc";
+// ctx.strokeRect(.5, .5, 15, 15);
+// ctx.strokeStyle = "#470000";
+// ctx.strokeStyle = "#cc2929";
+// ctx.strokeRect(5.5, 5.5, 5, 5);
+// ctx.globalAlpha = 1;
+// // ctx.drawImage(IMG(0), 0, 0);
+// var rc = sShot.getContext("2d");
+// WH(rc, ctx.canvas);
+// rc.setTransform(ctx.getTransform());
+// rc.lineWidth = 1.3;
+// rc.lineJoin = "round";
+// rc.lineCap = "round";
+// rc.strokeStyle = "#9f9f8f";
+// rc.strokeStyle = "#6E7069";
+// rc.beginPath();
+// rc.moveTo(8, 14);
+// rc.lineTo(8, 15.5 - 7.5 / 3);
+// rc.lineTo(.5, .5 + 7.5 / 2 + 15 / 3);
+// rc.lineTo(.5, 15.5 - 7.5 / 2);
+// rc.lineTo(8, 15.5);
+// rc.lineTo(15.5, 15.5 - 7.5 / 2);
+// rc.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
+// rc.lineTo(8 + 7.5 / 6, 15.5 - 37.5 / 12);
+// rc.moveTo(15.5, .5 + 7.5 / 2 + 15 / 3);
+// rc.lineTo(15.5 - 30 / 19, .5 + 7.5 / 2 + 15 / 3 - 15 / 19);
+// rc.stroke();
+// rc.strokeStyle = "#030e2f";
+// rc.beginPath();
+// rc.moveTo(.5 + 46 / 12, .5 + 52 / 12);
+// // rc.moveTo(.5 + 37.5 / 6, .5 + 37.5 / 12);
+// rc.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
+// rc.lineTo(8, .5);
+// rc.lineTo(.5, .5 + 7.5 / 2);
+// rc.lineTo(.5 + 7.5 / 3, .5 + 15 / 3);
+// rc.lineTo(.5 + 7.5 / 3 + 37.5 * 4 / 24, .5 + 15 / 3 + 31 * 4 / 24);
+// // rc.lineTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
+// rc.moveTo(8 + 7.5 / 3, .5 + 7.5 / 6);
+// rc.lineTo(8 + 7.5 / 3 + 15 * 4 / 29, .5 + 7.5 / 6 + 52.5 * 4 / 29);
+// rc.moveTo(.5, 5.9);
+// rc.lineTo(.5, 7.7);
+// rc.stroke();
+// ctx.globalCompositeOperation = "destination-in";
+// ctx.drawImage(rc.canvas, 0, 0, 16, 16);
+// ctx.globalCompositeOperation = "destination-over";
+// // ctx.globalAlpha = .5;
+// // ctx.fillStyle = "#000000";
+// // ctx.fillRect(5, 5, 6, 6);
+// // ctx.globalAlpha = 51 / 255;
+// // ctx.strokeStyle = "#000000";
+// // ctx.strokeRect(5.5, 5.5, 5, 5);
+// // ctx.globalAlpha = 1;
+// ctx.fillStyle = "#" + (16737894).toString(16);
+// ctx.strokeStyle = "#470000";
+// ctx.strokeRect(5.5, 5.5, 5, 5);
+// ctx.fillRect(5, 5, 6, 6);
+// ctx.fillStyle = "#030e2f";
+// ctx.beginPath();
+// ctx.moveTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
+// ctx.lineTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 3 - 15 / 6);
+// ctx.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
+// ctx.lineTo(8, .5);
+// ctx.lineTo(0, .5 + 7.5 / 2);
+// ctx.lineTo(0, .5 + 7.5 / 2 + 15 / 3);
+// ctx.lineTo(.5 - 7.5 / 3 + 7.5, .5 + 22.5 / 2);
+// // ctx.moveTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
+// // ctx.lineTo(8, 15.5 - 7.5 / 3);
+// // ctx.lineTo(8, 15.5);
+// // ctx.lineTo(8 + 7.5 / 3, 15.5 - 7.5 / 6);
+// // ctx.moveTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 3 - 15 / 6);
+// // ctx.lineTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 2 + 7.5 / 6);
+// // ctx.lineTo(15.5, 15.5 - 7.5 / 2);
+// // ctx.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
+// // ctx.moveTo(.5 + 7.5 / 3, .5 + 15 / 3);
+// // ctx.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
+// // ctx.lineTo(8 + 7.5 / 3 + 15 * 4 / 29, .5 + 7.5 / 6 + 52.5 * 4 / 29);
+// // ctx.lineTo(.5 + 7.5 / 3 + 37.5 * 4 / 24, .5 + 15 / 3 + 31 * 4 / 24);
+// ctx.closePath();
+// // ctx.globalCompositeOperation = "source-over";
+// ctx.fill();
+// // ctx.globalCompositeOperation = "destination-over";
+// ctx.fillStyle = "#6E7069";
+// ctx.beginPath();
+// ctx.moveTo(15.5 - 15 / 4, .5 + 7.5 / 2 + 15 / 3 - 15 / 8);
+// ctx.lineTo(.5, .5 + 7.5 / 2 + 15 / 3);
+// ctx.lineTo(.5, 15.5 - 7.5 / 2);
+// ctx.lineTo(8, 15.5);
+// ctx.lineTo(15.5, 15.5 - 7.5 / 2);
+// ctx.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
+// ctx.closePath();
+// ctx.fill();
+// ctx.lineWidth = 1;
+// ctx.strokeStyle = "#000000";
+// ctx.strokeRect(.5, .5, 15, 15);
+// if (maskable) {
+//   WH(rc, maskable, maskable);
+//   rc.fillStyle = ctx.strokeStyle;
+//   rc.fillRect(0, 0, maskable, maskable);
+//   var padding = (maskable - size) / 2;
+//   rc.drawImage(ctx.canvas, padding, padding);
+// }

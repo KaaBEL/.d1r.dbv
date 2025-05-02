@@ -1,9 +1,10 @@
 {
-  ".D1R.DBV-VERSION": "v.0.2",
+  "$schema": "https://json.schemastore.org/web-manifest.json",
+  ".D1R.DBV_VERSION": "v.0.2.7",
   "dir": "ltr",
   "lang": "en",
-  "name": "DroneBoi Vehicles Editor",
-  "short_name": "D1R DBV editor",
+  "name": "DroneBoi Vehicles Editor (DBVE)",
+  "short_name": "D1R DBV Editor",
   "start_url": "./editor.html?app=true",
   "id": "./",
   "scope": "./",
@@ -21,7 +22,19 @@
       "src": "./favicon.svg",
       "sizes": "16x16",
       "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/.d1r.dbv/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "/.d1r.dbv/web-app-manifest-16x16.svg",
+      "sizes": "16x16",
+      "type": "image/svg+xml",
+      "purpose": "monochrome"
     }
   ],
   "orientation": "any",

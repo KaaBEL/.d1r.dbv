@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.2.4 -->
+<!-- v.0.2.7 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -7,11 +7,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="https://kaabel.github.io/.d1r.dbv/favicon.png" type="image/png" />
   <link rel="icon shortcut" href="https://kaabel.github.io/.d1r.dbv/favicon.svg" type="image/svg+xml" />
-  <title>Droneboi Vehicles editor</title>
-  <meta name="description" content="Check out the early state of opensource Droneboi Vehicles editor." />
+  <link rel="apple-touch-icon" sizes="180x180" href="https://kaabel.github.io/.d1r.dbv/apple-touch-icon.png" />
+  <title>Droneboi Vehicles Editor (DBVE)</title>
+  <meta name="description" content="Check out the early state of opensource Droneboi Vehicles Editor." />
   <meta property="og:image" content="https://kaabel.github.io/.d1r.dbv/favicon.png">
   <meta name="theme-color" content="#111111"/>
-  <link rel="manifest" type="application/manifest+json" href="https://kaabel.github.io/.d1r.dbv/manifest.json"/>
+  <meta name="apple-mobile-web-app-title" content="D1R DBV Editor" />
+  <link rel="manifest" type="application/manifest+json" href="./manifest.json"/>
   <link rel="canonical" href="https://kaabel.github.io/.d1r.dbv/editor.html"/>
   <style>
     body {
@@ -96,7 +98,7 @@
       for (var ch = document.head.childNodes; i < ch.length; i++)
         if (ch[i].nodeName === "TITLE")
           /** @type {HTMLTitleElement} */
-          (ch[i]).text = "D1R DBV editor";
+          (ch[i]).text = "D1R DBV Editor";
     })(document.head || document.querySelector("head"));
   </script>
 </head>
@@ -112,7 +114,7 @@
     <a class="no-script" href="https://www.enable-javascript.com/">
       Enable javascript to view all of this page's content.
     </a>
-    <h1>Welcome to Dead (Droneboi) Vehicles editor</h1>
+    <h1>Welcome to Dead (droneBoi) Vehicles Editor</h1>
     <h2>What is it?</h2>
     It is a fan made opensource tool for modifying and creating Droneboi
     Vehicles online.
@@ -171,7 +173,7 @@
     <a href="https://discord.gg/Nb2jAgVHm5">
       Deltarealm fanclub
     </a>.
-    <div id="info_auth" itemprop="dateModified" content="2025-03-23" datetime="2025-03-23">Made by:
+    <div id="info_auth" itemprop="dateModified" content="2025-05-02" datetime="2025-05-02">Made by:
       <!-- link is unproperly displayed when whitespace is outside svg and pre -->
       <a href="https://github.com/KaaBEL"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="16" height="16" viewBox="0,0,16,16">
           <g data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill-rule="nonzero" stroke="none" style="mix-blend-mode: normal">
@@ -179,7 +181,7 @@
             <path d="M3,2h5v4h4v-4h1v5h-2l2,7h-1.3l-2,-7h-1.7v7h-5z" fill="#000" />
           </g>
       </svg><pre>KaaBEL</pre></a>
-      <time itemprop="dateModified" content="2025-03-23" datetime="2025-03-23">Last updated March 23, 2025</time>
+      <time itemprop="dateModified" content="2025-05-02" datetime="2025-05-02">Last updated May 2, 2025</time>
     </div>
     <div class="space" data="bottom_margin_workaround">0</div>
   </footer>
@@ -886,8 +888,8 @@
       resizeWindow();
     };
   </script>
-  <script type="text/javascript" src="./code/code.js"></script>
-  <script type="text/javascript" src="./code/editor.js"></script>
+  <script type="text/javascript" defer src="./code/code.js"></script>
+  <script type="text/javascript" defer src="./code/editor.js"></script>
   <!-- for 'unit' testing use devt_bug_testing(); function -->
 </body>
 </html>

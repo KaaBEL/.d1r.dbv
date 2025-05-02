@@ -6,7 +6,7 @@
 // B) create chrome extensions with custom modifications for live page
 // C) pull requests to main repo on github
 /** @readonly */
-var version_code_js = "v.0.2.4";
+var version_code_js = "v.0.2.7";
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[key:string|number|symbol]:unknown}} safe */
@@ -955,17 +955,7 @@ Logic.expensiveExec = function (ship) {
     logic.exec(arg, block, ship);
   }
 };
-// /** more confusation added to the Logic mess, OH YEAHH!!!
-//  * @param {(Logic<any>|undefined)[]} logics @param {Ship} ship
-//  * @param {number} i @param {Block|LogicBlock} oldOwner */
-// Logic.checkNodeOwners = function (logics, ship, i, oldOwner) {
-//   if (ship.prop && ship.prop.nodeList !== logics)
-//     return console.error("Inputted incompatible nedoList (logics).");
-//   var node = logics[i];
-//   if (!node)
-//     return console.error();
-//   if (node.owner !== oldOwner)
-// };
+// Logic.checkNodeOwners unused code removed in v.0.2.7
 
 function Color() {
   this.prop = !1;
@@ -998,7 +988,7 @@ Color.default = function getColor(name) {
   if (/Drill|Storage Rack/.test(name))
     return "Orange";
   if (/Ion Thruster/.test(name))
-    return "Lime"
+    return "Lime";
   if (/__placeholder776__|Afterburner/.test(name))
     return "Red";
   if (Color.colorlessRegexp.test(name))
@@ -1386,7 +1376,7 @@ Block.rotate = function (rot, x, y, z) {
         (turn + n & 3);
     //@ts-ignore
     } else if ('I have no idea')
-      throw new Error("Not implemented.")
+      throw new Error("Not implemented.");
   }
   return [rot[0] = face, rot[1] = side, rot[2] = turn];
 };
@@ -1490,7 +1480,7 @@ Block.Mirror = function Mirror(type) {
   this.dictionary =
     /** @type {T extends "BLOCK"?undefined:Rotation[]} */
     (Block.Mirror[type] ||
-    console.warn("Dictionary for \"BLOCK\" type is undefined!"));
+      console.warn("Dictionary for \"BLOCK\" type is undefined!"));
   Object.freeze(this);
 };
 /** @param {string} data */
@@ -1552,7 +1542,7 @@ Block.Properties = function (type, name) {
   this.name = name;
   /** @type {ItemTs[T]} defines the data structure *///@ts-ignore
   this.item = new Block.Properties.Items[type]();
-}
+};
 Block.Properties.Items = {
   // changed the integer slider from not having enterable input
   // to allow only for integer number unlike slider's multiplies of 0.1
@@ -1745,7 +1735,7 @@ Block.Properties.getInputOptions = function (prop) {
       arrMaybe :
       []).map(String)
   );
-}
+};
 /** visualising for collisions data (Block.Box2d.VALUE) */
 var test_collbxs = false,
   /** @type {typeof F|((rend?:any)=>true|undefined)} */
@@ -2013,13 +2003,11 @@ Block.Box2d.GRID = Object.freeze({
     [[-20, 20], [-20, -22], [22, -22], [22, 20], [0, 0]])
 });
 /**
- * @overload @param {Block.Box2d[]} path @returns {void}
- * @overload @param {Box2dPath} path @param {number} x @param {number} y
- * @param {boolean} isBlock1 @returns {void}
+ * @callback Block.Box2d.Visualize
  * @param {Box2dPath|Block.Box2d[]} path @param {number} [x]
- * @param {number} [y] @param {boolean} [isBlock1] @returns {void}
- * {(x:number,y:number,path:Box2dPath,isBlock1?:boolean)=>void}
- */
+ * @param {number} [y] @param {boolean} [isBlock1] @returns {void} */
+/** returns {(x:number,y:number,path:Box2dPath,isBlock1?:boolean)=>void}
+ * @type {Block.Box2d.Visualize} */
 Block.Box2d.visualize = function (path, x, y, isBlock1) {};
 /** if using Box2dPath as collider, last point is the reference point
  * @param {ShipBlock|Box2dPath} forShape @param {ShipBlock[]} within
@@ -2132,14 +2120,14 @@ Block.Box2d.collisions = function (forShape, within, inside, inverted) {
                   (point1.y === yMin1) === (point2.y === yMin2) &&
                   // line segments are overlaping
                   yMax1 > yMin2 && yMin1 < yMax2 :
-              // paralel horizontal lines on y axis (yMin<i> === yMax<i>)
-              prpdcr === 18 &&
-                // lines are same position
-                yMax1 === yMax2 &&
-                // (horizontal) lines are the same direction
-                (point1.x === xMin1) === (point2.x === xMin2) &&
-                // line segments are overlaping
-                xMax1 > xMin2 && xMin1 < xMax2
+                // paralel horizontal lines on y axis (yMin<i> === yMax<i>)
+                prpdcr === 18 &&
+                  // lines are same position
+                  yMax1 === yMax2 &&
+                  // (horizontal) lines are the same direction
+                  (point1.x === xMin1) === (point2.x === xMin2) &&
+                  // line segments are overlaping
+                  xMax1 > xMin2 && xMin1 < xMax2
             ) {
               return [point1, endpoint1, point2, endpoint2];
             } else
@@ -2236,7 +2224,7 @@ Block.Box2d.collisions = function (forShape, within, inside, inverted) {
         // second pntB under first pntA means that current line segment
         // makes a entering (left) boundary, otherwise its end boundary
         var n = pntA.y < pntB.y ? 1 : -1;
-        /** @TODO CONTINUE HERE finish fixing at */
+        /** @TODO ABANDONED UNFINISHED finish fixing at */
         x < point.x ? before += n : x > point.x ? after += n : at += n;
         // x < point.x ? before += n : after += n;
         // How to use test_debugbox2collisions:
@@ -2447,7 +2435,7 @@ Edit.save = function (target) {
   clone.name = target.name;
   clone.gameVersion = JSON.parse(JSON.stringify(target.gameVersion));
   clone.dateTime = target.dateTime;
-  clone.blocks = blocks,
+  clone.blocks = blocks;
   clone.prop = prop && function (logics, inputs) {
     var result = JSON.parse(JSON.stringify(prop));
     delete result.nodeList;
@@ -2539,8 +2527,9 @@ Edit.historyAt = function (target, index) {
         /** @type {Edit.Undo} */
         (3) ?
           edits[i = +edits[i].args.slice(1, -1)].temp = n :
-          edits[--i].temp = 0)
+          edits[--i].temp = 0) {
       i < n ? i : console.error("Edit.Undo refers forward");
+    }
   }
   try {
     for (i = 0; i <= index && lmax-- > 0; i++) {
@@ -2678,7 +2667,7 @@ Edit.randSFC32 = function (seed) {
     c = (c << 21 | c >>> 11);
     c = c + t | 0;
     return (t >>> 0) / 4294967296;
-  }
+  };
 };
 // end of taken
 /** @this {Ship} @param {number[]} ids @param {number} color */
@@ -2712,8 +2701,9 @@ Edit.oldUIRotate = function (ids) {
         "Smooth Corner 1x2",
         "Smooth Corner 1x4",
         "Glass Wedge"
-      ].indexOf(o.internalName) < 0 || rot === 3)
+      ].indexOf(o.internalName) < 0 || rot === 3) {
       o.rotation[1] = !o.rotation[1];
+    }
     //@ts-ignore
     o.rotation[2] = rot + 1 & 3;
   }
@@ -2760,8 +2750,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @readonly @type {33} significantVersion: 33 (integer) */// @ts-ignore
-Ship.VERSION = 33;
+/** @readonly @type {34} significantVersion: 34 (integer) */// @ts-ignore
+Ship.VERSION = 34;
 Ship.propertyNames = new RegExp("^(?:nodeList|nodeConnections|customI" +
   "nputs|gridSize)$");
 // Ship.PROPERTIES = {
@@ -2890,7 +2880,7 @@ Ship.prototype.fillRect = function (x0, y0, z0, x1, y1, z1) {
     Edit.capture(this, this.fillRect, x0, y0, z0, x1, y1, z1);
     return blocks;
   }
-  // width, height, length
+  // width, height, length (not implemented yet placing with collsisions)
   var w = x - x0 + 1, h = y - y0 + 1, l = z - z0 + 1;
   var b;
 };
@@ -2958,12 +2948,10 @@ Ship.prototype.paste = function (x, y, z) {
       if (outNode && outNode.pairs instanceof Array) {
         newNode.pairs = outIdx;
         outNode.pairs.push(inputs[i]);
-      }
-      else
+      } else
         console.error("Missing new logic output node at: " + outIdx);
     } else if (
-      (outNode = logics[newNode.pairs]) &&
-      outNode.pairs instanceof Array
+      (outNode = logics[newNode.pairs]) && outNode.pairs instanceof Array
     ) {
       newNode.pairs = newNode.pairs;
       outNode.pairs.push(inputs[i]);
@@ -3052,7 +3040,7 @@ Ship.prototype.mirror2d = (
       Edit.capture(this, this.mirror2d, x0, y0, z0, x1, y1, z1);
     } else {
       for (var i = 0; i < all.length; i++) {
-        pos = all[i].position
+        pos = all[i].position;
         pushBlock(all[i], pos);
       }
       Edit.capture(this, this.mirror2d);
@@ -3154,7 +3142,7 @@ Ship.prototype.fixVersion_1_3 = function () {
     }
   this.gameVersion = [];
   Edit.capture(this, this.fixVersion_1_3);
-}
+};
 /**
  * @param {number} x @param {number} y @param {number} z
  * @param {ShipBlock|number} refBlock template for the new one */
@@ -3227,7 +3215,7 @@ Ship.fromObject = function fromObject(object) {
     ver = (typeof o.ver === "string" ?
       o.ver.replace(/ ,/g, ".").split(".") :
       o.ver instanceof Array ?
-        o.ver:
+        o.ver :
         []).map(Number),
     time = typeof o.time == "string" ? o.time : Ship.dateTime(),
     /** @type {Logic<any>[]&{nc:any}} */
@@ -3382,14 +3370,16 @@ Ship.checkDBV = function (ship) {
     if (id === 791) {
       if (!(arr[0] instanceof Array && arr[0].length === 4) ||
         arr[0].some(function (e) {
-          return notPositiveInteger(e) || n > 4
-        }))
+          return notPositiveInteger(e) || n > 4;
+        })) {
         throw at(new Error("Incorrect welgroups array"));
+      }
     } else if (item instanceof classes["Integer Slider"] ||
-      item instanceof classes["Dropdown"])
+      item instanceof classes["Dropdown"]) {
       if (notPositiveInteger(arr[n - 1])) {
         throw at(new Error("The \"c\" property requires positive" +
           " integer value at index: " + (n - 1)));
+      }
     }
     var n0 = arr[n - 1];
     if ("max" in item && "min" in item && typeof n0 == "number") {
@@ -3398,8 +3388,9 @@ Ship.checkDBV = function (ship) {
           item.max + " are allowed at index: " + (n - 1) +
           " of \"c\" property"));
     }
-    "CONTINUE HERE";
+    "@TODO ABANDONED UNFINISHED";
   }
+  console.info("A" + "BAN" + "DONE" + atob("RCBVTkZJTklTSEVE"));
   rend_collisions = true;
   var classes = Block.Properties.Items, shipProp = ship.prop || {};
   for (var b = ship.blocks, i = b.length, msg = ""; i-- > 0;) {
@@ -3434,8 +3425,9 @@ Ship.checkDBV = function (ship) {
     arr = b[i].properties.nodeIndex;
     if (arr && !(arr instanceof Array && arr.every(function (e) {
       return typeof e == "number" && !isNaN(e % 1);
-    })))
+    }))) {
       throw at(new Error("The \"ni\" property can be (int) number[]"));
+    }
     /** @TODO investigate bottom lines parallel collisions */
     var colliding = Block.Box2d.collisions(b[i], b);
     if (colliding.length)
@@ -4375,8 +4367,8 @@ B64Key.decode = function decodeCmprsShip(cmprsShip) {
 // just converts Uint8Array to string with binary numbers in DevTools
 B64Key.binaryData = function ($help) {
   if (typeof $help === "boolean")
-    return "args: ArrayBuffer | Array (data), ?[?from, to] (slice), ?b\
-ytesize, ?isMSBF=false :displays data in bits(for viewing data)";
+    return "args: ArrayBuffer | Array (data), ?[?from, to] (slice), ?bytesiz\
+e, ?isMSBF=false :displays data in bits(for viewing data)";
   var i = 1, j = 0, l, bs = 0, bit = 1, s, slice = [0], a = arguments;
   if (a[1] instanceof Array && a[1].length) {
     i++;
