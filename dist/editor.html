@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.2.7 -->
+<!-- v.0.2.8 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -10,11 +10,11 @@
   <link rel="apple-touch-icon" sizes="180x180" href="https://kaabel.github.io/.d1r.dbv/apple-touch-icon.png" />
   <title>Droneboi Vehicles Editor (DBVE)</title>
   <meta name="description" content="Check out the early state of opensource Droneboi Vehicles Editor." />
-  <meta property="og:image" content="https://kaabel.github.io/.d1r.dbv/favicon.png">
-  <meta name="theme-color" content="#111111"/>
+  <meta property="og:image" content="https://kaabel.github.io/.d1r.dbv/favicon.png" />
+  <meta name="theme-color" content="#111111" />
   <meta name="apple-mobile-web-app-title" content="D1R DBV Editor" />
-  <link rel="manifest" type="application/manifest+json" href="./manifest.json"/>
-  <link rel="canonical" href="https://kaabel.github.io/.d1r.dbv/editor.html"/>
+  <link rel="manifest" type="application/manifest+json" href="https://kaabel.github.io/.d1r.dbv/manifest.json" />
+  <link rel="canonical" href="https://kaabel.github.io/.d1r.dbv/editor.html" />
   <style>
     body {
       position: relative;
@@ -27,8 +27,11 @@
       width: 100vw;
       height: 100%;
     }
-    #info a {
+    #info:hover a {
       color: #77b;
+    }
+    #info a, #info a:hover {
+      color: #88c;
     }
     #info a:visited {
       color: #95c;
@@ -160,7 +163,9 @@
     <h2 id="info_help">How to use it?</h2>
     Exporting
     feature is limited to existing blocks and usuall positions/rotations
-    beacause of that. While holding mouse and moving view position is
+    beacause of that, 
+    <span class="red">it is still not approved as ban safe.</span>
+    While holding mouse and moving view position is
     grabbed and moves. Scroll to zoom in/out. Open contextmenu, which is
     usually done by pressing right mouse button, to also open commands tab
     where you were pointing. There is list of commads, used to change
@@ -173,7 +178,7 @@
     <a href="https://discord.gg/Nb2jAgVHm5">
       Deltarealm fanclub
     </a>.
-    <div id="info_auth" itemprop="dateModified" content="2025-05-02" datetime="2025-05-02">Made by:
+    <div id="info_auth" itemprop="dateModified" content="2025-05-17" datetime="2025-05-17">Made by:
       <!-- link is unproperly displayed when whitespace is outside svg and pre -->
       <a href="https://github.com/KaaBEL"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="16" height="16" viewBox="0,0,16,16">
           <g data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill-rule="nonzero" stroke="none" style="mix-blend-mode: normal">
@@ -181,7 +186,7 @@
             <path d="M3,2h5v4h4v-4h1v5h-2l2,7h-1.3l-2,-7h-1.7v7h-5z" fill="#000" />
           </g>
       </svg><pre>KaaBEL</pre></a>
-      <time itemprop="dateModified" content="2025-05-02" datetime="2025-05-02">Last updated May 2, 2025</time>
+      <time itemprop="dateModified" content="2025-05-17" datetime="2025-05-17">Last updated May 17, 2025</time>
     </div>
     <div class="space" data="bottom_margin_workaround">0</div>
   </footer>
@@ -207,7 +212,7 @@
     /** @typedef {MouseEvent|TouchEvent|TchD} TemporaryEventParam */
     /** @type {((click?:true)=>void)|null} */
     var touchdevice = null;
-    
+
     /** signals UI API click on canvas */
     var press = function press(x, y) {
       return console.debug(x, y);
@@ -233,7 +238,7 @@
     var init = function init() {
       return;
     };
-    
+
     /** @readonly */
     var UDF = void 0, F = function () {};
     try {
@@ -360,7 +365,7 @@
       return Object.seal(this);
     }
     /** @typedef {TouchDat} TchD */
-    
+
     /** aditional/optional js logging of touch events */
     function test_touches(targ, calls, globalArr, customLog) {
       var a = [], t = {ch: TCH}, custLog = typeof customLog == "function" ?
@@ -438,7 +443,7 @@
 
       return {a: a, tch: t};
     }
-    
+
     /**
      * @param {HTMLElement} src
      * @param {hardH} [hardHandler]
@@ -474,7 +479,7 @@
       [events, temp, added, removed, touches, identifiers].map(function (e) {
         e.length = 0;
       });
-    
+
       // console.log(o = test_touches(src, handlers, 1, function () {
       //   return [events, temp.length, added.length, removed.length,
       //     touches.length, identifiers].map(
@@ -861,8 +866,8 @@
 
       /** also called first touch, used to initiate fullscreen */
       window.ontouchend = function () {
-        if (touchdevice && !document.fullscreen &&
-          !document.webkitIsFullScreen)
+        if (document.fullscreenEnabled !== false && touchdevice &&
+          !document.fullscreen && !document.webkitIsFullScreen)
           touchdevice();
       };
       +function (info, clickHandler) {

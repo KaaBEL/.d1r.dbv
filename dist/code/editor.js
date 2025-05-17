@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.7";
+var version_editor_js = "v.0.2.8";
 /** @TODO check @see {defaults} for setting a setting without saveSettings */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -25,7 +25,7 @@ var storage = typeof localStorage == "undefined" ? {
   } :
   localStorage;
 if (typeof TouchEvent == "undefined")
-  //@ts-ignore
+  //@ts-expect-error
   var TouchEvent = function TouchEvent() {};
 
 function throwErrors() {
@@ -70,7 +70,7 @@ else if (/https?/.test(location.protocol) && navigator.serviceWorker)
 if (/^http:\/\/(?:\d+\.\d+\.\d+\.\d+|localhost:\d+)/.exec(location.href))
   +function (globalWebSocket) {
     try {
-      sessionStorage = 
+      sessionStorage =
       window.WebSocket =
         /** @type {any} disables VS code live server live reload */
         (function WebSocket() {
@@ -99,13 +99,13 @@ canvas.addEventListener("contextrestored", function () {
   "#commandsTab" +
   "{position:fixed;width: 350px;height: " +
   (innerHeight > 500 ? 500 : innerHeight) + "px;border-radius: 10px;" +
-  "background-color: #000000db;}" +
+  "background-color:rgba(0, 0, 0, 0.86);}" +
   "#commandsTab, #commandsTab button, #commandsTab .loading" +
   "{color: #999;font-size: 16px;" +
   "font-family:monospace,sans-serif,Courier,Consolas;}" +
   "#commandsTab header:first-child" +
   "{display: flex;flex-direction: row;border-bottom: 1px solid #777;}" +
-  "#commandsTab button{border: 2px solid #0000;" +
+  "#commandsTab button{border: 2px solid rgba(0, 0, 0, 0);" +
   "background-color: inherit;-webkit-user-select: text;}" +
   "#commandsTab header:first-child button{font-weight: bold;}" +
   "#commandsTab button:hover, #commandsTab button:focus," +
@@ -116,7 +116,7 @@ canvas.addEventListener("contextrestored", function () {
   "#commandsTab .loading div:nth-child(1){height: 100%;padding: 0;" +
   "position: absolute;top: 0;left: 0;transition: .2s;}" +
   "#commandsTab .loading div:nth-child(2){position: relative;" +
-  "z-index: 1;background-color: #0000;text-align: center;}" +
+  "z-index: 1;background-color: rgba(0, 0, 0, 0);text-align: center;}" +
   "#commandsTab header div" +
   "{padding: 5px;flex-grow: 1;cursor: pointer;text-align: center;}" +
   "#commandsTab header div:active{cursor: grab;}" +
@@ -154,7 +154,7 @@ var defaults = {
   renderSharp: false,
   /** (default) true: position inputs use dbc units */
   meterPositions: true,
-  editorLaunchpadBorder: false,  
+  editorLaunchpadBorder: false,
   /** (default) false: displayed, true: not used */
   hideInventoryTile: false
 },
@@ -260,6 +260,7 @@ var init_funMode = F;
       break;
     case "47f76cb8":
       console.info("Fun mode 4");
+      //@ts-expect-error
       ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr("gAALU3RhcnRlcl\
 NoaXCAAQBnyR+wATjRE/MIg+/jGIhC4AC4AAgsIpEBBBAEDoFSLDKADKAEIFCSGTKAEQAAABClwm\
 uwSAQAIUQIkAEAGAEAACghWoXSoJToICaAFiADAHBCYCgRSlIIIQC0ABkAgBMCWIQEEZlkABkAAA\
@@ -276,6 +277,7 @@ AoxSIDyABKAAIlTviFogQ=")));
     case "91c5cddf":
     case "aebec1df":
       console.info("Fun mode 5");
+      //@ts-expect-error
       ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr("gIAEEFN0YXJ0ZX\
 IgRHJvbmVib2kABD9TDSCAv6/65vbGnas+ELMGgvIGgrKuIChrYKhuICjrCoKyBpQ34LgncNaA6g\
 ak9QRBWQPKGnDcFQjauHnfBwJbWzAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMC\
@@ -297,6 +299,7 @@ wxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNl0sIntcImNvbG\
     case "ae3c8f3b":
       init_funMode = function () {
         enableLogicEditing();
+        //@ts-expect-error
         ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr(("gIAEDEFOT05\
 fU2h1dHRsZQAEXVy0aoC/TzvnFnWt0z4R4pYUZx2CorwBRXLToKjrQJPehCK9CdKboLhB4MUPQVw\
 DhrgGiGuAuAaIa4C1XkER14AjrgFBjHHEFUWbA4oxBxTVDSjWu1FsOeBYccQw3YRiywPBlnFsGcG\
@@ -742,7 +745,7 @@ function fileOpener(f_exec, error, f_final, loadBar, mode) {
     reader.addEventListener("loadend", function event() {
       if (this.error !== null) {
         if (this.error.name === "NotReadableError")
-          //@ts-ignore
+          //@ts-expect-error
           console.warn("file " + file.files[fl_i].name + " changed");
         else
           console.error(this.error + "\nat fileOpener");
@@ -823,7 +826,7 @@ function dragDrop(e) {
       return a[i].getAsFile();
     };
   for (; i < a.length; i++, l++) {
-    //@ts-ignore
+    //@ts-expect-error
     file.files.push(f() || null);
     file.open.push(l);
   }
@@ -1412,7 +1415,7 @@ Command.push("Display Logic", function (items, collapsed) {
       if (!(node = logics[ni[i]]) || node.pairs instanceof Array)
         continue;
       var b = node.type & 1,
-        /** @type {HTMLSelectElement} *///@ts-ignore
+        /** @type {HTMLSelectElement} *///@ts-expect-error
         select = (b ? numerical : logical).cloneNode(!0),
         pairsN = b ?
           nums.indexOf(logics[node.pairs]) :
@@ -1675,7 +1678,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
         ship.prop.nodeConnections = logics.map(function (e, i) {
           var node = e || {pairs: []}, n = node.pairs;
           return !!(typeof n == "number" && logics[n]) && [i, n] || [];
-        }) 
+        })
         ship.prop.nodeList = UDF;
       }
       var s = JSON.stringify(ship);
@@ -1748,6 +1751,7 @@ Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
     try {
       if (!/^(:?UGxheWVy)?VmVoaWNsZT/.test(s.slice(0, 18))) {
         var obj = B64Key.decode(B64Key.b64ToU8arr(s));
+        //@ts-expect-error
         ship = Ship.fromObject(obj);
         if (typeof obj != "string")
           ship.fixPositionAdjustment(!(obj.significantVersion > 15));
@@ -2090,7 +2094,7 @@ Command.push("Vehicle stats", function (items, collapsed) {
     }
     sums = JSON.parse(stringify);
     skipped = JSON.parse(stringify);
-    texts[13].data = '';
+    texts[13].data = "";
     for (var blocks = ship.blocks, i = blocks.length; i-- > 0;) {
       var block = blocks[i], prop = block.properties || OC();
       var id = Block.ID[block.internalName];
@@ -2104,7 +2108,7 @@ Command.push("Vehicle stats", function (items, collapsed) {
       var xys = [x, y, -x, -y], position = block.position;
       x = position[1] + (rot & 1 ? h / 32 : w / 32) + xys[rot];
       y = position[2] + (rot & 1 ? w / 32 : h / 32) + xys[rot + 3 & 3];
-      //texts[13].data += " id"+id+'x'+x+'y'+y;
+      // (v.0.2.8) removed debugging code
       checkStat("cost", Block.COST[id], function (val) {
         return val < 0 ? 0 : val;
       });
@@ -2123,7 +2127,6 @@ Command.push("Vehicle stats", function (items, collapsed) {
         rot & 1 ?
           sums.yforce += useVal :
           sums.xforce += useVal;
-        //texts[13].data += 'r'+rot+'t';
       }
       checkStat("store.cargo", Block.CARGO_STORE[id]);
       checkStat("use.cargo", Block.CARGO_USE[id], anyUse);
@@ -2147,12 +2150,7 @@ Command.push("Vehicle stats", function (items, collapsed) {
     amount(6, "Electricity use", sums.use.energy, skipped.use.energy);
     amount(7, "Cargo capacity", sums.store.cargo, skipped.store.cargo);
     amount(8, "Ore mined", -sums.use.cargo, skipped.use.cargo);
-    //texts[12].data = "WIP debugging data: " +
-    //  "(Force: " + sums.xforce + ", x: " + xForce + ", y: " +
-    //  yForce + ", result: " + (xForce / sums.xforce) + "; Weight: " +
-    //  sums.weight + ", x: " + xWeight + ", y: " + yWeight + ", result: " +
-    //  (xWeight / sums.weight) + ", " + (yWeight / sums.weight) + ")";
-    // correct for typescript
+    // [][0] workarounding typescript with any
     riftLY.oninput && riftLY.oninput([][0]);
     // after adding more text lines don't forget changing j < <texts.length>
     utilities.rend_UI = function () {
@@ -2199,7 +2197,7 @@ Command.push("Rift Drive calculator", function (items, collapsed) {
   var riftCrystals = EL("input"), dist = tN("");
   riftCrystals.type = "number";
   riftCrystals.value = "4";
-  //@ts-ignore
+  //@ts-expect-error
   (riftCrystals.oninput = function () {
     var n = Number(riftCrystals.value) || 0;
     dist.data = "" + (10000 / weight * (n > drives * 4 ?
@@ -2268,6 +2266,7 @@ Command.push("Editing Mode", function (items) {
   redo.appendChild(tN("Redo"));
   redo.onclick = editioning(Edit.redo);
   items.push(touchScreen, EL("br"), undo, redo);
+  items.push(tN("devicePixelRatio: " + window.devicePixelRatio));
 }, "Editing modes is the newest feature that is Work In Progress. Be aware t\
 hat non of the older commands were designed to be compatible with other mode\
 s in there. \nYou can use inventoryTile to enable inventory icon item. By en\
@@ -2355,7 +2354,8 @@ Command.push("Set camera view", function (items, collapsed) {
   set.onclick = function () {
     vX = execRegEx("[vV]?[Xx]", 99);
     vY = execRegEx("[vV]?[Yy]", 99);
-    sc = execRegEx("[sScC][cC]?", 1) * 16;
+    sc = execRegEx("[sScC][cC]?", 16);
+    render();
   };
   set.appendChild(tN("Apply key"));
   items.push({name: "View key", inp: code}, set, get)
@@ -2490,11 +2490,12 @@ Command.push("Current version", function(items, collapsed) {
     }
   };
   xhr.send();
-}, "Gives information about versions of loaded source code components. For e\
-xample Ship.VERSION is significantVersion number attached to vehicle savefil\
-es encoded by D1R DBV editor, this number is increased by 1 when public webp\
-age update messes with vehicle editing funtionalities to allow for backward \
-compatibility in case of bug causing corrupted savefiles.");
+}, devicePixelRatio + "Gives information about versions of loaded source cod\
+e components. For example Ship.VERSION is significantVersion number attached\
+ to vehicle savefiles encoded by D1R DBV editor, this number is increased by\
+ 1 when public webpage update messes with vehicle editing funtionalities to \
+allow for backward compatibility in case of bug causing corrupted savefiles.\
+");
 Command.push("About Commands tab", function (items) {}, "OPENING AND MOVING \
 AROUND\nCommands tab is opened or moved by activating contextmenu, the optio\
 ns, usually from right click or long press on touch screen, not on already o\
@@ -2533,18 +2534,19 @@ e message will ever bother you, use https://kaabel.github.io/.d1r.dbv/editor\
  * @param {boolean} [permanent] slected until reselected or deselected */
 function Tool(name, icon, exec, permanent) {
   /** subclass @see {Tool.Tab} is defined further below */
-  if (exec instanceof Tool.Tab) {
-    var execute = exec.exec, init = exec.init;
-  } else {
-    execute = exec || F;
-    init = F;
+  if (exec instanceof Tool.Tab)
+    var execute = exec.exec, init = exec.init, destroy = exec.destroy;
+  else {
+    execute = init = destroy = F;
+    permanent ? execute = exec || F : init = Tool.execClick(exec || F);
   }
   this.name = name;
   this.icon = icon;
-  this.exec = permanent ? execute : Tool.execClick(execute);
+  this.exec = execute;
   this.init = init;
+  this.destroy = destroy;
   /** used to determim whether (true) the tile gets enebled instantly
-   * (for DefaultUI it's selectedClickTile property) or
+   * (for DefaultUI it's clickedTile property) or
    * (false) the tile is enabled until deselected (selected in
    * DefaultUI.selectedTile property) */
   this.clickType = !permanent;
@@ -2611,9 +2613,9 @@ Tool.execClick = function (execMain) {
     execMain(x, y);
     var thisTile = this;
     setTimeout(function () {
-      var tile = DefaultUI.getSelectedTile(DefaultUI.selectedClickTile);
+      var tile = DefaultUI.getSelectedTile(DefaultUI.clickedTile);
       if (tile instanceof Tool && tile === thisTile) {
-        DefaultUI.selectedClickTile = -1;
+        DefaultUI.clickedTile = -1;
         render();
       }
     }, 75);
@@ -2623,25 +2625,33 @@ Tool.execClick = function (execMain) {
  * @typedef Tool.Tab.Options
  * @type {{[key:string]:unknown,text?:string}} */
 /** @callback @param {Tool.Tab} setup @returns {void} */
-/** @param {ToolExec} initialise @param {ToolExec} execute */
-Tool.Tab = function (initialise, execute) {
-  this.init = initialise;
-  this.exec = execute;
+Tool.Tab = function () {
+  /** @type {ToolExec} */
+  this.init = F;
+  /** @type {ToolExec} */
+  this.exec = F;
+  /** @type {ToolExec} */
+  this.destroy = F;
   /** @type {Node[]} */
   this.elements = [];
   this.reuse = true;
+  this.class = "";
   Object.seal(this);
 };
 /** Uses global flag! */
 Tool.Tab.cssEscapeRegExp = (/\\[0-9A-Fa-f]{1,5} |\\[0-9A-Fa-f]{6}/g);
-Tool.Tab.cssQueryRegExp = (function (name, escape) {
-  return new RegExp(/(<name>)?(#<name>)?((?:\.<name>)+)/.source.replace(
-    /<name>/g, name.source.replace(/<esc>/g, escape.source)));
+Tool.Tab.cssQueryRegExp = (function (nameRegExp, escape) {
+  return new RegExp(/(<name>)?(#<name>)?((?:\.<name>)+)?/.source.replace(
+    /<name>/g, nameRegExp.source.replace(/<esc>/g, escape.source)));
 })(/(?:[^#.:\[\]= +<>]|<esc>)+/, Tool.Tab.cssEscapeRegExp);
 /** @param {Node} element @param {Tool.Tab.Options} options */
 Tool.Tab.prototype.setElementProperties = function (element, options) {
   if (options.text)
-    element.appendChild(document.createTextNode("" + options.text));
+    ("" + options.text).split("\n").forEach(function (e, i, arr) {
+      element.appendChild(document.createTextNode(e));
+      if (i + 1 < arr.length)
+        element.appendChild(document.createElement("br"))
+    });
   delete options.text;
   for (var property in options)
     if (OP.call(options, property))
@@ -2651,7 +2661,7 @@ Tool.Tab.prototype.setElementProperties = function (element, options) {
  //* @param {{[P in string]:P extends "text"?string:unknown}} [arg3]
 Tool.Tab.prototype.append = (
 /** append element to tool tab menu (Tab utility, no use of global constants)
- * @template {string} P
+ * template {string} P
  * @overload append from node @param {Node} node
  * @param {string} query @param {Function&{name?:string}} handler
  * @param {Tool.Tab.Options} [options]
@@ -2660,7 +2670,7 @@ Tool.Tab.prototype.append = (
  * @param {Tool.Tab.Options} [options]
  * @overload using css selector only for compact arguments list
  * @param {string} query @param {Function&{name?:string}} handler
- * @param {Tool.Tab.Options} [options] @returns
+ * @param {Tool.Tab.Options} [options] @returns {Node}
  * @this {Tool.Tab} @param {Node|string} [element]
  * @param {string} [query] @param {Function&{name?:string}} [handler]
  * @param {Tool.Tab.Options} [options] */
@@ -2680,7 +2690,7 @@ Tool.Tab.prototype.append = (
     query = argsCopy[1];
   }
   var n = handlerNext ? 1 : 2;
-  if (typeof argsCopy[n] == "function")
+  if (typeof argsCopy[n] != "function")
     throw new TypeError("Invalid arg" + n + ": handler");
   handler = argsCopy[n++];
   options = typeof argsCopy[n] == "object" ? argsCopy[n] : void 0;
@@ -2715,41 +2725,66 @@ Tool.Tab.prototype.append = (
   this.elements.push(el);
   return el;
 });
-Tool.Tab.cssQueryTest = "unimplemented from version v.0.2.6";
-//-Tool.Tab.openTab = function () {
-//-  return ;
-//-};
 /** @param {Tool.Tab} tab @param {ToolSetup} setup */
 Tool.Tab.bindInit = function (tab, setup) {
+  var nav = GE(9), tabDestroy = tab.destroy;
   /** assignTab @type {ToolExec&{originalInit:ToolExec}} */
-  function tabAssign(x, y) {
-    console.log('tabAssign');
-    setup(tab);
-    var main = GE(8), nav = GE(9);
+  var tabAssign = function (x, y) {
+    tab.elements = [];
+    setup(tab, x, y);
+    var main = GE(8);
     if (!main)
       throw new Error("can not initialize Tab, main#8 is missing");
-    if (!tab.reuse || !nav)
+    if (!tab.reuse || !(nav = nav || GE(9)))
       nav = main.appendChild(EL("nav"));
     while (nav.lastChild)
       nav.removeChild(nav.lastChild);
     if (tab.reuse)
       nav.id = "9";
-    nav.className = "tool-tab";
+    nav.className = "tool-tab" + (tab.class ? " " + tab.class : "");
     for (var i = 0; i < tab.elements.length; i++)
       nav.appendChild(tab.elements[i]);
-    tabAssign.originalInit(x, y);
+    nav.style.display = "";
   };
   tabAssign.originalInit = tab.init;
+  /** closeTab @type {ToolExec&{originalDestroy:ToolExec}} */
+  (tab.destroy = function (x, y) {
+    tabDestroy(x, y);
+    tab.elements = [];
+    if (nav)
+      nav.style.display = "none";
+  }).originalDestroy = tabDestroy;
   return tabAssign;
 };
-/** @callback ToolSetup @param {Tool.Tab} setup */
+/**
+ * @callback ToolSetup @param {Tool.Tab} setup
+ * @param {number} x @param {number} y */
 /** @param {string} name @param {ToolSetup} setup @param {string} icon */
 Tool.Tab.addItem = function (name, setup, icon) {
-  var tab = new Tool.Tab(F, F);
+  var tab = new Tool.Tab();
   tab.init = Tool.Tab.bindInit(tab, setup);
   Tool.list.push(new Tool(name, icon, tab, true));
 };
+/** @param {string} styles @param {string} selector */
+Tool.Tab.addCSS = function (styles, selector) {
+  var css = GE("style"), fallback = css || GE(8);
+  if (!fallback)
+    return console.error("Unable to Tool.Tab.addCSS, missing css&main");
+  var cssText = (css ?
+    css :
+    css = fallback.appendChild(EL("style"))).appendChild(tN(""));
+  cssText.data = (selector.indexOf(".tool-tab") === -1 ?
+    ".tool-tab " + selector :
+    selector) + "{" + styles + "}";
+};
 
+Tool.Tab.addCSS("position: absolute;top: 0px;right: 0px;width: 300px;height:\
+ 500px;padding: 7px;border: 2px solid rgb(85, 119, 170);border-radius: 7px\
+;font-family: sans-serif;background-color: rgba(13, 33, 55, .8);color: rgb\
+(187, 204, 221);overflow-y: scroll;scrollbar-width: none;-ms-overflow-style:\
+ none;", "");
+Tool.Tab.addCSS("width: 0px;background: transparent;", ".tool-tab::-webkit-s\
+crollbar");
 Tool.list.push(new Tool("Tune", "M4a4,24265 c51,2f0,273,ad3,931,f85 c8da,714\
 ,103d,642,13d7,615 c1ea0,-178,3dbe,974,552e,20cc c2c36,2c08,2c5b,7392,53,9fc\
 9 c-867,7af,-a8f,ddf,-b1e,1559 c-1ef,7c7,317,107b,4f9,1362 c8b3,d64,146d,1a9\
@@ -2906,12 +2941,75 @@ e c0,-5a6,0,-35d59,0,-3643c c0,-1052,d3b,-1d8e,1d8e,-1d8e c88f,0,db66,0,de2d\
 c-6b6,0,-d69e,0,-de2d,0 c-1052,0,-1d8e,d3b,-1d8e,1d8e c0,80c,0,1b1a5,0,1b629\
  c0,1052,d3b,1d8e,1d8e,1d8e c5e9,0,d9f1,0,de2d,0 c1052,0,1d8e,-d3b,1d8e,-1d8\
 e c0,-754,0,-1b5c7,0,-1b629 z"));
-Tool.Tab.addItem("Node", function (methods) {
-  methods.init = console.log;
+Tool.Tab.addItem("Node", function setup(methods, x, y) {
+  //-console.log('setup', x, y);
   methods.exec = function (x, y) {
     console.log('exec', x, ' ', y);
   };
-  console.log('initialize tst');
+  methods.append("article#juhus.hehes.xd.", function () {}, {text: "Lorem ip\
+sum dolor sit amet consectetur, adipisicing elit. Ullam.\nExplicabo, facere \
+natus veniam neque nam quisquam esse ex!\nRepellendus, porro? Voluptates asp\
+eriores inventore neque, ab dolore fugit.\nDolor ducimus incidunt impedit fu\
+giat odio eaque rerum illo!\nAssumenda alias maiores officiis facilis obcaec\
+ati asperiores dolorum aliquid?\nOptio eligendi architecto impedit itaque ne\
+cessitatibus aliquam modi libero.\nEx facilis amet explicabo, molestias est \
+ut officia blanditiis.\nExpedita, rerum asperiores. Vel doloribus corporis n\
+isi animi repellat.\nNihil modi quibusdam officiis harum sunt ex magni perfe\
+rendis!\nOfficia eum placeat beatae laborum ut perferendis ratione reiciendi\
+s?\nObcaecati tempora magnam laudantium. Assumenda nihil consequuntur facere\
+ quisquam?\nIusto fuga id libero ullam, minus expedita quam mollitia.\nQui i\
+usto in expedita consectetur maxime quisquam nam saepe!\nQuo quod incidunt d\
+olorum officia beatae tempore commodi perspiciatis.\nDolor dolorem necessita\
+tibus voluptates quam similique! Repellendus, rem beatae.\nUnde, vitae incid\
+unt! Expedita maiores deleniti veritatis culpa eos.\nError facere nam quidem\
+ molestiae numquam dolore excepturi quis!\nCommodi explicabo magni iure arch\
+itecto amet consequuntur necessitatibus reprehenderit.\nVoluptates, non eos!\
+ Asperiores placeat ratione unde odit earum?\nId mollitia ab illo laboriosam\
+ ratione harum facilis laborum!\nReiciendis consequatur quos et earum blandi\
+tiis nihil vel deserunt!\nNulla accusamus, eaque perferendis corrupti dolor \
+mollitia molestiae sit.\nDolore accusantium soluta illo, modi iusto dignissi\
+mos reiciendis? Fuga!\nFuga ex ab eveniet ut accusantium. Sed, dolores alias\
+.\nNulla dolor non amet provident totam commodi molestias possimus.\nEx sit \
+repellendus, maiores dolorem architecto eveniet nam odit!\nNulla distinctio,\
+ pariatur ipsa tempore voluptas illum culpa soluta!\nEa dignissimos laudanti\
+um nostrum itaque quis tempora odio aperiam?\nCupiditate laborum soluta rem \
+asperiores. Eligendi eveniet optio id.\nFuga itaque, esse aliquid vero iusto\
+ nisi eius necessitatibus!\nItaque odio reiciendis, magnam consectetur sit t\
+otam porro harum.\nLaborum aut distinctio debitis velit magni obcaecati adip\
+isci asperiores.\nAliquid optio porro delectus soluta ullam non et? Dicta.\n\
+Voluptas accusantium expedita asperiores, quam sint ullam blanditiis rerum!\
+\nMolestiae nisi ipsum harum? Quos ad assumenda suscipit eum.\nAd sint delec\
+tus, natus quidem culpa facilis voluptas facere.\nVero quaerat quibusdam a m\
+agni est tempora vitae vel.\nPlaceat nulla velit, veritatis sunt obcaecati v\
+oluptatem ducimus dolor.\nQuam dolore cupiditate et! Molestiae porro veniam \
+modi pariatur.\nEa tenetur sunt delectus ratione atque, culpa rerum exercita\
+tionem.\nVoluptates at, ipsam commodi ipsa corrupti minus assumenda! Non?\nO\
+fficiis architecto placeat fuga sequi velit cumque nam similique!\nEx velit \
+voluptatum fugit atque officiis vero ea ad.\nMagni fugit aspernatur possimus\
+ iste rem dicta vitae repellat?\nQuod quisquam unde error ex assumenda eaque\
+ fugiat quaerat?\nLaborum in a delectus dolor veniam placeat, voluptates odi\
+o?\nIllo officiis placeat amet, sequi laboriosam obcaecati sint a!\nVoluptas\
+ quo placeat culpa temporibus voluptate officiis autem doloremque.\nOfficiis\
+ corrupti eveniet totam excepturi sint eos distinctio minus.\nNulla, possimu\
+s. Asperiores obcaecati eaque modi unde esse minus.\nAb veniam nulla, deseru\
+nt doloribus aliquam a sint fuga.\nSoluta maiores aliquid numquam reprehende\
+rit quae minus, voluptas reiciendis.\nCumque dicta sed minima nobis non! Nul\
+la, doloremque fuga.\nExpedita atque ab alias omnis quas. Aliquid, nihil qua\
+m!\nModi, nam neque in quod numquam molestias nemo illum.\nEveniet laborum, \
+voluptatum beatae quibusdam iure dolor repellendus quis!\nQuas consectetur u\
+t praesentium nisi consequuntur temporibus ratione amet?\nUllam ut doloremqu\
+e deleniti illo quos molestias optio iusto.\nMagni illo rerum distinctio, la\
+boriosam deserunt tempora blanditiis reprehenderit?\nFacilis deserunt assume\
+nda fugit nemo, iure sed sunt earum?\nAccusamus doloremque numquam excepturi\
+ velit, deserunt libero id labore?\nDolorem quam quo voluptate sapiente iste\
+ architecto, natus quidem.\nOfficia molestiae ab dolorum, doloribus similiqu\
+e ipsum a voluptatum!\nVero libero iste repellendus saepe asperiores consect\
+etur et. Repudiandae.\nTempore repellat cupiditate eveniet molestiae quaerat\
+ perferendis quos perspiciatis!\nDeserunt amet fuga vero neque unde similiqu\
+e soluta temporibus.\nDolorem fuga doloremque rem aliquid temporibus cum ame\
+t sint.\nReiciendis aperiam quaerat repudiandae vero dolores impedit, enim p\
+orro.\nRepellendus excepturi, eaque mollitia aut tempore laborum nobis ex!\
+" + devicePixelRatio});
 }, "Mf70a,34a28 c0,f1b,0,7296,0,8060 c0,1e09,-1859,3663,-3663,3663 c-fa9,0,-\
 73b3,0,-8944,0 c-1e09,0,-3663,-1859,-3663,-3663 c0,-bcb,0,-7be7,0,-89f4 c0,-\
 1e09,1859,-3663,3663,-3663 h81d1 l251bf,-250eb v-81e2 c0,-1e09,1859,-3663,36\
@@ -2985,7 +3083,7 @@ Tool.list.push(new Tool("Erase", "M21cbd,3933e c-fa8,c27,-2353,1363,-38af,13\
 7f,-1a57,40a9,-1a57 c17a9,0,2d40,8e1,3d9d,177e l13941,13b1d cd12,ff5,14eb,24\
 5d,14eb,3a9a c0,16b2,-82c,2b7d,-15bc,3b96 z M1e360,34780 l96a9,-935f l-12979\
 ,-12ae9 l-eff8,ee4e ld536,d073 z", function (x, y) {
-  var found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
+  var found = DefaultUI.found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
   if (!found)
     return;
   ship.removeBlocks([found.id]);
@@ -3030,7 +3128,7 @@ e83 c-cd8,-cd8,-21ab,-cd8,-2e83,0 z"));
 function check_contentScript() {
   var contentScript = GE("contentScript"), data = "";
   if (contentScript && (data = contentScript.innerText)) {
-    //@ts-ignore no problem if it throws error
+    //@ts-expect-error no problem if it throws error
     contentScript.parentNode.removeChild(contentScript);
     document.body.appendChild(EL("script")).appendChild(tN(data));
   }
@@ -3043,13 +3141,16 @@ dBwN4EgXkrBPA9BQL1VkDeChz8CwQMDhAoOECA4ACBgQMEBH4GAhuPAgGNAwQyDhDAOEDA4gCBiw\
 MEKg4QoLhAYOIAAYkDBDgOEKBZIDBzgIDMAQL/BQjEHCAAc4DAywECLgcItBwgwHOAAMsBAisHCK\
 gcIJBygADKAQInBwiYHCBQcoAAyQECIwcIiBwgsPMsENA5QCDnAIH/AoBzgMDNAQI2BwjUHCAAXc\
 2T6QcAW1swLDE3LDAsMTddLCJ7XCJjb2xvclwiOlwiV2hpdGVcIn0iXQ=="));
-  typeof temp == "object" && temp.blocks.forEach(function (e) {
+  if (typeof temp != "object")
+    return console.error(temp);
+  temp.blocks.forEach(function (e) {
     e.properties = {color: e.properties.color || null};
     var rot = e.rotation, pos = e.position;
     e.position = [pos[1] / 2, pos[2] / 2];
     e.rotation = rot[2];
     e.flipped = rot[1];
   });
+  //@ts-expect-error
   ship = Ship.fromObject(temp);
   render();
 };
@@ -3112,7 +3213,7 @@ function devt_bug_testing() {
 }
 var devt_debugger = false;
 
-/** @typedef {Block|LogicBlock|Tool|null} TileType */
+/** @typedef {Block|LogicBlock|Tool|null} TileType (tile variable name) */
 function DefaultUI() {
   throw new TypeError("Illegal constructor");
   this.mode = "any";
@@ -3124,24 +3225,27 @@ DefaultUI.tilesRotation =
 DefaultUI.tilesFlippableRotation =
   /** @type {Rotation} */
   (DefaultUI.tilesRotation.slice());
-//- what was this supposed to store? 
-//- DefaultUI.TILE = {};
 DefaultUI.rend = F;
 /** @type {(TileType[]&{type:TileType})[]} */
 DefaultUI.blockBars = [];
-DefaultUI.selectedFolder = 0;
-/** The value of selected tile consists of:
+/** (v.0.2.8) renamed to opened to allow keeping selectedTile */
+DefaultUI.openedFolder = 0;
+/**
+ * use @see {DefaultUI.setSelectedTile} to select selectable tile
+ * The positon (item variable name) of selected tile consists of:
  * enum `value & 3` where 0 = selected in toolBar, 1 = selected in BlockBar,
  * 2 = selected inventoryTile, 3 = reserved for selected in inventory,
  * `value >> 2` gives index of selected tile,
  * if `value === -1` it means no tile is selected; */
 DefaultUI.selectedTile = -1;
-/** The value of selected tile consists of:
+/** the folder in where is selectedTile points to currently selected */
+DefaultUI.selectedFolder = 0;
+/** The position (item variable name) of clicked tile consists of:
  * enum `value & 3` where 0 = selected in toolBar, 1 = selected in BlockBar,
  * 2 = selected inventoryTile, 3 = reserved for selected in inventory,
  * `value >> 2` gives index of selected tile,
  * if `value === -1` it means no tile is selected; */
-DefaultUI.selectedClickTile = -1;
+DefaultUI.clickedTile = -1;
 DefaultUI.inventoryTile = !defaults.hideInventoryTile;
 DefaultUI.createTile = function () {
   /** @type {XYZPosition} */
@@ -3179,6 +3283,8 @@ DefaultUI.toolBar = [
 ];
 /** used at @typedef {"@see"} SeeRenderingFolders */
 DefaultUI.offsetsFolders = 0;
+/** previousFolders and nextFolders: are displaying Next and Previous
+ * Tool icon buttons to navigate to overflowed folders */
 DefaultUI.previousFolders = false;
 DefaultUI.nextFolders = true;
 /** DefaultUI.press, .move, .contextmenu, .over are memory for
@@ -3207,6 +3313,8 @@ DefaultUI.defaultFoldersData = [
 /** @type {ToolExec} */
 DefaultUI.defaultPress = function (_x, _y) {};
 DefaultUI.canDefaultPress = true;
+/** @type {Block.Selected|null} */
+DefaultUI.found = null;
 /** @param {number|string} type @param {unknown[]} [tiles=[]] */
 DefaultUI.createFolder = function (type, tiles) {
   var folder =
@@ -3215,26 +3323,49 @@ DefaultUI.createFolder = function (type, tiles) {
   folder.type = DefaultUI.createTile(type);
   return folder;
 };
-/** handles interactions with DefaultUI hotbars and inventoryTile
+/** @param {number} item @param {number} [x] @param {number} [y] */
+DefaultUI.setSelectedTile = function (item, x, y) {
+  typeof x != "number" ? x = 0 : 0;
+  typeof y != "number" ? y = 0 : 0;
+  var tile = DefaultUI.getSelectedTile(item) || {};
+  if (tile instanceof Tool && tile.clickType) {
+    DefaultUI.clickedTile = item;
+    tile.init(x, y);
+  } else if (
+    DefaultUI.selectedFolder !== DefaultUI.openedFolder ||
+      DefaultUI.selectedTile !== item
+  ) {
+    var old = DefaultUI.getSelectedTile();
+    old instanceof Tool && old.destroy(x, y);
+    DefaultUI.selectedTile = item;
+    DefaultUI.selectedFolder = DefaultUI.openedFolder;
+    tile instanceof Tool && tile.init(x, y);
+  } else {
+    DefaultUI.selectedTile = -1;
+    tile instanceof Tool && tile.destroy(x, y);
+  }
+};
+/** handles interactions with DefaultUI hotbars and inventory
  * @param {number} x @param {number} y @returns {boolean} over GUI area */
 DefaultUI.handleGUIArea = function (x, y) {
-  var tile = -1;
+  /** number positoin of tile @see {DefaultUI.selectedTile} */
+  var item = -1;
   if (x < 277) {
     // toolBar side of canvas: static tile slots
     var row = (canvas.height - y - 13) / 87 | 0,
       column = (x - 10) / 87 | 0;
     /** @see {DefaultUI.selectedTile} for tile indexing */
     if (y > canvas.height - 277)
-      tile = (row > 2 ? 2 : row) * 3 + (column > 2 ? 2 : column) << 2;
+      item = (row > 2 ? 2 : row) * 3 + (column > 2 ? 2 : column) << 2;
     else
       return false;
   } else if (y > canvas.height - 103) {
     // items for blockBar rect part of canvas: dynamic tile slots
     if (DefaultUI.inventoryTile && x > canvas.width - 103)
-      tile = 2;
-    else if (x - 277 < (DefaultUI.blockBars[DefaultUI.selectedFolder] ||
+      item = 2;
+    else if (x - 277 < (DefaultUI.blockBars[DefaultUI.openedFolder] ||
       []).length * 87) {
-        tile = (x - 283) / 87 << 2 | 1;
+        item = (x - 283) / 87 << 2 | 1;
       }
   } else if (x - 277 + DefaultUI.offsetsFolders <
     DefaultUI.blockBars.length * 57 && y > canvas.height - 170) {
@@ -3245,76 +3376,80 @@ DefaultUI.handleGUIArea = function (x, y) {
       DefaultUI.offsetsFolders -= 57;
     else if (DefaultUI.nextFolders && x > canvas.width - 61)
       DefaultUI.offsetsFolders += 57;
-    else if ((DefaultUI.selectedTile & 3) === 1 && folder !==
-      DefaultUI.selectedFolder) {
-      DefaultUI.selectedFolder = folder;
-    } else
-      DefaultUI.selectedFolder = folder;
+    else
+      DefaultUI.openedFolder = folder;
+    render();
+    return true;
   } else
     // the rest of canvas area is handled for building area
     return false;
-  /** @type {{clickType?:boolean}} */
-  (DefaultUI.getSelectedTile(tile) || {}).clickType ?
-    // currently this place dictates the clickType like properties of Tool
-    DefaultUI.selectedClickTile = tile :
-    DefaultUI.selectedTile =
-      DefaultUI.selectedTile === tile ? -1 : tile;
+  DefaultUI.setSelectedTile(item);
   render();
   return true;
 };
-/** @param {TileType} tile */
+/** @param {TileType|undefined} tile */
 DefaultUI.getCode = function tileCode(tile) {
   return tile instanceof Tool ?
     tile.name :
     tile instanceof Block ?
       tile.internalName :
       NaN;
-}; 
+};
 /** usually used before @see {DefaultUI.renderHotBars} @param {number} w */
 DefaultUI.reflowBlockBars = function (w) {
-  function pushToSame() {
-    sameTypes = sameTypes.concat(bars[i] || []);
+  function checkFoldersAddSameTiles() {
+    if (trackingSelected && i === DefaultUI.selectedFolder)
+      item = sameTiles.length + (DefaultUI.selectedTile >> 2);
+    if (trackingOpened && i === DefaultUI.openedFolder)
+      opened = sameTiles.length;
+    sameTiles = sameTiles.concat(initial[i] || []);
   }
-  /** plus = also adds bars[i] to sameTypes afterwards */
-  var checkAndPush = (DefaultUI.selectedTile & 3) === 1 ? function () {
-    if (i === DefaultUI.selectedFolder)
-      selectCode = sameTypes.length + (DefaultUI.selectedTile >> 2);
-    pushToSame();
-  } : pushToSame;
-  /** 380 = distance to the end of first tile + distance */
   var i = 0,
-    maxItems = ((w - 380) / 87 | 0) - +DefaultUI.inventoryTile + 1,
-    selectCode = -1,
-    bars = DefaultUI.blockBars,
-    prevType = (bars[0] || {}).type || null,
+    /** 380 = distance to the end of first tile + distance */
+    maxTiles = ((w - 380) / 87 | 0) - +DefaultUI.inventoryTile + 1,
+    trackingSelected = (DefaultUI.selectedTile & 3) === 1,
+    /** the selected one */
+    item = -1,
+    trackingOpened = true,
+    opened = -1,
+    initial = DefaultUI.blockBars,
+    /** folders reflowed @type {(TileType[]&{type:TileType})[]} */
+    updated = DefaultUI.blockBars = [],
+    prevTile = (initial[0] || {}).type || null,
     /** @type {TileType[]} */
-    sameTypes = [],
-    /** @type {(TileType[]&{type:TileType})[]} */
-    updated = DefaultUI.blockBars = [];
-  checkAndPush();
-  maxItems < 1 && (maxItems = 1);
-  for (i++; i <= bars.length; i++) {
-    var tiles = bars[i] || {}, nowCode = DefaultUI.getCode(tiles.type);
-    if (nowCode === DefaultUI.getCode(prevType) && i < bars.length)
-      checkAndPush();
+    sameTiles = [];
+  checkFoldersAddSameTiles();
+  maxTiles < 1 && (maxTiles = 1);
+  for (i++; i <= initial.length; i++) {
+    /** @type {TileType[]&{type?:TileType}} */
+    var tiles = initial[i] || {},
+      nowCode = DefaultUI.getCode(tiles.type);
+    if (nowCode === DefaultUI.getCode(prevTile) && i < initial.length)
+      checkFoldersAddSameTiles();
     else {
-      for (var j = 0; j < sameTypes.length; j += maxItems) {
-        if (selectCode !== -1 && j + maxItems > selectCode) {
-          DefaultUI.selectedTile = selectCode % maxItems << 2 | 1;
+      for (var j = 0; j < sameTiles.length; j += maxTiles) {
+        if (item !== -1 && j + maxTiles > item) {
+          DefaultUI.selectedTile = item % maxTiles << 2 | 1;
           DefaultUI.selectedFolder = updated.length;
-          checkAndPush = pushToSame;
-          selectCode = -1;
+          trackingSelected = false;
+          item = -1;
+        }
+        if (opened !== -1 && j + maxTiles > opened) {
+          DefaultUI.openedFolder = updated.length;
+          trackingOpened = false;
+          opened = -1;
         }
         var folder =
           /** @type {TileType[]&{type:TileType}} */
-          (sameTypes.slice(j, j + maxItems));
-        folder.type = prevType;
+          (sameTiles.slice(j, j + maxTiles));
+        folder.type = prevTile;
+
         updated.push(folder);
       }
-      sameTypes = [];
-      checkAndPush();
+      sameTiles = [];
+      checkFoldersAddSameTiles();
     }
-    prevType = tiles.type;
+    prevTile = tiles.type || null;
   }
   if (DefaultUI.offsetsFolders > (i = updated.length * 57))
     DefaultUI.offsetsFolders = 0;
@@ -3325,8 +3460,8 @@ DefaultUI.reflowBlockBars = function (w) {
 // https://github.com/KaaBEL/.d1r.dbv/blob/fb90bf5/code/editor.js#L2706-L2726
 // (fb90bf5e0ce42dd2bcbcb00f8a6e64b4a2242da7)
 /** gives selectedTile on default
- * @param {number} [tileIndex] pass DefaultUI.selectedClickTile
- * to get selectedClickTile (for single exec inventoryTiles) */
+ * @param {number} [tileIndex] pass DefaultUI.clickedTile
+ * to get clickedTile (for single exec inventoryTiles) */
 DefaultUI.getSelectedTile = function (tileIndex) {
   var select = tileIndex === UDF ? DefaultUI.selectedTile : tileIndex;
   return (select & 3) === 1 ?
@@ -3391,16 +3526,16 @@ DefaultUI.renderHotBars = function (w, h) {
     rc.drawImage(imgMask, x - size.x, y - size.y);
     rc.globalCompositeOperation = "source-over";
     rc.drawImage(imgOverlay, size.x, size.y, w, h, x, y, w, h);
-  }  
+  }
   /** @param {TileType} type @param {number} size */
-  function drawIconFn(type, size) {
+  function drawIconRc(type, size) {
     if (type instanceof Tool)
       Tool.drawPathRc(type, size);
     if (type instanceof Block)
       drawBlockRc(type);
   }
   /** @param {TileType} tile @param {unknown} selected boolean */
-  function drawItemCtx(tile, selected) {
+  function drawTileCtx(tile, selected) {
     tx += 87;
     if (!tile)
       return;
@@ -3416,12 +3551,12 @@ DefaultUI.renderHotBars = function (w, h) {
       ctx.fillStyle = ctx.strokeStyle;
       ctx.fill();
     }
-    drawIconFn(tile, 60);
+    drawIconRc(tile, 60);
     ctx.drawImage(helpCanvas, tx + 9, ty - 84, 60, 60);
   }
   /** is drawn relatively to local var tfx and tfy @param {TileType} type */
   function drawFolderCtx(type) {
-    ctx.globalAlpha = b ? .9 : .8;
+    ctx.globalAlpha = b ? .8 : .7;
     ctx.beginPath();
     ctx.moveTo(tfx, h - 101);
     ctx.arcTo(tfx, h - tfy, tfx + 12, h - tfy, radius);
@@ -3430,11 +3565,11 @@ DefaultUI.renderHotBars = function (w, h) {
     ctx.closePath();
     ctx.fillStyle = b ? "#0c243c" : "#000c1c";
     ctx.fill();
-    drawIconFn(type || [][0], 40);
+    drawIconRc(type || [][0], 40);
     ctx.globalAlpha = 1;
     ctx.drawImage(helpCanvas, tfx - 47, h - (b ? 161 : 146), 40, 40);
   }
-  ctx.globalAlpha = .9;
+  ctx.globalAlpha = .8;
   ctx.lineJoin = "round";
   ctx.beginPath();
   ctx.moveTo(7, h - 19);
@@ -3458,9 +3593,10 @@ DefaultUI.renderHotBars = function (w, h) {
   ctx.lineWidth = 2;
   ctx.strokeStyle = "#5577aa";
   // boolean: b contains fix for reselected item after reflow
-  var i = DefaultUI.selectedFolder, b = i !== -1 && i < bars.length;
+  var i = DefaultUI.openedFolder, b = i !== -1 && i < bars.length;
   for (var j = 0, tx = 200, ty = h; b && j < bars[i].length; j++)
-    drawItemCtx(bars[i][j], DefaultUI.selectedTile === (j << 2) + 1);
+    drawTileCtx(bars[i][j], DefaultUI.selectedTile === (j << 2) + 1 &&
+      DefaultUI.selectedFolder === DefaultUI.openedFolder);
   /** here @see {SeeRenderingFolders} */
   // tfx + tfy = position reference for folders, tx + ty = ... for items
   var n = DefaultUI.offsetsFolders, tfx = 279 + 56 - (n + 56) % 57;
@@ -3469,7 +3605,8 @@ DefaultUI.renderHotBars = function (w, h) {
       break;
     if (!bars[i])
       continue;
-    tfy = (b = i === DefaultUI.selectedFolder) ? 168 : 153;
+    // boolean: b resused for drawFolderCtx because yes
+    tfy = (b = i === DefaultUI.openedFolder) ? 168 : 153;
     drawFolderCtx(bars[i].type);
     tfx += 3;
   }
@@ -3484,22 +3621,22 @@ DefaultUI.renderHotBars = function (w, h) {
     drawFolderCtx(DefaultUI.createTile("Next"));
   }
   for (var j = 0, tx = -72; j < DefaultUI.toolBar.length; j++) {
-    drawItemCtx(
+    drawTileCtx(
       DefaultUI.toolBar[j],
       DefaultUI.selectedTile === (j << 2) ||
-        DefaultUI.selectedClickTile === (j << 2)
+        DefaultUI.clickedTile === (j << 2)
     );
     if (tx > 123) {
       ty -= 87;
       tx = -72;
     }
   }
-  if (DefaultUI.inventoryTile) { 
+  if (DefaultUI.inventoryTile) {
     ty = h;
     tx = w - 94 - 87;
-    drawItemCtx(
+    drawTileCtx(
       DefaultUI.createTile("Inventory"),
-      (DefaultUI.selectedClickTile & 3) === 2
+      (DefaultUI.clickedTile & 3) === 2
     );
   }
 };
@@ -3519,24 +3656,24 @@ DefaultUI.renderHotBars = function (w, h) {
  * @param {boolean} [canDefault=true] @returns {typeof press} */
 DefaultUI.basePress = function (blockPlacing, canDefault) {
   var placing = blockPlacing || function (x, y, tile) {
+    var size = Block.Size.VALUE[Block.ID[tile.internalName]],
+      xFix = size ? size.w / 32 + .5 : 2,
+      yFix = size ? -size.h / 32 + .5 : 0;
     ship.placeBlock(
       0,
-      Math.floor((vX - x) / sc + 2),
-      Math.floor((y - vY) / sc),
+      Math.floor((vX - x) / sc + xFix),
+      Math.floor((y - vY) / sc + yFix),
       tile
     );
     render();
   };
   DefaultUI.canDefaultPress = canDefault !== UDF ? canDefault : false;
   return function (x, y) {
-    if (DefaultUI.handleGUIArea(x, y)) {
-      var tile = DefaultUI.getSelectedTile(DefaultUI.selectedClickTile);
-      if (tile instanceof Tool)
-        tile.clickType && tile.exec(x, y);
+    if (DefaultUI.handleGUIArea(x, y))
       return true;
-    } else
+    else
       var tile = DefaultUI.getSelectedTile();
-    if (tile instanceof Block) 
+    if (tile instanceof Block)
       placing(x, y, tile);
     else if (tile instanceof Tool)
       tile.exec(x, y);
@@ -3592,19 +3729,12 @@ var cmdsName = EL(), cmds = (function () {
       content.style.display = "none";
       items.style.display = "";
       back.style.visibility = "visible";
-      var i = 0, classic = DefaultUI.createTile("Classic");
-      i = DefaultUI.blockBars[DefaultUI.selectedFolder].indexOf(classic);
-      if (i !== -1)
-        // should it render(); in these?
-        DefaultUI.selectedTile = i << 2 | 1;
-      else if ((i = DefaultUI.toolBar.indexOf(classic)) !== 1)
-        DefaultUI.selectedTile = i << 2 | 0;
       for (; items.firstChild;)
         items.removeChild(items.firstChild);
       var arr = item.items;
       if (typeof arr == "function")
         return arr(items), ending();
-      for (i = 0; i < arr.length; i++) {
+      for (var i = 0; i < arr.length; i++) {
         var s = arr[i].type, isBtn = s === "button";
         var isChck = s === "checkbox", e = EL(isChck ? "input" : s);
         if (isChck && e instanceof HTMLInputElement)
@@ -3652,17 +3782,22 @@ function enableShipEditing() {
   DefaultUI.press = press = DefaultUI.basePress(UDF);
   DefaultUI.move = move = function (x, y, e) {
     if (e.type === "mousedown" || e.type === "touchstart" ||
-      e.type === "mouseenter")
+      e.type === "mouseenter") {
       // #compactDownToExecTiel
-      if (DefaultUI.handleGUIArea(x, y)) {
-        var tile = DefaultUI.getSelectedTile(DefaultUI.selectedClickTile);
-        if (tile instanceof Tool && tile.clickType)
-          tile.exec(x, y);
+      if (DefaultUI.handleGUIArea(x, y))
         return true;
-      }
+    }
     return false;
   };
   DefaultUI.rend = function () {
+    var found = DefaultUI.found;
+    if (found) {
+      ctx.lineWidth = defaults.highlightWidth;
+      ctx.strokeStyle = defaults.highlightColor;
+      var dx = found.x * sc + vX, dy = found.y * sc + vY;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.strokeRect(dx, dy, found.w * sc, found.h * sc);
+    }
     DefaultUI.reflowBlockBars(canvas.width);
     DefaultUI.renderHotBars(canvas.width, canvas.height);
   };
@@ -3736,9 +3871,6 @@ function enableLogicEditing() {
       e.type === "mouseenter") {
       // #compactDownToExecTiel
       if (DefaultUI.handleGUIArea(x, y)) {
-        var tile = DefaultUI.getSelectedTile(DefaultUI.selectedClickTile);
-        if (tile instanceof Tool && tile.clickType)
-          tile.exec(x, y);
         found = null;
         return true;
       }
@@ -3807,6 +3939,7 @@ function enableLogicEditing() {
 /** @param {number} x @param {number} y @param {TemporaryEventParam} e */
 var edit_logicmove = function (x, y, e) {
   //?? #compactDownToExecTiel
+  // TODO: for implementing tile drag, handleGUIArea needs upgrade
   return e.type === "mousedown" ? DefaultUI.handleGUIArea(x, y) : false;
 };
 
@@ -4037,12 +4170,17 @@ function devt__share(inp) {
     return el.lastChild;
   (el.lastChild instanceof HTMLTextAreaElement ?
     el.lastChild : el.appendChild(EL("textarea"))).value = inp;
-  
 }
+devt__share.log = function () {
+  var ta = document.querySelector("#commandsTab textarea");
+  ta instanceof HTMLTextAreaElement ?
+    console.log(ta.value) :
+    (GE("commandsTab") || EL()).appendChild(EL("textarea"));
+};
 contextmenu = function (x, y, e) {
   var el = GE("info");
   if (el instanceof HTMLElement && el.onclick)
-    //@ts-ignore
+    //@ts-expect-error
     el.onclick();
   (DefaultUI.contextmenu = contextmenu = commands)(x, y, e);
 };
@@ -4185,7 +4323,7 @@ function expensiveRenderer() {
             "nodes" + AT);
           break;
         }
-        //@ts-ignore
+        //@ts-expect-error
         logic[j] || (logic[j] = {x: j / 3, y: j / 3});
         // facepalm No.1: works now actually
         var x = logic[j].x - (ow & 16) / 32,
@@ -4324,7 +4462,6 @@ Block.Box2d.visualize = function (path, x, y, green) {
   ctx.lineWidth = green === UDF ? 8 : green ? 4 : 2;
   if (path[0])
     ctx.moveTo(vX - (path[0].x - 2) * sc, (path[0].y + 2) * sc + vY);
-  //@ts-ignore
   for (var i = path.length; i-- > 1;)
   //0&&window.onerror(i+'=x:',(path[0].x + x) * sc + vX,'y',(path[i].y + y)
     ctx.lineTo(vX - (path[i].x - 2) * sc, (path[i].y + 2) * sc + vY);
@@ -4336,129 +4473,19 @@ Block.Box2d.visualize = function (path, x, y, green) {
   ctx.moveTo(vX - (x - path.range) * sc, (y) * sc + vY);
   ctx.arc(vX - (x) * sc, (y) * sc + vY, path.range * sc, 0, Math.PI * 2);
   ctx.stroke();
-  //@ts-ignore
+  ////@ts-expect-error
   //}catch(e){console.error(e && e.message || e);}
 };
 
 init = function () {
   enableShipEditing();
-  DefaultUI.selectedTile = (7 << 2) | 0;
+  var i = 0, classic = DefaultUI.createTile("Classic");
+  i = DefaultUI.blockBars[DefaultUI.openedFolder].indexOf(classic);
+  if (i !== -1)
+    DefaultUI.setSelectedTile(i << 2 | 1);
+  else if ((i = DefaultUI.toolBar.indexOf(classic)) !== 1)
+    DefaultUI.setSelectedTile(i << 2 | 0);
   rend_checkColors();
   init_funMode();
   check_contentScript();
 };
-/** @TODO remove in v.0.2.8 */
-// // .d1r.dbv DBVE icon v3
-// var size = 512, maskable = 192;
-// WH(ctx, size, size);
-// ctx.scale(size / 16, size / 16);
-// ctx.imageSmoothingEnabled = false;
-// // WH(ctx, 16, 16);
-// ctx.fillStyle = "#ffffff";
-// ctx.fillRect(0, 0, 16, 16);
-// ctx.fillStyle = "#" + (16737894).toString(16);
-// ctx.fillStyle = "#ff3333";
-// ctx.fillRect(5, 5, 6, 6);
-// // ctx.globalAlpha = 51 / 255;
-// ctx.strokeStyle = "#191919";
-// ctx.strokeStyle = "#cccccc";
-// ctx.strokeRect(.5, .5, 15, 15);
-// ctx.strokeStyle = "#470000";
-// ctx.strokeStyle = "#cc2929";
-// ctx.strokeRect(5.5, 5.5, 5, 5);
-// ctx.globalAlpha = 1;
-// // ctx.drawImage(IMG(0), 0, 0);
-// var rc = sShot.getContext("2d");
-// WH(rc, ctx.canvas);
-// rc.setTransform(ctx.getTransform());
-// rc.lineWidth = 1.3;
-// rc.lineJoin = "round";
-// rc.lineCap = "round";
-// rc.strokeStyle = "#9f9f8f";
-// rc.strokeStyle = "#6E7069";
-// rc.beginPath();
-// rc.moveTo(8, 14);
-// rc.lineTo(8, 15.5 - 7.5 / 3);
-// rc.lineTo(.5, .5 + 7.5 / 2 + 15 / 3);
-// rc.lineTo(.5, 15.5 - 7.5 / 2);
-// rc.lineTo(8, 15.5);
-// rc.lineTo(15.5, 15.5 - 7.5 / 2);
-// rc.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
-// rc.lineTo(8 + 7.5 / 6, 15.5 - 37.5 / 12);
-// rc.moveTo(15.5, .5 + 7.5 / 2 + 15 / 3);
-// rc.lineTo(15.5 - 30 / 19, .5 + 7.5 / 2 + 15 / 3 - 15 / 19);
-// rc.stroke();
-// rc.strokeStyle = "#030e2f";
-// rc.beginPath();
-// rc.moveTo(.5 + 46 / 12, .5 + 52 / 12);
-// // rc.moveTo(.5 + 37.5 / 6, .5 + 37.5 / 12);
-// rc.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
-// rc.lineTo(8, .5);
-// rc.lineTo(.5, .5 + 7.5 / 2);
-// rc.lineTo(.5 + 7.5 / 3, .5 + 15 / 3);
-// rc.lineTo(.5 + 7.5 / 3 + 37.5 * 4 / 24, .5 + 15 / 3 + 31 * 4 / 24);
-// // rc.lineTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
-// rc.moveTo(8 + 7.5 / 3, .5 + 7.5 / 6);
-// rc.lineTo(8 + 7.5 / 3 + 15 * 4 / 29, .5 + 7.5 / 6 + 52.5 * 4 / 29);
-// rc.moveTo(.5, 5.9);
-// rc.lineTo(.5, 7.7);
-// rc.stroke();
-// ctx.globalCompositeOperation = "destination-in";
-// ctx.drawImage(rc.canvas, 0, 0, 16, 16);
-// ctx.globalCompositeOperation = "destination-over";
-// // ctx.globalAlpha = .5;
-// // ctx.fillStyle = "#000000";
-// // ctx.fillRect(5, 5, 6, 6);
-// // ctx.globalAlpha = 51 / 255;
-// // ctx.strokeStyle = "#000000";
-// // ctx.strokeRect(5.5, 5.5, 5, 5);
-// // ctx.globalAlpha = 1;
-// ctx.fillStyle = "#" + (16737894).toString(16);
-// ctx.strokeStyle = "#470000";
-// ctx.strokeRect(5.5, 5.5, 5, 5);
-// ctx.fillRect(5, 5, 6, 6);
-// ctx.fillStyle = "#030e2f";
-// ctx.beginPath();
-// ctx.moveTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
-// ctx.lineTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 3 - 15 / 6);
-// ctx.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
-// ctx.lineTo(8, .5);
-// ctx.lineTo(0, .5 + 7.5 / 2);
-// ctx.lineTo(0, .5 + 7.5 / 2 + 15 / 3);
-// ctx.lineTo(.5 - 7.5 / 3 + 7.5, .5 + 22.5 / 2);
-// // ctx.moveTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
-// // ctx.lineTo(8, 15.5 - 7.5 / 3);
-// // ctx.lineTo(8, 15.5);
-// // ctx.lineTo(8 + 7.5 / 3, 15.5 - 7.5 / 6);
-// // ctx.moveTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 3 - 15 / 6);
-// // ctx.lineTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 2 + 7.5 / 6);
-// // ctx.lineTo(15.5, 15.5 - 7.5 / 2);
-// // ctx.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
-// // ctx.moveTo(.5 + 7.5 / 3, .5 + 15 / 3);
-// // ctx.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
-// // ctx.lineTo(8 + 7.5 / 3 + 15 * 4 / 29, .5 + 7.5 / 6 + 52.5 * 4 / 29);
-// // ctx.lineTo(.5 + 7.5 / 3 + 37.5 * 4 / 24, .5 + 15 / 3 + 31 * 4 / 24);
-// ctx.closePath();
-// // ctx.globalCompositeOperation = "source-over";
-// ctx.fill();
-// // ctx.globalCompositeOperation = "destination-over";
-// ctx.fillStyle = "#6E7069";
-// ctx.beginPath();
-// ctx.moveTo(15.5 - 15 / 4, .5 + 7.5 / 2 + 15 / 3 - 15 / 8);
-// ctx.lineTo(.5, .5 + 7.5 / 2 + 15 / 3);
-// ctx.lineTo(.5, 15.5 - 7.5 / 2);
-// ctx.lineTo(8, 15.5);
-// ctx.lineTo(15.5, 15.5 - 7.5 / 2);
-// ctx.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
-// ctx.closePath();
-// ctx.fill();
-// ctx.lineWidth = 1;
-// ctx.strokeStyle = "#000000";
-// ctx.strokeRect(.5, .5, 15, 15);
-// if (maskable) {
-//   WH(rc, maskable, maskable);
-//   rc.fillStyle = ctx.strokeStyle;
-//   rc.fillRect(0, 0, maskable, maskable);
-//   var padding = (maskable - size) / 2;
-//   rc.drawImage(ctx.canvas, padding, padding);
-// }

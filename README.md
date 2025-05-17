@@ -1,5 +1,5 @@
-<!-- v.0.2.5 -->
-I don't know what to put here at the moment :trollface:
+<!-- v.0.2.8 -->
+.d1r and .dbv are file extensions of the two main file formats supported by DroneBoi Vehicles Editor. DBV (Droneboi vehicle) are game files for creations of Droneboi: Conquest game, D1R (Deltarealm 1.0, which doesn't exist) is modular file format for compressing droneboi like games space ship creations into binary data, uint8 byte array, inspired by PNG format.
 
 Let me know (on Discord or) by creating issue in case you are interested in custom modification of editor or contributing to the project. 
 

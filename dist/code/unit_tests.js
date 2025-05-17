@@ -1,6 +1,6 @@
 //@ts-nocheck
 "use strict";
-// v.0.2.4 (global version of project when last changes were done)
+// v.0.2.8 (global version of project when last changes were done)
 var error = Error, utst_ = true;
 Error = function (message) {
   console.error(this.message = message);
@@ -184,6 +184,10 @@ CIsXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMjZdLFwid2VsZEdyb3VwXCI6MH0iXQ=="
   console.error("Ship.fromObject:");console.error(e);}
 console.warn = utst_consoleWarn;
 // END OF TESTS //
+// TEST: DefaultUI.reflowBlockBars DefaultUI.getSelectedTile ideas
+// - set inventory items to custom default items
+// - set slected tile and opened folder, reflow blockbars
+// - check if getSelectedTIle returns correct type
 if (error !== Error)
   Error = error;
 if (utst_)

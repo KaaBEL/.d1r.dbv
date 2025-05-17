@@ -6,10 +6,10 @@
 // B) create chrome extensions with custom modifications for live page
 // C) pull requests to main repo on github
 /** @readonly */
-var version_code_js = "v.0.2.7";
+var version_code_js = "v.0.2.8";
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
-  /** @typedef {{[key:string|number|symbol]:unknown}} safe */
+  /** @typedef {{[K in string|number|symbol]?:unknown}} safe */
   /** @type {()=>safe} should be safe with safe type */
   OC = function () {
     return {};
@@ -457,10 +457,11 @@ Data.nameMethods = function (namespace) {
       proprety.methodName = name + p;
   }
   for (var p in namespace)
-    p in {} || setMethodName(namespace[p]);
+    OP.call(namespace, p) || setMethodName(namespace[p]);
   name += "prototype.";
-  for (var p in namespace.prototype)
-    p in {} || setMethodName(namespace.prototype[p]);
+  var prototype = namespace.prototype;
+  for (var p in prototype)
+    OP.call(prototype, p) || setMethodName(prototype[p]);
 };
 Data.estimateIdentifier = new RegExp("^[^f]*function\\s+([_$a-zA-Z\\xA0-\
 \\uFFFF][_$a-zA-Z0-9\\xA0-\\uFFFF]*)");
@@ -509,7 +510,7 @@ Logic.rend = !1;
 /** @param {...{k:number,x:number,y:number}[]|string|number|LExec} args */
 Logic.generateLogic = function () {
   /** @type {{[key:number]:Logic[]&{exec:LExec|LExec&safe}|undefined}} */
-  var o = {},
+  var map = {},
     /** @type {{k:0|1|2|3,x:number,y:number}[][]} */
     defs = [],
     /** @type {LExec} */
@@ -526,7 +527,7 @@ Logic.generateLogic = function () {
       defs[Number(arg)] :
       defs[defs.length] = arg,
       nodes = [];
-    (o[l++] = nodes =
+    (map[l++] = nodes =
       /** @type {Logic[]&{exec:LExec|LExec&safe}} */
       (nodes)
     ).exec = func;
@@ -538,10 +539,10 @@ Logic.generateLogic = function () {
   for (var i = 0, l = 690, a = arguments; i < a.length; i++)
     typeof a[i] == "number" ?
       l = a[i] :
-      OP.call(o, l) ?
+      OP.call(map, l) ?
         console.error("Property ", l++, "already exists" + AT) :
         setLogic(a[i]);
-  return o;
+  return map;
 };
 /** 738, 739, 740, 741, 742, 743, 744, 745 Thrusters @type {LExec} */
 Logic.execThruster = function (arg, block) {
@@ -1012,23 +1013,23 @@ function Physics() {
 // };
 /** initPhysics is executed in context of Block constructor, the brackets
  * keep ts from asssiming it's PBlock property and uses its (this)context
- * @readonly *///@ts-ignore
-Physics.INIT = (function initBlockPhysics() {
+ * @readonly @this {Block} @type {()=>Physics} *///@ts-expect-error
+Physics.INIT = function initBlockPhysics() {
   var blockPhysics = new Physics();
   if (this instanceof Block)
     this.getPhysics = function () {
       return blockPhysics;
     };
   return blockPhysics;
-});
-/** @readonly *///@ts-ignore
+};
+/** @readonly *///@ts-expect-error
 Physics.rend = {reporter: false};
-/** @readonly class is frozen Ship Physics @param {Ship} ship *///@ts-ignore
+/** @readonly class is frozen Ship Physics @param {Ship} ship */
 Physics.Ship = function PShip(ship) {
   /** @type {string[]} list of selected inputs (checked checkbox) */
   this.selectedInputs = [];
 };
-/** @readonly *///@ts-ignore
+/** @readonly *///@ts-expect-error
 Physics.Ship.INIT = (function initShipPhysics() {
   if (!(this instanceof Ship))
     throw new TypeError("initShipPhysics used not on Ship.");
@@ -1071,36 +1072,36 @@ function Block(name, pos, rot, prop, color) {
 }
 // NOTE that blocks definitions will be version dependant over time
 // (allows cross version editing) there is just no need to implement it yet
-/** object is frozen @readonly *///@ts-ignore
+/** object is frozen @readonly *///@ts-expect-error
 Block.NAME = Object.freeze(Data.generateNames("blocks"));
-/** object is frozen @readonly *///@ts-ignore
+/** object is frozen @readonly *///@ts-expect-error
 Block.ID = Object.freeze(Data.generateIDs("blocks"));
-/** object is frozen @readonly *///@ts-ignore
+/** object is frozen @readonly *///@ts-expect-error
 Block.TITLE = Object.freeze(Data.titles);
-/** @readonly @type {{[key:number]:number|undefined}} (Mass) *///@ts-ignore
+/** @readonly @type {{[key:number]:number|undefined}} (Mass) *///@ts-expect-error
 // 799: 1, Inversed Dock?
 Block.WEIGHT = Data.generateValues("weight");
 /** @readonly @type {{[key:number]:number|undefined}} (Integrity) */
-//@ts-ignore
+//@ts-expect-error
 Block.STRENGTH = Data.generateValues("strength");
 /** number = Electricity Units per second
  * and in case of thruster when they are set to 1 000 000 (1M) force,
  * [number,number] = [Electricity Units, amout of seconds per use]
  * second @type {{[key:number]:number|[number,number]|undefined}}
- * @readonly (Electricity) *///@ts-ignore
+ * @readonly (Electricity) *///@ts-expect-error
 Block.ENERGY_USE = Data.generateValues("energy_use");
-/** number = contained units 
+/** number = contained units
  * @readonly @type {{[key:number]:number|undefined}} (Electricity) */
-//@ts-ignore
+//@ts-expect-error
 Block.ENERGY_STORE = Data.generateValues("energy_store");
 /** number = Liters of Fuel per second,
  * and in case of thruster when they are set to 1 000 000 (1M) force,
  * [number,number] = [Liters of fuel, amout of seconds per use]
  * @type {{[key:number]:number|[number,number]|undefined}} (Fuel)
- * @readonly *///@ts-ignore
+ * @readonly *///@ts-expect-error
 Block.FUEL_USE = Data.generateValues("fuel_use");
 /** number = contained liters
- * @readonly @type {{[key:number]:number|undefined}} (Fuel) *///@ts-ignore
+ * @readonly @type {{[key:number]:number|undefined}} (Fuel) *///@ts-expect-error
 // 754: was 20 before fuel buff
 // 755: was 100 before fuel buff
 // 375: was 250 before fuel buff
@@ -1108,16 +1109,16 @@ Block.FUEL_STORE = Data.generateValues("fuel_store");
 /** number = items per second,
  * [number,number] = [Items, amout of seconds per use] @readonly
  * @type {{[key:number]:number|[number,number]|undefined}} (Cargo) */
-//@ts-ignore
+//@ts-expect-error
 Block.CARGO_USE = Data.generateValues("cargo_use");
 /** number = items capacity
- * @readonly @type {{[key:number]:number|undefined}} (Cargo) *///@ts-ignore
+ * @readonly @type {{[key:number]:number|undefined}} (Cargo) *///@ts-expect-error
 Block.CARGO_STORE = Data.generateValues("cargo_store");
 /** positive = buy price of block, -1 = block isn't purchasable
  * @readonly @type {{[key:number]:number|undefined}} (MarketValue) */
-//@ts-ignore
+//@ts-expect-error
 Block.COST = Data.generateValues("cost");
-/** @readonly *///@ts-ignore
+/** @readonly *///@ts-expect-error
 Block.db1ToDb3 = Object.freeze({
   "T1 Block": "Block", "T1 Wedge": "Wedge", "T2 Wedge": "Wedge",
   "T1 Wedge 1x2": "Wedge 1x2", "Structure Block": "Struct",
@@ -1134,7 +1135,7 @@ Block.db1ToDb3 = Object.freeze({
   Connector: "Dock", Explosive: "__placeholder776__",
   "Station Block": "__placeholder846__"
 });
-/** @readonly settings for @see {Block.arrayFromObjects} *///@ts-ignore
+/** @readonly settings for @see {Block.arrayFromObjects} *///@ts-expect-error
 Block.creator = {warns: 3};
 /**
  * @readonly @param {any[]|any} blocks
@@ -1188,7 +1189,7 @@ Block.arrayFromObjects = function (blocks, logics$) {
     for (var i = logic.length; i-- > 0;)
       // if node at index is input replace it with reference to output
       if (typeof logic[i].pairs == "number")
-        //@ts-ignore
+        //@ts-expect-error
         indexes[i] = ncProperty[indexes[i]];
     return indexes;
   }
@@ -1227,7 +1228,7 @@ s|c|ni|invalidName|getPhysics|logicPosition|logicBlockIndex)$");
         []).map(function (e) {
           return Number(e) || 0;
         }).concat([0, 0, 0]),
-      /** @type {Rotation} *///@ts-ignore
+      /** @type {Rotation} *///@ts-expect-error
       rot = o.rot instanceof Array && o.rot.length === 3 ?
         // (v.0.1.68.K10) support for Deltarealm JSONs
         typeof o.rot[1] == "number" ?
@@ -1374,7 +1375,7 @@ Block.rotate = function (rot, x, y, z) {
       turn =
         /** @type {0|1|2|3} */
         (turn + n & 3);
-    //@ts-ignore
+    //@ts-expect-error
     } else if ('I have no idea')
       throw new Error("Not implemented.");
   }
@@ -1410,9 +1411,9 @@ Block.Size.genterateSizes = function () {
   for (var i = 0, j = 0, l = 690, nw = 0; l < Block.NAME.length; l++)
     if (Block.NAME[l]) {
       /** @type {[number]|[number,number,number]|PreciseDef} */
-      //@ts-ignore
+      //@ts-expect-error
       var v = a[i];
-      //@ts-ignore
+      //@ts-expect-error
       v instanceof Array && v[j] instanceof Array ? v = v[j++] : j = 3;
       if (typeof v[0] == "number")
         var x = (v[0] % this.width) * 32, y = v[0] / this.width << 5;
@@ -1426,7 +1427,7 @@ Block.Size.genterateSizes = function () {
         console.log(Block.NAME[l], v[0] % this.width, vup, v);
         // Block.Size must be change as well for resing to work
         v[0] += vup * 0;
-        //@ts-ignore
+        //@ts-expect-error
         nw.push(v);
       }
       if (((v[1] || 1) < 0 || (v[2] || 1) < 0) && v[0] !== -1)
@@ -1540,7 +1541,7 @@ Block.Properties = function (type, name) {
   this.type = type;
   /** text displayed above the setting like Tourque, Thrust, Function */
   this.name = name;
-  /** @type {ItemTs[T]} defines the data structure *///@ts-ignore
+  /** @type {ItemTs[T]} defines the data structure *///@ts-expect-error
   this.item = new Block.Properties.Items[type]();
 };
 Block.Properties.Items = {
@@ -1640,7 +1641,6 @@ Block.Properties.justOne = function (argArr) {
           ([v[1]]);
     }
   }
-  //@ts-ignore
   return r;
 };
 /**
@@ -1729,7 +1729,7 @@ Block.Properties.addProperty = function (name, property) {
 /** returns <default input optoins>.concat([custom input options])
  * @param {ShipProperties|null} prop */
 Block.Properties.getInputOptions = function (prop) {
-  var arrMaybe = (prop || OC()).customInputs;
+  var arrMaybe = (prop || {}).customInputs;
   return Block.Properties.VALUE[803][0].item.options.concat(
     (arrMaybe instanceof Array ?
       arrMaybe :
@@ -1760,7 +1760,7 @@ Block.Box2d.generateBuildBox = function () {
    * @type {{[key:number]:[Box2dPath,Box2dPath,Box2dPath,Box2dPath,
    * Box2dPath,Box2dPath,Box2dPath,Box2dPath]|undefined}}
    */
-  var o = {},
+  var map = {},
     /**
      * @type {[Box2dPath,Box2dPath,Box2dPath,Box2dPath,Box2dPath,
      * Box2dPath,Box2dPath,Box2dPath][]}
@@ -1800,7 +1800,7 @@ Block.Box2d.generateBuildBox = function () {
       return e instanceof Array ? {x: e[0], y: e[1]} : {x: e.x, y: e.y};
     }) : null;
     if (!path)
-      return o[l++] = defs[+arg];
+      return map[l++] = defs[+arg];
     for (var n = 3, rots = [box2dArray(path, true)]; n-- > 0;) {
       path.forEach(function (e) {
         var x = -e.y;
@@ -1821,16 +1821,16 @@ Block.Box2d.generateBuildBox = function () {
       });
       rots.push(box2dArray(path));
     }
-    //@ts-ignore
-    o[l++] = defs[defs.length] = Object.freeze(rots);
+    //@ts-expect-error
+    map[l++] = defs[defs.length] = Object.freeze(rots);
   }
   for (var i = 0, l = 690, a = arguments; i < a.length; i++)
     typeof a[i] == "number" ?
       l = a[i] :
-      OP.call(o, l) ?
+      OP.call(map, l) ?
         console.error("Property ", l++, "already exists" + AT) :
         setBuildBox(a[i]);
-  return o;
+  return map;
 };
 Block.Box2d.VALUE = Block.Box2d.generateBuildBox(
   690,
@@ -2007,7 +2007,7 @@ Block.Box2d.GRID = Object.freeze({
  * @param {Box2dPath|Block.Box2d[]} path @param {number} [x]
  * @param {number} [y] @param {boolean} [isBlock1] @returns {void} */
 /** returns {(x:number,y:number,path:Box2dPath,isBlock1?:boolean)=>void}
- * @type {Block.Box2d.Visualize} */
+ * @type {Block.Box2d.Visualize} callback */
 Block.Box2d.visualize = function (path, x, y, isBlock1) {};
 /** if using Box2dPath as collider, last point is the reference point
  * @param {ShipBlock|Box2dPath} forShape @param {ShipBlock[]} within
@@ -2402,8 +2402,8 @@ Edit.listeners = [];
 Edit.settingHistory = false;
 Edit.prototype.toString = function () {
   if (this.args[0] !== "[" || this.args.slice(-1)[0] !== "]")
-    return "\"Error: args is not arguments array (" + this.type + " " +
-    (this.command.methodName || (this + "").slice(0, 32)) + ")\"";
+    return "\"Error: args is not arguments array (" + this.type + " \
+" + (this.command.methodName || (this + "").slice(0, 32)) + ")\"";
   var s = Data.getFunctionName(this.command) || "(anonymous)";
   return "[" + this.type + ",\"" + s + "\"," + this.args + "]";
 };
@@ -2704,7 +2704,7 @@ Edit.oldUIRotate = function (ids) {
       ].indexOf(o.internalName) < 0 || rot === 3) {
       o.rotation[1] = !o.rotation[1];
     }
-    //@ts-ignore
+    //@ts-expect-error
     o.rotation[2] = rot + 1 & 3;
   }
   Edit.capture(this, Edit.oldUIRotate, ids);
@@ -2750,8 +2750,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @readonly @type {34} significantVersion: 34 (integer) */// @ts-ignore
-Ship.VERSION = 34;
+/** @readonly @type {35} significantVersion: 35 (integer) */// @ts-ignore
+Ship.VERSION = 35;
 Ship.propertyNames = new RegExp("^(?:nodeList|nodeConnections|customI" +
   "nputs|gridSize)$");
 // Ship.PROPERTIES = {
@@ -2918,7 +2918,7 @@ Ship.prototype.paste = function (x, y, z) {
           idx = (selected[i].properties.nodeIndex || [])[j];
         newNode.owner = block;
         /** @type {Logic<any>|safe} node from nodeList of selection */
-        var oldNode = oldLogics[idx] || OC();
+        var oldNode = oldLogics[idx] || {};
         if (logicDef[j].type > 1) {
           // only add nodeIndex references for actual output
           (oldNode.pairs instanceof Array ?
@@ -2937,7 +2937,7 @@ Ship.prototype.paste = function (x, y, z) {
     this.blocks.push(block);
   }
   for (i = inputs.length; i-- > 0;) {
-    newNode = logics[inputs[i]] || OC();
+    newNode = logics[inputs[i]] || {};
     if (typeof newNode.pairs != "number")
       return console.error("Not Logic input node:", newNode);
     // restoring reference to new logic output node
@@ -3167,7 +3167,7 @@ Ship.prototype.placeBlock = function placeBlock(x, y, z, refBlock) {
     ))
   );
   if (logics.length)
-    (this.prop || (this.prop = OC())).nodeList = logics;
+    (this.prop || (this.prop = {})).nodeList = logics;
   (block.properties.nodeIndex || []).forEach(function (e) {
     var node = logics[e];
     node ? node.owner = block : console.error("no node in temp code");
@@ -3197,7 +3197,8 @@ Ship.prototype.removeBlocks = function removeBlocks(ids) {
   // (v.0.2.1) is JSON.parse(JSON.stringify(ids)) necessary here?
   Edit.capture(this, removeBlocks, ids);
 };
-/** @readonly @param {any} object @see {Block.arrayFromObjects} */
+// (v.0.2.8) major refactor after limiting use of type any
+/** @readonly @param {safe} object @see {Block.arrayFromObjects} */
 Ship.fromObject = function fromObject(object) {
   var o = {
     name: object.name || object.n,
@@ -3218,22 +3219,26 @@ Ship.fromObject = function fromObject(object) {
         o.ver :
         []).map(Number),
     time = typeof o.time == "string" ? o.time : Ship.dateTime(),
+    /** @type {safe|null} */
+    props = typeof o.props == "object" ? o.props : null,
     /** @type {Logic<any>[]&{nc:any}} */
     logics = function () {
       /** @type {any} */
-      var arr = [], logics = (o.props || {}).nodeList;
+      var arr = [], temporary = (props || {}).nodeList;
+      /** @type {unknown[]} */
+      var logics = temporary instanceof Array ? temporary : [];
       arr.nc = o.add && o.add.logic || (logics instanceof Array ?
         logics.map(function (e, i) {
-          var node = e || {pairs: []}, n = node.pairs;
+          /** @type {{pairs?:unknown}} */
+          var node = typeof e == "object" && e || {}, n = node.pairs;
           return !!(typeof n == "number" && logics[n]) && [i, n] || null;
         }) :
-        o.props && o.props.nodeConnections || []);
+        props && props.nodeConnections || []);
       return arr;
     }(),
     blocks = o.blocks instanceof Array ?
       Block.arrayFromObjects(o.blocks, logics) :
-      Block.generateArray(-69, logics),
-    props = o.props;
+      Block.generateArray(-69, logics);
   delete logics.nc;
   Logic.reassemble(blocks, logics);
   if (o.add) {
@@ -3251,7 +3256,7 @@ Ship.fromObject = function fromObject(object) {
   if (logics.length)
     (props = props || OC()).nodeList = logics;
   // reassamble different from Logic.reassemble
-  Ship.CustomInput.reassemble(blocks, (props = props || OC()));
+  props = Ship.CustomInput.reassemble(blocks, props);
   return Edit.save(new Ship(name, ver, time, blocks, props));
 };
 /** @readonly @param {Ship} ship */
@@ -3274,7 +3279,7 @@ Ship.toDBV = function toDBV(ship) {
     });
   }
   /** @type {{Item1:number,Item2:number}[]} */
-  var connections = [], custominps = [], shipProp = ship.prop || OC();
+  var connections = [], custominps = [], shipProp = ship.prop || {};
   var logics = shipProp.nodeList instanceof Array ?
     shipProp.nodeList :
     [];
@@ -3294,7 +3299,7 @@ Ship.toDBV = function toDBV(ship) {
     [];
   for (i = 0; i < inputs.length; i++) {
     /** @type {Ship.CustomInput|safe} */
-    var custom = inputs[i] || OC(), s = custom.name,
+    var custom = inputs[i] || {}, s = custom.name,
       s = custom.name,
       t = custom.type;
     (t === 0 || t === 1 || t === -1) && typeof s == "string" &&
@@ -3508,42 +3513,42 @@ Ship.CustomInput = function CustomInput(name, type) {
 Ship.CustomInput.prototype.toString = function () {
   return this.name;
 };
-/** @param {Block[]} blocks @param {safe} prop ShipProperties */
+/** @param {Block[]} blocks @param {safe|null} prop ShipProperties */
 Ship.CustomInput.reassemble = function (blocks, prop) {
   // This Ship.CustomInput.reassemble code feels so ...loading ...brain error
+  var temporary = (prop || {}).customInputs;
   /** @type {safe} custom input from savefile */
-  var old, inputsOld = prop.customInputs instanceof Array ?
-    prop.customInputs :
-    [];
+  var old, oldInputs = temporary instanceof Array ? temporary : [];
   /** @type {Ship.CustomInput[]} */
   var inputs = [], used = Block.Properties.getInputOptions(prop);
   for (var i = used.length, j = i; i-- > 0;)
     inputs[i] = new Ship.CustomInput(used[i], 0);
-  for (j += i = inputsOld.length; i-- > 0;)
-    if ((old = inputsOld[i]) instanceof Object) {
+  for (j += i = oldInputs.length; i-- > 0;)
+    if ((old = oldInputs[i]) instanceof Object) {
       inputs[--j] = new Ship.CustomInput("" + (old.n || old.name),
         typeof old.t == "number" ? old.t : +(old.type || 0));
       used[j] = inputs[j].name;
     } else
       console.warn("CustomInput check- not passed.");
   /** @param {unknown} customParam */
-  function checkControlBlock(customParam) {
+  function includeMissingInput(customParam) {
     if (!(customParam instanceof Array))
       return console.warn("ControlBlock check0 not passed.");
     var name = customParam[0];
     if (typeof name != "string")
       return console.warn("ControlBlock check1 not passed.");
-// defs used to check for customInputs not
-// found in ship.prop.customInputs
-    used.indexOf(name) === -1 &&
-      inputs.push(new Ship.CustomInput(name, -1)) &&
-      // if found then remeber to not include dplicates
+    // if found then remeber to not include dplicates
+    if (used.indexOf(name) === -1) {
+      inputs.push(new Ship.CustomInput(name, -1));
       used.push(name);
+    }
   }
   for (var i = blocks.length; i-- > 0;)
     if (blocks[i].internalName === "Control Block")
-      checkControlBlock(blocks[i].properties.customParameter);
-  prop.customInputs = inputs.slice(j);
+      includeMissingInput(blocks[i].properties.customParameter);
+  if (inputs.length > j)
+    (prop || (prop = {})).customInputs = inputs.slice(j);
+  return prop;
 };
 /** instance is frozen, (experimental class is frozen)
  * (keeping reference to mode object also keeps its old ship object)
@@ -3557,7 +3562,7 @@ Ship.Mode = function (mode, ship) {
   Object.freeze(this);
 };
 // when encoding ship, it might need to be in "Ship" mode
-/** @readonly @type {Ship.Mode} *///@ts-ignore
+/** @readonly @type {Ship.Mode} *///@ts-expect-error
 Ship.Mode.NONE = new Ship.Mode("Ship", new Ship("", [], "", []));
 /** adds a layer for the parser to pass stored global ship in mode
  * to parse function, later parser calls only return the parse function
@@ -3710,7 +3715,7 @@ B64Key.rotateBlock = function (r) {
   r = [tmp[0], tmp[1], tmp[2]];
   switch (r[0]) {
     case 1:
-      //@ts-ignore
+      //@ts-expect-error
       return [2, !0, r[1] + 4 - r[2] & 3];
     case 2:
       r[0] = 0;
@@ -3718,14 +3723,14 @@ B64Key.rotateBlock = function (r) {
       r[2] = r[2] + 2 & 3;
       break;
     case 3:
-      //@ts-ignore
+      //@ts-expect-error
       return [2, !1, r[1] + r[2] & 3];
   }
   while (i-- > 0)
     if (r[i]) {
       angle = r[i];
       if (i === 1)
-        //@ts-ignore
+        //@ts-expect-error
         rot = (rot + angle) & 3;
       else {
         order = face === +!i;
@@ -3736,7 +3741,7 @@ B64Key.rotateBlock = function (r) {
         switch (i) {
           case 1:
             if (angle !== 2)
-              //@ts-ignore
+              //@ts-expect-error
               rot = rot + angle & 3;
           case 2:
             if (o_side === !0)
@@ -4271,7 +4276,7 @@ B64Key.decode = function decodeCmprsShip(cmprsShip) {
     } else
       obj = fixedBlock(!1);
     var r = obj.rotation;
-    //@ts-ignore
+    //@ts-expect-error
     B64Key.gBlockRotation(r[2] | +r[1] << 2 | r[0] << 3);
     n_1 = B64Key.i;
     if (n_0) {
