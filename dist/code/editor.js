@@ -1,9 +1,10 @@
 //@ts-check
 /// <reference path="./code.js" />
 "use strict";
+//-console.log("juhus jsbegin");//#rendlog
 /** @readonly */
-var version_editor_js = "v.0.2.8";
-/** @TODO check @see {defaults} for setting a setting without saveSettings */
+var version_editor_js = "v.0.2.9";
+/** @TODO check @see {Editor} for setting a setting without saveSettings */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -28,23 +29,8 @@ if (typeof TouchEvent == "undefined")
   //@ts-expect-error
   var TouchEvent = function TouchEvent() {};
 
-function throwErrors() {
-  if (/\[ ?native code ?\]/.test(
-    Function.prototype.toString.call(console.error)))
-    console.err = console.error;
-  console.error = function () {
-    console.err && console.err.apply(console, Array.prototype.map.call(
-      arguments,
-      function (e) {
-        return e;
-      }
-    ));
-    throw "See error over --^";
-  };
-}
-
 if (storage.getItem("D1R_DBV_no_offline") !== null)
-  console.log("Service Worker registration is disabled.");
+  console.info("Service Worker registration is disabled.");
 else if (/https?/.test(location.protocol) && navigator.serviceWorker)
   try {
     // @type {ServiceWorkerContainer}
@@ -80,22 +66,114 @@ if (/^http:\/\/(?:\d+\.\d+\.\d+\.\d+|localhost:\d+)/.exec(location.href))
     } catch (e) {}
   }(WebSocket);
 
-canvas.addEventListener("contextlost", function () {
+/** juss a lille wild experiment mixing settings into Editor class, any
+ * property not typeof function is considered Editor setting (defaults) */
+function Editor() {
+  console.error("Create new Window for more editor instances dumass/j");
+  throw new TypeError("Illegal constructor");
+  this.data = null;
+};
+/** (default) true: image pattern, false: color */
+Editor.background = typeof DOMMatrix != "undefined";
+/** mumst be in #xxxxxx hex color format */
+Editor.backgroundColor = "#111111";
+/** (default) 0: dbc, 1: db, ... 63: unassigned */
+Editor.backgroundImage = 0;
+//** mumst be in #xxxxxx hex color format */
+Editor.highlightColor = "#ff0000";
+Editor.highlightWidth = 2;
+Editor.logicPreviewAlpha = .5;
+Editor.buildReplace = !1;
+/** (default) 1: Lunar, 0: none, ... 31: unassigned */
+Editor.backgroundStage = 1;
+/** (default) false: PC, true: touchscreen device detected */
+Editor.fullscreenInitialized = false;
+/** (default) false: enabled, true: disabled */
+Editor.fullscreenDisabled = false;
+// not saved ** (default) false */
+Editor.renderSharp = false;
+/** (default) true: position inputs use dbc units */
+Editor.meterPositions = true;
+Editor.launchpadBorder = false;
+/** (default) false: displayed, true: not used */
+Editor.hideInventoryTile = false;
+Editor.saveSettings = function () {
+  var n = 0, arr = [+Editor.background];
+  if (isNaN(n = Number("0x" + Editor.backgroundColor.slice(1))))
+    throw new Error("Wrong format of editorBackgroundColor setting");
+  arr[0] += (n & 0x7fff) << 1;
+  arr[1] = n >> 15 & 0xffff;
+  arr[1] += Editor.backgroundImage << 15 & 1 << 15;
+  arr[2] = Editor.backgroundImage >> 1 & 31;
+  arr[2] += +Editor.fullscreenInitialized << 5
+  arr[2] += +Editor.fullscreenDisabled << 6;
+  arr[2] += Editor.backgroundStage << 7;
+  arr[2] += +Editor.meterPositions << 12;
+  arr[2] += +Editor.hideInventoryTile << 13;
+  storage.setItem("D1R_DBV_editor", String.fromCharCode.apply(String, arr));
+};
+Editor.loadSettings = function () {
+  var s = storage.getItem("D1R_DBV_editor") || "";
+  if (!s.length)
+    return;
+  if (s.length > 3)
+    return console.error("Unsupported length of localStorage item");
+  var n = 0, arr = s.split("").map(function (e) {
+    return e.charCodeAt(0);
+  });
+  Editor.background = !!(arr[0] & 1);
+  s = ((arr[0] & 0x7fff) + ((arr[1] & 0x01ff) << 16) >> 1).toString(16);
+  Editor.backgroundColor = "#" + "000000".slice(s.length) + s;
+  n = arr[1] >> 15;
+  Editor.backgroundImage = ((arr[2] & 31) << 1) + n;
+  Editor.fullscreenInitialized = !!(arr[2] >> 5 & 1);
+  Editor.fullscreenDisabled = !!(arr[2] >> (5 + 1) & 1);
+  Editor.backgroundStage = (arr[2] >> 7 & 31);
+  Editor.meterPositions = !!(arr[2] >> 12 & 1);
+  Editor.hideInventoryTile = !!(arr[2] >> 13 & 17);
+};
+Editor.throws = function () {
+  if (/\[ ?native code ?\]/.test(
+    Function.prototype.toString.call(console.error)))
+    console.err = console.error;
+  console.error = function () {
+    console.err && console.err.apply(console, Array.prototype.map.call(
+      arguments,
+      function (e) {
+        return e;
+      }
+    ));
+    throw "See error over --^";
+  };
+};
+Editor.contextlost = function () {
   console.warn("CONTEXT LOST!");
-});
-canvas.addEventListener("contextrestored", function () {
+};
+Editor.contextrestored = function () {
   console.log("%cCONTEXT RESTOERED!", "color:#4f3");
+  rend_initialized.indexOf(render) < 0 && rend_initialized.push(render);
   rend_checkColors();
-  console.log("D1R DBV rendering restorations initiated...");
-});
-
-/** @typedef addingStyles */
-(function addingStyles(css) {
+  console.info("D1R DBV rendering restorations initiated...");
+};
+Editor.setPixelRatio = function () {
+  var n = window.devicePixelRatio;
+  if (Editor.fullscreenInitialized && n > 1) {
+    pR = n;
+    /** @type {()=>void} */
+    (onresize || F)();
+  }
+};
+/** requires settings loaded first for applying global pR (pixel ratio) */
+Editor.addingStyles = function (css) {
+  Editor.setPixelRatio();
   var s = "style", e = GE(s) || document.head.appendChild(EL(s)), t = null;
   for (e.id = s; t = e.childNodes[0];)
     e.removeChild(t);
   e.appendChild(tN(css));
-})(
+};
+
+Editor.loadSettings();
+Editor.addingStyles(
   "#commandsTab" +
   "{position:fixed;width: 350px;height: " +
   (innerHeight > 500 ? 500 : innerHeight) + "px;border-radius: 10px;" +
@@ -106,7 +184,7 @@ canvas.addEventListener("contextrestored", function () {
   "#commandsTab header:first-child" +
   "{display: flex;flex-direction: row;border-bottom: 1px solid #777;}" +
   "#commandsTab button{border: 2px solid rgba(0, 0, 0, 0);" +
-  "background-color: inherit;-webkit-user-select: text;}" +
+  "background-color: rgba(0, 0, 0, 0);-webkit-user-select: text;}" +
   "#commandsTab header:first-child button{font-weight: bold;}" +
   "#commandsTab button:hover, #commandsTab button:focus," +
   " #commandsTab .loading{border: 2px solid #777;}" +
@@ -131,72 +209,8 @@ canvas.addEventListener("contextrestored", function () {
   "{background-color: #000;color: #bbb;border: 1px solid #888;}"
 );
 
-/** originally settings variable, defines type for settings */
-var defaults = {
-  /** (default) true: image pattern, false: color */
-  editorBackground: typeof DOMMatrix != "undefined",
-  /** mumst be in #xxxxxx hex color format */
-  editorBackgroundColor: "#111111",
-  /** (default) 0: dbc, 1: db, ... 63: unassigned */
-  editorBackgroundImage: 0,
-  //** mumst be in #xxxxxx hex color format */
-  highlightColor: "#ff0000",
-  highlightWidth: 2,
-  logicPreviewAlpha: .5,
-  buildReplace: !1,
-  /** (default) 1: Lunar, 0: none, ... 31: unassigned */
-  editorBackgroundStage: 1,
-  /** (default) false: PC, true: touchscreen device detected */
-  fullscreenInitialized: false,
-  /** (default) false: enabled, true: disabled */
-  fullscreenDisabled: false,
-  // not saved ** (default) false */
-  renderSharp: false,
-  /** (default) true: position inputs use dbc units */
-  meterPositions: true,
-  editorLaunchpadBorder: false,
-  /** (default) false: displayed, true: not used */
-  hideInventoryTile: false
-},
-  /** @type {typeof defaults|null} nullable alternative to original */
-  settings = defaults;
-// naming may change? + meaningless comment
-function saveSettings() {
-  var n = 0, arr = [+defaults.editorBackground];
-  if (isNaN(n = Number("0x" + defaults.editorBackgroundColor.slice(1))))
-    throw new Error("Wrong format of editorBackgroundColor setting");
-  arr[0] += (n & 0x7fff) << 1;
-  arr[1] = n >> 15 & 0xffff;
-  arr[1] += defaults.editorBackgroundImage << 15 & 1 << 15;
-  arr[2] = defaults.editorBackgroundImage >> 1 & 31;
-  arr[2] += +defaults.fullscreenInitialized << 5
-  arr[2] += +defaults.fullscreenDisabled << 6;
-  arr[2] += defaults.editorBackgroundStage << 7;
-  arr[2] += +defaults.meterPositions << 12;
-  arr[2] += +defaults.hideInventoryTile << 13;
-  storage.setItem("D1R_DBV_editor", String.fromCharCode.apply(String, arr));
-}
-function loadSettings() {
-  var s = storage.getItem("D1R_DBV_editor") || "";
-  if (!s.length)
-    return;
-  if (s.length > 3)
-    return console.error("Unsupported length of localStorage item");
-  var n = 0, arr = s.split("").map(function (e) {
-    return e.charCodeAt(0);
-  });
-  defaults.editorBackground = !!(arr[0] & 1);
-  s = ((arr[0] & 0x7fff) + ((arr[1] & 0x01ff) << 16) >> 1).toString(16);
-  defaults.editorBackgroundColor = "#" + "000000".slice(s.length) + s;
-  n = arr[1] >> 15;
-  defaults.editorBackgroundImage = ((arr[2] & 31) << 1) + n;
-  defaults.fullscreenInitialized = !!(arr[2] >> 5 & 1);
-  defaults.fullscreenDisabled = !!(arr[2] >> (5 + 1) & 1);
-  defaults.editorBackgroundStage = (arr[2] >> 7 & 31);
-  defaults.meterPositions = !!(arr[2] >> 12 & 1);
-  defaults.hideInventoryTile = !!(arr[2] >> 13 & 17);
-}
-loadSettings();
+canvas.addEventListener("contextrestored", Editor.contextrestored);
+canvas.addEventListener("contextlost", Editor.contextlost);
 
 /** to be able to include some fun when editor is initialized */
 var init_funMode = F;
@@ -269,7 +283,7 @@ AAABBoATIAAAAAnAAA2AAQKAFaAAAZAAAAJwAA4lABtAAZAAAAJwAAJAUAGQAAACcAAAARAAAKDU\
 ALkAEAAADgBABAFU6AFgBABgAAwAkAgDiAAJACZAAATgAAyAsARgAAAECMCo1BIxEAhBAhQAYAYA\
 QAAGCFWBVOg1Oig7gALoAMAMAJsTCcCCcphBAXwAWQAQA4IRawCAkiYWQQhUABUAAQaEQiAwBBoB\
 AoxSIDyABKAAIlTviFogQ=")));
-      defaults.editorBackgroundStage = 0;
+      Editor.backgroundStage = 0;
       break;
     case "17a472d":
     case "25f75d93":
@@ -401,12 +415,12 @@ em2":1},{"Item1":5,"Item2":15}],"ci":[],"significantVersion":20}'));
     case "d4d00d64":
     case "c058adcc":
       console.info("Fun mode 11");
-      defaults =
-        /** @type {typeof defaults} */
-        ({});
-      loadSettings();
-      defaults.renderSharp = true;
-      saveSettings();
+      for (var p in Editor)
+        if (OP.call(Editor, p) && typeof Editor[p] != "function")
+          delete Editor[p];
+      Editor.loadSettings();
+      Editor.renderSharp = true;
+      Editor.saveSettings();
       (GE("style") || EL()).appendChild(tN("#commandsTab,#info,#commandsTab \
 *,#info *{border-radius: 0;filter: contrast(7) brightness(0.7);font-weight: \
 bolder;}#commandsTab button:hover,#commandsTab button:focus{font-weight: nor\
@@ -640,6 +654,9 @@ e2tc+449k6Hcrl/eFFsvcaX7c2n5d27rwf2LNnb6AaXA93ASPZGNAemc4845EkEIqGgIUdC/L9h9\
 NXgaWrlwCxeBLobLu7YdYHnuyF1/F4HBiPmBkZyfPNVPyvtQPV4MV9H+RrQ6F0TmuuaHwsyF0HTC\
 gDrOrrAS5cGaFRTgd966XvAUxkABMpIdPi6Rnf1fQQsCi81A8N/gdE9KncelVoFwAAAABJRU5Erk\
 Jggg==";
+//-imgMask.onload = function () {//#rendlog
+//-  console.log("juhus maskload");
+//-};
 var imgBackg = document.createElement("img");
 var helpCanvas = document.createElement("canvas"),
   rc = function (rc) {
@@ -650,14 +667,14 @@ var helpCanvas = document.createElement("canvas"),
     {willReadFrequently: true}));
 
 canvas.style.backgroundColor = document.body.style.backgroundColor =
-  defaults.editorBackground ? "#132122" : defaults.editorBackgroundColor;
+  Editor.background ? "#132122" : Editor.backgroundColor;
 imgBackg.src = "./assets/_" + [
   "dbc",
   "db",
   "editor",
   "dbve2",
   "dbve"
-][defaults.editorBackgroundImage] + "_background.png";
+][Editor.backgroundImage] + "_background.png";
 
 /** @this {any} */
 function del(i) {
@@ -736,7 +753,7 @@ function fileOpener(f_exec, error, f_final, loadBar, mode) {
         return readFile();
       else {
         try {
-          console.log(succ ? final() : console.error(error), succ);
+          console.debug(succ ? final() : console.error(error), succ);
         } catch (e) {}
         barF();
         return fileNames();
@@ -771,7 +788,7 @@ function fileOpener(f_exec, error, f_final, loadBar, mode) {
         if (nextCLi())
           return readFile();
         else
-          console.log(succ ? final() : console.error(error), succ);
+          console.debug(succ ? final() : console.error(error), succ);
       else
         final();
       barF();
@@ -1137,7 +1154,7 @@ Command.push("Setup Properties", function (items, collapsed) {
     if (!block)
       return render();
     name.value = block.internalName;
-    var units = +defaults.meterPositions + 1;
+    var units = +Editor.meterPositions + 1;
     posX.value = block.position[1] / units + "";
     posY.value = block.position[2] / units + "";
     try {
@@ -1310,7 +1327,7 @@ Command.push("Setup Properties", function (items, collapsed) {
   items.push(select, next, {name: "focus", inp: focus}, insert, exchange);
   setPos.appendChild(tN("Set position"));
   setPos.onclick = function () {
-    var units = +defaults.meterPositions + 1;
+    var units = +Editor.meterPositions + 1;
     var pos = ship.blocks[idx].position;
     [posX, posY].map(function (e, i) {
       pos[i + 1] = Math.round((Number(e.value) || 0) * units);
@@ -1359,8 +1376,8 @@ Command.push("Setup Properties", function (items, collapsed) {
       rot === (block.rotation[1] ? 1 : 3) ?
         dy += (32 - w - tiny) * sc / 16 :
         0;
-    ctx.strokeStyle = defaults.highlightColor;
-    ctx.lineWidth = defaults.highlightWidth;
+    ctx.strokeStyle = Editor.highlightColor;
+    ctx.lineWidth = Editor.highlightWidth;
     ctx.strokeRect(dx, dy, (rot & 1 ? h : w) * sc / 16,
       (rot & 1 ? w : h) * sc / 16);
   };
@@ -1596,11 +1613,69 @@ Inputs not yet with tags are listed with option field to select logic output\
  of the same type.");
 
 Command.push("Import/Export DBV", function (items, collapsed) {
+  /** @param {Uint8Array|ArrayBuffer} buffer @param {number} [i=0] */
+  function utf8ToString(buffer, i) {
+    var bytes = buffer instanceof Uint8Array ?
+      buffer :
+      new Uint8Array(buffer);
+    // lb = lower boundary, ub = upper boundary, cp = code point, more
+    var n = 0, lb = 128, ub = 191, cp = 0, more = 0, s = "";
+    for (i = i || 0; i < bytes.length; s += String.fromCharCode(cp)) {
+      if ((cp = bytes[i++]) < 128)
+        continue;
+      if (cp < 194) {
+        cp = 0xFFFD;
+        continue;
+      }
+      if (cp < 224) {
+        cp = cp - 192 << 6;
+        more = 1;
+      } else if (cp < 240) {
+        cp === 224 ?
+          lb = 160 :
+          cp === 239 && (ub = 191);
+        cp = cp - 224 << 12;
+        more = 2;
+      } else if (cp < 245) {
+        cp === 240 ?
+          lb = 144 :
+          cp === 244 && (ub = 143);
+        cp = cp - 240 << 18;
+        more = 3;
+      } else if (cp < 256) {
+        cp = 0xFFFD;
+        continue;
+      } else {
+        debugger;
+        console.error("debugger HuHh!?");
+      } 
+      while (more) {
+        if (i >= bytes.length) {
+          cp = 0xFFFD;
+          continue;
+        }
+        n = bytes[i++];
+        n < lb || n > ub ? more = 0 : 0;
+        lb = 128;
+        ub = 191;
+        if (!more) {
+          i--;
+          more = 0;
+          cp = 0xFFFD;
+          continue;
+        }
+        cp = cp + (n - 128 << --more * 6);
+      }
+      if (0xffff0000 & cp)
+        throw new Error("[v.0.2.9]Code point out of decodable range!");
+    }
+    return s;
+  }
   var dbv = EL("input"), elBtn = EL("button"), error = EL();
   var gridCheck = EL("input"), grid = EL("select");
   gridCheck.type = "checkbox";
   gridCheck.oninput = function () {
-    defaults.editorLaunchpadBorder = gridCheck.checked;
+    Editor.launchpadBorder = gridCheck.checked;
     render();
   };
   for (var i = Ship.Grid.VALUE.length; i-- > 0;) {
@@ -1617,7 +1692,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
       return;
     (ship.prop || (ship.prop = {})).gridSize = gridValue;
     ship.prop.launchpadSize = gridValue.dbvIndex;
-    defaults.editorLaunchpadBorder && render();
+    Editor.launchpadBorder && render();
   };
   i = Number(((ship.prop || {}).gridSize || {}).gridIndex);
   grid.value = isNaN(i) ? "null" : "" + i;
@@ -1654,7 +1729,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
       return false;
     var s = "";
     try {
-      s = String.fromCharCode.apply(String, [].slice.apply(buffer));
+      s = utf8ToString(buffer);
       var obj = JSON.parse(s);
       Ship.fromObject(obj);
       !(obj.significantVersion > 15) && ship.fixPositionAdjustment(!0);
@@ -1789,7 +1864,7 @@ Command.push("Transform tool", function (items, collapsed) {
   var xy = [0, 0, 0, 0], locked = EL("input"), posUnits = EL("input");
   /** FORMAT INPUTS @this {GlobalEventHandlers} */
   function formatSelection() {
-    var i = 4, input = selectX0, units = +defaults.meterPositions + 1;
+    var i = 4, input = selectX0, units = +Editor.meterPositions + 1;
     while (input = [selectX0, selectY0, selectX1, selectY1][--i])
       this !== input ?
         input.value = "" + (xy[i] = +input.value * units || 0) * units :
@@ -1822,7 +1897,7 @@ Command.push("Transform tool", function (items, collapsed) {
     if (!trackPoints)
       return console.error("trackPoints unset, AT Command.\"Transfrom\"");
     var point0 = trackPoints.blocks[0], point1 = trackPoints.blocks[1];
-    var units = +defaults.meterPositions + 1;
+    var units = +Editor.meterPositions + 1;
     selectX0.value = (xy[0] = point0.position[1]) / units + "";
     selectY0.value = (xy[1] = point0.position[2]) / units + "";
     selectX1.value = (xy[2] = point1.position[1]) / units + "";
@@ -1833,7 +1908,7 @@ Command.push("Transform tool", function (items, collapsed) {
   selectX1.oninput = selectY1.oninput = formatSelection;
   var selecting = 2;
   select.onclick = function () {
-    var units = +defaults.meterPositions + 1;
+    var units = +Editor.meterPositions + 1;
     selectX0.value = selectY0.value = "";
     selectX1.value = selectY1.value = "";
     selecting = 2;
@@ -1866,7 +1941,7 @@ Command.push("Transform tool", function (items, collapsed) {
   var move = EL("button"), rotate = EL("button"), flip = EL("button");
   move.appendChild(tN("Move action"));
   move.onclick = function () {
-    var units = +defaults.meterPositions + 1;
+    var units = +Editor.meterPositions + 1;
     var x = +inpX.value * units || 0, y = +inpY.value * units || 0;
     Edit.move(getSelected(), 0, x, y);
     Edit.move(getSelectPoints(), 0, x, y);
@@ -1876,7 +1951,7 @@ Command.push("Transform tool", function (items, collapsed) {
   rotate.appendChild(tN("Rotate action"));
   rotate.onclick = function rotateDBV() {
     // rotation around axis
-    var units = +defaults.meterPositions + 1;
+    var units = +Editor.meterPositions + 1;
     var rx = +inpX.value * units || +inpY.value * units || 0;
     Edit.rotate(getSelected(), rx);
     Edit.rotate(getSelectPoints(), rx);
@@ -1950,17 +2025,17 @@ Command.push("Transform tool", function (items, collapsed) {
   fill.onclick = function () {
     if (selecting)
       return;
-    defaults.buildReplace = !0;
-    ship.fillRect(0, xy[0], xy[1], 0, xy[2], xy[3]);
-    defaults.buildReplace = !1;
+    Editor.buildReplace = !0;
+    ship.replaceRect(0, xy[0], xy[1], 0, xy[2], xy[3]);
+    Editor.buildReplace = !1;
     render();
   };
   posUnits.type = "checkbox";
-  posUnits.checked = defaults.meterPositions;
+  posUnits.checked = Editor.meterPositions;
   posUnits.oninput = function (e) {
-    defaults.meterPositions = posUnits.checked;
+    Editor.meterPositions = posUnits.checked;
     formatSelection.call(this);
-    saveSettings();
+    Editor.saveSettings();
   };
   items.push(copy, paste, fill, remove, {name: "Axis X", inp: inpX});
   items.push({name: "Axis Y", inp: inpY}, move, rotate, flip, mirror);
@@ -1973,8 +2048,8 @@ Command.push("Transform tool", function (items, collapsed) {
     var x = Math.max(xy[0], xy[2]), y = Math.min(xy[1], xy[3]);
     var w = x - Math.min(xy[0], xy[2]), h = Math.max(xy[1], xy[3]) - y;
     var dx = -x * sc + vX, dy = y * sc + vY;
-    ctx.strokeStyle = defaults.highlightColor;
-    ctx.lineWidth = defaults.highlightWidth;
+    ctx.strokeStyle = Editor.highlightColor;
+    ctx.lineWidth = Editor.highlightWidth;
     if (selecting) {
       ctx.beginPath();
       ctx.moveTo(dx + sc * 2, dy);
@@ -2099,7 +2174,6 @@ Command.push("Vehicle stats", function (items, collapsed) {
       var block = blocks[i], prop = block.properties || OC();
       var id = Block.ID[block.internalName];
       var rot = 10 - block.rotation[2] & 3, size = Block.Size.VALUE[id];
-      // (v.0.1.64T13) why was this missing
       if (!size)
         continue;
       var ow = size.w, oh = size.h, w = ow + (ow & 16), h = oh + (oh & 16);
@@ -2227,28 +2301,28 @@ Command.push("Editing Mode", function (items) {
   inventory.type = "checkbox";
   inventory.checked = DefaultUI.inventoryTile;
   inventory.oninput = function () {
-    defaults.hideInventoryTile =
+    Editor.hideInventoryTile =
       !(DefaultUI.inventoryTile = inventory.checked);
-    saveSettings();
+    Editor.saveSettings();
     render();
   };
   items.push(button1, button0, inventory);
   items.push({name: "Show inventory tile", inp: inventory});
   fullscreen.type = "checkbox";
-  fullscreen.checked = defaults.fullscreenDisabled;
+  fullscreen.checked = Editor.fullscreenDisabled;
   fullscreen.oninput = function () {
-    defaults.fullscreenDisabled = fullscreen.checked;
-    saveSettings();
+    Editor.fullscreenDisabled = fullscreen.checked;
+    Editor.saveSettings();
   };
   items.push({name: "Disable fullscreen", inp: fullscreen});
   var touchScreen = EL("button"),
-    detectionText = tN(defaults.fullscreenInitialized ?
+    detectionText = tN(Editor.fullscreenInitialized ?
       "Disable touch screen detected" :
       "Touch screen is not detected");
   touchScreen.appendChild(detectionText);
   touchScreen.onclick = function () {
-    defaults.fullscreenInitialized = false;
-    saveSettings();
+    Editor.fullscreenInitialized = false;
+    Editor.saveSettings();
     touchdevice = null;
     detectionText.data = "Touch screen is not detected";
   };
@@ -2267,6 +2341,19 @@ Command.push("Editing Mode", function (items) {
   redo.onclick = editioning(Edit.redo);
   items.push(touchScreen, EL("br"), undo, redo);
   items.push(tN("devicePixelRatio: " + window.devicePixelRatio));
+  if ("performance" in window && window.performance instanceof Object) {
+    //** @type {typeof window.performance.timing} */
+    var timing = window.performance["tim" + "ing"] || {}, div = EL();
+    div.appendChild(tN("PerformanceTiming:"));
+    var origin = timing.navigationStart ||
+      window.performance.timeOrigin || 0;
+    for (var p in timing) {
+      var time = (timing[p] - origin) / 1000;
+      div.appendChild(EL("br"));
+      div.appendChild(tN(p + ": " + (time < 0 ? "null" : time)));
+    }
+    items.push(EL("br"), EL("br"), div);
+  }
 }, "Editing modes is the newest feature that is Work In Progress. Be aware t\
 hat non of the older commands were designed to be compatible with other mode\
 s in there. \nYou can use inventoryTile to enable inventory icon item. By en\
@@ -2275,7 +2362,7 @@ t implemented. \nFor proper display of UI and mobile experience there is aut\
 omatic detection of touchscreen, this feature changes resolution and turns o\
 n fullscreen whenever the browser allows it, if it was somehow incorrectly d\
 etected you can use designated button to reset it. In case it still keeps de\
-tecting and it is not supposed to, that's a bug then.");
+tecting and it is not supposed to, that's a bug then. +dev stuff.");
 Command.push("Debug Logic circuit", function (items, collapsed) {
   /** @param {Block|LogicBlock} block @returns {LogicBlock|undefined} */
   function checkEndComponent(block) {
@@ -2389,15 +2476,15 @@ ng is used. For touch screen devices use two fingers to move and zoom.");
 Command.push("Change editor background", function (items, collapsed) {
   var backgImg = EL("input"), backgClr = EL("input");
   backgImg.type = "checkbox";
-  backgImg.checked = defaults.editorBackground;
+  backgImg.checked = Editor.background;
   backgImg.onchange = function () {
     if (!(this instanceof HTMLInputElement))
       return;
     rend_background =
-      (defaults.editorBackground = this.checked) ?
+      (Editor.background = this.checked) ?
         rend_backgPattern :
         rend_backgColor;
-    saveSettings();
+    Editor.saveSettings();
     render();
   };
   var select = EL("select"), option = EL("option");
@@ -2415,13 +2502,13 @@ Command.push("Change editor background", function (items, collapsed) {
   option = EL("option");
   option.label = option.value = "_dbve_background";
   select.add(option);
-  option = select.item(defaults.editorBackgroundImage) || option;
+  option = select.item(Editor.backgroundImage) || option;
   option.selected = !0;
   select.onchange = function () {
     if (!(this instanceof HTMLSelectElement))
       return;
-    defaults.editorBackgroundImage = this.selectedIndex;
-    saveSettings();
+    Editor.backgroundImage = this.selectedIndex;
+    Editor.saveSettings();
     var newImg = EL("img");
     newImg.onload === null ? newImg.onload = function () {
       imgBackg = newImg;
@@ -2429,27 +2516,27 @@ Command.push("Change editor background", function (items, collapsed) {
     } : (imgBackg = newImg);
     newImg.src = "./assets/" + this.value + ".png";
   };
-  backgClr.value = defaults.editorBackgroundColor;
+  backgClr.value = Editor.backgroundColor;
   backgClr.oninput = function () {
     var r = this instanceof HTMLInputElement ?
       new RegExp("#([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])|#(\
 [0-9a-f])([0-9a-f])([0-9a-f])").exec(this.value.slice(0, 7)) :
       null;
     if (r)
-      defaults.editorBackgroundColor = "#" + (r[0].length < 5 ?
+      Editor.backgroundColor = "#" + (r[0].length < 5 ?
         r[4] + r[4] + r[5] + r[5] + r[6] + r[6] :
         r[1] + r[2] + r[3]);
-    saveSettings();
+    Editor.saveSettings();
     render();
   };
   var backgHgr = EL("input");
   backgHgr.type = "checkbox";
-  backgHgr.checked = !!defaults.editorBackgroundStage;
+  backgHgr.checked = !!Editor.backgroundStage;
   backgHgr.onchange = function () {
     if (!(this instanceof HTMLInputElement))
       return;
-    defaults.editorBackgroundStage = +this.checked;
-    saveSettings();
+    Editor.backgroundStage = +this.checked;
+    Editor.saveSettings();
     render();
   };
   items.push(
@@ -2498,25 +2585,28 @@ allow for backward compatibility in case of bug causing corrupted savefiles.\
 ");
 Command.push("About Commands tab", function (items) {}, "OPENING AND MOVING \
 AROUND\nCommands tab is opened or moved by activating contextmenu, the optio\
-ns, usually from right click or long press on touch screen, not on already o\
-pened Commands tab. The Commands tab them opens and/or moves centered to whe\
-re contextmenu was activated, but it will align with top, right or left edge\
- of the page if it was going to 'display partialy behind them'. This is to c\
-reate 'grabable' surface for touch screens at any time any time.\nTo move th\
-e Commands tab around you can grab it 'with' top part, where changes to poin\
-ter hand, you can move it slightly behind edges on right and left side.\nCON\
-TEXTMENU NOTES\nSome browsers have option to save or copy image in the canva\
-s in 'rightclick options', it can be used to make precise image of your vehi\
-cle in high quality. When the Commands tab is right clicked the tab dissapea\
-rs and activated contextmenu is able to capture to visual.\n\nMENU\nIn menu \
-there is list of Commands, click one of the buttons to open coresponding Com\
-mand, optionaly sorted in collapsed groups. X sign in top right corner close\
-s the Commands tab.\n\nCOMMAND\nWhen Command is opened its name displays in \
-'top part', there's also < sign to return back to menu, X sign won't do that\
-. Each command has some inputs/buttons, their purpouse is explained in descr\
-iption.\nFINISHED READING\nNow so you are familiar with the basic, if Welcom\
-e message will ever bother you, use https://kaabel.github.io/.d1r.dbv/editor\
-.html?funmode&no=info for example to skip it.\n");
+ns, usually a right click for PC or long press for touch screen. Activating \
+contextmenu on already opened Commands tab closes it. The Commands tab opens\
+ and/or moves its center to where contextmenu was activated, this is to crea\
+te emergency 'grabbable' surface for touch screens at any time. It positions\
+ itself to not go behind other then bottom edge.\nTo move the Commands tab a\
+round you can grab it by the top part, 'header', where pointer changes to ha\
+nd. It can be grabbed partially behind edges on right and left side.\n\nCONT\
+EXTMENU NOTES\nSome browsers have option to save or copy image in the canvas\
+ in 'rightclick options', it can be used to make precise image of your vehic\
+le in high quality. When the Commands tab is right clicked the tab disappear\
+s and activated contextmenu is able to capture canvas picture (pretty much a\
+ll except Commands tab and tool tab).\n\nMENU\nIn menu there is list of Comm\
+ands, click one of the buttons to open corresponding Command, optionally sor\
+ted in collapsed groups, but collapsing feature isn't used. 'X' sign in top \
+right corner hides the Commands tab.\n\nCOMMAND\nWhen Command is opened its \
+name displays in top part, header. Use '<' sign to return back to menu and s\
+top Command functions, closing with 'X' sign keeps Command opened. Each Comm\
+and has some inputs/buttons, their purpose is explained in description inclu\
+ded at bottom.\n\nFINISHED READING\nNow so you are familiar with the basics,\
+ no=info URL parameter ca be used to skip Welcome message if it gets annoyin\
+g, as for example https://kaabel.github.io/.d1r.dbv/editor.html?funmode&no=i\
+nfo to skip it.\n");
 // DBVE contributors:
 // Thanks to Beau for Deltarealm and Droneboi: Conquest that DBVE is made
 // for.
@@ -2560,7 +2650,7 @@ Tool.drawPathRc = function (tool, size) {
   function parseParam(s) {
     return (s[0] === "-" ? -("0x" + s.slice(1)) : +("0x" + s)) / 1024;
   }
-  defaults.renderSharp ? size = (size || 0) * 8 : 1;
+  Editor.renderSharp ? size = (size || 0) * 8 : 1;
   if (size) {
     rc.canvas.width = rc.canvas.height = size;
     rc.scale(size / 256, size / 256);
@@ -2745,6 +2835,30 @@ Tool.Tab.bindInit = function (tab, setup) {
     for (var i = 0; i < tab.elements.length; i++)
       nav.appendChild(tab.elements[i]);
     nav.style.display = "";
+    var ratio = window.devicePixelRatio, scale = "" + 1 / ratio;
+    // v.0.2.9 1,1,50 = those values were found to get the job done
+    var translate = "" + (ratio < 1 ? 1 - 1 / ratio : ratio - 1) * 50;
+    scale = "scale(" + scale + "," + scale + ")";
+    translate = "translate(" + translate + "%," + -translate + "%)";
+    // v.0.2.9 2 = border width of tabs and tiles, .5 = minimun width
+    var border = Math.max(ratio / pR * 2, .5);
+    // v.0.2.9 168 = blockBar height
+    var availableHeight = (canvas.height - 168) /
+      (canvas.height / window.innerHeight);
+    var height = Math.min(Math.max(
+      // v.0.2.9 14 = Tool.Tab 'margin', 14 = Tool.Tab padding
+      (availableHeight - 14) * ratio - border - 14,
+      // v.0.2.9 210 = Tool.Tab minimal height, 500 = Tool.Tab maximal height
+      210), 500);
+    var tabHeight = (border + 14 + height) / ratio;
+    nav.style.top = Math.max(
+      // v.0.2.9 7 / pR = minimum for 'margin' is same as style right
+      (availableHeight - tabHeight) / 2, 7 / pR) + "px";
+    nav.style.height = height + "px";
+    nav.style.borderWidth = border + "px";
+    nav.style.transform = ratio < 1 ?
+      translate + scale :
+      scale + translate;
   };
   tabAssign.originalInit = tab.init;
   /** closeTab @type {ToolExec&{originalDestroy:ToolExec}} */
@@ -2756,6 +2870,98 @@ Tool.Tab.bindInit = function (tab, setup) {
   }).originalDestroy = tabDestroy;
   return tabAssign;
 };
+/** @TODO remove outdated comments in v.0.2.10 and give link here instead */
+//-function test_watch() {
+//-  var nav = function (el) {
+//-    return el instanceof HTMLElement ? el : EL("nav");
+//-  }(document.querySelector(".tool-tab"));
+//-  var ratio = window.devicePixelRatio, scale = "" + 1 / ratio;
+//-  var translate = "" + (ratio < 1 ? 1 - 1 / ratio : ratio - 1) * 50;
+//-  scale = "scale(" + scale + "," + scale + ")";
+//-  translate = "translate(" + translate + "%," + -translate + "%)";
+//-  //-var availableHeight = innerHeight * pR - 168;
+//-  // v.0.2.9 168 = blockBar height
+//-  // v.0.2.9 14 = Tool.Tab 'margin', 18 = Tool.Tab padding + borderWidth
+//-  var size = (canvas.height - 168 - 14 - 18 / ratio) * ratio;
+//-  // nav.style.top = Math.max((size / pR - 500) / 2 + 7 | 0, 7) + "px";
+//-  //nav.style.top = 7 / pR + "px";
+//-  //var height = Math.max(Math.min(size, 500), 250);
+//-  //nav.style.height = height + "px";
+//-  var border = Math.max(ratio / pR * 2, .5);
+//-  //nav.style.borderWidth = border + "px";
+//-  //nav.style.transform = ratio < 1 ?
+//-  //  translate + scale :
+//-  //  scale + translate;
+//-  var dev = GE("test") || document.body.appendChild(EL());
+//-  var div = GE("estt") || document.body.appendChild(EL());
+//-  dev.id = "test";
+//-  div.id = "estt";
+//-  dev.style.position = div.style.position = "fixed";
+//-  dev.style.inset = "0px";
+//-  div.style.inset = 7 / pR + "px";
+//-  dev.style.outline = "5px dashed #246";
+//-  div.style.outline = "5px dashed #57a";
+//-  dev.style.outlineOffset = div.style.outlineOffset = "-5px";
+//-  dev.style.pointerEvents = div.style.pointerEvents = "none";
+//-  var availableHeightHtml = (canvas.height - 168) /
+//-    (canvas.height / innerHeight);
+//-  dev.style.height = availableHeightHtml + "px";
+//-  var height = Math.min(Math.max(
+//-    (availableHeightHtml - 14) * ratio - border - 14, 250), 500);
+//-  var tabHeightHtml = (border + 14 + height) / ratio;
+//-  div.style.height = tabHeightHtml + "px";
+//-  nav.style.top = Math.max(
+//-    (availableHeightHtml - tabHeightHtml) / 2, 7 / pR) + "px";
+//-  nav.style.height = height + "px";
+//-  nav.style.borderWidth = border + "px";
+//-  nav.style.transform = ratio < 1 ?
+//-    translate + scale :
+//-    scale + translate;
+//-}
+//-80% 80% 1 1109 1 1109
+//-211px [done]
+
+//-80% 80% 1 652 1 652
+//-7px [done]
+
+//-80% 80% 1 345 1 345 
+//-7px [done]
+
+//-80% 33% 0.4166666865348816 2661 1 2661
+//-~652px [wrong 264px]
+
+//-80% 33% 0.4166666865348816 1164 1 1164 
+//-7px [done]
+
+//-80% 150% 1.875 591 1 591 
+//-~65px [wrong 131px]
+
+//-80% 150% 1.875 385 1 385 
+//-7px [done]
+
+//-80% 200% 2.5 443 1 443 
+//-~34px [wrong 74px]
+
+//-50% 50% 0.625 1774 1 1774 
+//-~375px [wrong 245px]
+
+//-50% 25% 0.3125 3548 1 3548 
+//-~862px [wrong 273px]
+
+//-50% 150% 1.875 591 1 591 
+//-~71px [wrong 131px]
+
+//-200% 200% 2.5 443 1 443 
+//-~26px [wrong 74px]
+
+//-200% 100% 1.25 887 1 887 
+//-~125px [wrong 188px]
+
+//-200% 50% 0.625 1774 1 1774 
+//-~372px [wrong 245px]
+
+//-200% 400% 5 221 1 221 
+//-7px [done]
 /**
  * @callback ToolSetup @param {Tool.Tab} setup
  * @param {number} x @param {number} y */
@@ -2778,11 +2984,11 @@ Tool.Tab.addCSS = function (styles, selector) {
     selector) + "{" + styles + "}";
 };
 
-Tool.Tab.addCSS("position: absolute;top: 0px;right: 0px;width: 300px;height:\
- 500px;padding: 7px;border: 2px solid rgb(85, 119, 170);border-radius: 7px\
-;font-family: sans-serif;background-color: rgba(13, 33, 55, .8);color: rgb\
-(187, 204, 221);overflow-y: scroll;scrollbar-width: none;-ms-overflow-style:\
- none;", "");
+Tool.Tab.addCSS("position: absolute;top: 7px;right: " + 7 / pR + "px;width: \
+320px;height: 500px;padding: 7px;border: 2px solid #5577aa;border-radius: 7p\
+x;font-family: segoe-ui, sans-serif;background-color: rgba(13, 33, 55, .8);c\
+olor: #bbccdd;overflow-y: scroll;scrollbar-width: none;-ms-overflow-style: n\
+one;font-size: 20px;", "");
 Tool.Tab.addCSS("width: 0px;background: transparent;", ".tool-tab::-webkit-s\
 crollbar");
 Tool.list.push(new Tool("Tune", "M4a4,24265 c51,2f0,273,ad3,931,f85 c8da,714\
@@ -2967,49 +3173,7 @@ itecto amet consequuntur necessitatibus reprehenderit.\nVoluptates, non eos!\
  Asperiores placeat ratione unde odit earum?\nId mollitia ab illo laboriosam\
  ratione harum facilis laborum!\nReiciendis consequatur quos et earum blandi\
 tiis nihil vel deserunt!\nNulla accusamus, eaque perferendis corrupti dolor \
-mollitia molestiae sit.\nDolore accusantium soluta illo, modi iusto dignissi\
-mos reiciendis? Fuga!\nFuga ex ab eveniet ut accusantium. Sed, dolores alias\
-.\nNulla dolor non amet provident totam commodi molestias possimus.\nEx sit \
-repellendus, maiores dolorem architecto eveniet nam odit!\nNulla distinctio,\
- pariatur ipsa tempore voluptas illum culpa soluta!\nEa dignissimos laudanti\
-um nostrum itaque quis tempora odio aperiam?\nCupiditate laborum soluta rem \
-asperiores. Eligendi eveniet optio id.\nFuga itaque, esse aliquid vero iusto\
- nisi eius necessitatibus!\nItaque odio reiciendis, magnam consectetur sit t\
-otam porro harum.\nLaborum aut distinctio debitis velit magni obcaecati adip\
-isci asperiores.\nAliquid optio porro delectus soluta ullam non et? Dicta.\n\
-Voluptas accusantium expedita asperiores, quam sint ullam blanditiis rerum!\
-\nMolestiae nisi ipsum harum? Quos ad assumenda suscipit eum.\nAd sint delec\
-tus, natus quidem culpa facilis voluptas facere.\nVero quaerat quibusdam a m\
-agni est tempora vitae vel.\nPlaceat nulla velit, veritatis sunt obcaecati v\
-oluptatem ducimus dolor.\nQuam dolore cupiditate et! Molestiae porro veniam \
-modi pariatur.\nEa tenetur sunt delectus ratione atque, culpa rerum exercita\
-tionem.\nVoluptates at, ipsam commodi ipsa corrupti minus assumenda! Non?\nO\
-fficiis architecto placeat fuga sequi velit cumque nam similique!\nEx velit \
-voluptatum fugit atque officiis vero ea ad.\nMagni fugit aspernatur possimus\
- iste rem dicta vitae repellat?\nQuod quisquam unde error ex assumenda eaque\
- fugiat quaerat?\nLaborum in a delectus dolor veniam placeat, voluptates odi\
-o?\nIllo officiis placeat amet, sequi laboriosam obcaecati sint a!\nVoluptas\
- quo placeat culpa temporibus voluptate officiis autem doloremque.\nOfficiis\
- corrupti eveniet totam excepturi sint eos distinctio minus.\nNulla, possimu\
-s. Asperiores obcaecati eaque modi unde esse minus.\nAb veniam nulla, deseru\
-nt doloribus aliquam a sint fuga.\nSoluta maiores aliquid numquam reprehende\
-rit quae minus, voluptas reiciendis.\nCumque dicta sed minima nobis non! Nul\
-la, doloremque fuga.\nExpedita atque ab alias omnis quas. Aliquid, nihil qua\
-m!\nModi, nam neque in quod numquam molestias nemo illum.\nEveniet laborum, \
-voluptatum beatae quibusdam iure dolor repellendus quis!\nQuas consectetur u\
-t praesentium nisi consequuntur temporibus ratione amet?\nUllam ut doloremqu\
-e deleniti illo quos molestias optio iusto.\nMagni illo rerum distinctio, la\
-boriosam deserunt tempora blanditiis reprehenderit?\nFacilis deserunt assume\
-nda fugit nemo, iure sed sunt earum?\nAccusamus doloremque numquam excepturi\
- velit, deserunt libero id labore?\nDolorem quam quo voluptate sapiente iste\
- architecto, natus quidem.\nOfficia molestiae ab dolorum, doloribus similiqu\
-e ipsum a voluptatum!\nVero libero iste repellendus saepe asperiores consect\
-etur et. Repudiandae.\nTempore repellat cupiditate eveniet molestiae quaerat\
- perferendis quos perspiciatis!\nDeserunt amet fuga vero neque unde similiqu\
-e soluta temporibus.\nDolorem fuga doloremque rem aliquid temporibus cum ame\
-t sint.\nReiciendis aperiam quaerat repudiandae vero dolores impedit, enim p\
-orro.\nRepellendus excepturi, eaque mollitia aut tempore laborum nobis ex!\
-" + devicePixelRatio});
+mollitia molestiae sit." + window.devicePixelRatio});
 }, "Mf70a,34a28 c0,f1b,0,7296,0,8060 c0,1e09,-1859,3663,-3663,3663 c-fa9,0,-\
 73b3,0,-8944,0 c-1e09,0,-3663,-1859,-3663,-3663 c0,-bcb,0,-7be7,0,-89f4 c0,-\
 1e09,1859,-3663,3663,-3663 h81d1 l251bf,-250eb v-81e2 c0,-1e09,1859,-3663,36\
@@ -3233,7 +3397,7 @@ DefaultUI.openedFolder = 0;
 /**
  * use @see {DefaultUI.setSelectedTile} to select selectable tile
  * The positon (item variable name) of selected tile consists of:
- * enum `value & 3` where 0 = selected in toolBar, 1 = selected in BlockBar,
+ * enum `value & 3` where 0 = selected in toolBar, 1 = selected in blockBar,
  * 2 = selected inventoryTile, 3 = reserved for selected in inventory,
  * `value >> 2` gives index of selected tile,
  * if `value === -1` it means no tile is selected; */
@@ -3241,12 +3405,12 @@ DefaultUI.selectedTile = -1;
 /** the folder in where is selectedTile points to currently selected */
 DefaultUI.selectedFolder = 0;
 /** The position (item variable name) of clicked tile consists of:
- * enum `value & 3` where 0 = selected in toolBar, 1 = selected in BlockBar,
+ * enum `value & 3` where 0 = selected in toolBar, 1 = selected in blockBar,
  * 2 = selected inventoryTile, 3 = reserved for selected in inventory,
  * `value >> 2` gives index of selected tile,
  * if `value === -1` it means no tile is selected; */
 DefaultUI.clickedTile = -1;
-DefaultUI.inventoryTile = !defaults.hideInventoryTile;
+DefaultUI.inventoryTile = !Editor.hideInventoryTile;
 DefaultUI.createTile = function () {
   /** @type {XYZPosition} */
   var pos = [0, 0, 0], id = 0;
@@ -3470,14 +3634,6 @@ DefaultUI.getSelectedTile = function (tileIndex) {
       DefaultUI.toolBar[select >> 2] :
       select === 2 ? DefaultUI.createTile("Inventory") : null;
 };
-DefaultUI.setPixelRatio = function () {
-  var n = window.devicePixelRatio;
-  if (defaults.fullscreenInitialized && n > 1) {
-    pR = n;
-    /** @type {()=>void} */
-    (onresize || F)();
-  }
-};
 /** Warning: resets DefaultUI.selectedTile!, ...you know, ... (xD)
  * @param {boolean} logicOnly */
 DefaultUI.getDefaultFolders = function (logicOnly) {
@@ -3496,13 +3652,15 @@ DefaultUI.getDefaultFolders = function (logicOnly) {
 /** render both toolBar and blockBar: all hotbar tile slots
  * @param {number} w @param {number} h */
 DefaultUI.renderHotBars = function (w, h) {
-  var radius = defaults.renderSharp ? 0 : 5;
+  var radius = Editor.renderSharp ? 0 : 5;
   /** @param {Block|LogicBlock} block */
   function drawBlockRc(block) {
     var size = Block.Size.VALUE[Block.ID[block.internalName]];
-    if (!size)
+    if (!size) {
       console.warn("No Block.Size definition for: " +
         block.internalName);
+      size = {x: 0, y: 0, w: 0, h: 0};
+    }
     if (size.h <= 0 || size.w <= 0)
       return void (rc.canvas.width = rc.canvas.width);
     /** detection of tiny block case, smallest texsture is 16x16 px */
@@ -3590,6 +3748,7 @@ DefaultUI.renderHotBars = function (w, h) {
   ctx.fill();
   /** @type {(TileType[]&{type:TileType})[]} */
   var bars = DefaultUI.blockBars;
+  ctx.globalAlpha = 1;
   ctx.lineWidth = 2;
   ctx.strokeStyle = "#5577aa";
   // boolean: b contains fix for reselected item after reflow
@@ -3686,7 +3845,7 @@ DefaultUI.baseContextmenu = function () {};
 DefaultUI.baseOver = function () {};
 
 var cmdsName = EL(), cmds = (function () {
-  /** for #commandsTab styles @see {addingStyles} */
+  /** for #commandsTab styles @see {Editor.addingStyles} */
   function goHome() {
     cmdsName.innerText = "[Commands tab]";
     content.style.display = "";
@@ -3792,8 +3951,8 @@ function enableShipEditing() {
   DefaultUI.rend = function () {
     var found = DefaultUI.found;
     if (found) {
-      ctx.lineWidth = defaults.highlightWidth;
-      ctx.strokeStyle = defaults.highlightColor;
+      ctx.lineWidth = Editor.highlightWidth;
+      ctx.strokeStyle = Editor.highlightColor;
       var dx = found.x * sc + vX, dy = found.y * sc + vY;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.strokeRect(dx, dy, found.w * sc, found.h * sc);
@@ -3923,8 +4082,8 @@ function enableLogicEditing() {
   };
   DefaultUI.rend = function () {
     if (found) {
-      ctx.lineWidth = defaults.highlightWidth;
-      ctx.strokeStyle = defaults.highlightColor;
+      ctx.lineWidth = Editor.highlightWidth;
+      ctx.strokeStyle = Editor.highlightColor;
       var dx = found.x * sc + vX, dy = found.y * sc + vY;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.strokeRect(dx, dy, found.w * sc, found.h * sc);
@@ -3949,7 +4108,7 @@ function rend_backgPattern() {
     ctx.fillStyle = ctx.createPattern(imgBackg, "repeat") || "";
     if (width === 64) {
       var n = sc / 32, sx = vX - sc, sy = vY - sc, idk = 32;
-      canvas.style.backgroundColor = defaults.editorBackgroundColor;
+      canvas.style.backgroundColor = Editor.backgroundColor;
     } else
       var n = sc / 4, sx = vX - sc * 37, sy = vY - sc * 37, idk = 148;
     ctx.translate(sx, sy);
@@ -3960,15 +4119,16 @@ function rend_backgPattern() {
   } catch (e) {
     console.debug(e, "at drawing background");
   }
-  if (defaults.editorBackgroundStage)
+  if (Editor.backgroundStage)
     rend_backgHangar();
 }
 function rend_backgColor() {
-  if (defaults.editorBackgroundStage)
+  if (Editor.backgroundStage)
     rend_backgHangar();
-  canvas.style.backgroundColor = defaults.editorBackgroundColor;
+  canvas.style.backgroundColor = Editor.backgroundColor;
 }
-var rend_backgHangar = F;
+// #rendlog
+var rend_backgHangar = F, rend_request = "", init_started = false;
 +function () {
   var xhr = new XMLHttpRequest();
   xhr.open("GET",
@@ -4016,7 +4176,7 @@ function backgHangarInit() {
   vY = oyV;
   ship = oship;
   rend_backgHangar = function () {
-    if (sc > 13 || defaults.renderSharp)
+    if (sc > 13 || Editor.renderSharp)
       ctx.imageSmoothingEnabled = ctx.msImageSmoothingEnabled = !1;
     ctx.drawImage(
       hangarImg || hangarCanv,
@@ -4027,12 +4187,12 @@ function backgHangarInit() {
     );
   };
   rend_background = obackground;
-  render();
+  init_started && render();
 }
 backgHangarInit.ship = Ship.fromObject({b: []});
 backgHangarInit.ready = 0;
 /** @type {(()=>void)&{primary?:()=>void}} */
-var rend_background = defaults.editorBackground ?
+var rend_background = Editor.background ?
   rend_backgPattern :
   rend_backgColor;
 /** make interface for it if there will already be some uses for it
@@ -4052,6 +4212,7 @@ function rend_initColors() {
   return patterns;
 }
 function rend_checkColors() {
+  //-console.log("juhus check")//#rendlog
   rc.fillStyle = rend_colors[0];
   rc.fillRect(0, 0, 32, 32);
   var dat = rc.getImageData(0, 0, 32, 32).data;
@@ -4064,32 +4225,35 @@ function rend_checkColors() {
   b < 16 ?
     // necessary for some browsers to assign color textures properly
     (itv = setInterval(function () {
-      helpCanvas.width = helpCanvas.height = 32;
-      try {
-        rc.drawImage(imgColor, 0, i * -32);
-      } catch (e) {
-        if (imgColor.complete === !1)
-          return i = 0;
-      }
-      rend_colors[i] = rc.createPattern(helpCanvas, "repeat") || "";
-      if (++i >= rend_colors.length) {
-        clearInterval(itv);
-        rend_initialized.forEach(function (e) {
-          e();
-        });
-        render();
-      }
-    }, i = 0)) :
+        helpCanvas.width = helpCanvas.height = 32;
+        try {
+          rc.drawImage(imgColor, 0, i * -32);
+        } catch (e) {
+          if (imgColor.complete === !1)
+            //-return console.log("juhus" + (i = 0));//#rendlog
+            return i = 0;
+        }
+        rend_colors[i] = rc.createPattern(helpCanvas, "repeat") || "";
+        if (++i >= rend_colors.length) {
+          clearInterval(itv);
+          rend_initialized.forEach(function (e) {
+            e();
+          });
+          //-console.log("juhus coloring", rend_initialized.join("[separator]"));
+          //-#rendlog
+          render();
+        }
+      }, i = 0)) :
     rend_initialized.forEach(function (e) {
-      e();
-    });
+        e();
+      });
+      //-console.log("juhus colored");//#rendlog
 }
 var rend_colors = rend_initColors();
 
-DefaultUI.setPixelRatio();
 /** @type {(click?: true | undefined) => void} */
 function init_touchScreen(click) {
-  if (click && !defaults.fullscreenInitialized)
+  if (click && !Editor.fullscreenInitialized)
     return;
   var max = 3, logging = function (m, s, l, c, e) {
     /** @type {Function} */
@@ -4097,13 +4261,13 @@ function init_touchScreen(click) {
   };
   if (typeof document.body.requestFullscreen == "function")
     (touchdevice = function () {
-      if (!defaults.fullscreenDisabled)
+      if (!Editor.fullscreenDisabled)
         document.body.requestFullscreen().then(render).catch(logging);
       max-- ;
     })();
-  defaults.fullscreenInitialized = true;
-  saveSettings();
-  DefaultUI.setPixelRatio();
+  Editor.fullscreenInitialized = true;
+  Editor.saveSettings();
+  Editor.setPixelRatio();
 }
 touchdevice = init_touchScreen;
 
@@ -4174,7 +4338,7 @@ function devt__share(inp) {
 devt__share.log = function () {
   var ta = document.querySelector("#commandsTab textarea");
   ta instanceof HTMLTextAreaElement ?
-    console.log(ta.value) :
+    console.debug(ta.value) :
     (GE("commandsTab") || EL()).appendChild(EL("textarea"));
 };
 contextmenu = function (x, y, e) {
@@ -4220,6 +4384,7 @@ DefaultUI.over = over = function (e) {
   // other advanced gestures will be provided with
 };
 
+// v.0.2.9 diagnosing rendering behaviour #rendlog
 /** should serve its purpouse by providing up to date rendering function
  * however to meet requirements of many various uses, and be aware of
  * possible optimizations, a system of global and local (single use)
@@ -4228,6 +4393,12 @@ render = function () {
   var rq = -1;
   return function requestRendering() {
     cancelAnimationFrame(rq);
+    try {
+      throw new Error();
+    } catch (e) {
+      if (e instanceof Object && "stack" in e)
+        rend_request = "" + e.stack;
+    }
     rq = requestAnimationFrame(function () {
       rq = -1;
       expensiveRenderer();
@@ -4265,6 +4436,9 @@ var rend_speeeeed = {}, rend_logs = 69, rend_collisions = false;
 /** @type {{[key:string]:ShipBlock|Box2dPath}|null} */
 var test_bugged = null, test_collisions = "";
 function expensiveRenderer() {
+  //-console.log("canvas " + canvas.width + " " + canvas.height);//#rendlog
+  //-if (canvas.width === 300)
+  //-  console.log("juhus " + rend_request);
   var t = Date.now(), AT = ", at expensiveRenderer();";
   canvas.width = canvas.width;
   rend_background();
@@ -4273,7 +4447,7 @@ function expensiveRenderer() {
     /** @type {(Logic|undefined)[]&{ownerShip:Ship}} */
     (ship.prop && ship.prop.nodeList || [UDF]);
   if (Logic.rend)
-    ctx.globalAlpha = defaults.logicPreviewAlpha;
+    ctx.globalAlpha = Editor.logicPreviewAlpha;
   var mult = sc / 16;
   for (var i = 0, id = 0, pos = [0, 0, 0]; i < objs.length; i++) {
     pos = objs[i].position;
@@ -4358,7 +4532,7 @@ function expensiveRenderer() {
       var str = objs[i].getPhysics().reporter;
       ctx.save();
       ctx.font = "24px sans-serif";
-      ctx.globalAlpha = defaults.logicPreviewAlpha;
+      ctx.globalAlpha = Editor.logicPreviewAlpha;
       ctx.fillStyle = "#000000";
       ctx.fillRect(dx, dy, ctx.measureText(str).width + 8, 32);
       ctx.globalAlpha = 1;
@@ -4372,8 +4546,8 @@ function expensiveRenderer() {
     }
   }
   ctx.globalAlpha = 1;
-  if (defaults.editorLaunchpadBorder) {
-    ctx.strokeStyle = defaults.highlightColor;
+  if (Editor.launchpadBorder) {
+    ctx.strokeStyle = Editor.highlightColor;
     ctx.lineWidth = 2;
     var grid = (ship.prop && ship.prop.gridSize || OC()).box2d,
       box2d = grid instanceof Array ? grid : Block.Box2d.GRID.Small;
@@ -4477,7 +4651,9 @@ Block.Box2d.visualize = function (path, x, y, green) {
   //}catch(e){console.error(e && e.message || e);}
 };
 
+//-console.log("juhus jsend");//#rendlog
 init = function () {
+  //-console.log("juhus init");//#rendlog
   enableShipEditing();
   var i = 0, classic = DefaultUI.createTile("Classic");
   i = DefaultUI.blockBars[DefaultUI.openedFolder].indexOf(classic);
