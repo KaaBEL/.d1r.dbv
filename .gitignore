@@ -1,4 +1,4 @@
-### v.0.2.6 ###
+### v.0.2.10 ###
 ### you can find some of the ignored files at old commit: https://github.com/KaaBEL/.d1r.dbv/tree/06ac3ab1837c3971cd943cbe9ae87cf958859a53
 numericals_tutrial.md
 # .gitignore
@@ -7,9 +7,8 @@ node_modules
 node_modules/**
 node_modules/**.**
 package-lock.json
-package.json
 # manifest.json
 # :( R.I.P. screenshare.html
 versions.md
 .vs
-conquest.json
+# conquest.json

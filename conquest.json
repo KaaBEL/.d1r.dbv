@@ -1,0 +1,229 @@
+{
+  "version": "0.2.10",
+  "gameVersion": "1.4.2",
+  "stations": 
+  [
+    {
+      "ownerStarSystem": "Miata",
+      "sectorNumber": 1,
+      "stationName": "Alpha Central",
+      "marketName": "Industrial Market",
+      "buy": [
+        {"item": "Cannon Ammo", "cost": 2},
+        {"item": "Rotary Cannon Ammo", "cost": 2},
+        {"item": "Electronics", "cost": 16},
+        {"item": "Fuel Injector", "cost": 31},
+        {"item": "Hydraulics", "cost": 23},
+        {"item": "Microchips", "cost": 27},
+        {"item": "Rift Crystal", "cost": 50}
+      ],
+      "sell": [
+        {"item": "Rock", "cost": 3},
+        {"item": "Iron Ore", "cost": 10},
+        {"item": "Gold Ore", "cost": 17},
+        {"item": "Titanium Ore", "cost": 22},
+        {"item": "Bread", "cost": 1},
+        {"item": "Canned Tuna", "cost": 2},
+        {"item": "Drinking Water", "cost": 3},
+        {"item": "Frog In A Jar", "cost": 15},
+        {"item": "Medical Supplies", "cost": 27},
+        {"item": "Nomster Energy", "cost": 4}
+      ]
+    },
+    {
+      "ownerStarSystem": "Zubenelgenubi",
+      "sectorNumber": 4,
+      "stationName": "Zubeneshamali",
+      "marketName": "Refinery Market",
+      "buy": [
+        {"item": "Ice", "cost": 8},
+        {"item": "Sand", "cost": 2},
+        {"item": "Soil", "cost": 2}
+      ],
+      "sell": [
+        {"item": "Biowaste", "cost": 1},
+        {"item": "Rock", "cost": 3},
+        {"item": "Iron Ore", "cost": 10},
+        {"item": "Gold Ore", "cost": 17},
+        {"item": "Titanium Ore", "cost": 22},
+        {"item": "Ice", "cost": 4},
+        {"item": "Bread", "cost": 1},
+        {"item": "Canned Tuna", "cost": 2},
+        {"item": "Drinking Water", "cost": 3},
+        {"item": "Frog In A Jar", "cost": 15},
+        {"item": "Medical Supplies", "cost": 27},
+        {"item": "Nomster Energy", "cost": 4}
+      ]
+    },
+    {
+      "ownerStarSystem": "Snicker",
+      "sectorNumber": 7,
+      "stationName": "Bobr's Arc",
+      "marketName": "Agriculture Market",
+      "buy": [
+        {"item": "Bread", "cost": 2},
+        {"item": "Canned Tuna", "cost": 4},
+        {"item": "Drinking Water", "cost": 6},
+        {"item": "Frog In A Jar", "cost": 31},
+        {"item": "Medical Supplies", "cost": 55},
+        {"item": "Nomster Energy", "cost": 9}
+      ],
+      "sell": [
+        {"item": "Biowaste", "cost": 1},
+        {"item": "Electronics", "cost": 8},
+        {"item": "Fuel Injector", "cost": 15},
+        {"item": "Hydraulics", "cost": 11},
+        {"item": "Microchips", "cost": 13}
+      ]
+    },
+    {
+      "ownerStarSystem": "Tams",
+      "sectorNumber": 15,
+      "stationName": "Sevastopol",
+      "marketName": "Military Market",
+      "buy": [],
+      "sell": [
+        {"item": "Cannon Ammo", "cost": 1},
+        {"item": "Rotary Cannon Ammo", "cost": 1}
+      ]
+    },
+    {
+      "ownerStarSystem": "Mekan",
+      "sectorNumber": 20,
+      "stationName": "Bean Terminal",
+      "marketName": "Industrial Market",
+      "buy": [
+        {"item": "Cannon Ammo", "cost": 2},
+        {"item": "Rotary Cannon Ammo", "cost": 2},
+        {"item": "Electronics", "cost": 16},
+        {"item": "Fuel Injector", "cost": 31},
+        {"item": "Hydraulics", "cost": 23},
+        {"item": "Microchips", "cost": 27},
+        {"item": "Rift Crystal", "cost": 50}
+      ],
+      "sell": [
+        {"item": "Rock", "cost": 3},
+        {"item": "Iron Ore", "cost": 10},
+        {"item": "Gold Ore", "cost": 17},
+        {"item": "Titanium Ore", "cost": 22},
+        {"item": "Bread", "cost": 1},
+        {"item": "Canned Tuna", "cost": 2},
+        {"item": "Drinking Water", "cost": 3},
+        {"item": "Frog In A Jar", "cost": 15},
+        {"item": "Medical Supplies", "cost": 27},
+        {"item": "Nomster Energy", "cost": 4}
+      ]
+    },
+    {
+      "ownerStarSystem": "Aurona",
+      "sectorNumber": 24,
+      "stationName": "Aether Fortuna",
+      "marketName": "Industrial Market",
+      "buy": [
+        {"item": "Cannon Ammo", "cost": 2},
+        {"item": "Rotary Cannon Ammo", "cost": 2},
+        {"item": "Electronics", "cost": 16},
+        {"item": "Fuel Injector", "cost": 31},
+        {"item": "Hydraulics", "cost": 23},
+        {"item": "Microchips", "cost": 27},
+        {"item": "Rift Crystal", "cost": 50}
+      ],
+      "sell": [
+        {"item": "Rock", "cost": 3},
+        {"item": "Iron Ore", "cost": 10},
+        {"item": "Gold Ore", "cost": 17},
+        {"item": "Titanium Ore", "cost": 22},
+        {"item": "Bread", "cost": 1},
+        {"item": "Canned Tuna", "cost": 2},
+        {"item": "Drinking Water", "cost": 3},
+        {"item": "Frog In A Jar", "cost": 15},
+        {"item": "Medical Supplies", "cost": 27},
+        {"item": "Nomster Energy", "cost": 4}
+      ]
+    },
+    {
+      "ownerStarSystem": "Aurona",
+      "sectorNumber": 24,
+      "stationName": "Fortuna Forgery",
+      "marketName": "Tech Market",
+      "buy": [
+        {"item": "Cannon Ammo", "cost": 2},
+        {"item": "Rotary Cannon Ammo", "cost": 2},
+        {"item": "Electronics", "cost": 16},
+        {"item": "Fuel Injector", "cost": 31},
+        {"item": "Hydraulics", "cost": 22},
+        {"item": "Microchips", "cost": 27},
+        {"item": "Rift Crystal", "cost": 50}
+      ],
+      "sell": [
+        {"item": "Rock", "cost": 3},
+        {"item": "Iron Ore", "cost": 10},
+        {"item": "Gold Ore", "cost": 17},
+        {"item": "Titanium Ore", "cost": 22},
+        {"item": "Bread", "cost": 1},
+        {"item": "Canned Tuna", "cost": 2},
+        {"item": "Drinking Water", "cost": 3},
+        {"item": "Frog In A Jar", "cost": 15},
+        {"item": "Medical Supplies", "cost": 27},
+        {"item": "Nomster Energy", "cost": 4}
+      ]
+    },
+    {
+      "ownerStarSystem": "Nimbral",
+      "sectorNumber": 26,
+      "stationName": "Galaxy's Edge",
+      "": ""
+    },
+    {
+      "ownerStarSystem": "Quasar",
+      "sectorNumber": 27,
+      "stationName": "Ninja Station",
+      "marketName": "Tourism Market",
+      "buy": [],
+      "sell": [
+        {"item": "Bread", "cost": 1},
+        {"item": "Canned Tuna", "cost": 2},
+        {"item": "Drinking Water", "cost": 3},
+        {"item": "Frog In A Jar", "cost": 15},
+        {"item": "Medical Supplies", "cost": 27},
+        {"item": "Nomster Energy", "cost": 4},
+        {"item": "Electronics", "cost": 8},
+        {"item": "Fuel Injector", "cost": 15},
+        {"item": "Hydraulics", "cost": 11},
+        {"item": "Microchips", "cost": 13}
+      ]
+    },
+    {
+      "ownerStarSystem": "Zephyros",
+      "sectorNumber": 30,
+      "stationName": "Solaris Hub",
+      "marketName": "Tourism Market",
+      "buy": [],
+      "sell": [
+        {"item": "Bread", "cost": 1},
+        {"item": "Canned Tuna", "cost": 2},
+        {"item": "Drinking Water", "cost": 3},
+        {"item": "Frog In A Jar", "cost": 15},
+        {"item": "Medical Supplies", "cost": 27},
+        {"item": "Nomster Energy", "cost": 4},
+        {"item": "Electronics", "cost": 8},
+        {"item": "Fuel Injector", "cost": 15},
+        {"item": "Hydraulics", "cost": 11},
+        {"item": "Microchips", "cost": 13}
+      ]
+    },
+    {"templateBelow": null},
+    {
+      "ownerStarSystem": "",
+      "sectorNumber": null,
+      "stationName": "",
+      "marketName": "",
+      "buy": [
+      ],
+      "sell": [
+        {"item": "", "cost": null}
+      ]
+    }
+  ]
+}
+

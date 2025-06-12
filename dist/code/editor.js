@@ -1,9 +1,8 @@
 //@ts-check
 /// <reference path="./code.js" />
 "use strict";
-//-console.log("juhus jsbegin");//#rendlog
 /** @readonly */
-var version_editor_js = "v.0.2.9";
+var version_editor_js = "v.0.2.10";
 /** @TODO check @see {Editor} for setting a setting without saveSettings */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -176,8 +175,8 @@ Editor.loadSettings();
 Editor.addingStyles(
   "#commandsTab" +
   "{position:fixed;width: 350px;height: " +
-  (innerHeight > 500 ? 500 : innerHeight) + "px;border-radius: 10px;" +
-  "background-color:rgba(0, 0, 0, 0.86);}" +
+  (innerHeight > 500 ? 500 : innerHeight) + "px;padding: 0;" +
+  "border-radius: 10px;background-color:rgba(0, 0, 0, 0.86);}" +
   "#commandsTab, #commandsTab button, #commandsTab .loading" +
   "{color: #999;font-size: 16px;" +
   "font-family:monospace,sans-serif,Courier,Consolas;}" +
@@ -195,9 +194,10 @@ Editor.addingStyles(
   "position: absolute;top: 0;left: 0;transition: .2s;}" +
   "#commandsTab .loading div:nth-child(2){position: relative;" +
   "z-index: 1;background-color: rgba(0, 0, 0, 0);text-align: center;}" +
-  "#commandsTab header div" +
-  "{padding: 5px;flex-grow: 1;cursor: pointer;text-align: center;}" +
-  "#commandsTab header div:active{cursor: grab;}" +
+  "#commandsTab header h1" +
+  "{padding: 5px;margin: 0;flex-grow: 1;cursor: pointer;" +
+  "font-size: inherit;font-weight: inherit;text-align: center;}" +
+  "#commandsTab header h1:active{cursor: grab;}" +
   "#commandsTab .content button, #commandsTab .items button" +
   "{display: block;position: relative;width: 333px;}" +
   "#commandsTab button div" +
@@ -206,7 +206,8 @@ Editor.addingStyles(
   "{overflow-x: hidden;max-height: " +
   (innerHeight > 500 ? 470 : innerHeight - 40) + "px;}" +
   "#commandsTab input, #commandsTab textarea, #commandsTab select" +
-  "{background-color: #000;color: #bbb;border: 1px solid #888;}"
+  "{background-color: #000;color: #bbb;border: 1px solid #888;}" +
+  "#commandsTab li{display: block;}"
 );
 
 canvas.addEventListener("contextrestored", Editor.contextrestored);
@@ -654,9 +655,6 @@ e2tc+449k6Hcrl/eFFsvcaX7c2n5d27rwf2LNnb6AaXA93ASPZGNAemc4845EkEIqGgIUdC/L9h9\
 NXgaWrlwCxeBLobLu7YdYHnuyF1/F4HBiPmBkZyfPNVPyvtQPV4MV9H+RrQ6F0TmuuaHwsyF0HTC\
 gDrOrrAS5cGaFRTgd966XvAUxkABMpIdPi6Rnf1fQQsCi81A8N/gdE9KncelVoFwAAAABJRU5Erk\
 Jggg==";
-//-imgMask.onload = function () {//#rendlog
-//-  console.log("juhus maskload");
-//-};
 var imgBackg = document.createElement("img");
 var helpCanvas = document.createElement("canvas"),
   rc = function (rc) {
@@ -995,7 +993,9 @@ Command.push = function (name, initialize, description, settings) {
     var items = [];
     initialize(items, utilities);
     for (var i = 0, itm; i < items.length; i++)
-      if ((itm = items[i]) instanceof Node)
+      if ((itm = items[i]) instanceof HTMLButtonElement)
+        el.appendChild(EL("li")).appendChild(itm);
+      else if (itm instanceof Node)
         el.appendChild(itm);
       else {
         el.appendChild(tN(itm.name + ": "));
@@ -2182,7 +2182,7 @@ Command.push("Vehicle stats", function (items, collapsed) {
       var xys = [x, y, -x, -y], position = block.position;
       x = position[1] + (rot & 1 ? h / 32 : w / 32) + xys[rot];
       y = position[2] + (rot & 1 ? w / 32 : h / 32) + xys[rot + 3 & 3];
-      // (v.0.2.8) removed debugging code
+      // removed debugging code #rendlog from v.0.2.9
       checkStat("cost", Block.COST[id], function (val) {
         return val < 0 ? 0 : val;
       });
@@ -2815,9 +2815,11 @@ Tool.Tab.prototype.append = (
   this.elements.push(el);
   return el;
 });
-/** @param {Tool.Tab} tab @param {ToolSetup} setup */
+/** unsafe method
+ * @description uses GE(9) = ToolTab nav element, GE(8) = main element
+ * @param {Tool.Tab} tab @param {ToolSetup} setup */
 Tool.Tab.bindInit = function (tab, setup) {
-  var nav = GE(9), tabDestroy = tab.destroy;
+  var toolTab = GE(9), tabDestroy = tab.destroy;
   /** assignTab @type {ToolExec&{originalInit:ToolExec}} */
   var tabAssign = function (x, y) {
     tab.elements = [];
@@ -2825,16 +2827,17 @@ Tool.Tab.bindInit = function (tab, setup) {
     var main = GE(8);
     if (!main)
       throw new Error("can not initialize Tab, main#8 is missing");
-    if (!tab.reuse || !(nav = nav || GE(9)))
-      nav = main.appendChild(EL("nav"));
-    while (nav.lastChild)
-      nav.removeChild(nav.lastChild);
+    if (!tab.reuse || !(toolTab = toolTab || GE(9)))
+      toolTab = main.appendChild(EL());
+    while (toolTab.lastChild)
+      toolTab.removeChild(toolTab.lastChild);
     if (tab.reuse)
-      nav.id = "9";
-    nav.className = "tool-tab" + (tab.class ? " " + tab.class : "");
+      toolTab.id = "9";
+    toolTab.className = "tool-tab" + (tab.class ? " " + tab.class : "");
+    toolTab.title = "Available options are shown in this tool tab.";
     for (var i = 0; i < tab.elements.length; i++)
-      nav.appendChild(tab.elements[i]);
-    nav.style.display = "";
+      toolTab.appendChild(tab.elements[i]);
+    toolTab.style.display = "";
     var ratio = window.devicePixelRatio, scale = "" + 1 / ratio;
     // v.0.2.9 1,1,50 = those values were found to get the job done
     var translate = "" + (ratio < 1 ? 1 - 1 / ratio : ratio - 1) * 50;
@@ -2851,12 +2854,12 @@ Tool.Tab.bindInit = function (tab, setup) {
       // v.0.2.9 210 = Tool.Tab minimal height, 500 = Tool.Tab maximal height
       210), 500);
     var tabHeight = (border + 14 + height) / ratio;
-    nav.style.top = Math.max(
+    toolTab.style.top = Math.max(
       // v.0.2.9 7 / pR = minimum for 'margin' is same as style right
       (availableHeight - tabHeight) / 2, 7 / pR) + "px";
-    nav.style.height = height + "px";
-    nav.style.borderWidth = border + "px";
-    nav.style.transform = ratio < 1 ?
+    toolTab.style.height = height + "px";
+    toolTab.style.borderWidth = border + "px";
+    toolTab.style.transform = ratio < 1 ?
       translate + scale :
       scale + translate;
   };
@@ -2865,103 +2868,11 @@ Tool.Tab.bindInit = function (tab, setup) {
   (tab.destroy = function (x, y) {
     tabDestroy(x, y);
     tab.elements = [];
-    if (nav)
-      nav.style.display = "none";
+    if (toolTab)
+      toolTab.style.display = "none";
   }).originalDestroy = tabDestroy;
   return tabAssign;
 };
-/** @TODO remove outdated comments in v.0.2.10 and give link here instead */
-//-function test_watch() {
-//-  var nav = function (el) {
-//-    return el instanceof HTMLElement ? el : EL("nav");
-//-  }(document.querySelector(".tool-tab"));
-//-  var ratio = window.devicePixelRatio, scale = "" + 1 / ratio;
-//-  var translate = "" + (ratio < 1 ? 1 - 1 / ratio : ratio - 1) * 50;
-//-  scale = "scale(" + scale + "," + scale + ")";
-//-  translate = "translate(" + translate + "%," + -translate + "%)";
-//-  //-var availableHeight = innerHeight * pR - 168;
-//-  // v.0.2.9 168 = blockBar height
-//-  // v.0.2.9 14 = Tool.Tab 'margin', 18 = Tool.Tab padding + borderWidth
-//-  var size = (canvas.height - 168 - 14 - 18 / ratio) * ratio;
-//-  // nav.style.top = Math.max((size / pR - 500) / 2 + 7 | 0, 7) + "px";
-//-  //nav.style.top = 7 / pR + "px";
-//-  //var height = Math.max(Math.min(size, 500), 250);
-//-  //nav.style.height = height + "px";
-//-  var border = Math.max(ratio / pR * 2, .5);
-//-  //nav.style.borderWidth = border + "px";
-//-  //nav.style.transform = ratio < 1 ?
-//-  //  translate + scale :
-//-  //  scale + translate;
-//-  var dev = GE("test") || document.body.appendChild(EL());
-//-  var div = GE("estt") || document.body.appendChild(EL());
-//-  dev.id = "test";
-//-  div.id = "estt";
-//-  dev.style.position = div.style.position = "fixed";
-//-  dev.style.inset = "0px";
-//-  div.style.inset = 7 / pR + "px";
-//-  dev.style.outline = "5px dashed #246";
-//-  div.style.outline = "5px dashed #57a";
-//-  dev.style.outlineOffset = div.style.outlineOffset = "-5px";
-//-  dev.style.pointerEvents = div.style.pointerEvents = "none";
-//-  var availableHeightHtml = (canvas.height - 168) /
-//-    (canvas.height / innerHeight);
-//-  dev.style.height = availableHeightHtml + "px";
-//-  var height = Math.min(Math.max(
-//-    (availableHeightHtml - 14) * ratio - border - 14, 250), 500);
-//-  var tabHeightHtml = (border + 14 + height) / ratio;
-//-  div.style.height = tabHeightHtml + "px";
-//-  nav.style.top = Math.max(
-//-    (availableHeightHtml - tabHeightHtml) / 2, 7 / pR) + "px";
-//-  nav.style.height = height + "px";
-//-  nav.style.borderWidth = border + "px";
-//-  nav.style.transform = ratio < 1 ?
-//-    translate + scale :
-//-    scale + translate;
-//-}
-//-80% 80% 1 1109 1 1109
-//-211px [done]
-
-//-80% 80% 1 652 1 652
-//-7px [done]
-
-//-80% 80% 1 345 1 345 
-//-7px [done]
-
-//-80% 33% 0.4166666865348816 2661 1 2661
-//-~652px [wrong 264px]
-
-//-80% 33% 0.4166666865348816 1164 1 1164 
-//-7px [done]
-
-//-80% 150% 1.875 591 1 591 
-//-~65px [wrong 131px]
-
-//-80% 150% 1.875 385 1 385 
-//-7px [done]
-
-//-80% 200% 2.5 443 1 443 
-//-~34px [wrong 74px]
-
-//-50% 50% 0.625 1774 1 1774 
-//-~375px [wrong 245px]
-
-//-50% 25% 0.3125 3548 1 3548 
-//-~862px [wrong 273px]
-
-//-50% 150% 1.875 591 1 591 
-//-~71px [wrong 131px]
-
-//-200% 200% 2.5 443 1 443 
-//-~26px [wrong 74px]
-
-//-200% 100% 1.25 887 1 887 
-//-~125px [wrong 188px]
-
-//-200% 50% 0.625 1774 1 1774 
-//-~372px [wrong 245px]
-
-//-200% 400% 5 221 1 221 
-//-7px [done]
 /**
  * @callback ToolSetup @param {Tool.Tab} setup
  * @param {number} x @param {number} y */
@@ -3148,7 +3059,6 @@ c-6b6,0,-d69e,0,-de2d,0 c-1052,0,-1d8e,d3b,-1d8e,1d8e c0,80c,0,1b1a5,0,1b629\
  c0,1052,d3b,1d8e,1d8e,1d8e c5e9,0,d9f1,0,de2d,0 c1052,0,1d8e,-d3b,1d8e,-1d8\
 e c0,-754,0,-1b5c7,0,-1b629 z"));
 Tool.Tab.addItem("Node", function setup(methods, x, y) {
-  //-console.log('setup', x, y);
   methods.exec = function (x, y) {
     console.log('exec', x, ' ', y);
   };
@@ -3514,28 +3424,35 @@ DefaultUI.setSelectedTile = function (item, x, y) {
 DefaultUI.handleGUIArea = function (x, y) {
   /** number positoin of tile @see {DefaultUI.selectedTile} */
   var item = -1;
-  if (x < 277) {
-    // toolBar side of canvas: static tile slots
-    var row = (canvas.height - y - 13) / 87 | 0,
-      column = (x - 10) / 87 | 0;
+  // v.0.2.10 237 = interactable witdh/height for toolBar
+  if (x < 237) {
+    // toolBar area of canvas: static tile slots
+    // v.0.2.10 74 = distance between origins of neighbour toolBar tiles
+    // v.0.2.10 11, 10 = offset distance from canvas edge to icon
+    var row = (canvas.height - y - 11) / 74 | 0,
+      column = (x - 10) / 74 | 0;
     /** @see {DefaultUI.selectedTile} for tile indexing */
-    if (y > canvas.height - 277)
+    if (y > canvas.height - 237)
       item = (row > 2 ? 2 : row) * 3 + (column > 2 ? 2 : column) << 2;
     else
       return false;
   } else if (y > canvas.height - 103) {
-    // items for blockBar rect part of canvas: dynamic tile slots
+    // items for blockBar rect area of canvas: dynamic tile slots
+    // v.0.2.10 103 = width of inventoryTile interactable area
     if (DefaultUI.inventoryTile && x > canvas.width - 103)
       item = 2;
-    else if (x - 277 < (DefaultUI.blockBars[DefaultUI.openedFolder] ||
+    else if (x - 237 < (DefaultUI.blockBars[DefaultUI.openedFolder] ||
       []).length * 87) {
-        item = (x - 283) / 87 << 2 | 1;
+        // v.0.2.10 243 = start of first tile detectable area
+        // negative value rounds up still being the first blockBar tile
+        item = (x - 243) / 87 << 2 | 1;
       }
-  } else if (x - 277 + DefaultUI.offsetsFolders <
+  } else if (x - 237 + DefaultUI.offsetsFolders <
+    // v.0.2.10 57 = distance between origin points of folders
     DefaultUI.blockBars.length * 57 && y > canvas.height - 170) {
     // folders for blockBar rect part of canvas:
     // resizes with folders amount changed
-    var folder = (x - 277 + DefaultUI.offsetsFolders) / 57 | 0;
+    var folder = (x - 237 + DefaultUI.offsetsFolders) / 57 | 0;
     if (DefaultUI.previousFolders && x < 333)
       DefaultUI.offsetsFolders -= 57;
     else if (DefaultUI.nextFolders && x > canvas.width - 61)
@@ -3615,10 +3532,12 @@ DefaultUI.reflowBlockBars = function (w) {
     }
     prevTile = tiles.type || null;
   }
+
   if (DefaultUI.offsetsFolders > (i = updated.length * 57))
     DefaultUI.offsetsFolders = 0;
   DefaultUI.previousFolders = DefaultUI.offsetsFolders > 0;
-  DefaultUI.nextFolders = 277 + i - DefaultUI.offsetsFolders > w - 8;
+  // v.0.2.10 237 = interactable witdh/height for toolBar
+  DefaultUI.nextFolders = 237 + i - DefaultUI.offsetsFolders > w - 8;
 };
 // live expression used for debugging:
 // https://github.com/KaaBEL/.d1r.dbv/blob/fb90bf5/code/editor.js#L2706-L2726
@@ -3692,25 +3611,31 @@ DefaultUI.renderHotBars = function (w, h) {
     if (type instanceof Block)
       drawBlockRc(type);
   }
-  /** @param {TileType} tile @param {unknown} selected boolean */
-  function drawTileCtx(tile, selected) {
-    tx += 87;
+  /**
+   * @param {TileType} tile @param {unknown} selected boolean
+    @param {boolean} [isToolBar=false] */
+  function drawTileCtx(tile, selected, isToolBar) {
     if (!tile)
       return;
+    var tRight = isToolBar ? tx + 64 : tx + 78,
+      tTop = isToolBar ? ty - 64 : ty - 78,
+      size = isToolBar ? 46 : 60;
     ctx.beginPath();
-    ctx.moveTo(tx, ty - 25);
-    ctx.arcTo(tx, ty - 15, tx + 78, ty - 15, radius);
-    ctx.arcTo(tx + 78, ty - 15, tx + 78, ty - 93, radius);
-    ctx.arcTo(tx + 78, ty - 93, tx, ty - 93, radius);
-    ctx.arcTo(tx, ty - 93, tx, ty, radius);
+    // 16 = greater than radius, lower then side - 2 * radius
+    ctx.moveTo(tx, ty - 16);
+    ctx.arcTo(tx, ty, tRight, ty, radius);
+    ctx.arcTo(tRight, ty, tRight, tTop, radius);
+    ctx.arcTo(tRight, tTop, tx, tTop, radius);
+    ctx.arcTo(tx, tTop, tx, ty, radius);
     ctx.closePath();
     ctx.stroke();
     if (selected) {
       ctx.fillStyle = ctx.strokeStyle;
       ctx.fill();
     }
-    drawIconRc(tile, 60);
-    ctx.drawImage(helpCanvas, tx + 9, ty - 84, 60, 60);
+    drawIconRc(tile, size);
+    tTop = isToolBar ? ty - 55 : ty - 69;
+    ctx.drawImage(helpCanvas, tx + 9, tTop, size, size);
   }
   /** is drawn relatively to local var tfx and tfy @param {TileType} type */
   function drawFolderCtx(type) {
@@ -3718,6 +3643,7 @@ DefaultUI.renderHotBars = function (w, h) {
     ctx.beginPath();
     ctx.moveTo(tfx, h - 101);
     ctx.arcTo(tfx, h - tfy, tfx + 12, h - tfy, radius);
+    // v.0.2.10 54 = width of folder, 146 = bottom of point to end left arc
     ctx.arcTo(tfx += 54, h - tfy, tfx, h - 146, radius);
     ctx.lineTo(tfx, h - 101);
     ctx.closePath();
@@ -3731,18 +3657,21 @@ DefaultUI.renderHotBars = function (w, h) {
   ctx.lineJoin = "round";
   ctx.beginPath();
   ctx.moveTo(7, h - 19);
+  // v.0.2.10 7 = margin of toolBar (foreground)
   ctx.arcTo(7, h - 7, 19, h - 7, radius);
-  ctx.arcTo(275, h - 7, 275, h - 19, radius);
-  ctx.arcTo(275, h - 275, 263, h - 275, radius);
-  ctx.arcTo(7, h - 275, 7, h - 263, radius);
+  // v.0.2.10 235 = size of toolBar (foreground)
+  ctx.arcTo(235, h - 7, 235, h - 19, radius);
+  // v.0.2.10 19, 223 = point to end arc after arc end (foreground)
+  ctx.arcTo(235, h - 235, 223, h - 235, radius);
+  ctx.arcTo(7, h - 235, 7, h - 223, radius);
   ctx.closePath();
-  ctx.moveTo(279, h - 19);
-  ctx.arcTo(279, h - 7, 291, h - 7, radius);
+  ctx.moveTo(239, h - 19);
+  ctx.arcTo(239, h - 7, 251, h - 7, radius);
   ctx.arcTo(w - 7, h - 7, w - 7, h - 19, radius);
   DefaultUI.nextFolders ?
     ctx.lineTo(w - 7, h - 101) :
     ctx.arcTo(w - 7, h - 101, w - 19, h - 101, radius);
-  ctx.lineTo(279, h - 101);
+  ctx.lineTo(239, h - 101);
   ctx.closePath();
   ctx.fillStyle = "#0c243c";
   ctx.fill();
@@ -3753,12 +3682,14 @@ DefaultUI.renderHotBars = function (w, h) {
   ctx.strokeStyle = "#5577aa";
   // boolean: b contains fix for reselected item after reflow
   var i = DefaultUI.openedFolder, b = i !== -1 && i < bars.length;
-  for (var j = 0, tx = 200, ty = h; b && j < bars[i].length; j++)
+  for (var j = 0, tx = 247, ty = h - 15; b && j < bars[i].length; j++) {
     drawTileCtx(bars[i][j], DefaultUI.selectedTile === (j << 2) + 1 &&
       DefaultUI.selectedFolder === DefaultUI.openedFolder);
+    tx += 87;
+  }
   /** here @see {SeeRenderingFolders} */
   // tfx + tfy = position reference for folders, tx + ty = ... for items
-  var n = DefaultUI.offsetsFolders, tfx = 279 + 56 - (n + 56) % 57;
+  var n = DefaultUI.offsetsFolders, tfx = 239 + 56 - (n + 56) % 57;
   for (var i = Math.ceil(n / 57), tfy = 0; i <= bars.length; i++) {
     if (tfx + 7 + 54 > w)
       break;
@@ -3772,31 +3703,37 @@ DefaultUI.renderHotBars = function (w, h) {
   b = !1;
   tfy = 153;
   if (DefaultUI.previousFolders) {
-    tfx = 279;
+    tfx = 239;
     drawFolderCtx(DefaultUI.createTile("Previous"));
   }
   if (DefaultUI.nextFolders) {
     tfx = w - 7 - 54;
     drawFolderCtx(DefaultUI.createTile("Next"));
   }
-  for (var j = 0, tx = -72; j < DefaultUI.toolBar.length; j++) {
-    drawTileCtx(
-      DefaultUI.toolBar[j],
-      DefaultUI.selectedTile === (j << 2) ||
-        DefaultUI.clickedTile === (j << 2)
-    );
-    if (tx > 123) {
-      ty -= 87;
-      tx = -72;
-    }
-  }
   if (DefaultUI.inventoryTile) {
-    ty = h;
-    tx = w - 94 - 87;
+    tx = w - 93;
     drawTileCtx(
       DefaultUI.createTile("Inventory"),
       (DefaultUI.clickedTile & 3) === 2
     );
+  }
+  radius = Math.max(0, radius - 1);
+  // v.0.2.10 14 = offset to tile origin
+  ty = h - 15;
+  for (var j = 0, tx = 15; j < DefaultUI.toolBar.length; j++) {
+    drawTileCtx(
+      DefaultUI.toolBar[j],
+      DefaultUI.selectedTile === (j << 2) ||
+        DefaultUI.clickedTile === (j << 2),
+      true
+    );
+    // v.0.2.10 123 = detects draw 3 tiles of the row
+    if (tx > 123) {
+      // v.0.2.10 74 = distance between origins of neighbour toolbar1 tiles
+      ty -= 74;
+      tx = 15;
+    } else
+      tx += 74;
   }
 };
 /**  new namings for action binds
@@ -3844,7 +3781,7 @@ DefaultUI.baseMove = function () {};
 DefaultUI.baseContextmenu = function () {};
 DefaultUI.baseOver = function () {};
 
-var cmdsName = EL(), cmds = (function () {
+var cmdsName = EL("h1"), cmds = (function () {
   /** for #commandsTab styles @see {Editor.addingStyles} */
   function goHome() {
     cmdsName.innerText = "[Commands tab]";
@@ -3857,10 +3794,10 @@ var cmdsName = EL(), cmds = (function () {
     render();
   }
   /** navigation element returned to set cmds variable */
-  var nav = EL("nav");
-  nav.id = "commandsTab";
-  nav.style.display = "none";
-  var el = nav.appendChild(EL("header")),
+  var menu = EL("menu");
+  menu.id = "commandsTab";
+  menu.style.display = "none";
+  var el = menu.appendChild(EL("header")),
     back = el.appendChild(EL("button"));
   back.appendChild(tN("<"));
   back.onclick = goHome;
@@ -3868,13 +3805,13 @@ var cmdsName = EL(), cmds = (function () {
   el = el.appendChild(EL("button"));
   el.appendChild(tN("X"));
   el.onclick = function () {
-    nav.style.display = "none";
+    menu.style.display = "none";
   };
-  var content = nav.appendChild(EL()), items = nav.appendChild(EL());
+  var content = menu.appendChild(EL()), items = menu.appendChild(EL());
   content.className = "content";
   items.className = "items";
   goHome();
-  (el = nav.appendChild(EL())).style.display = "none";
+  (el = menu.appendChild(EL())).style.display = "none";
   el.appendChild(tN("Search commads... coming spoon"));
   /** @param {Command} item */
   function initItems(item) {
@@ -3903,7 +3840,7 @@ var cmdsName = EL(), cmds = (function () {
           isChck ? "onchange" : "oninput"] = arr[i].fn;
         (isBtn ? e : items).appendChild(tN(
           arr[i].name + (isBtn ? "" : ": ")));
-        items.appendChild(e);
+        items.appendChild(EL("li")).appendChild(e);
         !isBtn && items.appendChild(EL("br"));
       }
       ending();
@@ -3932,7 +3869,7 @@ var cmdsName = EL(), cmds = (function () {
       "" + m + "\n" + e.stack :
       "" + m + "\n\t" + s + ":" + l + ":" + c));
   };
-  return (bd || EL()).appendChild(nav);
+  return (bd || EL()).appendChild(menu);
 })();
 
 function enableShipEditing() {
@@ -4212,7 +4149,6 @@ function rend_initColors() {
   return patterns;
 }
 function rend_checkColors() {
-  //-console.log("juhus check")//#rendlog
   rc.fillStyle = rend_colors[0];
   rc.fillRect(0, 0, 32, 32);
   var dat = rc.getImageData(0, 0, 32, 32).data;
@@ -4230,7 +4166,6 @@ function rend_checkColors() {
           rc.drawImage(imgColor, 0, i * -32);
         } catch (e) {
           if (imgColor.complete === !1)
-            //-return console.log("juhus" + (i = 0));//#rendlog
             return i = 0;
         }
         rend_colors[i] = rc.createPattern(helpCanvas, "repeat") || "";
@@ -4239,15 +4174,12 @@ function rend_checkColors() {
           rend_initialized.forEach(function (e) {
             e();
           });
-          //-console.log("juhus coloring", rend_initialized.join("[separator]"));
-          //-#rendlog
           render();
         }
       }, i = 0)) :
     rend_initialized.forEach(function (e) {
         e();
       });
-      //-console.log("juhus colored");//#rendlog
 }
 var rend_colors = rend_initColors();
 
@@ -4436,9 +4368,6 @@ var rend_speeeeed = {}, rend_logs = 69, rend_collisions = false;
 /** @type {{[key:string]:ShipBlock|Box2dPath}|null} */
 var test_bugged = null, test_collisions = "";
 function expensiveRenderer() {
-  //-console.log("canvas " + canvas.width + " " + canvas.height);//#rendlog
-  //-if (canvas.width === 300)
-  //-  console.log("juhus " + rend_request);
   var t = Date.now(), AT = ", at expensiveRenderer();";
   canvas.width = canvas.width;
   rend_background();
@@ -4651,9 +4580,7 @@ Block.Box2d.visualize = function (path, x, y, green) {
   //}catch(e){console.error(e && e.message || e);}
 };
 
-//-console.log("juhus jsend");//#rendlog
 init = function () {
-  //-console.log("juhus init");//#rendlog
   enableShipEditing();
   var i = 0, classic = DefaultUI.createTile("Classic");
   i = DefaultUI.blockBars[DefaultUI.openedFolder].indexOf(classic);

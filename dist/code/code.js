@@ -6,7 +6,7 @@
 // B) create chrome extensions with custom modifications for live page
 // C) pull requests to main repo on github
 /** @readonly */
-var version_code_js = "v.0.2.8";
+var version_code_js = "v.0.2.10";
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[K in string|number|symbol]?:unknown}} safe */
@@ -14,6 +14,9 @@ var OP = Object.prototype.hasOwnProperty,
   OC = function () {
     return {};
   };
+if (typeof F != "function" || typeof UDF !== "undefined")
+  /** @readonly *///@ts-expect-error
+  var F = function () {}, UDF = void 0;
 // inheritance's gonna go brrrrrrrrrrrrrrrr (taken standard ES5 extending)
 /** @param {Function} _new_class @param {Function} _super */
 function __extends(_new_class, _super) {
@@ -30,13 +33,18 @@ function __private(val) {
     return val;
   };
 }
-/** @type {typeof defaults|null} */
-var settings = null;
 /** @param {string} s best function ever, I should use this */
 function er(s) {
   throw new Error(s);
   return s;
 }
+
+//@ts-expect-error
+if (typeof Initial != "function")
+  var Initial = function () {
+    throw new TypeError("Illegal constructor");
+    this.data = null;
+  };
 
 function Data() {
   throw new TypeError("Illegal constructor");
@@ -1000,6 +1008,7 @@ Color.colorlessRegexp = new RegExp("Struct|Glass Block|Glass Wedge|Sol\
 ar Block|Solar Panel|Hinge|Piston|Ghost Block|Gauge|Dial|Digital Displ\
 ay|__placeholder(?:84[0-26-9]|85[0-3])__");
 
+/** @typedef {()=>Physics.Ship} initShipPhysics */
 /** class is frozen Block Physics */
 function Physics() {
   this.reporter = "";
@@ -1029,7 +1038,7 @@ Physics.Ship = function PShip(ship) {
   /** @type {string[]} list of selected inputs (checked checkbox) */
   this.selectedInputs = [];
 };
-/** @readonly *///@ts-expect-error
+/** @type {initShipPhysics} @readonly *///@ts-expect-error
 Physics.Ship.INIT = (function initShipPhysics() {
   if (!(this instanceof Ship))
     throw new TypeError("initShipPhysics used not on Ship.");
@@ -1402,7 +1411,7 @@ Block.Size.height = 48;
  * @typedef {[number,number,number,number,number]} PreciseDef
  * @typedef {[number|string]|[number|string,number,number]} SizeDef
  * @typedef {(SizeDef|PreciseDef)|(SizeDef|PreciseDef)[]} SizesArg
- * @type {(...arg:SizesArg[])=>{[key:number]:Block.Size}} */
+ * @type {(...arg:SizesArg[])=>{[key:number]:Block.Size|undefined}} */
 Block.Size.genterateSizes = function () {
   var r = {690: new this(0, 0, 2, 2)},
     /** @type {{[key:number]:SizeDef|SizeDef[],length:number}} */
@@ -2750,8 +2759,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @readonly @type {35} significantVersion: 35 (integer) */// @ts-ignore
-Ship.VERSION = 35;
+/** @readonly @type {36} significantVersion: 36 (integer) */// @ts-ignore
+Ship.VERSION = 36;
 Ship.propertyNames = new RegExp("^(?:nodeList|nodeConnections|customI" +
   "nputs|gridSize)$");
 // Ship.PROPERTIES = {
@@ -2833,7 +2842,7 @@ Ship.prototype.removeRect = function (x0, y0, z0, x1, y1, z1) {
   Edit.capture(this, this.removeRect, x0, y0, z0, x1, y1, z1);
 };
 /** @this {Ship} */
-Ship.prototype.fillRect = function (x0, y0, z0, x1, y1, z1) {
+Ship.prototype.replaceRect = function (x0, y0, z0, x1, y1, z1) {
   // https://stackoverflow.com/a/424445 backup random number solution
   var selected = this.getSelection();
   if (!selected.length)
@@ -2868,18 +2877,20 @@ Ship.prototype.fillRect = function (x0, y0, z0, x1, y1, z1) {
       )
     );
   }
-  if ((settings || {}).buildReplace) {
-    ship.removeRect(x1 = x, y1 = y, z1 = z, x0, y0, z0);
-    /** axis += 2 spacing is used temporarily
-     * @TODO make block collisions blocks are being placed
-     * maybe some kind of table for axis x, y, z, block index */
-    for (x = x1; x <= x0; x += 2)
-      for (y = y0; y >= y1; y -= 2)
-        for (z = z1; z <= z0; z += 2)
-          blocks.push(pushBlock(this));
-    Edit.capture(this, this.fillRect, x0, y0, z0, x1, y1, z1);
-    return blocks;
-  }
+  ship.removeRect(x1 = x, y1 = y, z1 = z, x0, y0, z0);
+  /** axis += 2 spacing is used temporarily
+   * @TODO make block collisions blocks are being placed
+   * maybe some kind of table for axis x, y, z, block index */
+  for (x = x1; x <= x0; x += 2)
+    for (y = y0; y >= y1; y -= 2)
+      for (z = z1; z <= z0; z += 2)
+        blocks.push(pushBlock(this));
+  Edit.capture(this, this.replaceRect, x0, y0, z0, x1, y1, z1);
+  return blocks;
+};
+Ship.prototype.fillRect = function () {
+  throw new Error("Unimplemented");
+  var x = 0, x0 = 0, y = 0, y0 = 0, z = 0, z0 = 0;
   // width, height, length (not implemented yet placing with collsisions)
   var w = x - x0 + 1, h = y - y0 + 1, l = z - z0 + 1;
   var b;
@@ -3003,10 +3014,12 @@ Ship.prototype.mirror2d = (
           -pos[1];
         // ...&& (is tiny block) ?
         pos[2] += size && ((size.w | size.h) & 16) ?
-          // (has size of tiny thruster ? leave it alone : [0, 1, 2, -1][r];
+          // (has size of tiny thruster ? leave it alone : [0, 1, 2, -1][r]) :
           (size.w & 16 ? 0 : (r + 1) % 4 - 1) :
-          // move bigger blocks to keep position of their center
-          r > 1 ? -(size.w -32 >> 4) : (size.w - 32 >> 4);
+          size ?
+            // move bigger blocks to keep position of their center
+            r > 1 ? -(size.w -32 >> 4) : (size.w - 32 >> 4) :
+            0;
         // 180deg turn
         block.rotation[2] =
           /** @type {0|1|2|3} */
@@ -4491,3 +4504,25 @@ B64Key.drawBlock = function (rc, block) {
     Tool.drawPathRc(new Tool("", "Ma000,a000" + path + " z"));
   }
 }
+
+//@ts-expect-error exporting but not exports weird stuff
+var api = typeof module == "undefined" ? {} : module.exports;
+api.version_code_js = version_code_js;
+api.OP = OP;
+api.OC = OC;
+api.F = F;
+api.__extends = __extends;
+api.__private = __private;
+api.er = er;
+api.Initial = Initial;
+api.Data = Data;
+api.Logic = Logic;
+api.Color = Color;
+api.Physics = Physics;
+api.test_collbxs = test_collbxs;
+api.test_debugbox2collisions = test_debugbox2collisions;
+api.Block = Block;
+api.Edit = Edit;
+api.Ship = Ship;
+api.ship = ship;
+api.B64Key = B64Key;

@@ -1,0 +1,7 @@
+{
+  "name": "d1r",
+  "version": "0.2.10",
+  "main": "./dist/code/code.js",
+  "license": "UNLICENSED",
+  "type": "module"
+}
