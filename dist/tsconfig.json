@@ -105,6 +105,7 @@
     "code/editor.html.ts",
     "code/defs.d.ts",
     "code/code.js",
-    "code/editor.js"
+    "code/editor.js",
+    "code/workshop.js"
   ]
 }

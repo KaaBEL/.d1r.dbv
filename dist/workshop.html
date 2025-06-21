@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.2.5 -->
+<!-- v.0.2.11 -->
 <html>
   <head>
     <meta charset="UTF-8" />
@@ -147,7 +147,7 @@ div.blank {
   max-height: 95%;
   overflow: auto;
 }
-#menu section, section.cell, #menu button {
+#menu section, article.cell, #menu button {
   position: relative;
   border: 2px solid #4782bc;
   border-radius: 5px;
@@ -192,12 +192,20 @@ div.blank {
 html:has(body.ratio2) {
   overflow: hidden;
 } */
+.cell.error {
+  border: 2px solid #c80900;
+  background-color: #651000;
+}
+.error .content {
+  background-color: #340500;
+}
     </style>
     <script>
       if (devicePixelRatio > 1)
         (document.getElementById("viewport") || fallbackEl).content =
           "width=device-width, initial-scale=" +
-          (1 / devicePixelRatio).toFixed(1);</script>
+          (1 / devicePixelRatio).toFixed(1);
+    </script>
   </head>
   <body>
     <div class="scrl">

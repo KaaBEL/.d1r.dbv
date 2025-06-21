@@ -1,11 +1,11 @@
 //@ts-check
 "use strict";
 /** @readonly */
-var version_workshop_js = "v.0.2.5";
-/** @param {any} v number, string any element ID */
-function GE(v){return document.getElementById((+v===v?(GE.i=v+1)-1:v===
-  void 0?v=GE.i++:v)+"")}GE.i=0;
-/** @typedef {HTMLElementTagNameMap} N */
+var version_workshop_js = "v.0.2.11";
+/** @param {any} v number, string any element ID *///@ts-ignore
+function GE
+(v){return document.getElementById(+v===v?(GE.i=v+1)-1:
+  v===void 0?v=GE.i++:v)}GE.i=0;
 /**
  * @overload @returns {HTMLDivElement}
  * @template {keyof N} K @overload @param {K} e @returns {N[K]}
@@ -87,19 +87,27 @@ function workshopItemOnclick(data) {
   };
 }
 menu.onclick = workshopItemOnclick;
-function addWorkshopItem(thubnail, size, name, description, creator) {
-  var section = document.createElement("section");
+function addWorkshopItem(thumbnail, size, name, description, creator) {
+  var section = document.createElement("article");
   for (var ch = vehicleList.childNodes, i = ch.length; i-- > 0;) {
     var child = ch[i];
     if (!(child instanceof HTMLElement) || child.className !== "spacer")
       break;
     section = child;
   }
+  if (thumbnail instanceof XMLHttpRequest) {
+    var error = thumbnail;
+    description = size || "";
+    thumbnail = size = creator = "";
+    name = error.status + " " + error.statusText;
+    section.className = "cell error";
+  } else
+    section.className = "cell";
   var span = document.createElement("span");
   span.appendChild(tN(size || "Small"))
   section.appendChild(span);
-  thubnail ? 
-    section.appendChild(EL("img")).src = thubnail :
+  thumbnail ? 
+    section.appendChild(EL("img")).src = thumbnail :
     section.appendChild(EL("div")).className =
       "blank";
   var div = EL("div");
@@ -109,12 +117,11 @@ function addWorkshopItem(thubnail, size, name, description, creator) {
   section.appendChild(div).className = "content";
   section.onclick = workshopItemOnclick({
     name: name,
-    thubnail: thubnail,
+    thubnail: thumbnail,
     description: description,
     creator: creator
   });
-  section.className = "cell";
-  vehicleList.appendChild(EL("section")).className = "spacer";
+  vehicleList.appendChild(EL("article")).className = "spacer";
 }
 /** @param {unknown} list */
 function addVehiclesFromJSON(list) {
@@ -140,7 +147,7 @@ function clearVehicles() {
   while (vehicleList.lastChild)
     vehicleList.removeChild(vehicleList.lastChild);
   for (var i = 7; i-- > 0;)
-    vehicleList.appendChild(EL("section")).className = "spacer";
+    vehicleList.appendChild(EL("article")).className = "spacer";
 }
 /** @type {(this: GlobalEventHandlers, ev: KeyboardEvent) => any} */
 function inputEneterHandler(e) {
@@ -154,7 +161,7 @@ input.onkeyup = inputEneterHandler;
 function requestVehiclesSearch(search, onsuccesful) {
   onsuccesful = onsuccesful || clearVehicles;
   console.log(JSON.stringify(search) + " requested");
-  var paged = search[0] !== "$", index = 0, previous = "";
+  var paged = search[0] !== "$", index = 0, previous = null;
   search = "https://exa.toastyx.dev/api/workshop/" + (paged ?
     "search?q=" + search.replace(/[?=&#]/g, function (s) {
       return "%" + s.charCodeAt(0).toString(16);
@@ -171,6 +178,8 @@ function requestVehiclesSearch(search, onsuccesful) {
         throw new Error("Repeating response, stopping next request.");
       response = JSON.parse(previous = this.responseText);
     } catch (e) {
+      if (this.status === 0 || this.status > 399)
+        addWorkshopItem(this, this.status ? e : "Cannot connect to exa bot.");
       console.error(this.responseText ? e : "xhr empty response");
       return;
     }
@@ -192,4 +201,5 @@ function requestVehiclesSearch(search, onsuccesful) {
   }
   xhrInitiate();
 }
+clearVehicles();
 requestVehiclesSearch("$newest?pageSize=4&pageIndex=0");
