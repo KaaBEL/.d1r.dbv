@@ -6,7 +6,8 @@
 // B) create chrome extensions with custom modifications for live page
 // C) pull requests to main repo on github
 /** @readonly */
-var version_code_js = "v.0.2.10";
+var version_code_js = "v.0.2.12";
+//-#defer fix attempt console.debug("version_code_js: " + version_code_js);
 /** @TODO check @see {Ship.VERSION} */
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[K in string|number|symbol]?:unknown}} safe */
@@ -15,7 +16,7 @@ var OP = Object.prototype.hasOwnProperty,
     return {};
   };
 if (typeof F != "function" || typeof UDF !== "undefined")
-  /** @readonly *///@ts-expect-error
+  /** @readonly */
   var F = function () {}, UDF = void 0;
 // inheritance's gonna go brrrrrrrrrrrrrrrr (taken standard ES5 extending)
 /** @param {Function} _new_class @param {Function} _super */
@@ -475,6 +476,10 @@ Data.estimateIdentifier = new RegExp("^[^f]*function\\s+([_$a-zA-Z\\xA0-\
 \\uFFFF][_$a-zA-Z0-9\\xA0-\\uFFFF]*)");
 /** @param {Function&{methodName?:string,name?:string}} fn */
 Data.getFunctionName = function (fn) {
+  if (typeof fn != "function") {
+    console.error(typeof fn + " is not a function!");
+    return "(error)";
+  }
   var s = fn.methodName || fn.name;
   return typeof s == "string" ?
     s :
@@ -1384,7 +1389,6 @@ Block.rotate = function (rot, x, y, z) {
       turn =
         /** @type {0|1|2|3} */
         (turn + n & 3);
-    //@ts-expect-error
     } else if ('I have no idea')
       throw new Error("Not implemented.");
   }

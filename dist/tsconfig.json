@@ -1,3 +1,4 @@
+// v.0.2.12
 {
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig to read more about this file */
@@ -103,6 +104,7 @@
   },
   "files": [
     "code/editor.html.ts",
+    "code/_k_api.js",
     "code/defs.d.ts",
     "code/code.js",
     "code/editor.js",

@@ -1,7 +1,7 @@
 //@ts-nocheck
 /// <reference path="./editor.js" />
 "use strict";
-// v.0.2.10 (global version of project when last changes were done)
+// v.0.2.12 (global version of project when last changes were done)
 var utst_ = true;
 function BError (message) {
   console.error(this.message = message);
@@ -9,7 +9,7 @@ function BError (message) {
 };
 console.log("Unit tests start:");
 console.time("Timestamp");
-console.time("Succesful unit tests, took");
+console.time("Succesful kinda tests, took");
 // TEST: enableLogicEditing //
 press = F;
 try {
@@ -87,12 +87,12 @@ function utst_testCommands() {
 }
 var utst_consoleError = console.error, utst_arr2 = [
   /Error: The array "c" property is required for "wedge" block\./,
-  /SyntaxError: Unexpected end of JSON input/,
-  /SyntaxError: Unexpected end of JSON input/,
+  /SyntaxError: (Unexpected end of JSON input|Syntaktick. chyba)/,
+  /SyntaxError: (Unexpected end of JSON input|Syntaktick. chyba)/,
   /Error: unexpected end of data/,
   /Error: Can do only \.DBV grids for now :\(/,
-  /SyntaxError: Unexpected end of JSON input/,
-  /SyntaxError: Unexpected end of JSON input/,
+  /SyntaxError: (Unexpected end of JSON input|Syntaktick. chyba)/,
+  /SyntaxError: (Unexpected end of JSON input|Syntaktick. chyba)/,
   /Error: unexpected end of data/
 ];
 try {
@@ -217,11 +217,11 @@ console.warn = utst_consoleWarn;
 // - set slected tile and opened folder, reflow blockbars
 // - check if getSelectedTIle returns correct type
 if (utst_)
-  console.timeEnd("Succesful unit tests, took");
+  console.timeEnd("Succesful kinda tests, took");
 else {
   console.groupCollapsed("Unsuccessful bug testing!");
   console.error("NOT...");
-  console.timeEnd("Succesful unit tests, took");
+  console.timeEnd("Succesful kinda tests, took");
   console.groupEnd();
   new BError("Unsuccessful indeed!");
 }

@@ -2,14 +2,9 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.10";
+var version_editor_js = "v.0.2.12";
+//-#defer fix attempt console.debug("version_editor_js: " + version_editor_js);
 /** @TODO check @see {Editor} for setting a setting without saveSettings */
-/** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
-/** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
-/** @overload @param {string} e @returns {HTMLElement} */
-function EL(e) {
-  return document.createElement(typeof e == "string" ? e : "div");
-}
 /** @param {string} data */
 var tN = function (data) {
   return document.createTextNode(data);
@@ -429,8 +424,10 @@ mal;}"));
   }
 })(/\/[0-9a-zA-Z._+\-:]+\/editor(?:\.html)?(?:#[^?]*)?($|\?[^=]*)/);
 
+//-#early render** @type {HTMLImageElement&{loaded?:boolean}} */ attempt
 var imgOverlay = document.body.appendChild(document.createElement("img"));
 imgOverlay.style.display = "none";
+imgOverlay.ariaHidden = "true";
 imgOverlay.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAYACAMA\
 AACJgLAbAAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAEmUExURUdwTAAAAAAAAAAAAAAA\
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOXlDTJBcICAgGZmZh8oM0n/\
@@ -534,6 +531,7 @@ WzF13UPnQzSaAHBZkO2cMQBsCKMAmBHGATAhjASgRxgLQIcwGsDyyHgA82MjAkyPjgmgHh8VQKa0\
 AbB+0MqWytPaAIgLTMxZuAc9aQBELtFwxN4ewWllgKPKQgEgpofJ9RBN9/V9AKz7jcOVXQDABgAA\
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAUbPWbWDw0fP/Ay30zCM9t27BAAAAAElF\
 TkSuQmCC";
+//-#early render** @type {HTMLImageElement&{loaded?:boolean}} */ attempt
 var imgMask = document.createElement("img");
 imgMask.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAYACAIAAAA\
 xPNd+AAAABnRSTlMAAAAAAABupgeRAAAOA0lEQVR42u3dW5LbNhBAUSmlhfXSe2n5sSuKZXHAB4j\
@@ -600,6 +598,7 @@ uDbAID/+MDgFYPcCwc2ACBFh7DkyAAGvPgQkQYO05MAECrD0HJkCAtefABAiw9hyYAAHWngMTIMD\
 ac2ACBFh7DkyAAGvPgQAmYO05EMAErD0HAjT2+09Hp7fi/3Nw13tiAhp7+s7+FmEBEEAABBAAAQR\
 AAAEQQAAEEAABBEAAARBAAAQQAAEEQAABEEAABBAAAQRAAAEQQAAEEAABBEAAARBAAAQQAAEEQAA\
 BEEAABBAAAQRAAAEQQAAEEAABmvsXSQ203PB/2NcAAAAASUVORK5CYII=";
+//-#early render** @type {HTMLImageElement&{loaded?:boolean}} */ attempt
 var imgColor = document.createElement("img");
 imgColor.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAOgCAIAAA\
 DTQOPmAAAACXBIWXMAAA7EAAAOxAGVKw4bAAALZUlEQVR42u2dWWxcVxnHf/fO9XjszCSxY4+dcZ\
@@ -656,6 +655,14 @@ NXgaWrlwCxeBLobLu7YdYHnuyF1/F4HBiPmBkZyfPNVPyvtQPV4MV9H+RrQ6F0TmuuaHwsyF0HTC\
 gDrOrrAS5cGaFRTgd966XvAUxkABMpIdPi6Rnf1fQQsCi81A8N/gdE9KncelVoFwAAAABJRU5Erk\
 Jggg==";
 var imgBackg = document.createElement("img");
+//-#early render attempt
+//-imgOverlay.onload = imgColor.onload = imgMask.onload = function () {
+//-  imgOverlay === this ? imgOverlay.loaded = true :
+//-    imgColor === this ? imgColor.loaded = true :
+//-      imgMask === this ? imgMask.loaded = true : 0;
+//-  if (imgOverlay.loaded && imgColor.loaded && imgMask.loaded)
+//-    render();
+//-};
 var helpCanvas = document.createElement("canvas"),
   rc = function (rc) {
     return rc instanceof CanvasRenderingContext2D ?
@@ -852,6 +859,8 @@ function dragDrop(e) {
   el.id = "2";
   el.type = "file";
   el.multiple = true;
+  el.ariaHidden = "true";
+  el.tabIndex = -1;
   el.style.display = "none";
   bd && bd.appendChild(el);
   file.open.length = 0;
@@ -2577,12 +2586,11 @@ Command.push("Current version", function(items, collapsed) {
     }
   };
   xhr.send();
-}, devicePixelRatio + "Gives information about versions of loaded source cod\
-e components. For example Ship.VERSION is significantVersion number attached\
- to vehicle savefiles encoded by D1R DBV editor, this number is increased by\
- 1 when public webpage update messes with vehicle editing funtionalities to \
-allow for backward compatibility in case of bug causing corrupted savefiles.\
-");
+}, "Gives information about versions of loaded source code components. For e\
+xample Ship.VERSION is significantVersion number attached to vehicle savefil\
+es encoded by D1R DBV editor, this number is increased by 1 when public webp\
+age update messes with vehicle editing funtionalities to allow for backward \
+compatibility in case of bug causing corrupted savefiles.");
 Command.push("About Commands tab", function (items) {}, "OPENING AND MOVING \
 AROUND\nCommands tab is opened or moved by activating contextmenu, the optio\
 ns, usually a right click for PC or long press for touch screen. Activating \
@@ -2620,26 +2628,21 @@ nfo to skip it.\n");
 /** @callback ToolExec @param {number} x @param {number} y @returns {void} */
 /** @typedef {ToolExec|Tool.Tab} ToolMethods */
 /** instance is sealed
- * @param {string} name @param {string} icon @param {ToolMethods} [exec]
- * @param {boolean} [permanent] slected until reselected or deselected */
-function Tool(name, icon, exec, permanent) {
-  /** subclass @see {Tool.Tab} is defined further below */
-  if (exec instanceof Tool.Tab)
-    var execute = exec.exec, init = exec.init, destroy = exec.destroy;
-  else {
-    execute = init = destroy = F;
-    permanent ? execute = exec || F : init = Tool.execClick(exec || F);
-  }
+ * @param {string} name @param {string} icon @param {ToolExec} [init]
+ * @param {ToolExec} [exec] @param {ToolExec} [destroy] */
+function Tool(name, icon, init, exec, destroy) {
+  var initialize = init || F;
   this.name = name;
   this.icon = icon;
-  this.exec = execute;
-  this.init = init;
-  this.destroy = destroy;
+  //-console.log(name, ("" + exec) || typeof exec);
+  this.init = exec === UDF ? Tool.execClick(initialize) : initialize;
+  this.exec = exec || F;
+  this.destroy = destroy || F;
   /** used to determim whether (true) the tile gets enebled instantly
    * (for DefaultUI it's clickedTile property) or
    * (false) the tile is enabled until deselected (selected in
    * DefaultUI.selectedTile property) */
-  this.clickType = !permanent;
+  this.clickType = exec === UDF;
   Object.seal(this);
 }
 /** @type {Tool[]} */
@@ -2751,19 +2754,20 @@ Tool.Tab.prototype.setElementProperties = function (element, options) {
  //* @param {{[P in string]:P extends "text"?string:unknown}} [arg3]
 Tool.Tab.prototype.append = (
 /** append element to tool tab menu (Tab utility, no use of global constants)
- * template {string} P
+ * @template {keyof HTMLElementTagNameMap} P
  * @overload append from node @param {Node} node
  * @param {string} query @param {Function&{name?:string}} handler
- * @param {Tool.Tab.Options} [options]
- * @overload no css selector @param {keyof HTMLElementTagNameMap} element
+ * @param {Tool.Tab.Options} [options] @returns {Node}
+ * @overload no css selector @param {P} element
  * @param {Function&{name?:string}} handler
- * @param {Tool.Tab.Options} [options]
+ * @param {Tool.Tab.Options} [options] @returns {P extends keyof
+ *   HTMLElementTagNameMap?HTMLElementTagNameMap[P]:Node}
  * @overload using css selector only for compact arguments list
  * @param {string} query @param {Function&{name?:string}} handler
  * @param {Tool.Tab.Options} [options] @returns {Node}
  * @this {Tool.Tab} @param {Node|string} [element]
  * @param {string} [query] @param {Function&{name?:string}} [handler]
- * @param {Tool.Tab.Options} [options] */
+ * @param {Tool.Tab.Options} [options] @returns {any} */
  function (element, query, handler, options) {
   var handlerNext = false, argsCopy = [].slice.call(arguments);
   if (argsCopy[0] instanceof Node)
@@ -2806,6 +2810,7 @@ Tool.Tab.prototype.append = (
     document.createElement(element || setFromQuery("name", result[1]));
   setFromQuery("id", result[2]);
   setFromQuery("className", result[3]);
+  console.log("handler:" + handler);
   var event = handler && Data.getFunctionName(handler) ||
     (el instanceof HTMLButtonElement ? "onclick" : "oninput");
   if (event)
@@ -2819,88 +2824,90 @@ Tool.Tab.prototype.append = (
  * @description uses GE(9) = ToolTab nav element, GE(8) = main element
  * @param {Tool.Tab} tab @param {ToolSetup} setup */
 Tool.Tab.bindInit = function (tab, setup) {
-  var toolTab = GE(9), tabDestroy = tab.destroy;
-  /** assignTab @type {ToolExec&{originalInit:ToolExec}} */
-  var tabAssign = function (x, y) {
-    tab.elements = [];
-    setup(tab, x, y);
-    var main = GE(8);
-    if (!main)
-      throw new Error("can not initialize Tab, main#8 is missing");
-    if (!tab.reuse || !(toolTab = toolTab || GE(9)))
-      toolTab = main.appendChild(EL());
-    while (toolTab.lastChild)
-      toolTab.removeChild(toolTab.lastChild);
-    if (tab.reuse)
-      toolTab.id = "9";
-    toolTab.className = "tool-tab" + (tab.class ? " " + tab.class : "");
-    toolTab.title = "Available options are shown in this tool tab.";
-    for (var i = 0; i < tab.elements.length; i++)
-      toolTab.appendChild(tab.elements[i]);
-    toolTab.style.display = "";
-    var ratio = window.devicePixelRatio, scale = "" + 1 / ratio;
-    // v.0.2.9 1,1,50 = those values were found to get the job done
-    var translate = "" + (ratio < 1 ? 1 - 1 / ratio : ratio - 1) * 50;
-    scale = "scale(" + scale + "," + scale + ")";
-    translate = "translate(" + translate + "%," + -translate + "%)";
-    // v.0.2.9 2 = border width of tabs and tiles, .5 = minimun width
-    var border = Math.max(ratio / pR * 2, .5);
-    // v.0.2.9 168 = blockBar height
-    var availableHeight = (canvas.height - 168) /
-      (canvas.height / window.innerHeight);
-    var height = Math.min(Math.max(
-      // v.0.2.9 14 = Tool.Tab 'margin', 14 = Tool.Tab padding
-      (availableHeight - 14) * ratio - border - 14,
-      // v.0.2.9 210 = Tool.Tab minimal height, 500 = Tool.Tab maximal height
-      210), 500);
-    var tabHeight = (border + 14 + height) / ratio;
-    toolTab.style.top = Math.max(
-      // v.0.2.9 7 / pR = minimum for 'margin' is same as style right
-      (availableHeight - tabHeight) / 2, 7 / pR) + "px";
-    toolTab.style.height = height + "px";
-    toolTab.style.borderWidth = border + "px";
-    toolTab.style.transform = ratio < 1 ?
-      translate + scale :
-      scale + translate;
+  var toolTab = GE(9);
+  return {
+    init: function (x, y) {
+      tab.elements = [];
+      setup(tab, x, y);
+      var main = GE(8);
+      if (!main)
+        throw new Error("can not initialize Tab, main#8 is missing");
+      if (!tab.reuse || !(toolTab = toolTab || GE(9)))
+        toolTab = main.appendChild(EL("nav"));
+      while (toolTab.lastChild)
+        toolTab.removeChild(toolTab.lastChild);
+      if (tab.reuse)
+        toolTab.id = "9";
+      toolTab.className = "tool-tab" + (tab.class ? " " + tab.class : "");
+      for (var i = 0; i < tab.elements.length; i++)
+        toolTab.appendChild(tab.elements[i]);
+      toolTab.style.display = "";
+      var ratio = window.devicePixelRatio, scale = "" + 1 / ratio;
+      // v.0.2.9 1,1,50 = those values were found to get the job done
+      var translate = "" + (ratio < 1 ? 1 - 1 / ratio : ratio - 1) * 50;
+      scale = "scale(" + scale + "," + scale + ")";
+      translate = "translate(" + translate + "%," + -translate + "%)";
+      // v.0.2.9 2 = border width of tabs and tiles, .5 = minimun width
+      var border = Math.max(ratio / pR * 2, .5);
+      // v.0.2.9 168 = blockBar height
+      var availableHeight = (canvas.height - 168) /
+        (canvas.height / window.innerHeight);
+      var height = Math.min(Math.max(
+        // v.0.2.9 14 = Tool.Tab 'margin', 14 = Tool.Tab padding
+        (availableHeight - 14) * ratio - border - 14,
+        // v.0.2.9 210 = Tool.Tab minimal height, 500 = Tool.Tab maximal height
+        210), 500);
+      var tabHeight = (border + 14 + height) / ratio;
+      toolTab.style.top = Math.max(
+        // v.0.2.9 7 / pR = minimum for 'margin' is same as style right
+        (availableHeight - tabHeight) / 2, 7 / pR) + "px";
+      toolTab.style.height = height + "px";
+      toolTab.style.borderWidth = border + "px";
+      toolTab.style.transform = ratio < 1 ?
+        translate + scale :
+        scale + translate;
+      tab.init(x, y);
+    },
+    exec: function (x, y) {
+      tab.exec(x, y);
+    },
+    destroy: function (x, y) {
+      tab.destroy(x, y);
+      tab.elements = [];
+      if (toolTab)
+        toolTab.style.display = "none";
+    }
   };
-  tabAssign.originalInit = tab.init;
-  /** closeTab @type {ToolExec&{originalDestroy:ToolExec}} */
-  (tab.destroy = function (x, y) {
-    tabDestroy(x, y);
-    tab.elements = [];
-    if (toolTab)
-      toolTab.style.display = "none";
-  }).originalDestroy = tabDestroy;
-  return tabAssign;
 };
 /**
  * @callback ToolSetup @param {Tool.Tab} setup
  * @param {number} x @param {number} y */
 /** @param {string} name @param {ToolSetup} setup @param {string} icon */
 Tool.Tab.addItem = function (name, setup, icon) {
-  var tab = new Tool.Tab();
-  tab.init = Tool.Tab.bindInit(tab, setup);
-  Tool.list.push(new Tool(name, icon, tab, true));
+  // "so I will name that variable... uhm..., uhm it is then."
+  var tab = new Tool.Tab(), uhm = Tool.Tab.bindInit(tab, setup);
+  Tool.list.push(new Tool(name, icon, uhm.init, uhm.exec, uhm.destroy));
 };
 /** @param {string} styles @param {string} selector */
-Tool.Tab.addCSS = function (styles, selector) {
+Tool.Tab.addCss = function (styles, selector) {
   var css = GE("style"), fallback = css || GE(8);
   if (!fallback)
-    return console.error("Unable to Tool.Tab.addCSS, missing css&main");
+    return console.error("Unable to Tool.Tab.addCss, missing css&main");
   var cssText = (css ?
     css :
     css = fallback.appendChild(EL("style"))).appendChild(tN(""));
   cssText.data = (selector.indexOf(".tool-tab") === -1 ?
-    ".tool-tab " + selector :
+    ".tool-tab " + selector.replace(/,/g, ",.tool-tab ") :
     selector) + "{" + styles + "}";
+  return cssText;
 };
 
-Tool.Tab.addCSS("position: absolute;top: 7px;right: " + 7 / pR + "px;width: \
+Tool.Tab.addCss("position: absolute;top: 7px;right: " + 7 / pR + "px;width: \
 320px;height: 500px;padding: 7px;border: 2px solid #5577aa;border-radius: 7p\
 x;font-family: segoe-ui, sans-serif;background-color: rgba(13, 33, 55, .8);c\
 olor: #bbccdd;overflow-y: scroll;scrollbar-width: none;-ms-overflow-style: n\
 one;font-size: 20px;", "");
-Tool.Tab.addCSS("width: 0px;background: transparent;", ".tool-tab::-webkit-s\
+Tool.Tab.addCss("width: 0px;background: transparent;", ".tool-tab::-webkit-s\
 crollbar");
 Tool.list.push(new Tool("Tune", "M4a4,24265 c51,2f0,273,ad3,931,f85 c8da,714\
 ,103d,642,13d7,615 c1ea0,-178,3dbe,974,552e,20cc c2c36,2c08,2c5b,7392,53,9fc\
@@ -3058,32 +3065,56 @@ e c0,-5a6,0,-35d59,0,-3643c c0,-1052,d3b,-1d8e,1d8e,-1d8e c88f,0,db66,0,de2d\
 c-6b6,0,-d69e,0,-de2d,0 c-1052,0,-1d8e,d3b,-1d8e,1d8e c0,80c,0,1b1a5,0,1b629\
  c0,1052,d3b,1d8e,1d8e,1d8e c5e9,0,d9f1,0,de2d,0 c1052,0,1d8e,-d3b,1d8e,-1d8\
 e c0,-754,0,-1b5c7,0,-1b629 z"));
-Tool.Tab.addItem("Node", function setup(methods, x, y) {
-  methods.exec = function (x, y) {
-    console.log('exec', x, ' ', y);
+var test_handler = 0, css = Tool.Tab.addCss("width: 68px;height: 68px;border\
+: 2px solid #5577aa;border-radius: 7px;margin: 5px;background-size: 64px;bac\
+kground-image: url(" + imgColor.src + ");font-weight: bold; -webkit-text-str\
+oke: thin #fff;", ".logic-group-disabled,.logic-group-enabled");
+Tool.Tab.addCss("opacity: 0.4;border-color: #0d2137;", ".logic-group-disable\
+d:not(:active)");
+Tool.Tab.addItem("Node", function setup(methods, _x, _y) {
+  function handler(group) {
+    var onclick = function () {
+      if (!(this instanceof HTMLButtonElement))
+        return;
+      this.className = this.className === "logic-group-disabled" ?
+        "logic-group-enabled" :
+        "logic-group-disabled";
+    };
+    onclick.methodName = "onclick";
+    return onclick;
+  }
+  Logic.rend = true;
+  try {
+    throw new Error();
+  } catch (e) {
+    if (e instanceof Object && "stack" in e)
+      console.debug('setup '+test_handler+':'+e.stack);
+  }
+  for (var i = 0; i < Color.NAME.length; i++)
+    methods.append("button", handler(i), {
+      id: "g" + i,
+      className: "logic-group-enabled",
+      text: "Group " + new Array(Math.max(0, ("" + Color.NAME.length
+        ).length - ("" + i).length + 1)).join("0") + i
+    // v.0.2.11 96 = background-size (px)
+    }).style.backgroundPositionY = (-i * 64) + "px";
+  methods.exec = function (_x, _y) {
+    try {
+      throw new Error();
+    } catch (e) {
+      if (e instanceof Object && "stack" in e)
+        console.debug('exec '+test_handler+':'+e.stack);
+    }
   };
-  methods.append("article#juhus.hehes.xd.", function () {}, {text: "Lorem ip\
-sum dolor sit amet consectetur, adipisicing elit. Ullam.\nExplicabo, facere \
-natus veniam neque nam quisquam esse ex!\nRepellendus, porro? Voluptates asp\
-eriores inventore neque, ab dolore fugit.\nDolor ducimus incidunt impedit fu\
-giat odio eaque rerum illo!\nAssumenda alias maiores officiis facilis obcaec\
-ati asperiores dolorum aliquid?\nOptio eligendi architecto impedit itaque ne\
-cessitatibus aliquam modi libero.\nEx facilis amet explicabo, molestias est \
-ut officia blanditiis.\nExpedita, rerum asperiores. Vel doloribus corporis n\
-isi animi repellat.\nNihil modi quibusdam officiis harum sunt ex magni perfe\
-rendis!\nOfficia eum placeat beatae laborum ut perferendis ratione reiciendi\
-s?\nObcaecati tempora magnam laudantium. Assumenda nihil consequuntur facere\
- quisquam?\nIusto fuga id libero ullam, minus expedita quam mollitia.\nQui i\
-usto in expedita consectetur maxime quisquam nam saepe!\nQuo quod incidunt d\
-olorum officia beatae tempore commodi perspiciatis.\nDolor dolorem necessita\
-tibus voluptates quam similique! Repellendus, rem beatae.\nUnde, vitae incid\
-unt! Expedita maiores deleniti veritatis culpa eos.\nError facere nam quidem\
- molestiae numquam dolore excepturi quis!\nCommodi explicabo magni iure arch\
-itecto amet consequuntur necessitatibus reprehenderit.\nVoluptates, non eos!\
- Asperiores placeat ratione unde odit earum?\nId mollitia ab illo laboriosam\
- ratione harum facilis laborum!\nReiciendis consequatur quos et earum blandi\
-tiis nihil vel deserunt!\nNulla accusamus, eaque perferendis corrupti dolor \
-mollitia molestiae sit." + window.devicePixelRatio});
+  methods.destroy = function () {
+    Logic.rend = false;
+    try {
+      throw new Error();
+    } catch (e) {
+      if (e instanceof Object && "stack" in e)
+        console.debug('destroy '+test_handler+':'+e.stack);
+    }
+  };
 }, "Mf70a,34a28 c0,f1b,0,7296,0,8060 c0,1e09,-1859,3663,-3663,3663 c-fa9,0,-\
 73b3,0,-8944,0 c-1e09,0,-3663,-1859,-3663,-3663 c0,-bcb,0,-7be7,0,-89f4 c0,-\
 1e09,1859,-3663,3663,-3663 h81d1 l251bf,-250eb v-81e2 c0,-1e09,1859,-3663,36\
@@ -3146,7 +3177,8 @@ c7,7,1dd5,-1e1c,1e42,-1e7e c523,-49e,c05,-771,1395,-771 cdae,0,1922,93d,1c14\
 9b,-2445 c-459b,-3fc8,-a25d,-66b4,-10837,-66b4 c-d80e,0,-18734,af26,-18734,1\
 8734 c0,3ea,e,7d2,2c,bb6 c86,11ce,1c4,2841,1c4,290a c0,f6c,-ce6,1bed,-1cd0,1\
 bed c-1df,0,-3b4,-2c,-57a,-81 c-624,-125,-3fa5,-d93,-41df,-e1c c-c8e,-303,-1\
-5dd,-e02,-15dd,-1b1c c0,-4b0,-a0,-102a,-a0,-26cc z", function () {
+5dd,-e02,-15dd,-1b1c c0,-4b0,-a0,-102a,-a0,-26cc z",
+function () {
   DefaultUI.tilesRotation[2] = DefaultUI.tilesFlippableRotation[2] =
     /** @type {0|1|2|3} */
     (DefaultUI.tilesRotation[2] + 3 & 3);
@@ -3156,13 +3188,13 @@ Tool.list.push(new Tool("Erase", "M21cbd,3933e c-fa8,c27,-2353,1363,-38af,13\
 -26cd,-1904,-3f47 c0,-19f4,aaf,-316a,1be6,-4238 l2182b,-219f0 c10ae,-104b,27\
 7f,-1a57,40a9,-1a57 c17a9,0,2d40,8e1,3d9d,177e l13941,13b1d cd12,ff5,14eb,24\
 5d,14eb,3a9a c0,16b2,-82c,2b7d,-15bc,3b96 z M1e360,34780 l96a9,-935f l-12979\
-,-12ae9 l-eff8,ee4e ld536,d073 z", function (x, y) {
+,-12ae9 l-eff8,ee4e ld536,d073 z", F, function (x, y) {
   var found = DefaultUI.found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
   if (!found)
     return;
   ship.removeBlocks([found.id]);
   render();
-}, true));
+}));
 Tool.list.push(new Tool("Classic", "M4030e,2bac1 c-1838,-80aa,-8930,-e200,-1\
 10e4,-e200 c-7669,0,-db83,4a1d,-10372,b27c l-a7c8,-a v-2884d h1fd7a c693b,0,\
 be8b,554f,be8b,be8b z M33a,c1a9 l0,0 c0,-693b,554f,-be8b,be8b,-be8b h3299 l-\
@@ -3172,10 +3204,10 @@ be8b,554f,be8b,be8b z M33a,c1a9 l0,0 c0,-693b,554f,-be8b,be8b,-be8b h3299 l-\
 2a,-c732 c6c57,0,c42a,592e,c42a,c732 c0,6e03,-57d3,c732,-c42a,c732 c-6c57,0,\
 -c42a,-592e,-c42a,-c732 z M3061d,29da1 c0,-1657,-121c,-2873,-2873,-2873 c-16\
 57,0,-2873,121c,-2873,2873 v6982 c0,1657,121c,2873,2873,2873 h5090 c1657,0,2\
-873,-121c,2873,-2873 c0,-1657,-121c,-2873,-2873,-2873 h-282b z",
+873,-121c,2873,-2873 c0,-1657,-121c,-2873,-2873,-2873 h-282b z", F,
 function (x, y) {
   old_UI(x, y);
-}, true));
+}));
 Tool.list.push(new Tool("Oldschool", "M105e7,3d210 c-3a97,3a97,-9997,3a97,-d\
 42f,0 c-3a97,-3a97,-3a97,-9997,0,-d42f l1b0b,-1b0b ld429,d429 z M803a,2adde \
 l7e92,-7e92 ld429,d429 l-7e8b,7e96 z M22c1b,101fd l8428,-8428 ld429,d429 l-8\
@@ -3729,7 +3761,7 @@ DefaultUI.renderHotBars = function (w, h) {
     );
     // v.0.2.10 123 = detects draw 3 tiles of the row
     if (tx > 123) {
-      // v.0.2.10 74 = distance between origins of neighbour toolbar1 tiles
+      // v.0.2.10 74 = distance between origins of neighbour toolBar tiles
       ty -= 74;
       tx = 15;
     } else
@@ -3777,9 +3809,9 @@ DefaultUI.basePress = function (blockPlacing, canDefault) {
       DefaultUI.canDefaultPress && DefaultUI.defaultPress(x, y);
   };
 };
-DefaultUI.baseMove = function () {};
-DefaultUI.baseContextmenu = function () {};
-DefaultUI.baseOver = function () {};
+DefaultUI.baseMove = F;
+DefaultUI.baseContextmenu = F;
+DefaultUI.baseOver = F;
 
 var cmdsName = EL("h1"), cmds = (function () {
   /** for #commandsTab styles @see {Editor.addingStyles} */

@@ -1,5 +1,5 @@
-// v.0.1.68
-/// <reference path="./editor.html.ts" />
+// v.0.2.12
+/// <reference path="./_k_api.js" />
 
 /** defining new property on Console for editor.js */
 declare interface Console {
