@@ -2,8 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.12";
-//-#defer fix attempt console.debug("version_editor_js: " + version_editor_js);
+var version_editor_js = "v.0.2.13";
 /** @TODO check @see {Editor} for setting a setting without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -170,7 +169,7 @@ Editor.loadSettings();
 Editor.addingStyles(
   "#commandsTab" +
   "{position:fixed;width: 350px;height: " +
-  (innerHeight > 500 ? 500 : innerHeight) + "px;padding: 0;" +
+  (innerHeight > 500 ? 500 : innerHeight) + "px;padding: 0;margin: 0;" +
   "border-radius: 10px;background-color:rgba(0, 0, 0, 0.86);}" +
   "#commandsTab, #commandsTab button, #commandsTab .loading" +
   "{color: #999;font-size: 16px;" +
@@ -181,7 +180,7 @@ Editor.addingStyles(
   "background-color: rgba(0, 0, 0, 0);-webkit-user-select: text;}" +
   "#commandsTab header:first-child button{font-weight: bold;}" +
   "#commandsTab button:hover, #commandsTab button:focus," +
-  " #commandsTab .loading{border: 2px solid #777;}" +
+  "#commandsTab .loading{border: 2px solid #777;}" +
   "#commandsTab button:active{background-color: #333;color: #bbb;}" +
   "#commandsTab .loading" +
   "{width: 300px;height: fit-content;position: relative;}" +
@@ -423,8 +422,6 @@ bolder;}#commandsTab button:hover,#commandsTab button:focus{font-weight: nor\
 mal;}"));
   }
 })(/\/[0-9a-zA-Z._+\-:]+\/editor(?:\.html)?(?:#[^?]*)?($|\?[^=]*)/);
-
-//-#early render** @type {HTMLImageElement&{loaded?:boolean}} */ attempt
 var imgOverlay = document.body.appendChild(document.createElement("img"));
 imgOverlay.style.display = "none";
 imgOverlay.ariaHidden = "true";
@@ -531,7 +528,6 @@ WzF13UPnQzSaAHBZkO2cMQBsCKMAmBHGATAhjASgRxgLQIcwGsDyyHgA82MjAkyPjgmgHh8VQKa0\
 AbB+0MqWytPaAIgLTMxZuAc9aQBELtFwxN4ewWllgKPKQgEgpofJ9RBN9/V9AKz7jcOVXQDABgAA\
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAUbPWbWDw0fP/Ay30zCM9t27BAAAAAElF\
 TkSuQmCC";
-//-#early render** @type {HTMLImageElement&{loaded?:boolean}} */ attempt
 var imgMask = document.createElement("img");
 imgMask.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAAYACAIAAAA\
 xPNd+AAAABnRSTlMAAAAAAABupgeRAAAOA0lEQVR42u3dW5LbNhBAUSmlhfXSe2n5sSuKZXHAB4j\
@@ -598,7 +594,6 @@ uDbAID/+MDgFYPcCwc2ACBFh7DkyAAGvPgQkQYO05MAECrD0HJkCAtefABAiw9hyYAAHWngMTIMD\
 ac2ACBFh7DkyAAGvPgQAmYO05EMAErD0HAjT2+09Hp7fi/3Nw13tiAhp7+s7+FmEBEEAABBAAAQR\
 AAAEQQAAEEAABBEAAARBAAAQQAAEEQAABEEAABBAAAQRAAAEQQAAEEAABBEAAARBAAAQQAAEEQAA\
 BEEAABBAAAQRAAAEQQAAEEAABmvsXSQ203PB/2NcAAAAASUVORK5CYII=";
-//-#early render** @type {HTMLImageElement&{loaded?:boolean}} */ attempt
 var imgColor = document.createElement("img");
 imgColor.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAOgCAIAAA\
 DTQOPmAAAACXBIWXMAAA7EAAAOxAGVKw4bAAALZUlEQVR42u2dWWxcVxnHf/fO9XjszCSxY4+dcZ\
@@ -655,14 +650,6 @@ NXgaWrlwCxeBLobLu7YdYHnuyF1/F4HBiPmBkZyfPNVPyvtQPV4MV9H+RrQ6F0TmuuaHwsyF0HTC\
 gDrOrrAS5cGaFRTgd966XvAUxkABMpIdPi6Rnf1fQQsCi81A8N/gdE9KncelVoFwAAAABJRU5Erk\
 Jggg==";
 var imgBackg = document.createElement("img");
-//-#early render attempt
-//-imgOverlay.onload = imgColor.onload = imgMask.onload = function () {
-//-  imgOverlay === this ? imgOverlay.loaded = true :
-//-    imgColor === this ? imgColor.loaded = true :
-//-      imgMask === this ? imgMask.loaded = true : 0;
-//-  if (imgOverlay.loaded && imgColor.loaded && imgMask.loaded)
-//-    render();
-//-};
 var helpCanvas = document.createElement("canvas"),
   rc = function (rc) {
     return rc instanceof CanvasRenderingContext2D ?
@@ -2634,7 +2621,6 @@ function Tool(name, icon, init, exec, destroy) {
   var initialize = init || F;
   this.name = name;
   this.icon = icon;
-  //-console.log(name, ("" + exec) || typeof exec);
   this.init = exec === UDF ? Tool.execClick(initialize) : initialize;
   this.exec = exec || F;
   this.destroy = destroy || F;
@@ -3885,7 +3871,8 @@ var cmdsName = EL("h1"), cmds = (function () {
       content.appendChild(group[0]);
       content.appendChild(group[1]);
     }
-    (item.group ? group[1] : content).appendChild(el = EL("button"));
+    (item.group ? group[1] : content).appendChild(el = EL("li"));
+    el = el.appendChild(EL("button"));
     el.appendChild(tN(item.name));
     el.onclick = initItems(item);
     el.appendChild(EL()).appendChild(tN(">"));
@@ -4099,6 +4086,14 @@ function rend_backgColor() {
 // #rendlog
 var rend_backgHangar = F, rend_request = "", init_started = false;
 +function () {
+  if (0 || /http:..localhost:8158/.test(location.href)) {
+    var script = EL("script");
+    script.type = "text/javascript";
+    script.src = "./code/alphalunar.js";
+    document.body.appendChild(script);
+    console.info("loading local lunaralpha.js fallback");
+    return;
+  }
   var xhr = new XMLHttpRequest();
   xhr.open("GET",
     "https://kaabel.github.io/.d1r.dbv/assets/AlphaLunar.json");

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.2.12 -->
+<!-- v.0.2.13 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -88,6 +88,13 @@
       display: none;
     }
   </style>
+<script>
+    "use strict";
+    window.onerror = function (m, s, l, c, e) {
+      alert(m + " " + s + ":" + (l || "") + ":" + (c || "") + " " +
+        (e && typeof e == "object" && e.stack || e));
+    };
+  </script>
   <script>
     "use strict";
     (function (h) {
@@ -129,7 +136,7 @@
     </a>
     for modifying and creating
     <a href="https://rizenplanet.com/droneboi.html">Droneboi</a>
-    Vehicles online.
+    Vehicles online, recreation of the game editor using the same assets.
     <a href="https://rizenplanet.com/droneboi.html">DBC</a>
     (DB as DroneBoi shortly, a fourth title of DB series) is the ultimate
     open-world sandbox space drone building, exploration, and combat
@@ -139,7 +146,7 @@
     customizable tools for advanced drone designs. It is currently in
     development. First thanks to God that we can enjoy and share interests
     in such Droneboi community being in care of Beau and incredible thanks
-    to him for upkeeping the game series. Thanks
+    to him for upkeeping the game series, credits to Beau for this. Thanks
     to the DBVE contributors and for feedback from also others.
     Most of the icons are made by Freepik from www.flaticon.com:
     <a href="https://www.flaticon.com/free-icon/refresh_1330172?page=1&position=2&related_id=1330172" title="refresh icon by Freepik">
@@ -200,46 +207,8 @@
     </footer>
     <div class="space" data="bottom_margin_workaround">0</div>
   </article>
-  <!-- v.0.0.28 -->
-  <script>
-    "use strict";
-    //-#defer fix attempt
-    //-document.body.onload = function () {
-    //-  for (var i = 0, ch = document.body.childNodes; i < ch.length; i++) {
-    //-    var element = ch[i], src = "";
-    //-    if (element instanceof Element)
-    //-      src = element.getAttribute("data-script-src");
-    //-    if (!src)
-    //-      continue;
-    //-    var script = document.createElement("script");
-    //-    script.type = "text/javascript";
-    //-    script.src = src;
-    //-    script.onload = function () {
-    //-      console.log("loaded: " + this.src);
-    //-    };
-    //-    document.body.removeChild(ch[i]);
-    //-    document.body.appendChild(script);
-    //-  }
-    //-};
-    //-#defer fix attempt - part of it too
-    //-if (/^http:\/\/(?:\d+\.\d+\.\d+\.\d+|localhost:\d+)/.exec(""+location))
-    //-  +function (globalWebSocket) {
-    //-    try {
-    //-      sessionStorage =
-    //-      window.WebSocket =
-    //-        /** @type {any} disables VS code live server live reload */
-    //-        (function WebSocket() {
-    //-          this.onmessage = function juhus() {};
-    //-          window.WebSocket = globalWebSocket;
-    //-        });
-    //-    } catch (e) {}
-    //-  }(WebSocket);
-  </script>
-  <!-- #defer fix attempt ... turned out the defer works in favourd of FCP and
-    LCP, but VScode liveserver localhost measures worse the GitHub pages host
-  //-<div type="text/javascript" defer data-script-src="./code/_k_api.js"></div>
-  //-<div type="text/javascript" defer data-script-src="./code/code.js"></div>
-  //-<div type="text/javascript" defer data-script-src="./code/editor.js"></div> -->
+  <!-- #defer fix attempt from v.0.1.12  https://github.com/KaaBEL/.d1r.dbv/blob/3eaff652afcfac3f7c46c5eaeb2a2bbdaf21acf8/dist/editor.html#L206C5-L242C85
+  https://github.com/KaaBEL/.d1r.dbv/blob/3eaff/dist/editor.html#L206C5-L242C85 -->
   <script type="text/javascript" defer src="./code/_k_api.js"></script>
   <script type="text/javascript" defer src="./code/code.js"></script>
   <script type="text/javascript" defer src="./code/editor.js"></script>
