@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.13";
+var version_editor_js = "v.0.2.14";
 /** @TODO check @see {Editor} for setting a setting without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -67,7 +67,7 @@ function Editor() {
   this.data = null;
 };
 /** (default) true: image pattern, false: color */
-Editor.background = typeof DOMMatrix != "undefined";
+Editor.background = typeof DOMMatrix == "function";
 /** mumst be in #xxxxxx hex color format */
 Editor.backgroundColor = "#111111";
 /** (default) 0: dbc, 1: db, ... 63: unassigned */
@@ -149,11 +149,12 @@ Editor.contextrestored = function () {
   console.info("D1R DBV rendering restorations initiated...");
 };
 Editor.setPixelRatio = function () {
-  var n = window.devicePixelRatio;
+  var n = window.devicePixelRatio, same = pR === n;
   if (Editor.fullscreenInitialized && n > 1) {
     pR = n;
-    /** @type {()=>void} */
-    (onresize || F)();
+    !same &&
+      /** @type {()=>void} */
+      (onresize || F)();
   }
 };
 /** requires settings loaded first for applying global pR (pixel ratio) */
@@ -949,6 +950,10 @@ Command.groupName = "";
 Command.rend_UI = F;
 Command.listening = -1;
 Command.NAME = {"Setup Properties": "Setup Properties"};
+Command.el = EL("menu");
+Command.head = EL("h1");
+Command.x = 5;
+Command.y = 5;
 /**
  * @type {{
  *   (name: string, items: [{name:string,type:string,
@@ -2105,7 +2110,7 @@ Command.push("Vehicle stats", function (items, collapsed) {
     var stack = stat.split("."), tmpSums = sums, tmpSkip = skipped;
     for (var i = 0; ++i < stack.length; tmpSkip = tmpSkip[stack[i - 1]])
       tmpSums = tmpSums[stack[i - 1]];
-    typeof value != "undefined" ?
+    value !== UDF ?
       tmpSums[stack[i - 1]] += parse ? parse(value) : value :
       tmpSkip[stack[i - 1]]++;
   }
@@ -2358,7 +2363,8 @@ t implemented. \nFor proper display of UI and mobile experience there is aut\
 omatic detection of touchscreen, this feature changes resolution and turns o\
 n fullscreen whenever the browser allows it, if it was somehow incorrectly d\
 etected you can use designated button to reset it. In case it still keeps de\
-tecting and it is not supposed to, that's a bug then. +dev stuff.");
+tecting and it is not supposed to, that's a bug then, not detecting when it'\
+s supposed to is a bug too. +dev stuff.");
 Command.push("Debug Logic circuit", function (items, collapsed) {
   /** @param {Block|LogicBlock} block @returns {LogicBlock|undefined} */
   function checkEndComponent(block) {
@@ -2464,6 +2470,9 @@ Command.push("Set camera view", function (items, collapsed) {
   };
   elBtn.appendChild(tN("Set"));
   items.push(elBtn);
+  // items.push(EL("br"), tN("pR (devicePixelRatio) is: " + pR));
+  // if (Number.isFinite && !Number.isFinite(pR) || +pR !== 0)
+  //   items.push(" something seemed to be wrong, fixed to: " + (pR = 1));
 }, "Let's you to set zoom and camera position to desired values. It is usefu\
 ll for reseting to intial view by pressing set while inputs are empty. The n\
 ewer Retreive/Apply variant with key allows you to save your build location.\
@@ -2553,12 +2562,17 @@ Command.push("Current version", function(items, collapsed) {
     EL("br"),
     tN("[editor.html]: " + (document.childNodes[1][s] || "")),
     EL("br"),
+    tN("[_k_api.js]: " + version__k_api_js),
+    EL("br"),
     tN("[code.js]: " + version_code_js),
     EL("br"),
     tN("[editor.js]: " + version_editor_js),
-    EL("br"),
-    version_sw
+    EL("br")
   );
+  if ("version_alphalunar_js" in window)
+    items.push(tN("[alphalunar.js]:" +
+      window.version_alphalunar_js), EL("br"));
+  items.push(version_sw);
   var xhr = new XMLHttpRequest();
   xhr.open("GET", "./service-worker.js");
   xhr.onreadystatechange = function () {
@@ -2614,7 +2628,7 @@ nfo to skip it.\n");
 
 /** @callback ToolExec @param {number} x @param {number} y @returns {void} */
 /** @typedef {ToolExec|Tool.Tab} ToolMethods */
-/** instance is sealed
+/**
  * @param {string} name @param {string} icon @param {ToolExec} [init]
  * @param {ToolExec} [exec] @param {ToolExec} [destroy] */
 function Tool(name, icon, init, exec, destroy) {
@@ -2796,7 +2810,6 @@ Tool.Tab.prototype.append = (
     document.createElement(element || setFromQuery("name", result[1]));
   setFromQuery("id", result[2]);
   setFromQuery("className", result[3]);
-  console.log("handler:" + handler);
   var event = handler && Data.getFunctionName(handler) ||
     (el instanceof HTMLButtonElement ? "onclick" : "oninput");
   if (event)
@@ -2987,9 +3000,10 @@ v0 c0,12d2,112d,2400,23ff,2400 h1c400 c12d2,0,2400,-112d,2400,-2400 v0 c0,-1\
 2d2,-112d,-2400,-2400,-2400 z M1fe22,38888 c-12d2,0,-2400,112d,-2400,23ff v0\
  c0,12d2,112d,2400,23ff,2400 h19400 c12d2,0,2400,-112d,2400,-2400 v0 c0,-12d\
 2,-112d,-2400,-2400,-2400 z", function () {
-  cmds.style.display = cmds.style.display ? "" : "none";
-  if (!cmds.style.top)
-    cmds.style.top = "0px";
+  var st = Command.el.style;
+  st.display = st.display ? "" : "none";
+  if (!st.top)
+    st.top = "0px";
 }));
 Tool.list.push(new Tool("Flip", "M2497,3d3e7 c-1420,0,-2470,-1050,-2470,-247\
 0 c0,-4ef,fb,-9a3,2c1,-dee c3fe,-9a4,1662c,-35d83,16900,-362b1 c62e,-b51,123\
@@ -3070,12 +3084,12 @@ Tool.Tab.addItem("Node", function setup(methods, _x, _y) {
     return onclick;
   }
   Logic.rend = true;
-  try {
-    throw new Error();
-  } catch (e) {
-    if (e instanceof Object && "stack" in e)
-      console.debug('setup '+test_handler+':'+e.stack);
-  }
+  //-try {
+  //-  throw new Error();
+  //-} catch (e) {
+  //-  if (e instanceof Object && "stack" in e)
+  //-    console.debug('setup '+test_handler+':'+e.stack);
+  //-}
   for (var i = 0; i < Color.NAME.length; i++)
     methods.append("button", handler(i), {
       id: "g" + i,
@@ -3095,7 +3109,7 @@ Tool.Tab.addItem("Node", function setup(methods, _x, _y) {
   methods.destroy = function () {
     Logic.rend = false;
     try {
-      throw new Error();
+      //throw new Error();
     } catch (e) {
       if (e instanceof Object && "stack" in e)
         console.debug('destroy '+test_handler+':'+e.stack);
@@ -3407,6 +3421,8 @@ DefaultUI.defaultPress = function (_x, _y) {};
 DefaultUI.canDefaultPress = true;
 /** @type {Block.Selected|null} */
 DefaultUI.found = null;
+/** will be used to visualise where is DefaultUI.Grab.tile being put */
+DefaultUI.replacingTile = -1;
 /** @param {number|string} type @param {unknown[]} [tiles=[]] */
 DefaultUI.createFolder = function (type, tiles) {
   var folder =
@@ -3438,10 +3454,13 @@ DefaultUI.setSelectedTile = function (item, x, y) {
   }
 };
 /** handles interactions with DefaultUI hotbars and inventory
- * @param {number} x @param {number} y @returns {boolean} over GUI area */
-DefaultUI.handleGUIArea = function (x, y) {
+ * @param {number} x @param {number} y
+ * @param {{item:number,folder:number}} [reference]
+ * @returns {boolean} over GUI area */
+DefaultUI.handleGUIArea = function (x, y, reference) {
+  // NOTE will probably require option for getactionArea
   /** number positoin of tile @see {DefaultUI.selectedTile} */
-  var item = -1;
+  var item = reference ? reference.item = reference.folder = -1 : -1;
   // v.0.2.10 237 = interactable witdh/height for toolBar
   if (x < 237) {
     // toolBar area of canvas: static tile slots
@@ -3459,18 +3478,26 @@ DefaultUI.handleGUIArea = function (x, y) {
     // v.0.2.10 103 = width of inventoryTile interactable area
     if (DefaultUI.inventoryTile && x > canvas.width - 103)
       item = 2;
-    else if (x - 237 < (DefaultUI.blockBars[DefaultUI.openedFolder] ||
-      []).length * 87) {
-        // v.0.2.10 243 = start of first tile detectable area
-        // negative value rounds up still being the first blockBar tile
-        item = (x - 243) / 87 << 2 | 1;
-      }
-  } else if (x - 237 + DefaultUI.offsetsFolders <
-    // v.0.2.10 57 = distance between origin points of folders
-    DefaultUI.blockBars.length * 57 && y > canvas.height - 170) {
+    else if (
+      x - 237 < (DefaultUI.blockBars[DefaultUI.openedFolder] ||
+        []).length * 87
+    ) {
+      // v.0.2.10 243 = start of first tile detectable area
+      // negative value rounds up still being the first blockBar tile
+      item = (x - 243) / 87 << 2 | 1;
+    }
+  } else if (
+    x - 237 + DefaultUI.offsetsFolders <
+      // v.0.2.10 57 = distance between origin points of folders
+      DefaultUI.blockBars.length * 57 && y > canvas.height - 170
+  ) {
     // folders for blockBar rect part of canvas:
     // resizes with folders amount changed
     var folder = (x - 237 + DefaultUI.offsetsFolders) / 57 | 0;
+    if (reference) {
+      reference.folder = folder;
+      return true;
+    }
     if (DefaultUI.previousFolders && x < 333)
       DefaultUI.offsetsFolders -= 57;
     else if (DefaultUI.nextFolders && x > canvas.width - 61)
@@ -3482,6 +3509,10 @@ DefaultUI.handleGUIArea = function (x, y) {
   } else
     // the rest of canvas area is handled for building area
     return false;
+  if (reference) {
+    reference.item = item;
+    return true;
+  }
   DefaultUI.setSelectedTile(item);
   render();
   return true;
@@ -3753,18 +3784,11 @@ DefaultUI.renderHotBars = function (w, h) {
     } else
       tx += 74;
   }
+  var grabbed = DefaultUI.Drag.tile;
+  tx = grabbed.x;
+  ty = grabbed.y;
+  drawTileCtx(grabbed.tile, false);
 };
-/**  new namings for action binds
- * @typedef ActionBind protoping of new simplified UI interface
- * @property {function} forceAction prevents default editor movement and
- * handles forced action instead
- * @property {function} moveAction
- * @property {function} pressAction
- * @property {function} longAction
- * @property {function} doubleAction
- * @property {function} hoverAction
- * @property {function} contextmenuAction
- **/
 /** generator for press action bind handling
  * @param {(x:number,y:number,tile:ShipBlock)=>void} [blockPlacing]
  * @param {boolean} [canDefault=true] @returns {typeof press} */
@@ -3795,14 +3819,125 @@ DefaultUI.basePress = function (blockPlacing, canDefault) {
       DefaultUI.canDefaultPress && DefaultUI.defaultPress(x, y);
   };
 };
-DefaultUI.baseMove = F;
-DefaultUI.baseContextmenu = F;
-DefaultUI.baseOver = F;
+// DefaultUI.baseMove = F;
+// DefaultUI.baseContextmenu = F;
+// DefaultUI.baseOver = F;
+/** @param {number} x @param {number} y @param {Actions} action */
+DefaultUI.detectTileMove = function (x, y, action) {
+  var claim = juhus.get("claim"), grabbed = DefaultUI.Drag.tile;
+  if (claim === "movetile") {
+    action.event.cancelable && action.event.preventDefault();
+    grabbed.update(x, y);
+    render();
+    return true;
+  }
+  if (claim === "unclaimed" && action.state.slice(-4) !== "drag")
+    return false;
+  /** @type {TileType[]|null} @see {DefaultUI.selectedTile} 0, 1 for hotbars */
+  var hotbar = grabbed.item !== -1 && ((grabbed.item & 3) === 1 ?
+    DefaultUI.blockBars[grabbed.folder] :
+    (grabbed.item & 3) === 0 ? DefaultUI.toolBar : null) || [];
+  if (grabbed.tile && !hotbar[grabbed.item >> 2])
+    hotbar[grabbed.item >> 2] = grabbed.tile;
+  if (!DefaultUI.handleGUIArea(action.startX, action.startY, grabbed))
+    return false;
+  action.event.cancelable && action.event.preventDefault();
+  hotbar = (grabbed.item & 3) === 1 ?
+    DefaultUI.blockBars[grabbed.folder = DefaultUI.openedFolder] :
+    (grabbed.item & 3) === 0 ? DefaultUI.toolBar : null;
+  console.log("grabbed="+grabbed.item+' '+grabbed.folder);
+  if (hotbar) {
+    grabbed.tile = hotbar[grabbed.item >> 2];
+    hotbar[grabbed.item >> 2] = null;
+  }
+  //console.log("<juhus " + grabbed.item + " " + grabbed.folder + ">"+hotbar+"</juhus>");
+  juhus.set("claim", "movetile");
+  return true;
+};
+//-/**
+//-* @param {number} x @param {number} y @param {number} item
+//-* @param {number} folder @param {TileType} tile */
+//-DefaultUI.Grab = function (x, y, item, folder, tile) {
+DefaultUI.Drag = function () {
+  this.x = 0;
+  this.y = 0;
+  this.item = -1;
+  this.folder = -1;
+  /** @type {TileType|null} */
+  this.tile = null;
+  Object.seal(this);
+};
+// #unsealed regexp for finding unsealed instances (sub/class definitions)
+/function [A-Z]|[ .][A-Z][A-Za-z0-9_$]* *= *(async +)?function/g;
+/** @param {number} x @param {number} y @param {TileType} [tile] */
+DefaultUI.Drag.prototype.update = function (x, y, tile) {
+  this.x = x;
+  this.y = y;
+  tile !== UDF ? this.tile = tile : 0;
+  return this;
+};
+/** lovely mutable @type {DefaultUI.Drag} */
+DefaultUI.Drag.tile = new DefaultUI.Drag();
 
-var cmdsName = EL("h1"), cmds = (function () {
+// #IDK move elsewhere maybe
+juhus.set("onclaim", function (x, y, source) {
+  if (source.source.startTarget !== canvas)
+    return source.preventClaim();
+    // if (source.source.startTarget !== Command.head)
+  if (DefaultUI.detectTileMove(x, y, source.source))
+    return source.preventClaim();
+});
+juhus.set("onstart", function (x, y, source) {
+  var action = source.source;
+  if (action.startTarget === Command.head) {
+    //-#cmdswtf does this do that it works?
+    var style = Command.el.style;
+    //-  x = Number(style.left.slice(0, -2)) || 0,
+    //-  y = Number(style.top.slice(0, -2)) || 0;
+    //-Command.x = x - source.source.pageX - canvas.offsetLeft;
+    //-Command.y = y - source.source.pageY - canvas.offsetTop;
+    //-juhus.set("claim", "cmdsmove"); may be replacable with:\ startTarget
+    style["" + "webkitUserSelect"] = style.userSelect = "none";
+  }
+});
+juhus.set("onmove", function (x, y, source) {
+  var action = source.source;
+  if (action.startTarget === Command.head) {
+    var style = Command.el.style, w = innerWidth - 86;
+    //-#cmdswtf does this do that it works?
+    //-oooh, it's because action.x as well tchd.x are (pageX - Left) * pR
+    //-var x = Command.x + action.pageX - canvas.offsetLeft,
+    //-  y = Command.y + action.pageY - canvas.offsetTop;
+    var x = +style.left.slice(0, -2) + action.movementX / pR || 0,
+      y = +style.top.slice(0, -2) + action.movementY / pR || 0;
+    style.left = (x > -269 ? x < w ? x : w : -269) + "px";
+    style.top = (y > 5 ? y : 5) + "px";
+    return;
+  }
+  if (action.startTarget !== canvas)
+    return;
+  if (DefaultUI.detectTileMove(x, y, action))
+    return;
+});
+juhus.set("onend", function (x, y, source) {
+  var action = source.source;
+  if (action.startTarget !== canvas)
+    return;
+  if (action.startTarget === Command.head) {
+    var style = Command.el.style;
+    style["" + "webkitUserSelect"] = style.userSelect = "none";
+    return;
+  }
+  if (action.state.slice(-5) === "short") {
+    action.event.cancelable && action.event.preventDefault();
+    DefaultUI.press(x, y);
+  }
+});
+
+(function () {
   /** for #commandsTab styles @see {Editor.addingStyles} */
   function goHome() {
-    cmdsName.innerText = "[Commands tab]";
+    Command.head.innerText = "[Commands tab]";
     content.style.display = "";
     items.style.display = "none";
     back.style.visibility = "hidden";
@@ -3812,14 +3947,14 @@ var cmdsName = EL("h1"), cmds = (function () {
     render();
   }
   /** navigation element returned to set cmds variable */
-  var menu = EL("menu");
+  var menu = Command.el;
   menu.id = "commandsTab";
   menu.style.display = "none";
   var el = menu.appendChild(EL("header")),
     back = el.appendChild(EL("button"));
   back.appendChild(tN("<"));
   back.onclick = goHome;
-  el.appendChild(cmdsName);
+  el.appendChild(Command.head);
   el = el.appendChild(EL("button"));
   el.appendChild(tN("X"));
   el.onclick = function () {
@@ -3839,7 +3974,7 @@ var cmdsName = EL("h1"), cmds = (function () {
       el.style.color = "#879b90";
     }
     return function () {
-      cmdsName.innerText = item.name;
+      Command.head.innerText = item.name;
       content.style.display = "none";
       items.style.display = "";
       back.style.visibility = "visible";
@@ -4086,7 +4221,7 @@ function rend_backgColor() {
 // #rendlog
 var rend_backgHangar = F, rend_request = "", init_started = false;
 +function () {
-  if (0 || /http:..localhost:8158/.test(location.href)) {
+  if (0 || /http:..localhost:815[89]/.test(location.href)) {
     var script = EL("script");
     script.type = "text/javascript";
     script.src = "./code/alphalunar.js";
@@ -4214,16 +4349,23 @@ var rend_colors = rend_initColors();
 function init_touchScreen(click) {
   if (click && !Editor.fullscreenInitialized)
     return;
-  var max = 3, logging = function (m, s, l, c, e) {
+  function logging(m, s, l, c, e) {
+    c === UDF && e === UDF ? c = e = "" : 0;
     /** @type {Function} */
     (window.onerror)(m, s === UDF ? " for Fulscreen." : s, l, c, e);
   };
-  if (typeof document.body.requestFullscreen == "function")
+  if (
+    typeof document.body.requestFullscreen == "function" &&
+    document.fullscreenEnabled !== false
+  ) {
     (touchdevice = function () {
-      if (!Editor.fullscreenDisabled)
+      var attempt = !Editor.fullscreenDisabled &&
+        //@ts-expect-error
+        !document.fullscreen && !document.webkitIsFullScreen;
+      if (attempt)
         document.body.requestFullscreen().then(render).catch(logging);
-      max-- ;
     })();
+  }
   Editor.fullscreenInitialized = true;
   Editor.saveSettings();
   Editor.setPixelRatio();
@@ -4270,7 +4412,7 @@ function commands(x, y, e) {
     e.target instanceof HTMLTextAreaElement) {
     return;
   }
-  var w = innerWidth - 175, ih = innerHeight - 255, st = cmds.style;
+  var w = innerWidth - 175, ih = innerHeight - 255, st = Command.el.style;
   st.left = (x > 178 ? x < w ? x - 175 : w - 180 : 5) + "px";
   st.top = (y > 45 && y > (ih < 250 ? ih : 255) ? y - 250 : 5) + "px";
   st.display = "";
@@ -4313,21 +4455,21 @@ DefaultUI.over = over = function (e) {
   if (e instanceof TouchEvent)
     return;
   if ((e.type === "mousedown" || e.type === "touchstart") &&
-    e.target === cmdsName) {
-    var st = cmds.style,
+    e.target === Command.head) {
+    var st = Command.el.style,
       x = Number(st.left.slice(0, -2)) || 0,
       y = Number(st.top.slice(0, -2)) || 0;
     cmdsX = x - e.pageX - canvas.offsetLeft;
     cmdsY = y - e.pageY - canvas.offsetTop;
     cmdsMove = !0;
-    cmds.style["" + "webkitUserSelect"] = cmds.style.userSelect = "none";
+    st["" + "webkitUserSelect"] = st.userSelect = "none";
   } else if (cmdsMove && (e.type === "mousemove" || e.type ===
     "touchmove")) {
     if (e instanceof MouseEvent && !e.buttons && !e.button) {
       cmdsMove = !1;
       return;
     }
-    var st = cmds.style,
+    var st = Command.el.style,
       x = cmdsX + e.pageX - canvas.offsetLeft,
       y = cmdsY + e.pageY - canvas.offsetTop,
       w = innerWidth - 86;
@@ -4337,10 +4479,8 @@ DefaultUI.over = over = function (e) {
     e.type === "touchcancel") {
     cmdsMove = !1;
   } else
-    cmds.style["" + "webkitUserSelect"] = cmds.style.userSelect = "";
-  // TODO: some nice system to account for end/'hoverleave'
-  // ^ will hopefully inherit final form which also "doublepress" and
-  // other advanced gestures will be provided with
+    Command.el.style["" + "webkitUserSelect"] =
+      Command.el.style.userSelect = "";
 };
 
 // v.0.2.9 diagnosing rendering behaviour #rendlog
@@ -4348,6 +4488,10 @@ DefaultUI.over = over = function (e) {
  * however to meet requirements of many various uses, and be aware of
  * possible optimizations, a system of global and local (single use)
  * settings to provide interface with multiple rendering methods */
+function Render() {
+  throw new Error("Unimplemented");;
+  this.logíc = false;
+}
 render = function () {
   var rq = -1;
   return function requestRendering() {

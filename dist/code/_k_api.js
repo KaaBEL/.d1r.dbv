@@ -2,7 +2,7 @@
 /// <reference path="./editor.html.ts" />
 "use strict";
 /** @readonly */
-var version__k_api_js = "v.0.2.13";
+var version__k_api_js = "v.0.2.14";
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -536,6 +536,7 @@ function mouseInit() {
     pY = y;
     moving = e.type === "mouseleave";
   };
+}//DISABLED HERE
   window.oncontextmenu = function (e) {
     for (var el = e.target; el instanceof Node;)
       if (!(el = el.parentNode))
@@ -546,7 +547,7 @@ function mouseInit() {
       y = (e.pageY - canvas.offsetTop) * pR;
     contextmenu(x, y, e);
   };
-}
+//DISABLED HERE}
 /** settings: allowed press time legth, @see {touchesInit.time} */
 mouseInit.time = 350;
 /** allowed press precision, @see {touchesInit.move} */
@@ -704,19 +705,15 @@ function initDoc() {
 
   window.onresize = resizeWindow;
 
-  mouseInit();
+  //DISABLED HEREmouseInit();
 
-  if (bd)
-    touchesInit(bd, UDF, [thetouchstart, thetouchmove, thetouchend,
-      thetouchcancel]);
+  //DISABLED HEREif (bd)
+  //   touchesInit(bd, UDF, [thetouchstart, thetouchmove, thetouchend,
+  //     thetouchcancel]);
 
   /** also called first touch, used to initiate fullscreen */
   window.ontouchend = function () {
-    if (document.fullscreenEnabled !== false && touchdevice &&
-      !document.fullscreen &&
-      //@ts-expect-error
-      !document.webkitIsFullScreen)
-      touchdevice();
+    touchdevice && touchdevice();
   };
   +function (info, clickHandler) {
     info ?
@@ -738,47 +735,53 @@ function initDoc() {
   resizeWindow();
 };
 
+/** @TODO what the going on in here? */
+if (typeof EventTarget != "function")
+  //@ts-expect-error IE11 compatibility
+  var EventTarget = Node;
+
 /** 
  * @typedef {Exclude<keyof (MouseEvent|WheelEvent|PointerEvent),"initEvent"|
  * "initUIEvent"|"preventDefault"|"stopImmediatePropagation"|"composedPath"|
  * "stopPropagation"|"getModifierState"|"initMouseEvent">} ActionsDefault
  */
-/** @typedef {Actions&{index:number}} ActionT touchues */
-/** @typedef {Actions&{index:-1}} ActionM mouse pointer */
-/** @typedef {Actions&{index:-2}} ActionP pointer (pen) */
 /** @typedef {TouchEvent|MouseEvent|WheelEvent|PointerEvent} ActionsEvent */
-/** @typedef {(x:number,y:number,temp:(Actions|null)[])=>void} ActionsExec */
+/**
+ * @typedef AllActions @property {(Actions|null)[]} changed
+ * @property {(Actions|null)[]&{count:number}} all
+ * @property {Actions} source 
+ */
+/** @typedef {(x:number,y:number,actions:AllActions)=>void} ActionsExec */
+/**
+ * @typedef {(x:number,y:number,claims:AllActions&{claim:string,cancelable:
+ * true,preventClaim:(custom?:string)=>void})=>void} ActionsClaim
+ */
 /**
  * @typedef {{immutable?:boolean,listeners?:AddEventListenerOptions,
- * start?:ActionsExec,move?:ActionsExec,end?:ActionsExec}} ActionsOptions
+ * start?:ActionsExec,move?:ActionsExec,end?:ActionsExec,claim?:ActionsClaim,
+ * filterClaimed?:boolean,touchIndex0:boolean}} ActionsOptions
  */
 /** @callback ActionsHandler @param {ActionsEvent} ev @this {HTMLElement} */
-/**
+/** UI API class/namespace, support either use of mouse or touches
  * @param {ActionsEvent} event @param {number} index
- * @param {Actions.State} state
- * @param {Actions|null} previous @param {Touch} [touch] */
+ * @param {Actions.State} state @param {Actions|null} previous
+ * @param {Touch} [touch] */
 function Actions(event, index, state, previous, touch) {
-  /** @TODO update for @see {previous} */
   /** @type {Touch|typeof Actions.default} */
   var source = touch || (event instanceof TouchEvent ?
     Actions.default : 
     event);
-  console.log(source);//- delete this when? assumimg for [Object Touch]
-  /** @type {number|undefined} */
-  var lastEnd = state.endTimeStamps[index],
-    type = this.type = event.type;
-/** original event captured by root */
+  var offset = state.root instanceof HTMLElement ?
+    state.root :
+    {offsetLeft: 0, offsetTop: 0};
+  // var type = this.type = event.type,
+  //   x = (source.pageX - state.root.offsetLeft) * pR,
+  //   y = (source.pageY - state.root.offsetTop) * pR;
+  this.type = event.type;
+  /** original event captured by root */
   this.event = event;
-  /** short double for example, check naming in scratch projects */
-  this.state = previous ? previous.state : (lastEnd && lastEnd +
-    state.shortTouchTime < event.timeStamp ? "double " : "single ") +
-    (state.shortTouchMove);
   // this.stage could be "start", "move", "end"
   this.identifier = touch ? touch.identifier : NaN;
-  //- touch.identifier :
-    //-/mouse/.test(type) ?
-      //-   -1 :
-      //-m  /pointer/.test(type) ? -2 : -3;
   /** number of order in which touches were creater or other cursor */
   this.index = index;
   this.altKey = event.altKey;
@@ -787,12 +790,16 @@ function Actions(event, index, state, previous, touch) {
   this.shiftKey = event.shiftKey;
   /** may provide gesture alternatives to mouse buttons and wheel */
   this.buttons = source instanceof Touch ? 0 : source.buttons;
+  /** @type {number} */
+  this.oldTimeStamp = previous ? previous.timeStamp : event.timeStamp;
+  /** @type {number} */
   this.timeStamp = state.endTimeStamps[index] = event.timeStamp;
-  this.oldTimeStamp = previous ? previous.timeStamp : this.timeStamp;
+  /** @type {number} */
   this.startTimeStamp = previous ? previous.startTimeStamp : this.timeStamp;
-  // the Event.srcElement seems to've been initial IE property for target xD
-  this.target = event.target || event.srcElement;
-  this.startTarget = previous ? previous.target : this.target;
+  /** @type {EventTarget|null} */
+  this.target = event.target;
+  /** @type {EventTarget|null} */
+  this.startTarget = previous ? previous.target : event.target;
   this.pageX = source.pageX;
   this.pageY = source.pageY;
   this.clientX = source.clientX;
@@ -802,24 +809,26 @@ function Actions(event, index, state, previous, touch) {
   this.force = touch ? touch.force : 1;
   this.radiusX = touch ? touch.radiusX : 1;
   this.radiusX = touch ? touch.radiusY : 1;
-  /** is not clientX but supposed to be x relative to root offsetLeft */
-  this.x = (source.pageX - state.root.offsetLeft) * pR;
-  /** is not clientX but supposed to be y relative to root offsetTop */
-  this.y = (source.pageY - state.root.offsetTop) * pR;
-    this.startX = previous ? previous.startX : this.x;
+  /** @type {number} not clientX but x relative to root offsetLeft */
+  this.x = (source.pageX - offset.offsetLeft) * pR;
+  /** @type {number} not clientX but y relative to root offsetTop */
+  this.y = (source.pageY - offset.offsetTop) * pR;
+  /** @type {number} */
+  this.startX = previous ? previous.startX : this.x;
+  /** @type {number} */
   this.startY = previous ? previous.startY : this.y;
   this.movementX = source instanceof Touch ? (previous ?
-    //@ts-expect-error what the sucking flux!
-    previous.x -this.x :
-    0) : source.movementX;
+    this.x - previous.x : 0) : source.movementX;
   this.movementY = source instanceof Touch ? (previous ?
-    //@ts-expect-error what the sucking flux!
-    previous.y - this.y:
-    0) : source.movementY;
+    this.y - previous.y : 0) : source.movementY;
+  /** short double for example, check naming in scratch projects */
+  this.state = Actions.updateState(this, event, state, previous);
+  /** @TODO it is possible for extra touches to exist due to missing touchend event */
+  // this.expires = -1;
   Object.seal(this);
 }
 /** @readonly *///@ts-expect-error
-Actions.API_VERSION = "0.3";
+Actions.API_VERSION = "0.3.3";
 Actions.default = Object.freeze(
   /** @type {{[K in ActionsDefault]:(MouseEvent|WheelEvent|PointerEvent)[K]}} */
   ({
@@ -863,36 +872,65 @@ Actions.default = Object.freeze(
     AT_TARGET: 2,
     BUBBLING_PHASE: 3
   }));
+/** shortens the code amount burder per precossing state.state string
+ * @param {Actions} action @param {ActionsEvent} event
+ * @param {Actions.State} state @param {Actions|null} previous */
+Actions.updateState = function  (action, event, state, previous) {
+  if (!previous) {
+    var lastEnd = state.endTimeStamps[action.index],
+      lastPosition = state.endPositions[action.index],
+      x = action.x - (lastPosition || [0])[0],
+      y = action.y - (lastPosition || [0, 0])[1];
+    //-console.log(lastEnd | 0, '+', state.doubleTouchTime | 0, ">", event.timeStamp | 0);
+    return lastEnd && lastEnd + state.doubleTouchTime > event.timeStamp &&
+      lastPosition && Math.sqrt(x * x + y * y) < state.shortTouchMove ?
+        "double " :
+        "single ";
+  }
+  x = action.x - previous.startX, y = action.y - previous.startY;
+  var both = previous.state.split(" "), click = both[0] || "single";
+  /** is how the interactions evolves after start short|long|drag|longdrag */
+  var hold = both[1] || "";
+  var drag = hold.slice(-4) === "drag",
+    long = hold.slice(0, 4) === "long" || !drag &&
+      event.timeStamp > action.startTimeStamp + state.shortTouchTime;
+  // TODO: use of state.pixelRatio sounds like it could improve experience
+  drag = drag || Math.sqrt(x * x + y * y) > state.shortTouchMove;
+  return click + " " +
+    ((long ? "long" : "") + (drag ? "drag" : "") || "short");
+};
 /** updates by mutating, or just mutates to create given Actions instance
- * @param {Actions|undefined} action @param {number} index
- * @param {Actions.State} state
- * @param {ActionsEvent} event @param {Touch} [touch] */
-Actions.update = function (action, index, state, event, touch) {
+ * @param {Actions|null} action @param {number} index
+ * @param {Actions.State} state @param {ActionsEvent} event
+ * @param {Actions|null} previous @param {Touch} [touch] */
+Actions.update = function (action, index, state, event, previous, touch) {
   if (!action)
     throw new TypeError("action undefined at Actions.update");
+  // the order of updating properties is depended by previous === action
   var source = touch || (event instanceof TouchEvent ?
     Actions.default : 
     event);
-  var type = action.type = event.type;
+  var offset = state.root instanceof HTMLElement ?
+    state.root :
+    {offsetLeft: 0, offsetTop: 0};
+  var previousX = previous ? previous.x : NaN,
+    previousY = previous ? previous.y : NaN;
+  action.type = event.type;
   action.event = event;
-  // UPDATE HERE set s4ate same as in Actions constructor
-  action.state = state.state;
-  action.identifier = touch ?
-    touch.identifier :
-    /mouse/.test(type) ?
-      -1 :
-      /pointer/.test(type) ? -2 : -3;
+  action.identifier = touch ? touch.identifier : NaN;
   action.index = index;
   action.altKey = event.altKey;
   action.ctrlKey = event.ctrlKey;
   action.metaKey = event.metaKey;
   action.shiftKey = event.shiftKey;
   action.buttons = source instanceof Touch ? 0 : source.buttons;
+  action.oldTimeStamp =
+    previous ? previous.timeStamp : event.timeStamp;
   action.timeStamp = event.timeStamp;
-  action.oldTimeStamp = action.timeStamp;
-  action.startTimeStamp = action.startTimeStamp;
-  action.target = event.target || event.srcElement;
-  action.startTarget = action.target;
+  action.startTimeStamp =
+    previous ? previous.startTimeStamp : event.timeStamp;
+  action.target = event.target;
+  action.startTarget = previous ? previous.startTarget : event.target;
   action.pageX = source.pageX;
   action.pageY = source.pageY;
   action.clientX = source.clientX;
@@ -902,27 +940,73 @@ Actions.update = function (action, index, state, event, touch) {
   action.force = touch ? touch.force : 1;
   action.radiusX = touch ? touch.radiusX : 1;
   action.radiusX = touch ? touch.radiusY : 1;
-  var oldX = action.x, oldY = action.y;
-  action.x = (source.pageX - state.root.offsetLeft) * pR;
-  action.y = (source.pageY - state.root.offsetTop) * pR;
-  action.startX = action.startX;
-  action.startY = action.startY;
-  action.movementX =
-    source instanceof Touch ? oldX - action.x : source.movementX;
-  action.movementY =
-    source instanceof Touch ? oldY - action.y : source.movementY;
+  action.x = (source.pageX - offset.offsetLeft) * pR;
+  action.y = (source.pageY - offset.offsetTop) * pR;
+  action.startX = previous ? previous.startX : action.x;
+  action.startY = previous ? previous.startY : action.y;
+  //-previous ? console.log(previous.x, previous, action.x) : console.log("niema ");
+  // in case of mutable version previous === action, old x, y need variables
+  action.movementX = source instanceof Touch ? (previous ?
+    action.x - previousX :
+    0) : source.movementX;
+  action.movementY = source instanceof Touch ? (previous ?
+    action.y - previousY :
+    0) : source.movementY;
+  action.state = Actions.updateState(action, event, state, previous);
   return action;
 };
-/** @param {HTMLElement} root @param {ActionsOptions} options */
+/**
+ * @param {Actions.State} state @param {AllActions["all"]} all
+ * @param {ActionsEvent} ev */
+Actions.touchGrab = function (state, all, ev) {
+  var touch0 = all[0], touch1 = all[1];
+  if (!touch0 && touch1)
+    touch0 = touch1;
+  else if (!touch1 && touch0)
+    touch1 = touch0;
+  else if (!touch0 || !touch1)
+    return console.error("touchGrab error");
+  //console.log(state.grabAction);
+  ev.cancelable && ev.preventDefault();
+  var x0 = touch0.movementX, y0 = touch0.movementY;
+  var x1 = touch1.movementX, y1 = touch1.movementY;
+  if (state.grabAction.slice(0, 4) === "move") {
+    var n = state.grabAction === "moveorzoom" ? 4 : 2;
+    //console.log(x0 +' '+ x1 +' '+ y0+' '+ y1+' '+ n);
+    vX += (x0 + x1) / n;
+    vY += (y0 + y1) / n;
+  }
+  if (state.grabAction.slice(-4) === "zoom") {
+    test_debug && console.log("ontouch zoom");
+    var prev = sc, w = canvas.width / 2, h = canvas.height / 2;
+    sc +=
+      ((touch0.pageX > touch1.pageX ? x0 - x1 : x1 - x0) +
+      (touch0.pageY > touch1.pageY ? y0 - y1 : y1 - y0) || 0) *
+        sc / (474 << +(state.grabAction === "moveorzoom"));
+    vX = (vX - w) * sc / prev + w;
+    vY = (vY - h) * sc / prev + h;
+    // TODO: starting with "moveorzoom" is supposed to detect either
+    // zooming in/out or movement, It did it very stubbornly though
+    if (state.grabAction === "moveorzoom")
+      ++state.grabCount > 4 ?
+        state.grabAction =
+          Math.abs(state.grabScore) > state.shortTouchMove / 2 ?
+            state.grabScore > 0 ? "move" : "zoom" :
+        "movezoom" :
+      state.grabScore += Math.abs(x0 + x1 + y0 + y1) -
+        Math.abs(x0 - x1 + y0 - y1) * 2;
+  }
+  render();
+};
+/** @param {EventTarget} root @param {ActionsOptions} options */
 Actions.init = function (root, options) {
-  if (!(root instanceof HTMLElement))
-    throw new TypeError("root is not instanceof HTMLElement");
+  if (!(root instanceof EventTarget))
+    throw new TypeError("root is not instanceof EventTarget");
   var immutable = "immutable" in options && options.immutable,
     listeners = "listeners" in options ? options.listeners : null;
   /** @type {number[]} */
   var identifiers = [];
-  /** contains all touches + outdated ones for reusing the same object over
-   * @type {(Actions|null)[]} */
+  /** @type {(Actions|null)[]} */
   var temp = [];
   /** @type {(Actions|null)[]&{count:number}} */
   var all = function () {
@@ -932,19 +1016,55 @@ Actions.init = function (root, options) {
     arr[-1] = null;
     arr[-2] = null;
     return arr;
-  }(),
-    mutable = [];
-  /** @TODO to be implemented managing user assigned Actions listeners
-   * @type {((ev,i,all,idx)=>void|boolean)[]}  */
-  var softHandlers = [F, F, F, F];
+  }();
+  /** contains all touches + outdated ones for reusing the same object
+   * over @type {(Actions|null)[]} */
+  var mutable = [];
+  /** @type {AllActions} @throws source.source is null *///@ts-expect-error
+  var source =
+    Object.seal({all: all, changed: temp, source: null});
   /** @TODO to be implemented managing user assigned Actions err listeners
    * @type {((ev,i,all,idx)=>void|boolean)[]} */
   var errorHandlers = [F, F, F, F];
+  //-probably a typesctipt test
+  //-state.onclaim(0, 0, {
+  //-  changed: temp,
+  //-  all: all,
+  //-  source: source.source,
+  //-  claim: "the one",
+  //-  cancelable: true,
+  //-  preventClaim: function (custom) {
+  //-    return;
+  //-  }
+  //-});
 
   var state = new Actions.State(options);
   state.root = root;
   for (var p in options)
     delete options[p];
+  /** starts claim event it's own way, returns true if not prevented
+   * @param {ActionsEvent} ev @param {string} claim @returns claimed */
+  function dispatchClaim(ev, claim) {
+    claim.length !== 4 &&
+      console.warn("internal claims must have name lenght of 4!");
+    /** alternative to this was constructing Actions.State with
+     * this.grabAction = "movezoom" */
+    var initial = state.claim;
+    state.onclaim(source.source.x, source.source.y, Object.freeze({
+      changed: temp,
+      all: all,
+      source: source.source,
+      claim: claim,
+      cancelable: true,
+      preventClaim: function (custom) {
+        state.claim = (typeof custom == "string" ?
+          custom.length !== 4 && custom :
+          state.claim !== initial && state.claim) || "custom";
+      }
+    }));
+    state.claim === initial ? state.claim = claim : 0;
+    return state.claim === claim;
+  }
   /**
    * @param {keyof HTMLElementEventMap|"mousewheel"} type
    * @param {ActionsHandler} handler */
@@ -962,13 +1082,13 @@ Actions.init = function (root, options) {
   addEvent("touchstart", function (ev) {
     if (!(ev instanceof TouchEvent))
       throw new TypeError("not TouchEvent for touchstart handler");
-    //-state.state = "start";
+    var action = temp[-9];
     for (var i = 0, changed = ev.changedTouches; i < changed.length; i++) {
       var touch = changed[i], j = identifiers.indexOf(touch.identifier);
       if (j >= 0) {
         if (errorHandlers[0] && errorHandlers[0](ev, i, all, j))
           continue;
-                console.error("assigning touch");
+        console.error("assigning touch");
         // continues existing identifier index
       } else
         // otherwise find it a new index
@@ -978,13 +1098,32 @@ Actions.init = function (root, options) {
       all[j] = temp[j] = immutable ?
         Object.freeze(new Actions(ev, j, state, null, touch)) :
         mutable[j] ?
-          Actions.update(mutable[j], j, state, ev, touch) :
+          Actions.update(mutable[j], j, state, ev, null, touch) :
           mutable[j] = new Actions(ev, j, state, null, touch);
+      action ? 0 : source.source = (action = temp[j]) || source.source;
       for (j = all.count = 0; j < all.length;)
         all.count += +!!all[j++];
     }
     // #tstart beggining of created touches handling
-    Actions.log(temp, ev, "srt", state);
+    if (state.grabCount === 0)
+      state.grabTime = Date.now();
+    if (state.claim === "move" || state.claim === "unclaimed")
+      if (
+        all.length > 1 && all[0] && all[1] &&
+        Date.now() < state.grabTime + state.shortTouchTime &&
+        all[0].startTarget === state.root && all[1].target === state.root
+      ) {
+        state.claim = "grab";
+        state.grabAction = "movezoom";
+        state.grabCount = 0;
+      }
+    action ?
+      !(state.filterClaimed && state.claim.length === 4) &&
+        !(state.touchIndex0 && action !== temp[0]) &&
+        state.onstart(action.x, action.y, source) :
+      console.error("very strange error, action is null");
+    Actions.log(temp, ev, "srt", state, source);
+    state.grabCount = all.count;
     // end of touches handling
     for (j = temp.length = all.length; j-- > 0;)
       temp[j] = null;
@@ -992,29 +1131,45 @@ Actions.init = function (root, options) {
   addEvent("touchmove", function (ev) {
     if (!(ev instanceof TouchEvent))
       throw new TypeError("not TouchEvent for touchmove handler");
-    //-state.state = "move";
+    var action = temp[-9];
     for (var i = 0, changed = ev.changedTouches; i < changed.length; i++) {
       var touch = changed[i], j = identifiers.indexOf(touch.identifier);
       if (j < 0) {
         if (errorHandlers[1] && errorHandlers[1](ev, i, all, -1))
           continue;
-                console.error("adding touch");
+        console.error("adding touch");
         // find it a new index
         for (j = 0; all[j] !== null && j < all.length;)
           j++;
         identifiers[j] = touch.identifier;
       }
       // otherwise continues existing identifier index
-      all[j] = temp[j] = immutable ?
+      source.source = all[j] = temp[j] = immutable ?
         Object.freeze(new Actions(ev, j, state, all[j], touch)) :
         mutable[j] ?
-          Actions.update(mutable[j], j, state, ev, touch) :
+          Actions.update(mutable[j], j, state, ev, all[j], touch) :
           mutable[j] = new Actions(ev, j, state, all[j], touch);
+      action ? 0 : source.source = (action = temp[j]) || source.source;
       for (j = all.count = 0; j < all.length;)
         all.count += +!!all[j++];
     }
     // #tmove beggining of updated touches handling
-    Actions.log(temp, ev, "mov", state);
+    //-console.log(state.state, " ", state.claim);
+    if (state.claim === "grab")
+      (all[0] || all[1]) && Actions.touchGrab(state, all, ev);
+    else if (
+      source.source.state === "single drag" &&
+      state.claim === "unclaimed"
+    ) {
+      if (dispatchClaim(ev, "grab"))
+        state.grabAction = "movezoom";
+    }
+    action ?
+      !(state.filterClaimed && state.claim.length === 4) &&
+        !(state.touchIndex0 && action !== temp[0]) &&
+        state.onmove(action.x, action.y, source) :
+      console.error("very strange error, action is null");
+    Actions.log(temp, ev, "mov", state, source);
     // end of touches handling
     for (j = temp.length = all.length; j-- > 0;)
       temp[j] = null;
@@ -1022,20 +1177,22 @@ Actions.init = function (root, options) {
   addEvent("touchend", addEvent("touchcancel", function (ev) {
     if (!(ev instanceof TouchEvent))
       throw new TypeError("not TouchEvent for touchend handler");
-    //-state.state = "click";
+    //-console.log("end:" + ev.type);
+    var action = temp[-9];
     for (var i = 0, changed = ev.changedTouches; i < changed.length; i++) {
       var touch = changed[i], j = identifiers.indexOf(touch.identifier);
       if (j < 0) {
         if (!(errorHandlers[2] && errorHandlers[2](ev, i, all, -1)))
           continue;
-                console.error("adding ghost/instant touch");
+        console.error("adding ghost/instant touch");
       }
       identifiers[j] = -1;
       temp[j] = immutable ?
         Object.freeze(new Actions(ev, j, state, all[j], touch)) :
         mutable[j] ?
-          Actions.update(mutable[j], j, state, ev, touch) :
+          Actions.update(mutable[j], j, state, ev, all[j], touch) :
           mutable[j] = new Actions(ev, j, state, all[j], touch);
+      action ? 0 : source.source = (action = temp[j]) || source.source;
       all[j] = null;
       for (j = all.length - 1; j >= 0 && !all[j]; j--)
         all.length--;
@@ -1043,16 +1200,28 @@ Actions.init = function (root, options) {
         all.count += +!!all[j++];
     }
     // #tend beggining of removed/canceled touches handling
-    var action = temp[0];
-    // if (action) {
-    //   ev.preventDefault();
-    //   state.onend(action.x, action.y, all); 
-    // }
-    Actions.log(temp, ev, "end", state);
+    if (state.claim === "grab")
+      Actions.touchGrab(state, all, ev);
+    //-console.log('This one does' + action,''+(action && [action.startTarget+"=="+(/*action.startTarget === */root),action.state.slice(-5)]));
+    //-if (action && (!state.target || action.startTarget === state.target) &&
+    //- action.state.slice(-5) === "short") {
+    //-  //ev.preventDefault();
+    //-  console.log('Are we there yet?');
+    action ?
+      !(state.filterClaimed && state.claim.length === 4) &&
+        !(state.touchIndex0 && action !== temp[0]) &&
+        state.onend(action.x, action.y, source) :
+      console.error("very strange error, action is null");
+    //-}
+    Actions.log(temp, ev, "end", state, source);
     // end of touches handling
-    for (j = temp.length = all.length; j-- > 0; temp[j] = null)
-      if (action = temp[j])
+    for (j = temp.length; j-- > 0; temp[j] = null)
+      if (action = temp[j]) {
         state.endTimeStamps[j] = action.timeStamp;
+        state.endPositions[j] = [action.x, action.y];
+      }
+    if ((state.grabCount = temp.length = all.length) === 0)
+      state.claim = "unclaimed";
   }));
   addEvent("mousedown", function (ev) {
     ;
@@ -1076,29 +1245,55 @@ return state.generateAccessors();
 };
 /** @param {ActionsOptions} options */
 Actions.State = function (options) {
+  /** vX, vY, sc, pR globals aen't getting removed yet */
   this.x = 0;
+  /** vY */
   this.y = 0;
-  this.fromX = 0;
-  this.fromY = 0;
-  this.grabX = 0;
-  this.grabY = 0;
+  /** sc */
   this.scale = 16;
-/** customisable @see {typeof window.devicePixelRatio} */
+  /** fX */
+  this.fromX = 0;
+  /** fY */
+  this.fromY = 0;
+  /** gX */
+  this.grabX = 0;
+  /** gY */
+  this.grabY = 0;
+  /** pR customisable @see {window.devicePixelRatio} */
   this.pixelRatio = 1;
   this.onstart = options.start || F;
   this.onmove = options.move || F;
   this.onend = options.end || F;
   this.oncancel = options.end || F;
+  this.onclaim = options.claim || F;
+  /** @type {EventTarget} the element that gets events assigned */
   this.root = EL("unknown");
-  /** gesture type "<single|double> <short|long|grab>" */
+  /** @deprecated gesture "<single|double> <short|long|drag|longdrag>" */
   this.state = " ";
-/** previous end timeStamps for each acion index */
+  /** so far only for one/two finger moving around "move"/"grab",
+   * "custom" means the actons are in use outside API, "unclaimed"
+   * !as an experiment string length 4 means it's claimed by API! */
+  this.claim = "unclaimed";
+  /** the top canvas element used for display of the editor,
+   * detects all elements if null @param {EventTarget|null}
+   * is responsible for preventing grab through elementw over canvas */
+  this.target = null;
+  /** @type {(number|undefined)[]} previous end timeStamps per index */
   this.endTimeStamps = [];
+  /** previous end positions per action index
+   * @type {([number,number]|undefined)[]} */
+  this.endPositions = [];
+  /** stores the last Date.now() of active touches */
+  this.grabTime = 0;
+  this.grabCount = 0;
+  /** "grab" properies refer to Actions.touchGrab, this is its mode */
+  this.grabAction = "";
+  this.grabScore = 0;
   
   /** allowed time for active (started) action to get state...short" */
-  this.shortTouchMove = 350;
+  this.shortTouchTime = 350;
   /** allowed distance for active action to get state "...short" */
-  this.shortTouchTime = 13;
+  this.shortTouchMove = 13;
   /** allowed time between actions to get state "double..." */
   this.doubleTouchTime = 300;
   /** allowed time for active (started) action to get state...short" */
@@ -1113,6 +1308,9 @@ Actions.State = function (options) {
   this.shortOtherMove = 5;
   /** allowed time between actions to get state "double..." */
   this.doubleOtherTime = 300;
+  this.filterClaimed = options.filterClaimed || true;
+  /** filters out all actions that don't have all[0] as source.source */
+  this.touchIndex0 = true;
   Object.seal(this);
 };
 /** @this {Actions.State} */
@@ -1123,7 +1321,6 @@ Actions.State.prototype.generateAccessors = function () {
    * keys:()=>(keyof Actions.State)[]}}
    */
   var accessors = {
-    //**  @template {keyof StateType} K @param {K} key @returns {StateType[K]} */
     get: function (key) {
       return self[key];
     },
@@ -1139,26 +1336,24 @@ Actions.State.prototype.generateAccessors = function () {
       return keys;
     }
   }, self = this;
-  //-for (var p in this)
-  //-  if (Object.prototype.hasOwnProperty.call(this, p))
-  //-    this["get" + p[0].toUpperCase() + p.slice(1)] = function () {
-  //-    };
-  return Object.freeze(accessors);
+    return Object.freeze(accessors);
 };
 Actions.logMax = 16;
 /** spaghetti Actions debugging utility
-* @param {(Actions|null)[]} tem typeof temp @param {ActionsEvent} evt
-* @param {string} typ @param {Actions.State} stat */
-Actions.log = function (tem, evt, typ, stat) {
+ * @param {(Actions|null)[]} tem typeof temp @param {ActionsEvent} evt
+ * @param {string} typ @param {Actions.State} stat @param {AllActions} src */
+Actions.log = function (tem, evt, typ, stat, src) {
   var max = 16;
   //, alias = JSON.parse("{x:vX,y:vY,}".replace(/:/g, ':"').replace(/,/g, '",');
   //Actions.logMax-- > 0 && console.log
-    (evt);
-    //console.log
-    (typ + " " + tem.map(function (e) {
-      return e instanceof Actions ? "t" : e === null ? "_" : "" + e;
-    }).join(","));
-  typ !== "end" &&
+  (evt);
+  //console.log
+  (typ + " " + tem.map(function (e) {
+    return e instanceof Actions ? "t" : e === null ? "_" : "" + e;
+  }).join(","));
+  //Actions.logMax-- < 1 &&
+  //typ !== "end" &&
+  /** list full actions with all properies */
   (1) || tem.forEach(function (e) {
     if (!e)
       return;
@@ -1171,16 +1366,33 @@ Actions.log = function (tem, evt, typ, stat) {
     console.log(s + "state.endTimeStamp:n=" +
       juhus.get("endTimeStamps") + "]");
   });
+  /** live log into evil_input */
+  var action = tem[0], inpLog =
+    //action ? action.movementX + " " + action.movementY : "";
+    action ? action.state + " " + juhus.get('claim') + " " +
+      src.all.count + '(state+claim+temp.count)\n' : "";
+    //action ? JSON.stringify(action.state) + (action.timeStamp | 0) + '\n' : "";
+    //JSON.stringify(stat.endPositions);
+  if (Actions.logLivevil && action && "evil_input" in window) {
+    var input = window.evil_input;
+    (input instanceof HTMLInputElement ||
+      input instanceof HTMLTextAreaElement ?
+      input : EL("input")).value = inpLog;
+  }
 };
-console.log(((Actions.logImmutable =
-  (Date.now() / 24 * 3600 * 1000) % 2 > 1) ? "Imm" : "M") + "utable today!");
+Actions.logLivevil = true;
+Actions.logImmutable =
+  (Date.now() / (24 * 3600 * 1000)) % 2 < 1;
+console.log((Actions.logImmutable ? "Imm" : "M") + "utable today!");
+if (typeof test_actions == "function")
 // #foracode                 > || document.querySelector("c-console")<
 var juhus = Actions.init(GE(8) || document.querySelector("c-console") || EL(), {
   listeners: {},
-  immutable: Actions.logImmutable
+  immutable: Actions.logImmutable,
+  filterClaimed: true,
+  touchIndex0: true
 });
-//EL().onclick = function (ev) { if (this instanceof HTMLElement)
-//new Actions(ev, this, null).altKey; };
+function test_actions() {}
 
 // #acodekeys [search,ctrl, tab,shift,arrrow left,arrow right,undo,redo]
 //            [move v,move ^,copy v,meta,   ctrl,    shift,   alt, esc ]

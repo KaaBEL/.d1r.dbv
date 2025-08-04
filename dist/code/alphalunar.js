@@ -1,6 +1,7 @@
 /// <reference path="editor.js"/>
 "use strict";
-var version_alphalunar_js = "v.0.2.13";
+/** @readonly *///@ts-expect-error
+var version_alphalunar_js = "v.0.2.14";
 var test_ship = {"name":"Starter Droneboi","gameVersion":[],"dateTime":"05.05.2024 21:12:18","blocks":[{"internalName":"__placeholder856__","position":[0,-9,-52],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-50],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-48],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
 {"internalName":"__placeholder856__","position":[0,-9,-46],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-44],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-42],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-40],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
 {"internalName":"__placeholder856__","position":[0,-9,-38],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-52],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-50],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-48],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-46],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-44],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
@@ -208,6 +209,11 @@ Command.push("Evil Addon", function (items, collapsed) {
   exec.id = "evil_exec";
   exec.appendChild(tN("Do evil"));
   exec.onclick = function () {
+    if (typeof Actions == "function" && Actions.logLivevil) {
+      Actions.logLivevil = false;
+      input.value = "//GE(\"evil_input\").value =\n  " +
+        JSON.stringify(input.value) + ";";
+    }
     try {
       result.style.color = "#ccc";
       value = eval.call(window, input.value);
@@ -245,4 +251,17 @@ Command.push("Evil Addon", function (items, collapsed) {
       window.test_log.push(text);
   };
 }, "Gives access to eval.");
+setTimeout(function () {
+  var ch = (document.querySelector("#commandsTab .content") || EL()).childNodes;
+  for (var i = ch.length, button = null; i-- > 0;) {
+    for (var node = ch[i]; node.firstChild; node = node.firstChild)
+      if (node instanceof HTMLButtonElement)
+        button = node;
+    if (node instanceof Text && node.data === "Evil Addon") {
+      /** @type {()=>void} */
+      ((button || node.parentNode || {click: null}).onclick || F)();
+      break;
+    }
+  }
+}, 300)
 document.head.querySelector("link[rel=\"icon\"]").href = "./favicon.png";

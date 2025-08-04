@@ -1,14 +1,13 @@
 //@ts-check
 /// <reference path="./defs.d.ts" />
 "use strict";
+/** @readonly */
+var version_code_js = "v.0.2.14";
+/** @TODO check @see {Ship.VERSION} */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
 // B) create chrome extensions with custom modifications for live page
-// C) pull requests to main repo on github
-/** @readonly */
-var version_code_js = "v.0.2.12";
-//-#defer fix attempt console.debug("version_code_js: " + version_code_js);
-/** @TODO check @see {Ship.VERSION} */
+// C) pull requests contribuition to main repo on github
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[K in string|number|symbol]?:unknown}} safe */
   /** @type {()=>safe} should be safe with safe type */
@@ -534,7 +533,7 @@ Logic.generateLogic = function () {
   function setLogic(arg) {
     if (typeof arg == "function")
       return void (func = arg);
-    if (typeof arg == "undefined")
+    if (arg === UDF)
       return console.warn("Found \"undefined\" type" + AT);
     var nodesDef = typeof arg == "string" ?
       defs[Number(arg)] :
@@ -1556,6 +1555,7 @@ Block.Properties = function (type, name) {
   this.name = name;
   /** @type {ItemTs[T]} defines the data structure *///@ts-expect-error
   this.item = new Block.Properties.Items[type]();
+  Object.seal(this);
 };
 Block.Properties.Items = {
   // changed the integer slider from not having enterable input
@@ -1807,7 +1807,7 @@ Block.Box2d.generateBuildBox = function () {
   }
   /** @param {PathArg[]|string} arg */
   function setBuildBox(arg) {
-    if (typeof arg == "undefined")
+    if (arg === UDF)
       return console.warn("Found \"undefined\" type" + AT);
     var path = typeof arg == "object" ? arg.map(function (e) {
       return e instanceof Array ? {x: e[0], y: e[1]} : {x: e.x, y: e.y};
@@ -2377,6 +2377,7 @@ function LogicBlock(block, index, ship) {
   this.logicPosition = block.position;
   /** while in Logic mode it stores index of the block in Ship Ship.Mode */
   this.logicBlockIndex = index;
+  Object.seal(this);
 }
 __extends(LogicBlock, Block);
 
@@ -2404,6 +2405,7 @@ function Edit(command, args, type) {
   // when Edit.historyAt crawls edits list for progression path
   // it assigns a 0 or reference to what was skipped by undone
   this.temp = 0;
+  Object.seal(this);
 }
 // what about buildReplace options kind !!?
 // > if an Edit command uses settings, it must contain optional
