@@ -2,7 +2,7 @@
 /// <reference path="./editor.html.ts" />
 "use strict";
 /** @readonly */
-var version__k_api_js = "v.0.2.14";
+var version__k_api_js = "v.0.2.15";
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -21,9 +21,38 @@ var canvas = function (canvas) {
   ctx = canvas.getContext("2d") || new CanvasRenderingContext2D();
 
 var test_log = [];
-console.log = function () {
-  test_log.push([].slice.call(arguments));
-};
+if (/http:..localhost:815[89]/.test(location.href))
+  (function test_alphalunar() {
+    /** @typedef {()=>void} F */
+    /** @type {Console&{oldLog?:F,oldWarn?:F,oldError?:F}} */
+    var NS = console;
+    var oldLog = NS.log, oldError = NS.error;
+    var oldWarn = NS.warn;
+    function log() {
+      var args = [].slice.call(arguments);
+      test_log.push(args);
+      oldLog.apply(NS, args);
+    };
+    log.old = oldLog;
+    function warn() {
+      var args = [].slice.call(arguments);
+      test_log.push(["[c.w]:"].concat(args));
+      oldWarn.apply(NS, args);
+    };
+    warn.old = oldWarn;
+    function error() {
+      var args = [].slice.call(arguments);
+      test_log.push(["[c.err]:"].concat(args));
+      oldError.apply(NS, args);
+    }
+    error.old = oldError;
+    NS.log = log;
+    NS.warn = warn;
+    NS.error = error;
+    NS.oldLog = oldLog;
+    NS.oldWarn = oldWarn;
+    NS.oldError = oldError;
+  })();
 // api v.0.0.29
 
 // press is touch or click
@@ -556,7 +585,7 @@ mouseInit.move = 2;
 var actionType = 0, moveScore = 0, moveCount = 0;
 function touchGrab(all, ev) {
   if (!all[0] || !all[1])
-    return console.error("touchGrab error");
+    return console.error("touchGrab outdated error");
   ev.cancelable && ev.preventDefault();
   var x0 = all[0].movX,
     y0 = all[0].movY,
@@ -686,6 +715,7 @@ function thetouchcancel(all, changed, ev) {
 (document.body || EL()).onload = initDoc;
 function initDoc() {
   function resizeWindow() {
+    console.log("resizing");
     var w = window.innerWidth * pR,
       h = window.innerHeight * pR;
     if (w > 4096 || h > 4096)
@@ -748,8 +778,7 @@ if (typeof EventTarget != "function")
 /** @typedef {TouchEvent|MouseEvent|WheelEvent|PointerEvent} ActionsEvent */
 /**
  * @typedef AllActions @property {(Actions|null)[]} changed
- * @property {(Actions|null)[]&{count:number}} all
- * @property {Actions} source 
+ * @property {(Actions|null)[]&{count:number}} all @property {Actions} source
  */
 /** @typedef {(x:number,y:number,actions:AllActions)=>void} ActionsExec */
 /**
@@ -799,7 +828,7 @@ function Actions(event, index, state, previous, touch) {
   /** @type {EventTarget|null} */
   this.target = event.target;
   /** @type {EventTarget|null} */
-  this.startTarget = previous ? previous.target : event.target;
+  this.startTarget = previous ? previous.startTarget : event.target;
   this.pageX = source.pageX;
   this.pageY = source.pageY;
   this.clientX = source.clientX;
@@ -828,7 +857,7 @@ function Actions(event, index, state, previous, touch) {
   Object.seal(this);
 }
 /** @readonly *///@ts-expect-error
-Actions.API_VERSION = "0.3.3";
+Actions.API_VERSION = "0.3.4";
 Actions.default = Object.freeze(
   /** @type {{[K in ActionsDefault]:(MouseEvent|WheelEvent|PointerEvent)[K]}} */
   ({
@@ -881,7 +910,6 @@ Actions.updateState = function  (action, event, state, previous) {
       lastPosition = state.endPositions[action.index],
       x = action.x - (lastPosition || [0])[0],
       y = action.y - (lastPosition || [0, 0])[1];
-    //-console.log(lastEnd | 0, '+', state.doubleTouchTime | 0, ">", event.timeStamp | 0);
     return lastEnd && lastEnd + state.doubleTouchTime > event.timeStamp &&
       lastPosition && Math.sqrt(x * x + y * y) < state.shortTouchMove ?
         "double " :
@@ -944,7 +972,6 @@ Actions.update = function (action, index, state, event, previous, touch) {
   action.y = (source.pageY - offset.offsetTop) * pR;
   action.startX = previous ? previous.startX : action.x;
   action.startY = previous ? previous.startY : action.y;
-  //-previous ? console.log(previous.x, previous, action.x) : console.log("niema ");
   // in case of mutable version previous === action, old x, y need variables
   action.movementX = source instanceof Touch ? (previous ?
     action.x - previousX :
@@ -1026,17 +1053,6 @@ Actions.init = function (root, options) {
   /** @TODO to be implemented managing user assigned Actions err listeners
    * @type {((ev,i,all,idx)=>void|boolean)[]} */
   var errorHandlers = [F, F, F, F];
-  //-probably a typesctipt test
-  //-state.onclaim(0, 0, {
-  //-  changed: temp,
-  //-  all: all,
-  //-  source: source.source,
-  //-  claim: "the one",
-  //-  cancelable: true,
-  //-  preventClaim: function (custom) {
-  //-    return;
-  //-  }
-  //-});
 
   var state = new Actions.State(options);
   state.root = root;
@@ -1154,7 +1170,6 @@ Actions.init = function (root, options) {
         all.count += +!!all[j++];
     }
     // #tmove beggining of updated touches handling
-    //-console.log(state.state, " ", state.claim);
     if (state.claim === "grab")
       (all[0] || all[1]) && Actions.touchGrab(state, all, ev);
     else if (
@@ -1177,7 +1192,6 @@ Actions.init = function (root, options) {
   addEvent("touchend", addEvent("touchcancel", function (ev) {
     if (!(ev instanceof TouchEvent))
       throw new TypeError("not TouchEvent for touchend handler");
-    //-console.log("end:" + ev.type);
     var action = temp[-9];
     for (var i = 0, changed = ev.changedTouches; i < changed.length; i++) {
       var touch = changed[i], j = identifiers.indexOf(touch.identifier);
@@ -1201,18 +1215,12 @@ Actions.init = function (root, options) {
     }
     // #tend beggining of removed/canceled touches handling
     if (state.claim === "grab")
-      Actions.touchGrab(state, all, ev);
-    //-console.log('This one does' + action,''+(action && [action.startTarget+"=="+(/*action.startTarget === */root),action.state.slice(-5)]));
-    //-if (action && (!state.target || action.startTarget === state.target) &&
-    //- action.state.slice(-5) === "short") {
-    //-  //ev.preventDefault();
-    //-  console.log('Are we there yet?');
+      (all[0] || all[1]) && Actions.touchGrab(state, all, ev);
     action ?
       !(state.filterClaimed && state.claim.length === 4) &&
         !(state.touchIndex0 && action !== temp[0]) &&
         state.onend(action.x, action.y, source) :
       console.error("very strange error, action is null");
-    //-}
     Actions.log(temp, ev, "end", state, source);
     // end of touches handling
     for (j = temp.length; j-- > 0; temp[j] = null)
@@ -1338,7 +1346,7 @@ Actions.State.prototype.generateAccessors = function () {
   }, self = this;
     return Object.freeze(accessors);
 };
-Actions.logMax = 16;
+Actions.logMax = 32;
 /** spaghetti Actions debugging utility
  * @param {(Actions|null)[]} tem typeof temp @param {ActionsEvent} evt
  * @param {string} typ @param {Actions.State} stat @param {AllActions} src */

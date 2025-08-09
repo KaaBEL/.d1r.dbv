@@ -1,7 +1,7 @@
 /// <reference path="editor.js"/>
 "use strict";
 /** @readonly *///@ts-expect-error
-var version_alphalunar_js = "v.0.2.14";
+var version_alphalunar_js = "v.0.2.15";
 var test_ship = {"name":"Starter Droneboi","gameVersion":[],"dateTime":"05.05.2024 21:12:18","blocks":[{"internalName":"__placeholder856__","position":[0,-9,-52],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-50],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-48],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
 {"internalName":"__placeholder856__","position":[0,-9,-46],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-44],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-42],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-40],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
 {"internalName":"__placeholder856__","position":[0,-9,-38],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-52],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-50],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-48],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-46],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-44],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
@@ -239,17 +239,67 @@ Command.push("Evil Addon", function (items, collapsed) {
   };
   breakAll.id = "evil_breakAll";
   items.push(input, exec, {name: "break-all", inp: breakAll}, result);
-  console.error = function () {
-    var e = (document.body.querySelector(".items") || {}).lastChild;
-    e && (e.data += "\nError: " + [].slice.apply(arguments));
-  };
+  var lastTexted = +Date(), tO = 0;
+  function evilPrint() {
+    if (!(window.test_log instanceof Array))
+      return window.test_log = [];
+    var sibling = result.nextSibling || EL();
+    var arr = [].concat(window.test_log);
+    for (var i = 0; sibling && i < arr.length; i++)
+      ('' + arr[i]).split("\n").forEach(function (e) {
+        sibling.appendChild(EL("br"));
+        sibling.appendChild(tN(e));
+      });
+    window.test_log.length = 0;
+  }
+  function text(str) {
+    if (!(window.test_log instanceof Array))
+      return window.test_log = [];
+    window.test_log.push("" + str);
+    var time = +Date();
+    clearTimeout(tO);
+    time < lastTexted + 50 ? tO = setTimeout(evilPrint, 50) : evilPrint();
+    lastTexted = time;
+  }
+  "oldLog" in console || (console.oldLog = console.log);
   console.log = function () {
-    //result.parentNode.nextChild;
-    var text = [].slice.apply(arguments);
-    result.nextSibling.innerText += "\n " + text;
-    "test_log" in window && (window.test_log) instanceof Array &&
-      window.test_log.push(text);
+    var args = [].slice.apply(arguments);
+    console.oldLog && console.oldLog.apply(console, args);
+    text("" + args);
   };
+  "oldWarn" in console || (console.oldWarn = console.log);
+  console.warn = function () {
+    var args = [].slice.apply(arguments);
+    console.oldWarn && console.oldWarn.apply(console, args);
+    text("[w:]" + args);
+  };
+  "oldError" in console || (console.oldError = console.log);
+  console.error = function () {
+    var args = [].slice.apply(arguments);
+    console.oldError && console.oldError.apply(console, args);
+    text("[err:]" + args);
+    // var e = (document.body.querySelector(".items") || {}).lastChild;
+    // e && (e.data += "\nError: " + args);
+  };
+  //-(function () {
+  //-  //result.parentNode.nextChild;
+  //-  var text = [].slice.apply(arguments), sibling = result.nextSibling;
+  //-  console.oldLog && console.oldLog.apply(console, text);
+  //-  if (!("test_log" in window && (window.test_log) instanceof Array))
+  //-    return;
+  //-  if (window.test_log.length)
+  //-    return void window.test_log.push(text);
+  //-  setTimeout(function (e) {
+  //-    text = text.concat(window.test_log);
+  //-    for (var i = 0; sibling && i < text.length; i++)
+  //-      ('' + text[i]).split("\n").forEach(function (e) {
+  //-        sibling.appendChild(EL("br"));
+  //-        sibling.appendChild(tN(e));
+  //-      });
+  //-    window.test_log.length = 0;
+  //-    //if(result.nextSibling)result.nextSibling.innerText += "\n " + text;
+  //-  }, 50);
+  //-});
 }, "Gives access to eval.");
 setTimeout(function () {
   var ch = (document.querySelector("#commandsTab .content") || EL()).childNodes;

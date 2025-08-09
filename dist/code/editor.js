@@ -2,8 +2,8 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.14";
-/** @TODO check @see {Editor} for setting a setting without saveSettings */
+var version_editor_js = "v.0.2.15";
+/** 3h_ @TODO check @see {Editor} for setting a setting without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
   return document.createTextNode(data);
@@ -3084,12 +3084,6 @@ Tool.Tab.addItem("Node", function setup(methods, _x, _y) {
     return onclick;
   }
   Logic.rend = true;
-  //-try {
-  //-  throw new Error();
-  //-} catch (e) {
-  //-  if (e instanceof Object && "stack" in e)
-  //-    console.debug('setup '+test_handler+':'+e.stack);
-  //-}
   for (var i = 0; i < Color.NAME.length; i++)
     methods.append("button", handler(i), {
       id: "g" + i,
@@ -3421,8 +3415,9 @@ DefaultUI.defaultPress = function (_x, _y) {};
 DefaultUI.canDefaultPress = true;
 /** @type {Block.Selected|null} */
 DefaultUI.found = null;
-/** will be used to visualise where is DefaultUI.Grab.tile being put */
+/** will be used to visualise where is DefaultUI.Drag.tile being put */
 DefaultUI.replacingTile = -1;
+DefaultUI.insertedTile = -1;
 /** @param {number|string} type @param {unknown[]} [tiles=[]] */
 DefaultUI.createFolder = function (type, tiles) {
   var folder =
@@ -3455,12 +3450,13 @@ DefaultUI.setSelectedTile = function (item, x, y) {
 };
 /** handles interactions with DefaultUI hotbars and inventory
  * @param {number} x @param {number} y
- * @param {{item:number,folder:number}} [reference]
+ * @param {{item:number,folder:number,fraction:number}} [reference]
  * @returns {boolean} over GUI area */
 DefaultUI.handleGUIArea = function (x, y, reference) {
   // NOTE will probably require option for getactionArea
   /** number positoin of tile @see {DefaultUI.selectedTile} */
   var item = reference ? reference.item = reference.folder = -1 : -1;
+  var fraction = 0.5;
   // v.0.2.10 237 = interactable witdh/height for toolBar
   if (x < 237) {
     // toolBar area of canvas: static tile slots
@@ -3468,6 +3464,8 @@ DefaultUI.handleGUIArea = function (x, y, reference) {
     // v.0.2.10 11, 10 = offset distance from canvas edge to icon
     var row = (canvas.height - y - 11) / 74 | 0,
       column = (x - 10) / 74 | 0;
+    // v.0.2.12.K84 uses the same constants as right above
+    fraction = (x - 10) % 74 / 74;
     /** @see {DefaultUI.selectedTile} for tile indexing */
     if (y > canvas.height - 237)
       item = (row > 2 ? 2 : row) * 3 + (column > 2 ? 2 : column) << 2;
@@ -3480,11 +3478,13 @@ DefaultUI.handleGUIArea = function (x, y, reference) {
       item = 2;
     else if (
       x - 237 < (DefaultUI.blockBars[DefaultUI.openedFolder] ||
-        []).length * 87
+        []).length * 87 || reference
     ) {
       // v.0.2.10 243 = start of first tile detectable area
       // negative value rounds up still being the first blockBar tile
       item = (x - 243) / 87 << 2 | 1;
+      // v.0.2.12.K84 uses the same constants as right above
+      fraction = (x - 243) % 87 / 87;
     }
   } else if (
     x - 237 + DefaultUI.offsetsFolders <
@@ -3511,6 +3511,7 @@ DefaultUI.handleGUIArea = function (x, y, reference) {
     return false;
   if (reference) {
     reference.item = item;
+    reference.fraction = fraction;
     return true;
   }
   DefaultUI.setSelectedTile(item);
@@ -3728,14 +3729,16 @@ DefaultUI.renderHotBars = function (w, h) {
   var bars = DefaultUI.blockBars;
   ctx.globalAlpha = 1;
   ctx.lineWidth = 2;
-  ctx.strokeStyle = "#5577aa";
   // boolean: b contains fix for reselected item after reflow
   var i = DefaultUI.openedFolder, b = i !== -1 && i < bars.length;
   for (var j = 0, tx = 247, ty = h - 15; b && j < bars[i].length; j++) {
+    ctx.strokeStyle = DefaultUI.replacingTile === (j << 2) + 1 ?
+      "#ff5533" : "#5577aa";
     drawTileCtx(bars[i][j], DefaultUI.selectedTile === (j << 2) + 1 &&
       DefaultUI.selectedFolder === DefaultUI.openedFolder);
     tx += 87;
   }
+  ctx.strokeStyle = "#5577aa";
   /** here @see {SeeRenderingFolders} */
   // tfx + tfy = position reference for folders, tx + ty = ... for items
   var n = DefaultUI.offsetsFolders, tfx = 239 + 56 - (n + 56) % 57;
@@ -3770,6 +3773,8 @@ DefaultUI.renderHotBars = function (w, h) {
   // v.0.2.10 14 = offset to tile origin
   ty = h - 15;
   for (var j = 0, tx = 15; j < DefaultUI.toolBar.length; j++) {
+    ctx.strokeStyle = DefaultUI.replacingTile === (j << 2) ?
+      "#ff5533" : "#5577aa";
     drawTileCtx(
       DefaultUI.toolBar[j],
       DefaultUI.selectedTile === (j << 2) ||
@@ -3784,10 +3789,11 @@ DefaultUI.renderHotBars = function (w, h) {
     } else
       tx += 74;
   }
-  var grabbed = DefaultUI.Drag.tile;
-  tx = grabbed.x;
-  ty = grabbed.y;
-  drawTileCtx(grabbed.tile, false);
+  ctx.strokeStyle = "#5577aa";
+  var dragged = DefaultUI.Drag.tile;
+  tx = dragged.x;
+  ty = dragged.y;
+  drawTileCtx(dragged.tile, false);
 };
 /** generator for press action bind handling
  * @param {(x:number,y:number,tile:ShipBlock)=>void} [blockPlacing]
@@ -3822,46 +3828,117 @@ DefaultUI.basePress = function (blockPlacing, canDefault) {
 // DefaultUI.baseMove = F;
 // DefaultUI.baseContextmenu = F;
 // DefaultUI.baseOver = F;
+/** @param {boolean} [reset] */
+DefaultUI.finishTileMove = function (reset) {
+  if (reset === UDF && juhus.get("claim") !== "movetile")
+    return null;
+  var dragged = DefaultUI.Drag.tile;
+  /** this is actually hobar for grabbed and later for pointed
+   * evetually may become draBar, repBar, insBar? */
+  var hotbar = dragged.item !== -1 && (dragged.item & 3) === 1 ?
+    DefaultUI.blockBars[dragged.folder] || [] :
+    (dragged.item & 3) === 0 ? DefaultUI.toolBar : [];
+  var replacing = DefaultUI.replacingTile, returning = reset !== UDF ?
+    dragged.tile && !hotbar[dragged.item >> 2] :
+    replacing === -1 && DefaultUI.insertedTile === -1;
+  if (returning)
+    hotbar[dragged.item >> 2] = dragged.tile;
+  if (reset !== UDF)
+    return reset ? dragged.tile = null : dragged.tile;
+  for (var i = hotbar.length; --i > 0 && !hotbar[i];)
+    0;
+  hotbar.length = i + 1;
+  if (DefaultUI.insertedTile !== -1) {
+    DefaultUI.insertedTile = -1;
+    dragged.tile = null;
+    render();
+    return;
+  }
+  hotbar = replacing !== -1 && dragged.tile && (replacing & 3) === 1 ?
+    DefaultUI.blockBars[DefaultUI.openedFolder] || [] :
+    (replacing & 3) === 0 ? DefaultUI.toolBar : [];
+  i = replacing >> 2;
+  for (hotbar[i--] = dragged.tile; i-- > 0; hotbar[i] = null)
+    if (hotbar[i])
+      break;
+  DefaultUI.replacingTile = -1;
+  dragged.tile = null;
+  render();
+  return;
+};
 /** @param {number} x @param {number} y @param {Actions} action */
 DefaultUI.detectTileMove = function (x, y, action) {
-  var claim = juhus.get("claim"), grabbed = DefaultUI.Drag.tile;
+  var claim = juhus.get("claim"), dragged = DefaultUI.Drag.tile;
   if (claim === "movetile") {
     action.event.cancelable && action.event.preventDefault();
-    grabbed.update(x, y);
+    dragged.update(x, y);
+    var pointed = DefaultUI.Drag.pointed;
+    DefaultUI.handleGUIArea(action.x, action.y, pointed);
+    if (dragged.tile) {
+      if (DefaultUI.replacingTile !== -1 && DefaultUI.insertedTile !== -1)
+        console.error("replacing shouldn't be together with inserted");
+      var inserted = DefaultUI.insertedTile;
+      var hotbar = (pointed.item & 3) === 1 ?
+        DefaultUI.blockBars[DefaultUI.openedFolder] || null :
+        (pointed.item & 3) === 0 ? DefaultUI.toolBar : null;
+      pointed.tile = (hotbar || [])[pointed.item >> 2] || null;
+      //console.log('sinw:'+pointed.item,pointed.tile,pointed.fraction);
+      if (pointed.tile && pointed.fraction < .5) {
+        DefaultUI.insertedTile = pointed.item;
+        DefaultUI.replacingTile = -1;
+      } else {
+        DefaultUI.replacingTile = pointed.item;
+        DefaultUI.insertedTile = -1;
+      }
+      //console.log('inshited:'+inserted,Object.getPrototypeOf(hotbar).constructor.name);
+      hotbar = (inserted & 3) === 1 ?
+        DefaultUI.blockBars[DefaultUI.openedFolder] || null :
+        (inserted & 3) === 0 ? DefaultUI.toolBar : null;
+      if (inserted !== -1 && hotbar) {
+        for (var i = inserted >> 2; i < hotbar.length; i++)
+          hotbar[i] = hotbar[i + 1];
+          //console.log('the fuck is thishit?!'+i,hotbar.length);
+        !hotbar[hotbar.length - 1] && hotbar.length--;
+      }
+      hotbar = ((inserted = DefaultUI.insertedTile) & 3) === 1 ?
+        DefaultUI.blockBars[DefaultUI.openedFolder] || null:
+        (inserted & 3) === 0 ? DefaultUI.toolBar : null;
+      if (inserted !== -1 && hotbar) {
+        for (i = hotbar.length; i-- > (inserted >> 2);)
+          hotbar[i + 1] = hotbar[i];
+        hotbar[inserted >> 2] = dragged.tile;
+      }
+    }
     render();
     return true;
   }
-  if (claim === "unclaimed" && action.state.slice(-4) !== "drag")
+  if (claim !== "unclaimed" || action.state.slice(-4) !== "drag")
     return false;
-  /** @type {TileType[]|null} @see {DefaultUI.selectedTile} 0, 1 for hotbars */
-  var hotbar = grabbed.item !== -1 && ((grabbed.item & 3) === 1 ?
-    DefaultUI.blockBars[grabbed.folder] :
-    (grabbed.item & 3) === 0 ? DefaultUI.toolBar : null) || [];
-  if (grabbed.tile && !hotbar[grabbed.item >> 2])
-    hotbar[grabbed.item >> 2] = grabbed.tile;
-  if (!DefaultUI.handleGUIArea(action.startX, action.startY, grabbed))
+  DefaultUI.finishTileMove(true);
+  if (!DefaultUI.handleGUIArea(action.startX, action.startY, dragged))
     return false;
   action.event.cancelable && action.event.preventDefault();
-  hotbar = (grabbed.item & 3) === 1 ?
-    DefaultUI.blockBars[grabbed.folder = DefaultUI.openedFolder] :
-    (grabbed.item & 3) === 0 ? DefaultUI.toolBar : null;
-  console.log("grabbed="+grabbed.item+' '+grabbed.folder);
+  /** @see {DefaultUI.selectedTile} 0, 1 for hotbars */
+  hotbar = (dragged.item & 3) === 1 ?
+    DefaultUI.blockBars[dragged.folder = DefaultUI.openedFolder] || null :
+    (dragged.item & 3) === 0 ? DefaultUI.toolBar : null;
+  //console.log("dragged="+dragged.item+' '+dragged.folder);
   if (hotbar) {
-    grabbed.tile = hotbar[grabbed.item >> 2];
-    hotbar[grabbed.item >> 2] = null;
+    dragged.tile = hotbar[dragged.item >> 2] || null;
+    // hacky way to pick up dragged tile
+    //-hotbar[dragged.item >> 2] = null;
+    DefaultUI.insertedTile = dragged.item;//+
+    dragged.item = -1;//+
   }
-  //console.log("<juhus " + grabbed.item + " " + grabbed.folder + ">"+hotbar+"</juhus>");
+  //console.log("<juhus " + dragged.item + " " + dragged.folder + ">"+hotbar+"</juhus>");
   juhus.set("claim", "movetile");
   return true;
 };
-//-/**
-//-* @param {number} x @param {number} y @param {number} item
-//-* @param {number} folder @param {TileType} tile */
-//-DefaultUI.Grab = function (x, y, item, folder, tile) {
 DefaultUI.Drag = function () {
   this.x = 0;
   this.y = 0;
   this.item = -1;
+  this.fraction = .5;
   this.folder = -1;
   /** @type {TileType|null} */
   this.tile = null;
@@ -3878,6 +3955,8 @@ DefaultUI.Drag.prototype.update = function (x, y, tile) {
 };
 /** lovely mutable @type {DefaultUI.Drag} */
 DefaultUI.Drag.tile = new DefaultUI.Drag();
+/** lovely mutable @type {DefaultUI.Drag} */
+DefaultUI.Drag.pointed = new DefaultUI.Drag();
 
 // #IDK move elsewhere maybe
 juhus.set("onclaim", function (x, y, source) {
@@ -3890,13 +3969,8 @@ juhus.set("onclaim", function (x, y, source) {
 juhus.set("onstart", function (x, y, source) {
   var action = source.source;
   if (action.startTarget === Command.head) {
-    //-#cmdswtf does this do that it works?
+    // v.0.2.14 pixelRatio difference: #cmdswtf does this do
     var style = Command.el.style;
-    //-  x = Number(style.left.slice(0, -2)) || 0,
-    //-  y = Number(style.top.slice(0, -2)) || 0;
-    //-Command.x = x - source.source.pageX - canvas.offsetLeft;
-    //-Command.y = y - source.source.pageY - canvas.offsetTop;
-    //-juhus.set("claim", "cmdsmove"); may be replacable with:\ startTarget
     style["" + "webkitUserSelect"] = style.userSelect = "none";
   }
 });
@@ -3904,10 +3978,6 @@ juhus.set("onmove", function (x, y, source) {
   var action = source.source;
   if (action.startTarget === Command.head) {
     var style = Command.el.style, w = innerWidth - 86;
-    //-#cmdswtf does this do that it works?
-    //-oooh, it's because action.x as well tchd.x are (pageX - Left) * pR
-    //-var x = Command.x + action.pageX - canvas.offsetLeft,
-    //-  y = Command.y + action.pageY - canvas.offsetTop;
     var x = +style.left.slice(0, -2) + action.movementX / pR || 0,
       y = +style.top.slice(0, -2) + action.movementY / pR || 0;
     style.left = (x > -269 ? x < w ? x : w : -269) + "px";
@@ -3928,6 +3998,8 @@ juhus.set("onend", function (x, y, source) {
     style["" + "webkitUserSelect"] = style.userSelect = "none";
     return;
   }
+  if (DefaultUI.finishTileMove())
+    return;
   if (action.state.slice(-5) === "short") {
     action.event.cancelable && action.event.preventDefault();
     DefaultUI.press(x, y);
@@ -4022,6 +4094,8 @@ juhus.set("onend", function (x, y, source) {
     pre.appendChild(tN(e && e.stack ?
       "" + m + "\n" + e.stack :
       "" + m + "\n\t" + s + ":" + l + ":" + c));
+    if ("test_log" in window && window.test_log instanceof Array)
+      window.test_log.push("[w.err]");
   };
   return (bd || EL()).appendChild(menu);
 })();
@@ -4226,7 +4300,7 @@ var rend_backgHangar = F, rend_request = "", init_started = false;
     script.type = "text/javascript";
     script.src = "./code/alphalunar.js";
     document.body.appendChild(script);
-    console.info("loading local lunaralpha.js fallback");
+    console.info("loading local alphalunar.js fallback");
     return;
   }
   var xhr = new XMLHttpRequest();
