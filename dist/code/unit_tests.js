@@ -1,7 +1,7 @@
 //@ts-nocheck
 /// <reference path="./editor.js" />
 "use strict";
-// v.0.2.12 (global version of project when last changes were done)
+// v.0.2.16 (global version of project when last changes were done)
 var utst_ = true;
 function BError (message) {
   console.error(this.message = message);
@@ -101,7 +101,7 @@ try {
     if (!utst_arr2.length || !utst_arr2.pop().test(str))
       utst_ = utst_consoleError("Unexpected error(s)!? : " + str);
     else
-      console.log("Expected error: " + str);
+      console.debug("Expected error: " + str);
   };
   utst_testCommands();
   ship = Ship.fromObject(B64Key.decode(

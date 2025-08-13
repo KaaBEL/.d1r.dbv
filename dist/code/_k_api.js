@@ -2,7 +2,7 @@
 /// <reference path="./editor.html.ts" />
 "use strict";
 /** @readonly */
-var version__k_api_js = "v.0.2.15";
+var version__k_api_js = "v.0.2.16";
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -103,6 +103,17 @@ var init = function init() {
 
 /** @readonly */
 var F = function () {}, UDF = void 0;
+
+if (typeof TouchEvent == "undefined")
+  //@ts-expect-error
+  var TouchEvent = function TouchEvent() {};
+if (typeof Touch == "undefined")
+  //@ts-expect-error
+  var Touch = function Touch() {};
+var WheelSroll = typeof WheelEvent == "undefined" ? Object : WheelEvent;
+if (window.MouseWheelEvent === UDF)
+  /** @type {MouseWheelConstructor} *///@ts-expect-error
+  var MouseWheelEvent = Object;
 
 /** @typedef {(TouchDat|null)[]} TchDArr */
 /** @typedef {(TouchDat|null)[] & {count: number}} AllTchD */
@@ -474,9 +485,6 @@ touchesInit.time = 350;
 touchesInit.move = 13;
 
 var mouseStamp = 0, test_debug = !1;
-var WheelSroll = typeof WheelEvent == "undefined" ? Object : WheelEvent;
-if (window.MouseWheelEvent === UDF)
-  var MouseWheelEvent = Object;
 function mouseInit() {
   if (!bd)
     return console.error("bd is null, UI wasn't initialized");
@@ -566,16 +574,16 @@ function mouseInit() {
     moving = e.type === "mouseleave";
   };
 }//DISABLED HERE
-  window.oncontextmenu = function (e) {
-    for (var el = e.target; el instanceof Node;)
-      if (!(el = el.parentNode))
-        return;
-      else if (el === bd)
-        break;
-    var x = (e.pageX - canvas.offsetLeft) * pR,
-      y = (e.pageY - canvas.offsetTop) * pR;
-    contextmenu(x, y, e);
-  };
+// window.oncontextmenu = function (e) {
+//   for (var el = e.target; el instanceof Node;)
+//     if (!(el = el.parentNode))
+//       return;
+//     else if (el === bd)
+//       break;
+//   var x = (e.pageX - canvas.offsetLeft) * pR,
+//     y = (e.pageY - canvas.offsetTop) * pR;
+//   contextmenu(x, y, e);
+// };
 //DISABLED HERE}
 /** settings: allowed press time legth, @see {touchesInit.time} */
 mouseInit.time = 350;
@@ -775,7 +783,10 @@ if (typeof EventTarget != "function")
  * "initUIEvent"|"preventDefault"|"stopImmediatePropagation"|"composedPath"|
  * "stopPropagation"|"getModifierState"|"initMouseEvent">} ActionsDefault
  */
-/** @typedef {TouchEvent|MouseEvent|WheelEvent|PointerEvent} ActionsEvent */
+/** @typedef {new()=>MouseEvent&{wheelDelta:number}} MouseWheelConstructor */
+/** @typedef {MouseEvent&{wheelDelta:number}} MouseWheelEvent */
+/** @typedef {WheelEvent|MouseWheelEvent} ScrollWheel */
+/** @typedef {TouchEvent|MouseEvent|ScrollWheel|PointerEvent} ActionsEvent */
 /**
  * @typedef AllActions @property {(Actions|null)[]} changed
  * @property {(Actions|null)[]&{count:number}} all @property {Actions} source
@@ -788,7 +799,8 @@ if (typeof EventTarget != "function")
 /**
  * @typedef {{immutable?:boolean,listeners?:AddEventListenerOptions,
  * start?:ActionsExec,move?:ActionsExec,end?:ActionsExec,claim?:ActionsClaim,
- * filterClaimed?:boolean,touchIndex0:boolean}} ActionsOptions
+ * filterClaimed?:boolean,touchIndex0:boolean,target?:EventTarget|null
+ * }} ActionsOptions
  */
 /** @callback ActionsHandler @param {ActionsEvent} ev @this {HTMLElement} */
 /** UI API class/namespace, support either use of mouse or touches
@@ -803,9 +815,7 @@ function Actions(event, index, state, previous, touch) {
   var offset = state.root instanceof HTMLElement ?
     state.root :
     {offsetLeft: 0, offsetTop: 0};
-  // var type = this.type = event.type,
-  //   x = (source.pageX - state.root.offsetLeft) * pR,
-  //   y = (source.pageY - state.root.offsetTop) * pR;
+  /** @see {Event.type} */
   this.type = event.type;
   /** original event captured by root */
   this.event = event;
@@ -825,7 +835,7 @@ function Actions(event, index, state, previous, touch) {
   this.timeStamp = state.endTimeStamps[index] = event.timeStamp;
   /** @type {number} */
   this.startTimeStamp = previous ? previous.startTimeStamp : this.timeStamp;
-  /** @type {EventTarget|null} */
+  /** @type {EventTarget|null} @see {Event.target} */
   this.target = event.target;
   /** @type {EventTarget|null} */
   this.startTarget = previous ? previous.startTarget : event.target;
@@ -833,23 +843,27 @@ function Actions(event, index, state, previous, touch) {
   this.pageY = source.pageY;
   this.clientX = source.clientX;
   this.clientY = source.clientY;
+  /** @type {number} @see {Event.screenX} */
   this.screenX = source.screenX;
+  /** @type {number} @see {Event.screenY} */
   this.screenY = source.screenY;
   this.force = touch ? touch.force : 1;
   this.radiusX = touch ? touch.radiusX : 1;
   this.radiusX = touch ? touch.radiusY : 1;
-  /** @type {number} not clientX but x relative to root offsetLeft */
+  this.movementX = previous ? this.screenX - previous.screenX : 0;
+  this.movementY = previous ? this.screenY - previous.screenY : 0;
+  /** @type {number} !not clientX but x relative to root offsetLeft * pR */
   this.x = (source.pageX - offset.offsetLeft) * pR;
-  /** @type {number} not clientX but y relative to root offsetTop */
+  /** @type {number} !not clientX but y relative to root offsetTop * pR */
   this.y = (source.pageY - offset.offsetTop) * pR;
   /** @type {number} */
   this.startX = previous ? previous.startX : this.x;
   /** @type {number} */
   this.startY = previous ? previous.startY : this.y;
-  this.movementX = source instanceof Touch ? (previous ?
-    this.x - previous.x : 0) : source.movementX;
-  this.movementY = source instanceof Touch ? (previous ?
-    this.y - previous.y : 0) : source.movementY;
+  this.moveX = source instanceof Touch ? (previous ?
+    this.x - previous.x : 0) : this.movementX * pR;
+  this.moveY = source instanceof Touch ? (previous ?
+    this.y - previous.y : 0) : this.movementY * pR;
   /** short double for example, check naming in scratch projects */
   this.state = Actions.updateState(this, event, state, previous);
   /** @TODO it is possible for extra touches to exist due to missing touchend event */
@@ -859,7 +873,7 @@ function Actions(event, index, state, previous, touch) {
 /** @readonly *///@ts-expect-error
 Actions.API_VERSION = "0.3.4";
 Actions.default = Object.freeze(
-  /** @type {{[K in ActionsDefault]:(MouseEvent|WheelEvent|PointerEvent)[K]}} */
+  /** @type {{[K in ActionsDefault]:(MouseEvent|ScrollWheel|PointerEvent)[K]}} */
   ({
     altKey: false,
     button: 0,
@@ -968,17 +982,19 @@ Actions.update = function (action, index, state, event, previous, touch) {
   action.force = touch ? touch.force : 1;
   action.radiusX = touch ? touch.radiusX : 1;
   action.radiusX = touch ? touch.radiusY : 1;
+  action.movementX = previous ? action.screenX - previous.screenX : 0;
+  action.movementY = previous ? action.screenY - previous.screenY : 0;
   action.x = (source.pageX - offset.offsetLeft) * pR;
   action.y = (source.pageY - offset.offsetTop) * pR;
   action.startX = previous ? previous.startX : action.x;
   action.startY = previous ? previous.startY : action.y;
   // in case of mutable version previous === action, old x, y need variables
-  action.movementX = source instanceof Touch ? (previous ?
+  action.moveX = source instanceof Touch ? (previous ?
     action.x - previousX :
-    0) : source.movementX;
-  action.movementY = source instanceof Touch ? (previous ?
+    0) : action.movementX * pR;
+  action.moveY = source instanceof Touch ? (previous ?
     action.y - previousY :
-    0) : source.movementY;
+    0) : action.movementY * pR;
   action.state = Actions.updateState(action, event, state, previous);
   return action;
 };
@@ -993,10 +1009,13 @@ Actions.touchGrab = function (state, all, ev) {
     touch1 = touch0;
   else if (!touch0 || !touch1)
     return console.error("touchGrab error");
+  var canvas = state.target instanceof HTMLCanvasElement ?
+    state.target :
+    {width: window.innerWidth, height: window.innerHeight};
   //console.log(state.grabAction);
   ev.cancelable && ev.preventDefault();
-  var x0 = touch0.movementX, y0 = touch0.movementY;
-  var x1 = touch1.movementX, y1 = touch1.movementY;
+  var x0 = touch0.moveX, y0 = touch0.moveY;
+  var x1 = touch1.moveX, y1 = touch1.moveY;
   if (state.grabAction.slice(0, 4) === "move") {
     var n = state.grabAction === "moveorzoom" ? 4 : 2;
     //console.log(x0 +' '+ x1 +' '+ y0+' '+ y1+' '+ n);
@@ -1058,6 +1077,10 @@ Actions.init = function (root, options) {
   state.root = root;
   for (var p in options)
     delete options[p];
+  var canvas = state.target instanceof HTMLCanvasElement ?
+    state.target :
+    {width: window.innerWidth, height: window.innerHeight};
+
   /** starts claim event it's own way, returns true if not prevented
    * @param {ActionsEvent} ev @param {string} claim @returns claimed */
   function dispatchClaim(ev, claim) {
@@ -1083,16 +1106,17 @@ Actions.init = function (root, options) {
   }
   /**
    * @param {keyof HTMLElementEventMap|"mousewheel"} type
-   * @param {ActionsHandler} handler */
-  function addEvent(type, handler) {
+   * @param {ActionsHandler} handler @param {EventTarget} [target] */
+  function addEvent(type, handler, target) {
+    target = target || root;
     listeners ?
-      root.addEventListener(
+      target.addEventListener(
           type,
           /** @type {EventListener} */
           (handler),
           listeners
         ) :
-      root["on" + type] = handler;
+      target["on" + type] = handler;
     return handler;
   }
   addEvent("touchstart", function (ev) {
@@ -1137,7 +1161,7 @@ Actions.init = function (root, options) {
       !(state.filterClaimed && state.claim.length === 4) &&
         !(state.touchIndex0 && action !== temp[0]) &&
         state.onstart(action.x, action.y, source) :
-      console.error("very strange error, action is null");
+      console.error("very strange error, action is null0");
     Actions.log(temp, ev, "srt", state, source);
     state.grabCount = all.count;
     // end of touches handling
@@ -1183,7 +1207,7 @@ Actions.init = function (root, options) {
       !(state.filterClaimed && state.claim.length === 4) &&
         !(state.touchIndex0 && action !== temp[0]) &&
         state.onmove(action.x, action.y, source) :
-      console.error("very strange error, action is null");
+      console.error("very strange error, action is null1");
     Actions.log(temp, ev, "mov", state, source);
     // end of touches handling
     for (j = temp.length = all.length; j-- > 0;)
@@ -1220,7 +1244,7 @@ Actions.init = function (root, options) {
       !(state.filterClaimed && state.claim.length === 4) &&
         !(state.touchIndex0 && action !== temp[0]) &&
         state.onend(action.x, action.y, source) :
-      console.error("very strange error, action is null");
+      console.error("very strange error, action is null2");
     Actions.log(temp, ev, "end", state, source);
     // end of touches handling
     for (j = temp.length; j-- > 0; temp[j] = null)
@@ -1231,28 +1255,107 @@ Actions.init = function (root, options) {
     if ((state.grabCount = temp.length = all.length) === 0)
       state.claim = "unclaimed";
   }));
-  addEvent("mousedown", function (ev) {
-    ;
-  });
-  addEvent("mousemove", function (ev) {
-    ;
-  });
-  addEvent("mouseup", function (ev) {
-    ;
-  });
-  addEvent("mouseenter", function (ev) {
-    ;
-  });
-  addEvent("mouseleave", function (ev) {
-    ;   
-  });
-  addEvent("wheel", addEvent("mousewheel", function (ev) {
-    ;
+  addEvent("mousedown", addEvent("mouseenter", function (ev) {
+    var action = all[-1] = source.source = immutable ?
+      Object.freeze(new Actions(ev, -1, state, null)) :
+      mutable[-1] ?
+        Actions.update(mutable[-1], -1, state, ev, null) :
+        mutable[-1] = new Actions(ev, -1, state, null);
+    // #mstart beggining of mouse action
+    if (action.type === "mouseenter" && action.buttons === 0)
+      state.claim = "unclaimed";
+    action ?
+      !(state.filterClaimed && state.claim.length === 4) &&
+        !(state.mouseButton && action.buttons !== 1) &&
+        state.onstart(action.x, action.y, source) :
+      console.error("very strange error, action is null3");
+    state.endButtons = action.buttons;
+    Actions.log(temp, ev, "dwn", state, source);
   }));
-return state.generateAccessors();
+  addEvent("mousemove", function (ev) {
+    var action = all[-1] = source.source = immutable ?
+      Object.freeze(new Actions(ev, -1, state, all[-1])) :
+      mutable[-1] ?
+        Actions.update(mutable[-1], -1, state, ev, all[-1]) :
+        mutable[-1] = new Actions(ev, -1, state, all[-1]);
+    // #mmove beggining of mouse action
+    if (
+      source.source.state === "single drag" &&
+      state.claim === "unclaimed" && action.buttons === 1
+    ) {
+      dispatchClaim(ev, "move");
+    } else if (state.claim === "unclaimed" && action.buttons === 4)
+      state.claim = "move";
+    if (state.claim === "move" && (action.buttons & 5)) {
+      vX += action.moveX;
+      vY += action.moveY;
+      render();
+    }
+    action ?
+      !(state.filterClaimed && state.claim.length === 4) &&
+        !(state.mouseButton && action.buttons !== 1) &&
+        state.onmove(action.x, action.y, source) :
+      console.error("very strange error, action is null4");
+    state.endButtons = action.buttons;
+    Actions.log(temp, ev, "hvr", state, source);
+  });
+  addEvent("mouseup", addEvent("mouseleave", function (ev) {
+    var action = all[-1] = source.source = immutable ?
+      Object.freeze(new Actions(ev, -1, state, all[-1])) :
+      mutable[-1] ?
+        Actions.update(mutable[-1], -1, state, ev, all[-1]) :
+        mutable[-1] = new Actions(ev, -1, state, all[-1]);
+    // #mmove beggining of mouse action
+    action ?
+      !(state.filterClaimed && state.claim.length === 4) &&
+        !(state.mouseButton && state.endButtons !== 1) &&
+        state.onend(action.x, action.y, source) :
+      console.error("very strange error, action is null5");
+    state.endButtons = action.buttons;
+    Actions.log(temp, ev, " up", state, source);
+    // end of mouse handling
+    if (action.buttons === 0)
+      if (action.type !== "mouseleave" || state.claim !== "move")
+        state.claim = "unclaimed";
+  }));
+  addEvent("wheel", addEvent("mousewheel", function (ev) {
+    if (!(ev instanceof WheelEvent) && !(ev instanceof MouseWheelEvent))
+      throw new TypeError("not WheelEvent for wheel handler");
+    if (ev.target !== state.target)
+      return;
+    // else if (!( ))
+    //   throw new TypeError("not MouseWheelEvent for wheel handler");
+    test_debug && console.log("onwheel", +new Date / 100 | 0,
+      ("deltaY" in ev ? ev.deltaY : -ev.wheelDelta) || 0, +new Date, sc);
+    var prev = sc, w = canvas.width / 2, h = canvas.height / 2;
+    sc -= sc / ("deltaY" in ev ? ev.deltaY : -ev.wheelDelta) * 10;
+    vX = (vX - w) * sc / prev + w;
+    vY = (vY - h) * sc / prev + h;
+    render();
+  }));
+  addEvent("contextmenu", function (e) {
+    for (var el = e.target; el instanceof Node;)
+      if (!(el = el.parentNode))
+        return;
+      else if (el === bd)
+        break;
+    if (!(e instanceof MouseEvent))
+      return;
+    var offset = state.root instanceof HTMLElement ?
+      state.root :
+      {offsetLeft: 0, offsetTop: 0};
+    var x = (e.pageX - offset.offsetLeft) * pR,
+      y = (e.pageY - offset.offsetTop) * pR;
+    contextmenu(x, y, e);
+  }, window);
+  return state.generateAccessors();
 };
 /** @param {ActionsOptions} options */
 Actions.State = function (options) {
+  /** @param {string} setting @param {any} fallback */
+  function checkOptions(setting, fallback) {
+    return setting in options ? options[setting] : fallback;
+  }
   /** vX, vY, sc, pR globals aen't getting removed yet */
   this.x = 0;
   /** vY */
@@ -1283,9 +1386,9 @@ Actions.State = function (options) {
    * !as an experiment string length 4 means it's claimed by API! */
   this.claim = "unclaimed";
   /** the top canvas element used for display of the editor,
-   * detects all elements if null @param {EventTarget|null}
-   * is responsible for preventing grab through elementw over canvas */
-  this.target = null;
+   * detects all elements if null @type {EventTarget|null}
+   * is responsible for preventing grab through elements above canvas */
+  this.target = options.target || null;
   /** @type {(number|undefined)[]} previous end timeStamps per index */
   this.endTimeStamps = [];
   /** previous end positions per action index
@@ -1297,6 +1400,7 @@ Actions.State = function (options) {
   /** "grab" properies refer to Actions.touchGrab, this is its mode */
   this.grabAction = "";
   this.grabScore = 0;
+  this.endButtons = 0;
   
   /** allowed time for active (started) action to get state...short" */
   this.shortTouchTime = 350;
@@ -1316,9 +1420,11 @@ Actions.State = function (options) {
   this.shortOtherMove = 5;
   /** allowed time between actions to get state "double..." */
   this.doubleOtherTime = 300;
-  this.filterClaimed = options.filterClaimed || true;
+  this.filterClaimed = checkOptions("filterClaimed", true);
   /** filters out all actions that don't have all[0] as source.source */
-  this.touchIndex0 = true;
+  this.touchIndex0 = checkOptions("touchIndex0", true);
+  /** filters out all actions that aren't left mouse button only */
+  this.mouseButton = checkOptions("mouseButton", this.touchIndex0);
   Object.seal(this);
 };
 /** @this {Actions.State} */
@@ -1393,9 +1499,10 @@ Actions.logImmutable =
   (Date.now() / (24 * 3600 * 1000)) % 2 < 1;
 console.log((Actions.logImmutable ? "Imm" : "M") + "utable today!");
 if (typeof test_actions == "function")
-// #foracode                 > || document.querySelector("c-console")<
-var juhus = Actions.init(GE(8) || document.querySelector("c-console") || EL(), {
+// #foracode            >document.querySelector("c-console") || <
+var juhus = Actions.init(document.querySelector("c-console") || document, {
   listeners: {},
+  target: canvas,
   immutable: Actions.logImmutable,
   filterClaimed: true,
   touchIndex0: true

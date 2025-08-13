@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.15";
+var version_editor_js = "v.0.2.16";
 /** 3h_ @TODO check @see {Editor} for setting a setting without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -18,9 +18,6 @@ var storage = typeof localStorage == "undefined" ? {
     setItem: function (key, value) {}
   } :
   localStorage;
-if (typeof TouchEvent == "undefined")
-  //@ts-expect-error
-  var TouchEvent = function TouchEvent() {};
 
 if (storage.getItem("D1R_DBV_no_offline") !== null)
   console.info("Service Worker registration is disabled.");
@@ -3067,8 +3064,8 @@ c-6b6,0,-d69e,0,-de2d,0 c-1052,0,-1d8e,d3b,-1d8e,1d8e c0,80c,0,1b1a5,0,1b629\
 e c0,-754,0,-1b5c7,0,-1b629 z"));
 var test_handler = 0, css = Tool.Tab.addCss("width: 68px;height: 68px;border\
 : 2px solid #5577aa;border-radius: 7px;margin: 5px;background-size: 64px;bac\
-kground-image: url(" + imgColor.src + ");font-weight: bold; -webkit-text-str\
-oke: thin #fff;", ".logic-group-disabled,.logic-group-enabled");
+kground-image: url(" + imgColor.src + ");font-weight: bold;-webkit-text-stro\
+ke: thin #000;color: #fff;", ".logic-group-disabled,.logic-group-enabled");
 Tool.Tab.addCss("opacity: 0.4;border-color: #0d2137;", ".logic-group-disable\
 d:not(:active)");
 Tool.Tab.addItem("Node", function setup(methods, _x, _y) {
@@ -3371,17 +3368,17 @@ DefaultUI.createTile = function () {
 }();
 /** @type {TileType[]} */
 DefaultUI.toolBar = [
-  DefaultUI.createTile("Undo"),
-  DefaultUI.createTile("Redo"),
   DefaultUI.createTile("Rotate90"),
-  DefaultUI.createTile("Rotate"),
-  DefaultUI.createTile("Flip"),
+  DefaultUI.createTile("Redo"),
+  DefaultUI.createTile("Undo"),
   DefaultUI.createTile("Flip180"),
-  DefaultUI.createTile("Erase"),
+  DefaultUI.createTile("Flip"),
+  DefaultUI.createTile("Rotate"),
+  DefaultUI.createTile("Node"),
   DefaultUI.createTile("Classic"),
-  DefaultUI.createTile("Node")
+  DefaultUI.createTile("Erase")
 ];
-/** used at @typedef {"@see"} SeeRenderingFolders */
+//** used at #SeeRenderingFolders */
 DefaultUI.offsetsFolders = 0;
 /** previousFolders and nextFolders: are displaying Next and Previous
  * Tool icon buttons to navigate to overflowed folders */
@@ -3415,8 +3412,10 @@ DefaultUI.defaultPress = function (_x, _y) {};
 DefaultUI.canDefaultPress = true;
 /** @type {Block.Selected|null} */
 DefaultUI.found = null;
-/** will be used to visualise where is DefaultUI.Drag.tile being put */
+/** used to visualise where DefaultUI.Drag.dragged will be placed, is
+ * like @see {DefaultUI.clickedTile} @see {DefaultUI.selectedTile} */
 DefaultUI.replacingTile = -1;
+/** obsolete as of right now @deprecated */
 DefaultUI.insertedTile = -1;
 /** @param {number|string} type @param {unknown[]} [tiles=[]] */
 DefaultUI.createFolder = function (type, tiles) {
@@ -3461,11 +3460,11 @@ DefaultUI.handleGUIArea = function (x, y, reference) {
   if (x < 237) {
     // toolBar area of canvas: static tile slots
     // v.0.2.10 74 = distance between origins of neighbour toolBar tiles
-    // v.0.2.10 11, 10 = offset distance from canvas edge to icon
+    // v.0.2.10 11, 237 = offset distance from canvas edge to icon
     var row = (canvas.height - y - 11) / 74 | 0,
-      column = (x - 10) / 74 | 0;
+      column = (237 - x) / 74 | 0;
     // v.0.2.12.K84 uses the same constants as right above
-    fraction = (x - 10) % 74 / 74;
+    fraction = (237 - x) % 74 / 74;
     /** @see {DefaultUI.selectedTile} for tile indexing */
     if (y > canvas.height - 237)
       item = (row > 2 ? 2 : row) * 3 + (column > 2 ? 2 : column) << 2;
@@ -3536,8 +3535,8 @@ DefaultUI.reflowBlockBars = function (w) {
     sameTiles = sameTiles.concat(initial[i] || []);
   }
   var i = 0,
-    /** 380 = distance to the end of first tile + distance */
-    maxTiles = ((w - 380) / 87 | 0) - +DefaultUI.inventoryTile + 1,
+    /** v.0.2.16 340 = distance to the end of first tile + distance */
+    maxTiles = ((w - 340) / 87 | 0) - +DefaultUI.inventoryTile + 1,
     trackingSelected = (DefaultUI.selectedTile & 3) === 1,
     /** the selected one */
     item = -1,
@@ -3729,17 +3728,15 @@ DefaultUI.renderHotBars = function (w, h) {
   var bars = DefaultUI.blockBars;
   ctx.globalAlpha = 1;
   ctx.lineWidth = 2;
+  ctx.strokeStyle = "#5577aa";
   // boolean: b contains fix for reselected item after reflow
   var i = DefaultUI.openedFolder, b = i !== -1 && i < bars.length;
   for (var j = 0, tx = 247, ty = h - 15; b && j < bars[i].length; j++) {
-    ctx.strokeStyle = DefaultUI.replacingTile === (j << 2) + 1 ?
-      "#ff5533" : "#5577aa";
     drawTileCtx(bars[i][j], DefaultUI.selectedTile === (j << 2) + 1 &&
       DefaultUI.selectedFolder === DefaultUI.openedFolder);
     tx += 87;
   }
-  ctx.strokeStyle = "#5577aa";
-  /** here @see {SeeRenderingFolders} */
+  /** here #SeeRenderingFolders */
   // tfx + tfy = position reference for folders, tx + ty = ... for items
   var n = DefaultUI.offsetsFolders, tfx = 239 + 56 - (n + 56) % 57;
   for (var i = Math.ceil(n / 57), tfy = 0; i <= bars.length; i++) {
@@ -3772,28 +3769,34 @@ DefaultUI.renderHotBars = function (w, h) {
   radius = Math.max(0, radius - 1);
   // v.0.2.10 14 = offset to tile origin
   ty = h - 15;
-  for (var j = 0, tx = 15; j < DefaultUI.toolBar.length; j++) {
-    ctx.strokeStyle = DefaultUI.replacingTile === (j << 2) ?
-      "#ff5533" : "#5577aa";
+  for (var j = 0, tx = 163; j < DefaultUI.toolBar.length; j++) {
     drawTileCtx(
       DefaultUI.toolBar[j],
       DefaultUI.selectedTile === (j << 2) ||
         DefaultUI.clickedTile === (j << 2),
       true
     );
-    // v.0.2.10 123 = detects draw 3 tiles of the row
-    if (tx > 123) {
+    // v.0.2.10 69 = detects drawn 3 tiles of the row
+    if (tx < 69) {
       // v.0.2.10 74 = distance between origins of neighbour toolBar tiles
       ty -= 74;
-      tx = 15;
+      tx = 163;
     } else
-      tx += 74;
+      tx -= 74;
   }
-  ctx.strokeStyle = "#5577aa";
-  var dragged = DefaultUI.Drag.tile;
+  var dragged = DefaultUI.Drag.dragged;
   tx = dragged.x;
   ty = dragged.y;
   drawTileCtx(dragged.tile, false);
+  if ((i = DefaultUI.replacingTile) !== -1) {
+    ctx.strokeStyle = "#ff5533";
+    b = (i & 3) === 0;
+    // v.0.2.16 constants same as ones for calculating
+    // tile coordinates for: (b ? toolBar : blockBar)
+    tx = b ? 163 - (i >> 2) % 3 * 74 : 247 + (i >> 2) * 87;
+    ty = b ? h - 15 - ((i >> 2) / 3 | 0) * 74 : h - 15;
+    drawTileCtx(new Block("__NULL__", [0, 0, 0], [0, !1, 0]), false, b);
+  }
 };
 /** generator for press action bind handling
  * @param {(x:number,y:number,tile:ShipBlock)=>void} [blockPlacing]
@@ -3828,112 +3831,6 @@ DefaultUI.basePress = function (blockPlacing, canDefault) {
 // DefaultUI.baseMove = F;
 // DefaultUI.baseContextmenu = F;
 // DefaultUI.baseOver = F;
-/** @param {boolean} [reset] */
-DefaultUI.finishTileMove = function (reset) {
-  if (reset === UDF && juhus.get("claim") !== "movetile")
-    return null;
-  var dragged = DefaultUI.Drag.tile;
-  /** this is actually hobar for grabbed and later for pointed
-   * evetually may become draBar, repBar, insBar? */
-  var hotbar = dragged.item !== -1 && (dragged.item & 3) === 1 ?
-    DefaultUI.blockBars[dragged.folder] || [] :
-    (dragged.item & 3) === 0 ? DefaultUI.toolBar : [];
-  var replacing = DefaultUI.replacingTile, returning = reset !== UDF ?
-    dragged.tile && !hotbar[dragged.item >> 2] :
-    replacing === -1 && DefaultUI.insertedTile === -1;
-  if (returning)
-    hotbar[dragged.item >> 2] = dragged.tile;
-  if (reset !== UDF)
-    return reset ? dragged.tile = null : dragged.tile;
-  for (var i = hotbar.length; --i > 0 && !hotbar[i];)
-    0;
-  hotbar.length = i + 1;
-  if (DefaultUI.insertedTile !== -1) {
-    DefaultUI.insertedTile = -1;
-    dragged.tile = null;
-    render();
-    return;
-  }
-  hotbar = replacing !== -1 && dragged.tile && (replacing & 3) === 1 ?
-    DefaultUI.blockBars[DefaultUI.openedFolder] || [] :
-    (replacing & 3) === 0 ? DefaultUI.toolBar : [];
-  i = replacing >> 2;
-  for (hotbar[i--] = dragged.tile; i-- > 0; hotbar[i] = null)
-    if (hotbar[i])
-      break;
-  DefaultUI.replacingTile = -1;
-  dragged.tile = null;
-  render();
-  return;
-};
-/** @param {number} x @param {number} y @param {Actions} action */
-DefaultUI.detectTileMove = function (x, y, action) {
-  var claim = juhus.get("claim"), dragged = DefaultUI.Drag.tile;
-  if (claim === "movetile") {
-    action.event.cancelable && action.event.preventDefault();
-    dragged.update(x, y);
-    var pointed = DefaultUI.Drag.pointed;
-    DefaultUI.handleGUIArea(action.x, action.y, pointed);
-    if (dragged.tile) {
-      if (DefaultUI.replacingTile !== -1 && DefaultUI.insertedTile !== -1)
-        console.error("replacing shouldn't be together with inserted");
-      var inserted = DefaultUI.insertedTile;
-      var hotbar = (pointed.item & 3) === 1 ?
-        DefaultUI.blockBars[DefaultUI.openedFolder] || null :
-        (pointed.item & 3) === 0 ? DefaultUI.toolBar : null;
-      pointed.tile = (hotbar || [])[pointed.item >> 2] || null;
-      //console.log('sinw:'+pointed.item,pointed.tile,pointed.fraction);
-      if (pointed.tile && pointed.fraction < .5) {
-        DefaultUI.insertedTile = pointed.item;
-        DefaultUI.replacingTile = -1;
-      } else {
-        DefaultUI.replacingTile = pointed.item;
-        DefaultUI.insertedTile = -1;
-      }
-      //console.log('inshited:'+inserted,Object.getPrototypeOf(hotbar).constructor.name);
-      hotbar = (inserted & 3) === 1 ?
-        DefaultUI.blockBars[DefaultUI.openedFolder] || null :
-        (inserted & 3) === 0 ? DefaultUI.toolBar : null;
-      if (inserted !== -1 && hotbar) {
-        for (var i = inserted >> 2; i < hotbar.length; i++)
-          hotbar[i] = hotbar[i + 1];
-          //console.log('the fuck is thishit?!'+i,hotbar.length);
-        !hotbar[hotbar.length - 1] && hotbar.length--;
-      }
-      hotbar = ((inserted = DefaultUI.insertedTile) & 3) === 1 ?
-        DefaultUI.blockBars[DefaultUI.openedFolder] || null:
-        (inserted & 3) === 0 ? DefaultUI.toolBar : null;
-      if (inserted !== -1 && hotbar) {
-        for (i = hotbar.length; i-- > (inserted >> 2);)
-          hotbar[i + 1] = hotbar[i];
-        hotbar[inserted >> 2] = dragged.tile;
-      }
-    }
-    render();
-    return true;
-  }
-  if (claim !== "unclaimed" || action.state.slice(-4) !== "drag")
-    return false;
-  DefaultUI.finishTileMove(true);
-  if (!DefaultUI.handleGUIArea(action.startX, action.startY, dragged))
-    return false;
-  action.event.cancelable && action.event.preventDefault();
-  /** @see {DefaultUI.selectedTile} 0, 1 for hotbars */
-  hotbar = (dragged.item & 3) === 1 ?
-    DefaultUI.blockBars[dragged.folder = DefaultUI.openedFolder] || null :
-    (dragged.item & 3) === 0 ? DefaultUI.toolBar : null;
-  //console.log("dragged="+dragged.item+' '+dragged.folder);
-  if (hotbar) {
-    dragged.tile = hotbar[dragged.item >> 2] || null;
-    // hacky way to pick up dragged tile
-    //-hotbar[dragged.item >> 2] = null;
-    DefaultUI.insertedTile = dragged.item;//+
-    dragged.item = -1;//+
-  }
-  //console.log("<juhus " + dragged.item + " " + dragged.folder + ">"+hotbar+"</juhus>");
-  juhus.set("claim", "movetile");
-  return true;
-};
 DefaultUI.Drag = function () {
   this.x = 0;
   this.y = 0;
@@ -3946,24 +3843,202 @@ DefaultUI.Drag = function () {
 };
 // #unsealed regexp for finding unsealed instances (sub/class definitions)
 /function [A-Z]|[ .][A-Z][A-Za-z0-9_$]* *= *(async +)?function/g;
-/** @param {number} x @param {number} y @param {TileType} [tile] */
-DefaultUI.Drag.prototype.update = function (x, y, tile) {
+/** @param {number} x @param {number} y */
+DefaultUI.Drag.prototype.update = function (x, y) {
   this.x = x;
   this.y = y;
-  tile !== UDF ? this.tile = tile : 0;
-  return this;
 };
 /** lovely mutable @type {DefaultUI.Drag} */
-DefaultUI.Drag.tile = new DefaultUI.Drag();
+//-DefaultUI.Drag.tile = new DefaultUI.Drag();
+DefaultUI.Drag.dragged = new DefaultUI.Drag();
 /** lovely mutable @type {DefaultUI.Drag} */
 DefaultUI.Drag.pointed = new DefaultUI.Drag();
+/** @see {DefaultUI.selectedTile} original item placement */
+DefaultUI.Drag.original = -1;
+/** @param {number} from @param {number} to @param {TileType[]} hotbar */
+DefaultUI.Drag.shiftDragged = function (from, to, hotbar) {
+  var dragged = DefaultUI.Drag.dragged;
+  if (to !== -1 && to !== from) {
+    if (from > to)
+      for (; from-- > to;)
+        hotbar[from + 1] = hotbar[from] || null;
+    else
+      for (; from < to; from++)
+        hotbar[from] = hotbar[from + 1] || null;
+    hotbar[to] = null;
+    dragged.item = to << 2 | ((dragged.item & 3) === 1 ? 1 : 0);
+  }
+};
+/** @param {boolean} [notTile] */
+DefaultUI.Drag.reset = function (notTile) {
+  var dragged = DefaultUI.Drag.dragged;
+  var hotbar = dragged.item !== -1 && (dragged.item & 3) === 1 ?
+    DefaultUI.blockBars[dragged.folder] || [] :
+    (dragged.item & 3) === 0 ? DefaultUI.toolBar : [];
+  if (!dragged.tile || hotbar[dragged.item >> 2])
+    return true;
+  DefaultUI.Drag.shiftDragged(dragged.item >> 2,
+    DefaultUI.Drag.original >> 2, hotbar);
+  DefaultUI.Drag.original = -1;
+  if (!notTile) {
+    hotbar[dragged.item >> 2] = dragged.tile;
+    dragged.item = -1;
+    dragged.tile = null;
+  }
+  render();
+  return true;
+};
+/** @param {Actions} action */
+DefaultUI.Drag.finish = function (action) {
+  if (juhus.get("claim") !== "movetile")
+    return false;
+  var replacing = DefaultUI.replacingTile;
+  if (replacing === -1 || action.type === "mouseleave")
+    return DefaultUI.Drag.reset();
+  var dragged = DefaultUI.Drag.dragged;
+  if (replacing !== dragged.item)
+    DefaultUI.Drag.reset(true);
+  var hotbar = dragged.item !== -1 && (dragged.item & 3) === 1 ?
+    DefaultUI.blockBars[dragged.folder] || [] :
+    (dragged.item & 3) === 0 ? DefaultUI.toolBar : [];
+  //3-if (reset !== UDF)
+  //3-  return reset ? dragged.tile = null : dragged.tile;
+  for (var i = hotbar.length; --i > 0 && !hotbar[i];)
+    0;
+  hotbar.length = i + 1;
+  if (DefaultUI.insertedTile !== -1) {
+    DefaultUI.insertedTile = -1;
+    dragged.tile = null;
+    render();
+    return true;
+  }
+  hotbar = replacing !== -1 && dragged.tile && (replacing & 3) === 1 ?
+    DefaultUI.blockBars[DefaultUI.openedFolder] || [] :
+    (replacing & 3) === 0 ? DefaultUI.toolBar : [];
+  i = replacing >> 2;
+  for (hotbar[i--] = dragged.tile; i-- > 0; hotbar[i] = null)
+    if (hotbar[i])
+      break;
+  DefaultUI.replacingTile = -1;
+  dragged.tile = null;
+  render();
+  return true;
+};
+/** for all magical number constants used in bitwise operations
+ * and comparsion of the results @see {DefaultUI.selectedTile}
+ * @param {number} x @param {number} y @param {Actions} action */
+DefaultUI.Drag.detect = function (x, y, action) {
+  var claim = juhus.get("claim"), dragged = DefaultUI.Drag.dragged;
+  if (claim === "movetile") {
+    action.event.cancelable && action.event.preventDefault();
+    dragged.update(x, y);
+    var pointed = DefaultUI.Drag.pointed;
+    DefaultUI.handleGUIArea(action.x, action.y, pointed);
+    //-if (dragged.tile) {
+      //-if (DefaultUI.replacingTile !== -1 && DefaultUI.insertedTile !== -1)
+      //-  console.error("replacing shouldn't be together with inserted");
+      //-var inserted = DefaultUI.insertedTile;
+    if (!dragged.tile)
+      return true;
+    DefaultUI.replacingTile = pointed.item;
+    var from = dragged.item >> 2, hotbar = (dragged.item & 3) === 1 ?
+      DefaultUI.blockBars[DefaultUI.openedFolder] || [] :
+      (dragged.item & 3) === 0 ? DefaultUI.toolBar : [];
+    if (pointed.item === -1)
+      void 0;
+    else if ((pointed.item & 3) !== (dragged.item & 3)) {
+      DefaultUI.Drag.shiftDragged(from, 0, hotbar);
+      //--if ((dragged.item & 3) === 1) {
+      //--  var hotbar = DefaultUI.blockBars[DefaultUI.openedFolder] || [];
+      // for (var i = dragged.item >> 2; i-- > 0;)
+      //   hotbar[i + 1] = hotbar[i];
+      // hotbar[0] = null;
+      // dragged.item = (dragged.item & 3) === 1 ? 1 : 0;
+      //--} else {
+      //--  hotbar = ;
+      //--  for (i = dragged.item >> 2; i < hotbar.length; i++)
+      //--    hotbar[i] = hotbar[i + 1];
+      //--  hotbar[hotbar.length - 1];
+      //--  dragged.item = hotbar.length - 1 << 2;
+      //--}
+    } else if (pointed.item < dragged.item)
+      this.shiftDragged(from, (pointed.item >> 2) + 1, hotbar);
+    else if (pointed.item > dragged.item)
+      this.shiftDragged(from, (pointed.item >> 2) - 1, hotbar);
+    // } else if (pointed.item < dragged.item) {
+    //   i = dragged.item >> 2;
+    //   var l;
+    //   for (console.log('uhuh1='+i,l = (pointed.item >> 2) + 1); i-- > l;)
+    //     hotbar[i + 1] = hotbar[i];
+    //   hotbar[l] = null;
+    //   dragged.item = l << 2 | ((dragged.item & 3) === 1 ? 1 : 0);
+    // } else if (pointed.item > dragged.item) {
+    //   i = dragged.item >> 2;
+    //   for (console.log('uhuh0='+i,l = (pointed.item >> 2) - 1); i < l; i++)
+    //     hotbar[i] = hotbar[i + 1];
+    //   hotbar[l] = null;
+    //   dragged.item = l << 2 | ((dragged.item & 3) === 1 ? 1 : 0);
+    // }
+    //0-var hotbar = (pointed.item & 3) === 1 ?
+    //0-  DefaultUI.blockBars[DefaultUI.openedFolder] || [] :
+    //0-  (pointed.item & 3) === 0 ? DefaultUI.toolBar : [];
+      //-//console.log('sinw:'+pointed.item,pointed.tile,pointed.fraction);
+      //-if (pointed.tile && pointed.fraction < .5) {
+      //-  DefaultUI.insertedTile = pointed.item;
+      //-  DefaultUI.replacingTile = -1;
+      //-} else {
+      //-  DefaultUI.replacingTile = pointed.item;
+      //-  DefaultUI.insertedTile = -1;
+      //-}
+      //-//console.log('inshited:'+inserted,Object.getPrototypeOf(hotbar).constructor.name);
+      //-hotbar = (inserted & 3) === 1 ?
+      //-  DefaultUI.blockBars[DefaultUI.openedFolder] || null :
+      //-  (inserted & 3) === 0 ? DefaultUI.toolBar : null;
+      //-if (inserted !== -1 && hotbar) {
+      //-  for (var i = inserted >> 2; i < hotbar.length; i++)
+      //-    hotbar[i] = hotbar[i + 1];
+      //-    //console.log('the fuck is thishit?!'+i,hotbar.length);
+      //-  !hotbar[hotbar.length - 1] && hotbar.length--;
+      //-}
+      //-hotbar = ((inserted = DefaultUI.insertedTile) & 3) === 1 ?
+      //-  DefaultUI.blockBars[DefaultUI.openedFolder] || null:
+      //-  (inserted & 3) === 0 ? DefaultUI.toolBar : null;
+      //-if (inserted !== -1 && hotbar) {
+      //-  for (i = hotbar.length; i-- > (inserted >> 2);)
+      //-    hotbar[i + 1] = hotbar[i];
+      //-  hotbar[inserted >> 2] = dragged.tile;
+      //-}
+    //-}
+    render();
+    return true;
+  }
+  if (claim !== "unclaimed" || action.state.slice(-4) !== "drag")
+    return false;
+  DefaultUI.Drag.reset();
+  //3-DefaultUI.Drag.finish(action, true);
+  if (!DefaultUI.handleGUIArea(action.startX, action.startY, dragged))
+    return false;
+  action.event.cancelable && action.event.preventDefault();
+  DefaultUI.Drag.original = dragged.item;
+  hotbar = (dragged.item & 3) === 1 ?
+    DefaultUI.blockBars[dragged.folder = DefaultUI.openedFolder] || [] :
+    (dragged.item & 3) === 0 ? DefaultUI.toolBar : [];
+  if ((dragged.tile = hotbar[dragged.item >> 2] || null))
+  //- {
+    hotbar[dragged.item >> 2] = null;
+  //-   DefaultUI.insertedTile = dragged.item;
+  //-   dragged.item = -1;
+  //- }
+  juhus.set("claim", "movetile");
+  return true;
+};
 
 // #IDK move elsewhere maybe
 juhus.set("onclaim", function (x, y, source) {
   if (source.source.startTarget !== canvas)
     return source.preventClaim();
     // if (source.source.startTarget !== Command.head)
-  if (DefaultUI.detectTileMove(x, y, source.source))
+  if (DefaultUI.Drag.detect(x, y, source.source))
     return source.preventClaim();
 });
 juhus.set("onstart", function (x, y, source) {
@@ -3978,15 +4053,15 @@ juhus.set("onmove", function (x, y, source) {
   var action = source.source;
   if (action.startTarget === Command.head) {
     var style = Command.el.style, w = innerWidth - 86;
-    var x = +style.left.slice(0, -2) + action.movementX / pR || 0,
-      y = +style.top.slice(0, -2) + action.movementY / pR || 0;
+    var x = +style.left.slice(0, -2) + action.moveX / pR || 0,
+      y = +style.top.slice(0, -2) + action.moveY / pR || 0;
     style.left = (x > -269 ? x < w ? x : w : -269) + "px";
     style.top = (y > 5 ? y : 5) + "px";
     return;
   }
   if (action.startTarget !== canvas)
     return;
-  if (DefaultUI.detectTileMove(x, y, action))
+  if (DefaultUI.Drag.detect(x, y, action))
     return;
 });
 juhus.set("onend", function (x, y, source) {
@@ -3998,7 +4073,7 @@ juhus.set("onend", function (x, y, source) {
     style["" + "webkitUserSelect"] = style.userSelect = "none";
     return;
   }
-  if (DefaultUI.finishTileMove())
+  if (DefaultUI.Drag.finish(action))
     return;
   if (action.state.slice(-5) === "short") {
     action.event.cancelable && action.event.preventDefault();
