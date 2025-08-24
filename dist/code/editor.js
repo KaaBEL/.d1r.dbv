@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.16";
+var version_editor_js = "v.0.2.17";
 /** 3h_ @TODO check @see {Editor} for setting a setting without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -87,6 +87,8 @@ Editor.meterPositions = true;
 Editor.launchpadBorder = false;
 /** (default) false: displayed, true: not used */
 Editor.hideInventoryTile = false;
+Editor.placingOffsetX = -50;
+Editor.placingOffsetY = -70;
 Editor.saveSettings = function () {
   var n = 0, arr = [+Editor.background];
   if (isNaN(n = Number("0x" + Editor.backgroundColor.slice(1))))
@@ -3784,10 +3786,22 @@ DefaultUI.renderHotBars = function (w, h) {
     } else
       tx -= 74;
   }
+  '3h_'
   var dragged = DefaultUI.Drag.dragged;
   tx = dragged.x;
   ty = dragged.y;
-  drawTileCtx(dragged.tile, false);
+  if (dragged.placing) {
+    var size =
+        Block.Size.VALUE[Block.ID[DefaultUI.getCode(dragged.tile)]],
+      xFix = size ? size.w / 32 + .5 : 2,
+      yFix = size ? -size.h / 32 + .5 : 0;
+    Renderer.drawBlock(
+      Math.floor((vX - xFix) / sc + xFix),
+      Math.floor((yFix - vY) / sc + yFix),
+      dragged.tile
+    );
+  } else
+    drawTileCtx(dragged.tile, false);
   if ((i = DefaultUI.replacingTile) !== -1) {
     ctx.strokeStyle = "#ff5533";
     b = (i & 3) === 0;
@@ -3839,6 +3853,7 @@ DefaultUI.Drag = function () {
   this.folder = -1;
   /** @type {TileType|null} */
   this.tile = null;
+  this.placing = false;
   Object.seal(this);
 };
 // #unsealed regexp for finding unsealed instances (sub/class definitions)
@@ -3849,7 +3864,6 @@ DefaultUI.Drag.prototype.update = function (x, y) {
   this.y = y;
 };
 /** lovely mutable @type {DefaultUI.Drag} */
-//-DefaultUI.Drag.tile = new DefaultUI.Drag();
 DefaultUI.Drag.dragged = new DefaultUI.Drag();
 /** lovely mutable @type {DefaultUI.Drag} */
 DefaultUI.Drag.pointed = new DefaultUI.Drag();
@@ -3901,8 +3915,6 @@ DefaultUI.Drag.finish = function (action) {
   var hotbar = dragged.item !== -1 && (dragged.item & 3) === 1 ?
     DefaultUI.blockBars[dragged.folder] || [] :
     (dragged.item & 3) === 0 ? DefaultUI.toolBar : [];
-  //3-if (reset !== UDF)
-  //3-  return reset ? dragged.tile = null : dragged.tile;
   for (var i = hotbar.length; --i > 0 && !hotbar[i];)
     0;
   hotbar.length = i + 1;
@@ -3924,6 +3936,7 @@ DefaultUI.Drag.finish = function (action) {
   render();
   return true;
 };
+'3h_'
 /** for all magical number constants used in bitwise operations
  * and comparsion of the results @see {DefaultUI.selectedTile}
  * @param {number} x @param {number} y @param {Actions} action */
@@ -3934,10 +3947,6 @@ DefaultUI.Drag.detect = function (x, y, action) {
     dragged.update(x, y);
     var pointed = DefaultUI.Drag.pointed;
     DefaultUI.handleGUIArea(action.x, action.y, pointed);
-    //-if (dragged.tile) {
-      //-if (DefaultUI.replacingTile !== -1 && DefaultUI.insertedTile !== -1)
-      //-  console.error("replacing shouldn't be together with inserted");
-      //-var inserted = DefaultUI.insertedTile;
     if (!dragged.tile)
       return true;
     DefaultUI.replacingTile = pointed.item;
@@ -3948,74 +3957,16 @@ DefaultUI.Drag.detect = function (x, y, action) {
       void 0;
     else if ((pointed.item & 3) !== (dragged.item & 3)) {
       DefaultUI.Drag.shiftDragged(from, 0, hotbar);
-      //--if ((dragged.item & 3) === 1) {
-      //--  var hotbar = DefaultUI.blockBars[DefaultUI.openedFolder] || [];
-      // for (var i = dragged.item >> 2; i-- > 0;)
-      //   hotbar[i + 1] = hotbar[i];
-      // hotbar[0] = null;
-      // dragged.item = (dragged.item & 3) === 1 ? 1 : 0;
-      //--} else {
-      //--  hotbar = ;
-      //--  for (i = dragged.item >> 2; i < hotbar.length; i++)
-      //--    hotbar[i] = hotbar[i + 1];
-      //--  hotbar[hotbar.length - 1];
-      //--  dragged.item = hotbar.length - 1 << 2;
-      //--}
     } else if (pointed.item < dragged.item)
       this.shiftDragged(from, (pointed.item >> 2) + 1, hotbar);
     else if (pointed.item > dragged.item)
       this.shiftDragged(from, (pointed.item >> 2) - 1, hotbar);
-    // } else if (pointed.item < dragged.item) {
-    //   i = dragged.item >> 2;
-    //   var l;
-    //   for (console.log('uhuh1='+i,l = (pointed.item >> 2) + 1); i-- > l;)
-    //     hotbar[i + 1] = hotbar[i];
-    //   hotbar[l] = null;
-    //   dragged.item = l << 2 | ((dragged.item & 3) === 1 ? 1 : 0);
-    // } else if (pointed.item > dragged.item) {
-    //   i = dragged.item >> 2;
-    //   for (console.log('uhuh0='+i,l = (pointed.item >> 2) - 1); i < l; i++)
-    //     hotbar[i] = hotbar[i + 1];
-    //   hotbar[l] = null;
-    //   dragged.item = l << 2 | ((dragged.item & 3) === 1 ? 1 : 0);
-    // }
-    //0-var hotbar = (pointed.item & 3) === 1 ?
-    //0-  DefaultUI.blockBars[DefaultUI.openedFolder] || [] :
-    //0-  (pointed.item & 3) === 0 ? DefaultUI.toolBar : [];
-      //-//console.log('sinw:'+pointed.item,pointed.tile,pointed.fraction);
-      //-if (pointed.tile && pointed.fraction < .5) {
-      //-  DefaultUI.insertedTile = pointed.item;
-      //-  DefaultUI.replacingTile = -1;
-      //-} else {
-      //-  DefaultUI.replacingTile = pointed.item;
-      //-  DefaultUI.insertedTile = -1;
-      //-}
-      //-//console.log('inshited:'+inserted,Object.getPrototypeOf(hotbar).constructor.name);
-      //-hotbar = (inserted & 3) === 1 ?
-      //-  DefaultUI.blockBars[DefaultUI.openedFolder] || null :
-      //-  (inserted & 3) === 0 ? DefaultUI.toolBar : null;
-      //-if (inserted !== -1 && hotbar) {
-      //-  for (var i = inserted >> 2; i < hotbar.length; i++)
-      //-    hotbar[i] = hotbar[i + 1];
-      //-    //console.log('the fuck is thishit?!'+i,hotbar.length);
-      //-  !hotbar[hotbar.length - 1] && hotbar.length--;
-      //-}
-      //-hotbar = ((inserted = DefaultUI.insertedTile) & 3) === 1 ?
-      //-  DefaultUI.blockBars[DefaultUI.openedFolder] || null:
-      //-  (inserted & 3) === 0 ? DefaultUI.toolBar : null;
-      //-if (inserted !== -1 && hotbar) {
-      //-  for (i = hotbar.length; i-- > (inserted >> 2);)
-      //-    hotbar[i + 1] = hotbar[i];
-      //-  hotbar[inserted >> 2] = dragged.tile;
-      //-}
-    //-}
     render();
     return true;
   }
   if (claim !== "unclaimed" || action.state.slice(-4) !== "drag")
     return false;
   DefaultUI.Drag.reset();
-  //3-DefaultUI.Drag.finish(action, true);
   if (!DefaultUI.handleGUIArea(action.startX, action.startY, dragged))
     return false;
   action.event.cancelable && action.event.preventDefault();
@@ -4024,11 +3975,7 @@ DefaultUI.Drag.detect = function (x, y, action) {
     DefaultUI.blockBars[dragged.folder = DefaultUI.openedFolder] || [] :
     (dragged.item & 3) === 0 ? DefaultUI.toolBar : [];
   if ((dragged.tile = hotbar[dragged.item >> 2] || null))
-  //- {
     hotbar[dragged.item >> 2] = null;
-  //-   DefaultUI.insertedTile = dragged.item;
-  //-   dragged.item = -1;
-  //- }
   juhus.set("claim", "movetile");
   return true;
 };
@@ -4335,7 +4282,7 @@ function enableLogicEditing() {
   render();
 };
 
-/** @param {number} x @param {number} y @param {TemporaryEventParam} e */
+/** @param {number} x @param {number} y @param {MouseEvent} e */
 var edit_logicmove = function (x, y, e) {
   //?? #compactDownToExecTiel
   // TODO: for implementing tile drag, handleGUIArea needs upgrade
@@ -4555,7 +4502,7 @@ var old_UI = DefaultUI.press = press = function (x, y) {
   render();
 };
 
-/** @type {(x:number,y:number,e:TemporaryEventParam)=>void} */
+/** @type {(x:number,y:number,e:MouseEvent)=>void} */
 function commands(x, y, e) {
   if (e.target instanceof HTMLInputElement ||
     e.target instanceof HTMLTextAreaElement) {
@@ -4637,11 +4584,11 @@ DefaultUI.over = over = function (e) {
  * however to meet requirements of many various uses, and be aware of
  * possible optimizations, a system of global and local (single use)
  * settings to provide interface with multiple rendering methods */
-function Render() {
+function Renderer() {
   throw new Error("Unimplemented");;
   this.logíc = false;
 }
-render = function () {
+Renderer.queue = function () {
   var rq = -1;
   return function requestRendering() {
     cancelAnimationFrame(rq);
@@ -4657,6 +4604,12 @@ render = function () {
     });
   };
 }();
+/** @param {number} x @param {number} y @param {TileType} block */
+Renderer.drawBlock = function (x, y, block) {
+  ;
+};
+
+render = Renderer.queue;
 
 function rend_showrc() {
   bd && bd.appendChild(rc.canvas);

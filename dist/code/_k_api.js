@@ -2,7 +2,7 @@
 /// <reference path="./editor.html.ts" />
 "use strict";
 /** @readonly */
-var version__k_api_js = "v.0.2.16";
+var version__k_api_js = "v.0.2.17";
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -71,7 +71,6 @@ var vX = 0, vY = 0, fX, fY, gX, gY, sc = 16, pR = 1;
 var bd = GE(8);
 // . mouseStamp = 0, tStart = 0, touch = null, touch_2 = null;
 
-/** @typedef {MouseEvent|TouchEvent|TchD} TemporaryEventParam */
 /** @type {((click?:true)=>void)|null} */
 var touchdevice = null;
 
@@ -114,676 +113,19 @@ var WheelSroll = typeof WheelEvent == "undefined" ? Object : WheelEvent;
 if (window.MouseWheelEvent === UDF)
   /** @type {MouseWheelConstructor} *///@ts-expect-error
   var MouseWheelEvent = Object;
-
-/** @typedef {(TouchDat|null)[]} TchDArr */
-/** @typedef {(TouchDat|null)[] & {count: number}} AllTchD */
-/** fires when action of event doesn't correspond with touches array
- * @callback errorH
- * @param {AllTchD} touches @param {Touch} faulty @param {TouchEvent} event
- * @returns {boolean|void} ? keep current touches : reset to the new action
- * ^ swapped result by boolean (should reset on default: void functions) */
-/** fires when event is fired, may give all or portion of changed touches
- * @callback softH
- * @param {AllTchD} touches (all) same as changed but with count property
- * @param {TchDArr} changed TchD|null array with touches at their indexes
- * @param {TouchEvent} ev
- * @returns {void} */
-/** fires when all events were collected, possibly one cycle
- * @callback hardH
- * @param {AllTchD} touches
- * @param {TchDArr} added
- * @param {TchDArr} removed
- * @returns {void} */
-/** @typedef {(e:TouchEvent)=>void} handler */
-
-/** tested object for touch data
- * @param {HTMLElement} src @param {Touch} touch
- * @param {TouchEvent} touchEvent*/
-function TouchDat(src, touch, touchEvent) {
-  /** @type {TouchEvent} */
-  this.event = touchEvent;
-  /** @type {number} */
-  this.identifier = touch.identifier;
-  /** @type {EventTarget} */
-  this.target = touch.target;
-  /** @type {string} */
-  this.type = touchEvent.type;
-  /** @type {number} */
-  this.pageX = touch.pageX;
-  /** @type {number} */
-  this.pageY = touch.pageY;
-  /** @type {number} */
-  this.clientX = touch.clientX;
-  /** @type {number} */
-  this.clientY = touch.clientY;
-  /** @type {number} */
-  this.screenX = touch.screenX;
-  /** @type {number} */
-  this.screenY = touch.screenY;
-  /** @type {number} */
-  this.force = touch.force;
-  /** @type {number} */
-  this.radiusX = touch.radiusX;
-  /** @type {number} */
-  this.radiusY = touch.radiusY;
-  /** @type {number} position within element */
-  this.posX = (touch.pageX - src.offsetLeft) * pR;
-  /** @type {number} position within element */
-  this.posY = (touch.pageY - src.offsetTop) * pR;
-  /** @type {number} starting position within element */
-  this.sX = this.posX;
-  /** @type {number} starting position within element */
-  this.sY = this.posY;
-  /** @type {number} movement within element */
-  this.movX = 0;
-  /** @type {number} movement within element */
-  this.movY = 0;
-  /** @type {number} timestamp */
-  this.time = Date.now();
-  /** @type {number} timestamp of previous */
-  this.pTime = 0;
-  /** @type {number} start timestamp */
-  this.sTime = this.time;
-  /** @type {EventTarget} source target */
-  this.srcTarget = this.target;
-  /** @type {EventTarget|null} source target */
-  this.srcElement = touchEvent.target;
-  /** @method update @this {TouchDat} */
-  this.update = function (touch, touchEvent) {
-    if (!(touch instanceof Touch))
-      throw new TypeError("1. arg: touch is not type of Touch");
-    if (touch.identifier !== this.identifier)
-      throw new Error("attempt to udpdate with different identifier");
-    if (!(touchEvent instanceof TouchEvent))
-      throw new TypeError("2. arg: touchEvent is not type of TouchEvent");
-    this.event = touchEvent;
-    this.target = touch.target;
-    this.pageX = touch.pageX;
-    this.pageY = touch.pageY;
-    this.clientX = touch.clientX;
-    this.clientY = touch.clientY;
-    this.screenX = touch.screenX;
-    this.screenY = touch.screenY;
-    this.force = touch.force;
-    this.radiusX = touch.radiusX;
-    this.radiusY = touch.radiusY;
-    this.type = touchEvent.type;
-    var tmp = (touch.pageX - src.offsetLeft) * pR;
-    this.movX = tmp - this.posX;
-    this.posX = tmp;
-    tmp = (touch.pageY - src.offsetTop) * pR;
-    this.movY = tmp - this.posY;
-    this.posY = tmp;
-    tmp = Date.now()
-    this.pTime = this.time;
-    this.time = tmp;
-    return this;
-  };
-  return Object.seal(this);
-}
-TouchDat.workaround = function () {
-  try {
-    var src = EL(), touch = new Touch({
-      identifier: 0, target: src
-    });
-    return new TouchDat(src, touch, new TouchEvent("cancel")); 
-  } catch (e) {
-    console.error("TouchDat.workaround could not create TouchDat");
-    return {};
-  }
-};
-/** @typedef {TouchDat} TchD */
-
-/** aditional/optional js logging of touch events */
-function test_touches(targ, calls, globalArr, customLog) {
-  try {
-    /** @type {TouchEvent} */
-    var TCH = new TouchEvent("ontouchcancel");
-  } catch (e) {
-    //@ts-expect-error
-    TCH = {};
-  }
-  var a = [], t = {ch: TCH}, custLog = typeof customLog == "function" ?
-    customLog : customLog === UDF ? function () { return [] } :
-    function () {
-        return customLog instanceof Array ? customLog : [customLog];
-      };
-  var map = Array.prototype.map;
-  function tchLog(s, e, ef, n, l, p) {
-    n = (t.ch = e).timeStamp % 1E7 | 0;
-    // countermeausre in offset left in console logs by array indexes
-    l = 7 - ((n) + "").length;
-    return Array.prototype.concat.apply([
-      n,
-      new Array(
-        l + 1
-      ).join(" ") + s + map.call(ef(e, p = []), function (i) {
-        var s = [
-          /* empty */,
-          i.identifier,
-          i.force,
-          i.pageX | 0,
-          i.pageY | 0
-        ].join(" ");
-        return s += new Array(
-          13 - s.length + 1
-        ).join(" ");
-      })
-    ], custLog()).concat(e.timeStamp - n, p);
-  }
-  function fn(s, f) {
-    // ef in tchLog
-    var prpt = s !== "cancel:" ?
-      function (e, arr) {
-          // p in touch log preservers the identifiesrs of changedTouches
-          arr.push(map.call(e.changedTouches, function (e) {
-            return e.identifier;
-          }));
-          return t.cs = e.touches;
-        } :
-      function (e) {return t.cs = e.changedTouches};
-    function prcs(e) {
-      e.cancelable && e.preventDefault();
-      if (a.push(tchLog(s, e, prpt)) > 109) {
-        console.log([a]);
-        a = new Array(10);
-      }
-    }
-    if (globalArr)
-      return function prcsLog(e) {
-        if (a.push(tchLog(s, e, prpt)) > 99) {
-          console.log([a]);
-          (a = []).length = 10;
-        }
-        f && f(e);
-      }
-    function withLog(e) {
-      delete a[a.push(tchLog(s, e, function (e) {
-        return e.targetTouches;
-      })) - 64];
-      f && f(e);
-    }
-    return f ? withLog : prcs;
-  }
-  if (calls instanceof Array ? globalArr : calls = []) {
-    (globalArr =
-      //@ts-expect-error
-      typeof arr ===
-      "undefined" && (a.length = 10) &&
-      Object.defineProperty(window, "tchs", {
-        get: function (p) {
-          p = a;
-          (a = []).length = 10;
-          return {a: p};
-        }
-      }));
-  }
-  targ.ontouchcancel = fn("cancel:", calls[3]);
-  targ.ontouchstart = fn(" start:", calls[0]);
-  targ.ontouchmove = fn("  move:", calls[1]);
-  targ.ontouchend = fn("   end:", calls[2]);
-
-  return {a: a, tch: t};
-}
-
-/**
- * @param {HTMLElement} src
- * @param {hardH} [hardHandler]
- * @param {[softH,softH,softH,softH]} [softHandlers]
- * @param {[errorH,errorH,errorH]} [errorHandlers] */
-function touchesInit(src, hardHandler, softHandlers, errorHandlers) {
-  src = src instanceof HTMLElement ? src : (console.error("No src EL" +
-    " at touchesInit beggining."), EL("unknown"));
-  var hardHandler_ = hardHandler || F;
-  var softHandlers_ = softHandlers || [F, F, F, F];
-  var errorHandlers_ = errorHandlers || [F, F, F];
-  /** @typedef {Array<[number,string,number]>} touchlog */
-  /** @type {{a?:touchlog,tch?:{ch:TouchEvent,cs:TouchList}}} */
-  var o = {},
-    /** @type {boolean[]} */
-    events = [],
-    /** @type {TchDArr} */
-    temp = [],
-    /** @type {TchDArr} */
-    added = [],
-    /** @type {TchDArr} */
-    removed = [],
-    touches = function () {
-      var arr =
-        /** @type {AllTchD} */
-        ([TouchDat.workaround()].slice(1));
-      arr.count = 0;
-      return arr;
-    }(),
-    /** @type {Array<number>} */
-    identifiers = [-1],
-    /** @type {[handler,handler,handler,handler]} */
-    handlers = [onstart, onmove, onend, oncancel];
-  [events, temp, added, removed, touches, identifiers].map(function (e) {
-    e.length = 0;
-  });
-
-  // console.log(o = test_touches(src, handlers, 1, function () {
-  //   return [events, temp.length, added.length, removed.length,
-  //     touches.length, identifiers].map(
-  //     function (e, i) {
-  //       if (typeof e == "number")
-  //         return e;
-  //       return e.join(",") + " ".slice(+!i);
-  //     }
-  //   );
-  // }));
-  src.ontouchstart = onstart;
-  src.ontouchmove = onmove;
-  src.ontouchend = onend;
-  src.ontouchcancel = oncancel;
-  // ontouches events handling
-  function createTouch(tch, ev, i) {
-    if (i === UDF) {
-      if ((i = identifiers.indexOf(tch.identifier)) >= 0)
-        return errorHandlers_[0](touches, tch, ev) ?
-          console.error("Can't add existing Touch") :
-          console.error("Assigning Touch", updateTouch(tch, ev, i));
-    }
-    for (i = 0; touches[i] !== null && i < touches.length;)
-      i++;
-    events[i] = !0;
-    identifiers[i] = tch.identifier;
-    touches[i] = added[i] = temp[i] = new TouchDat(src, tch, ev);
-  }
-  function updateTouch(tch, ev, i) {
-    if (i === UDF) {
-      if ((i = identifiers.indexOf(tch.identifier)) < 0)
-        return errorHandlers_[1](touches, tch, ev) ?
-          console.error("Can't update unexisting Touch") :
-          console.error("Adding Touch", createTouch(tch, ev, i));
-    }
-    events[i] = !0;
-    var touch = touches[i];
-    touch ?
-      temp[i] = touch.update(tch, ev) :
-      console.error("Indentified touch is unpresent in touches.");
-  }
-  function removeTouch(tch, ev, i) {
-    var j = identifiers.indexOf(tch.identifier);
-    if (j < 0 && errorHandlers_[2](touches, tch, ev))
-      return console.error("Can't remove unexisting Touch");
-    events[j] = !0;
-    identifiers[j] = -1;
-    var touch = touches[j];
-    touch ?
-      removed[j] = temp[j] = touch.update(tch, ev) :
-      console.error("Indentified touch is unpresent in touches.");
-    touches[j] = null;
-    for (j = touches.length - 1; j > 0 && touches[j] === null;)
-      touches.length--;
-  }
-  /** @param {TouchEvent} ev */
-  function prcsTouches(evId, evStr, ev, method) {
-    for (var i = 0, tchs = ev.changedTouches; i < tchs.length; i++)
-      method(tchs[i], ev);
-    for (i = touches.count = 0; i < touches.length;)
-      touches.count += +!!touches[i++];
-    softHandlers_[evId](touches, temp, ev);
-    for (i = temp.length = touches.length; i-- > 0;)
-      temp[i] = null;
-  }
-  function inputTouches(evId, evStr, ev, method) {
-    for (var i = touches.count = 0; i < touches.length;)
-      touches.count += +!!touches[i++];
-    hardHandler_(touches, added, removed);
-    events = [];
-    added = [];
-    removed = [];
-    prcsTouches(evId, evStr, ev, method);
-  }
-
-  function checkEvent(tchs) {
-    for (var i = tchs.length; i-- > 0;)
-      if (events[i])
-        return !1;
-    return !0;
-  }
-  /** @param {TouchEvent} e */
-  function onstart(e) {
-    // checkEvent = each complete input contains only one event for each
-    // touch ?
-    // has 2 outcomes: assigning new start tchs : fire UI complete input;
-    if (checkEvent(e.changedTouches))
-      // start of existing | end/cancel of unexisting further throws error
-      prcsTouches(0, "start", e, createTouch);
-    else
-      inputTouches(0, "start", e, createTouch);
-  }
-  /** @param {TouchEvent} e */
-  function onmove(e) {
-    if (checkEvent(e.changedTouches))
-      prcsTouches(1, "move", e, updateTouch);
-    else
-      inputTouches(1, "move", e, updateTouch);
-  }
-  /** @param {TouchEvent} e */
-  function onend(e) {
-    // remove existing one else throw error, conditioned in updateRemoved...
-    if (checkEvent(e.changedTouches))
-      prcsTouches(2, "end", e, removeTouch);
-    else
-      inputTouches(2, "end", e, removeTouch);
-  }
-  /** @param {TouchEvent} e */
-  function oncancel(e) {
-    if (checkEvent(e.changedTouches))
-      prcsTouches(3, "cancel", e, removeTouch);
-    else
-      inputTouches(3, "cancel", e, removeTouch);
-  }
-  return o;
-}
-/** settings: allowed press time legth, @see {mouseInit.time} */
-touchesInit.time = 350;
-/** allowed press precision, @see {mouseInit.move} */
-touchesInit.move = 13;
-
-var mouseStamp = 0, test_debug = !1;
-function mouseInit() {
-  if (!bd)
-    return console.error("bd is null, UI wasn't initialized");
-  bd.onwheel = bd.onmousewheel = function (e) {
-    if (e.target !== canvas || !(e instanceof WheelSroll ||
-      e instanceof MouseWheelEvent))
-      return;
-    test_debug && console.log("onwheel", +new Date / 100 | 0,
-      e.deltaY || -(e.wheelDelta || 0), +new Date, sc);
-    var prev = sc, w = canvas.width / 2, h = canvas.height / 2;
-    sc -= sc / (e.deltaY || -(e.wheelDelta || 0)) * 10;
-    vX = (vX - w) * sc / prev + w;
-    vY = (vY - h) * sc / prev + h;
-    render();
-  };
-  // maybe the first step in refining could be making all boolean states
-  // into one better understandable enum for different states (:TODO)
-  // pX/pY = prev x, y (previous press position)
-  var foreign = !1, pX = 0, pY = 0, moving = !1, taken = !1;
-  // fix for mouseleave and mouseenter after fixing ghost __NULL__ blocks
-  var left = !1;
-  bd.onmousedown = function (e) {
-    left = moving = taken = !1;
-    var x = (e.pageX - canvas.offsetLeft) * pR,
-      y = (e.pageY - canvas.offsetTop) * pR;
-    if (foreign = e.target !== canvas)
-      over(e);
-    else
-      taken = e.buttons === 1 && move(x, y, e);
-    mouseStamp = e.buttons === 1 ? Date.now() : 0;
-    pX = gX = x;
-    pY = gY = y;
-  };
-  bd.onmouseenter = function (e) {
-    foreign = taken = !1;
-    if (left = !(moving && e.buttons & 5))
-      return moving = !1;
-    var x = (e.pageX - canvas.offsetLeft) * pR,
-      y = (e.pageY - canvas.offsetTop) * pR;
-    pX = gX = x;
-    pY = gY = y;
-    // there's still some weird in OBS's interact with browser
-  };
-  bd.onmousemove = function (e) {
-    if (foreign)
-      return over(e);
-    if (!(e.buttons & 5))
-      return;
-    var x = (e.pageX - canvas.offsetLeft) * pR,
-      y = (e.pageY - canvas.offsetTop) * pR;
-    if (!moving && (Date.now() < mouseStamp + mouseInit.time &&
-      Math.abs(gX - x) < mouseInit.move &&
-      Math.abs(gY - y) < mouseInit.move || left)) {
-      return;
-    }
-    if (taken)
-      return move(x, y, e);
-    moving = !0;
-    // works on add difference basis to not fight with other movement
-    vX += x - pX || 0;
-    vY += y - pY || 0;
-    pX = x;
-    pY = y;
-    render();
-  };
-  bd.onmouseleave = bd.onmouseup = function (e) {
-    if (foreign)
-      return over(e);
-    var x = (e.pageX - canvas.offsetLeft) * pR,
-      y = (e.pageY - canvas.offsetTop) * pR;
-    if (Date.now() < mouseStamp + mouseInit.time &&
-      Math.abs(gX - x) < mouseInit.move &&
-      Math.abs(gY - y) < mouseInit.move &&
-      e.type === "mouseup" && !taken && !moving) {
-      return press(x, y);
-    }
-    if (taken) {
-      taken = !1;
-      return move(x, y, e);
-    }
-    if (!moving || left)
-      return;
-    vX += x - pX || 0;
-    vY += y - pY || 0;
-    pX = x;
-    pY = y;
-    moving = e.type === "mouseleave";
-  };
-}//DISABLED HERE
-// window.oncontextmenu = function (e) {
-//   for (var el = e.target; el instanceof Node;)
-//     if (!(el = el.parentNode))
-//       return;
-//     else if (el === bd)
-//       break;
-//   var x = (e.pageX - canvas.offsetLeft) * pR,
-//     y = (e.pageY - canvas.offsetTop) * pR;
-//   contextmenu(x, y, e);
-// };
-//DISABLED HERE}
-/** settings: allowed press time legth, @see {touchesInit.time} */
-mouseInit.time = 350;
-/** allowed press precision, @see {touchesInit.move} */
-mouseInit.move = 2;
-
-var actionType = 0, moveScore = 0, moveCount = 0;
-function touchGrab(all, ev) {
-  if (!all[0] || !all[1])
-    return console.error("touchGrab outdated error");
-  ev.cancelable && ev.preventDefault();
-  var x0 = all[0].movX,
-    y0 = all[0].movY,
-    x1 = all[1].movX,
-    y1 = all[1].movY;
-  if (actionType < 5) {
-    var n = actionType === 2 ? 4 : 2;
-    vX += (x0 + x1) / n;
-    vY += (y0 + y1) / n;
-  }
-  if (actionType > 3 || actionType === 2) {
-    test_debug && console.log("ontouch zoom");
-    var prev = sc, w = canvas.width / 2, h = canvas.height / 2;
-    sc += ((all[0].pageX > all[1].pageX ?
-        x0 - x1 :
-        x1 - x0) +
-      (all[0].pageY > all[1].pageY ?
-        y0 - y1 :
-        y1 - y0) || 0) *
-      sc / (474 << +(actionType === 2));
-    vX = (vX - w) * sc / prev + w;
-    vY = (vY - h) * sc / prev + h;
-    // TODO: the default (actionType = 2) is supposed to detect either
-    // zooming in/out or movement, It did it very stubbornly though
-    actionType === 2 ?
-      ++moveCount > 4 ?
-        actionType = Math.abs(moveScore) > touchesInit.move / 2 ?
-          moveScore > 0 ? 3 : 5 :
-          4 :
-        moveScore += Math.abs(x0 + x1 + y0 + y1) -
-          Math.abs(x0 - x1 + y0 - y1) * 2 :
-      0;
-  }
-  used = !1;
-  render();
-}
-/** equivalent of foreign for touches */
-var other = !1, touchStamp = 0, prevCount = 0;
-/** equivalent of moving and taken for touches */
-var swiping = !1, used = !1;
-/** @type {(all:AllTchD,changed:TchDArr,ev:TouchEvent)=>void} */
-function thetouchstart(all, changed, ev) {
-  // at ontouchstart it's decided what action is active
-  if (prevCount === 0)
-    touchStamp = Date.now();
-  if (all.count === 1 && changed[0]) {
-    if (other = changed[0].srcTarget !== canvas)
-      over(changed[0]);
-    else
-      (used = move(changed[0].posX, changed[0].posY, ev));
-      // && ev.cancelable && ev.preventDefault();
-  // @see {bd.onmousedown} for teleporting in between
-  } else if (all.length > 1 && !actionType && all[0] && all[1] &&
-    Date.now() < touchStamp + touchesInit.time) {
-    moveScore = moveCount = 0;
-    actionType = 4;
-  }
-  prevCount = all.count;
-}
-/** @type {(all:AllTchD,changed:TchDArr,ev:TouchEvent)=>void} */
-function thetouchmove(all, changed, ev) {
-  // at ontouchmove active actions are executed
-  if (other)
-    return changed[0] ? over(changed[0]) : UDF;
-  if (actionType > 1)
-    return all[0] && all[1] ? touchGrab(all, ev) : UDF;
-  if (!changed[0])
-    return;
-  var x = Math.abs(changed[0].sX - changed[0].posX),
-    y = Math.abs(changed[0].sY - changed[0].posY),
-    long = Date.now() < touchStamp + touchesInit.time,
-    far = Math.sqrt(x * x + y * y) > touchesInit.move;
-  far && ev.cancelable && ev.preventDefault();
-  if (used)
-    move(changed[0].posX, changed[0].posY, ev);
-  else if (swiping) {
-    vX += changed[0].movX;
-    vY += changed[0].movY;
-    render();
-  } else {
-    swiping = !used &&
-      Date.now() > touchStamp + touchesInit.time || far;
-  }
-}
-/** @type {(all:AllTchD,changed:TchDArr,ev:TouchEvent)=>void} */
-function thetouchend(all, changed, ev) {
-  // at ontouchend actions may finish, deactivate or activate
-  if (other && changed[0]) {
-    over(changed[0]);
-  // if (other) {
-  //   changed[0] && over(changed[0]);
-    other = !1;
-  } else if (actionType > 1) {
-    var tch0 = changed[0] || all[0], tch1 = changed[1] || all[1];
-    tch0 && tch1 && touchGrab([tch0, tch1], ev);
-  } else if (changed[0]) {
-    ev.cancelable && ev.preventDefault();
-    var x = Math.abs(changed[0].sX - changed[0].posX),
-      y = Math.abs(changed[0].sY - changed[0].posY),
-      long = Date.now() > touchStamp + touchesInit.time,
-      far = Math.sqrt(x * x + y * y) > touchesInit.move;
-    (!long || far) && ev.cancelable && ev.preventDefault();
-    if (used)
-      move(changed[0].posX, changed[0].posY, ev);
-    else if (swiping) {
-      vX += changed[0].movX;
-      vY += changed[0].movY;
-      render();
-    } else if (!far)
-      long ?
-        contextmenu(changed[0].posX, changed[0].posY, ev) :
-        press(changed[0].posX, changed[0].posY);
-  }
-  if (all.count === 0) {
-    actionType = 0;
-    swiping = used = other = !1;
-  }
-  prevCount = all.count;
-}
-/** @type {(all:AllTchD,changed:TchDArr,ev:TouchEvent)=>void} */
-function thetouchcancel(all, changed, ev) {
-  console.error("Touches canceled");
-  prevCount = touchStamp = actionType = 0;
-  used = swiping = other = !1;
-}
-
-(document.body || EL()).onload = initDoc;
-function initDoc() {
-  function resizeWindow() {
-    console.log("resizing");
-    var w = window.innerWidth * pR,
-      h = window.innerHeight * pR;
-    if (w > 4096 || h > 4096)
-      if (w > h) {
-        h = h * 4096 / w;
-        w = 4096;
-      } else {
-        w = w * 4096 / h;
-        h = 4096;
-      }
-    vX -= (canvas.width - w) / 2;
-    vY -= (canvas.height - h) / 2;
-    canvas.width = w;
-    canvas.height = h;
-    render();
-  }
-
-  window.onresize = resizeWindow;
-
-  //DISABLED HEREmouseInit();
-
-  //DISABLED HEREif (bd)
-  //   touchesInit(bd, UDF, [thetouchstart, thetouchmove, thetouchend,
-  //     thetouchcancel]);
-
-  /** also called first touch, used to initiate fullscreen */
-  window.ontouchend = function () {
-    touchdevice && touchdevice();
-  };
-  +function (info, clickHandler) {
-    info ?
-      info.onclick = clickHandler :
-      clickHandler();
-  }(GE("info"),
-    /** @this {GlobalEventHandlers|void} @param {MouseEvent} [e] */
-    function (e) {
-      document.body.classList.remove("scroll");
-      this instanceof Node && document.body.removeChild(this);
-      e && touchdevice && touchdevice(true);
-    }
-  );
-
-  init();
-
-  vX = 128;
-  vY = 64;
-  resizeWindow();
-};
-
 /** @TODO what the going on in here? */
 if (typeof EventTarget != "function")
   //@ts-expect-error IE11 compatibility
   var EventTarget = Node;
+
+var test_debug = false;
 
 /** 
  * @typedef {Exclude<keyof (MouseEvent|WheelEvent|PointerEvent),"initEvent"|
  * "initUIEvent"|"preventDefault"|"stopImmediatePropagation"|"composedPath"|
  * "stopPropagation"|"getModifierState"|"initMouseEvent">} ActionsDefault
  */
-/** @typedef {new()=>MouseEvent&{wheelDelta:number}} MouseWheelConstructor */
+/** @typedef {new()=>MouseWheelEvent&safe} MouseWheelConstructor */
 /** @typedef {MouseEvent&{wheelDelta:number}} MouseWheelEvent */
 /** @typedef {WheelEvent|MouseWheelEvent} ScrollWheel */
 /** @typedef {TouchEvent|MouseEvent|ScrollWheel|PointerEvent} ActionsEvent */
@@ -799,8 +141,8 @@ if (typeof EventTarget != "function")
 /**
  * @typedef {{immutable?:boolean,listeners?:AddEventListenerOptions,
  * start?:ActionsExec,move?:ActionsExec,end?:ActionsExec,claim?:ActionsClaim,
- * filterClaimed?:boolean,touchIndex0:boolean,target?:EventTarget|null
- * }} ActionsOptions
+ * filterClaimed?:boolean,touchIndex0:boolean,target?:EventTarget|null,
+ * wheelException?:boolean}} ActionsOptions
  */
 /** @callback ActionsHandler @param {ActionsEvent} ev @this {HTMLElement} */
 /** UI API class/namespace, support either use of mouse or touches
@@ -871,7 +213,7 @@ function Actions(event, index, state, previous, touch) {
   Object.seal(this);
 }
 /** @readonly *///@ts-expect-error
-Actions.API_VERSION = "0.3.4";
+Actions.API_VERSION = "0.3.5";
 Actions.default = Object.freeze(
   /** @type {{[K in ActionsDefault]:(MouseEvent|ScrollWheel|PointerEvent)[K]}} */
   ({
@@ -881,6 +223,8 @@ Actions.default = Object.freeze(
     clientX: 0,
     clientY: 0,
     ctrlKey: false,
+    layerX: 0,
+    layerY: 0,
     metaKey: false,
     movementX: 0,
     movementY: 0,
@@ -955,8 +299,8 @@ Actions.update = function (action, index, state, event, previous, touch) {
   var offset = state.root instanceof HTMLElement ?
     state.root :
     {offsetLeft: 0, offsetTop: 0};
-  var previousX = previous ? previous.x : NaN,
-    previousY = previous ? previous.y : NaN;
+  var previousX = previous ? previous.screenX : NaN,
+    previousY = previous ? previous.screenY : NaN;
   action.type = event.type;
   action.event = event;
   action.identifier = touch ? touch.identifier : NaN;
@@ -982,8 +326,10 @@ Actions.update = function (action, index, state, event, previous, touch) {
   action.force = touch ? touch.force : 1;
   action.radiusX = touch ? touch.radiusX : 1;
   action.radiusX = touch ? touch.radiusY : 1;
-  action.movementX = previous ? action.screenX - previous.screenX : 0;
-  action.movementY = previous ? action.screenY - previous.screenY : 0;
+  action.movementX = previous ? action.screenX - previousX : 0;
+  action.movementY = previous ? action.screenY - previousY : 0;
+  previousX = previous ? previous.x : NaN;
+  previousY = previous ? previous.y : NaN;
   action.x = (source.pageX - offset.offsetLeft) * pR;
   action.y = (source.pageY - offset.offsetTop) * pR;
   action.startX = previous ? previous.startX : action.x;
@@ -1108,14 +454,17 @@ Actions.init = function (root, options) {
    * @param {keyof HTMLElementEventMap|"mousewheel"} type
    * @param {ActionsHandler} handler @param {EventTarget} [target] */
   function addEvent(type, handler, target) {
+    /** @type {EventListener} *///@ts-expect-error
+    var eventHandler = handler;
+    if (state.wheelException && type === "wheel" && state.target) {
+      state.target.addEventListener("wheel", eventHandler, {
+        passive: false
+      });
+      return handler;
+    }
     target = target || root;
     listeners ?
-      target.addEventListener(
-          type,
-          /** @type {EventListener} */
-          (handler),
-          listeners
-        ) :
+      target.addEventListener(type, eventHandler, listeners) :
       target["on" + type] = handler;
     return handler;
   }
@@ -1318,21 +667,61 @@ Actions.init = function (root, options) {
       if (action.type !== "mouseleave" || state.claim !== "move")
         state.claim = "unclaimed";
   }));
-  addEvent("wheel", addEvent("mousewheel", function (ev) {
+  addEvent("onwheel" in root ? "wheel" : "mousewheel", function (ev) {
     if (!(ev instanceof WheelEvent) && !(ev instanceof MouseWheelEvent))
       throw new TypeError("not WheelEvent for wheel handler");
-    if (ev.target !== state.target)
+    if (ev.target !== state.target && state.target)
       return;
-    // else if (!( ))
-    //   throw new TypeError("not MouseWheelEvent for wheel handler");
-    test_debug && console.log("onwheel", +new Date / 100 | 0,
-      ("deltaY" in ev ? ev.deltaY : -ev.wheelDelta) || 0, +new Date, sc);
-    var prev = sc, w = canvas.width / 2, h = canvas.height / 2;
-    sc -= sc / ("deltaY" in ev ? ev.deltaY : -ev.wheelDelta) * 10;
-    vX = (vX - w) * sc / prev + w;
-    vY = (vY - h) * sc / prev + h;
+    test_debug &&
+      console.log("onwheel t [dY|wD] sc ...[]=", +new Date / 10 | 0,
+        ("deltaY" in ev ? ev.deltaY : -ev.wheelDelta) || 0, sc,
+        ["X Y Z Mode X Y ".split(" ").map(function (e, i) {
+          var key = (i > 3 ? "wheelDelta" : "delta") + e;
+          return key in ev ? ev[key] : "";
+        }).concat(window.devicePixelRatio)]);
+    // detects Edge and IE11 scrolly/zooomy(lol) scroll
+    // why? well... there's no F-ing js standard for touch/trackpads
+    if ("wheelDelta" in ev) {
+      //- /** first initiation of delta is temp value for detecting scroll */
+      //- var delta = (Math.abs(ev.wheelDelta * devicePixelRatio) + 2) % 120;
+      //- console.debug(delta);
+      //- if (delta <= 2 && delta > 0)
+      //-   delta = -ev.wheelDelta;
+      var x = "wheelDeltaX" in ev ? ev.wheelDeltaX : UDF;
+      if (!x && state.wheelScore < 32) {
+        var delta = -ev.wheelDelta;
+      } else {
+        state.wheelScore = 32;
+      //- console.debug("wheel+");
+      //- var x = "wheelDeltaX" in ev ? ev.wheelDeltaX : UDF,
+      //-   y = "wheelDeltaY" in ev ? ev.wheelDeltaY : UDF;
+      //-  x && (state.wheelScore = 32);
+        var y = "wheelDeltaY" in ev ? ev.wheelDeltaY : UDF;
+        vX += state.wheelOffset *
+          (typeof x == "number" ? x || 0 : ev.deltaX ? +ev.deltaX : 0);
+        vY += state.wheelOffset *
+          (typeof y == "number" ? y || 0 : ev.deltaY ? +ev.deltaY : 0);
+        return render();
+      }
+      if (state.wheelScore > 31 && ev instanceof WheelEvent)
+        ev.cancelable && ev.preventDefault();
+    } else
+      delta = ev.deltaY;
+    var canvas = state.target instanceof HTMLCanvasElement ?
+      state.target :
+      {width: window.innerWidth, height: window.innerHeight};
+    var lastSc = sc, w = canvas.width / 2, h = canvas.height / 2;
+    var delay = Date.now() - state.wheelTime;
+    if (delay < 32) {
+      sc -= sc * (delta && (delta > 0 ? 1 : -1)) / state.wheelDelta *
+        delay / 32;
+    } else
+      sc -= sc * (delta && (delta > 0 ? 1 : -1)) / state.wheelDelta;
+    state.wheelTime = Date.now();
+    vX = (vX - w) * sc / lastSc + w;
+    vY = (vY - h) * sc / lastSc + h;
     render();
-  }));
+  });
   addEvent("contextmenu", function (e) {
     for (var el = e.target; el instanceof Node;)
       if (!(el = el.parentNode))
@@ -1401,6 +790,10 @@ Actions.State = function (options) {
   this.grabAction = "";
   this.grabScore = 0;
   this.endButtons = 0;
+  /** stores the last Date.now() of (mouse)wheel event */
+  this.wheelTime = 0;
+  /** after reaching score of 32 touch/trackpad is detected */
+  this.wheelScore = 0;
   
   /** allowed time for active (started) action to get state...short" */
   this.shortTouchTime = 350;
@@ -1420,11 +813,17 @@ Actions.State = function (options) {
   this.shortOtherMove = 5;
   /** allowed time between actions to get state "double..." */
   this.doubleOtherTime = 300;
+  /** multiplier for scroll wheel's 120 per tick or sum of deltas */
+  this.wheelDelta = 8;
+  /** multiplier for touchpad drag */
+  this.wheelOffset = 1;
   this.filterClaimed = checkOptions("filterClaimed", true);
   /** filters out all actions that don't have all[0] as source.source */
   this.touchIndex0 = checkOptions("touchIndex0", true);
   /** filters out all actions that aren't left mouse button only */
   this.mouseButton = checkOptions("mouseButton", this.touchIndex0);
+  /** onwheel and onmousewheel root exception because passive scrolling */
+  this.wheelException = checkOptions("wheelException", true);
   Object.seal(this);
 };
 /** @this {Actions.State} */
@@ -1498,18 +897,57 @@ Actions.logLivevil = true;
 Actions.logImmutable =
   (Date.now() / (24 * 3600 * 1000)) % 2 < 1;
 console.log((Actions.logImmutable ? "Imm" : "M") + "utable today!");
-if (typeof test_actions == "function")
-// #foracode            >document.querySelector("c-console") || <
-var juhus = Actions.init(document.querySelector("c-console") || document, {
-  listeners: {},
+var juhus = Actions.init(document, {
   target: canvas,
   immutable: Actions.logImmutable,
   filterClaimed: true,
   touchIndex0: true
 });
-function test_actions() {}
+// v.0.2.16 for acode stuff
 
-// #acodekeys [search,ctrl, tab,shift,arrrow left,arrow right,undo,redo]
-//            [move v,move ^,copy v,meta,   ctrl,    shift,   alt, esc ]
-//       [arrrow <,arrow >,arrrow ^,arrow v,move ^,move v,copy ^,move v]
-//       [";",     "'",    "\"",    "&",    "|",   "=",   "/",   "!"   ]
+(document.body || EL()).onload = initDoc;
+function initDoc() {
+  function resizeWindow() {
+    console.log("resizing");
+    var w = window.innerWidth * pR,
+      h = window.innerHeight * pR;
+    if (w > 4096 || h > 4096)
+      if (w > h) {
+        h = h * 4096 / w;
+        w = 4096;
+      } else {
+        w = w * 4096 / h;
+        h = 4096;
+      }
+    vX -= (canvas.width - w) / 2;
+    vY -= (canvas.height - h) / 2;
+    canvas.width = w;
+    canvas.height = h;
+    render();
+  }
+
+  window.onresize = resizeWindow;
+
+  /** also called first touch, used to initiate fullscreen */
+  window.ontouchend = function () {
+    touchdevice && touchdevice();
+  };
+  +function (info, clickHandler) {
+    info ?
+      info.onclick = clickHandler :
+      clickHandler();
+  }(GE("info"),
+    /** @this {GlobalEventHandlers|void} @param {MouseEvent} [e] */
+    function (e) {
+      document.body.classList.remove("scroll");
+      this instanceof Node && document.body.removeChild(this);
+      e && touchdevice && touchdevice(true);
+    }
+  );
+
+  init();
+
+  vX = 128;
+  vY = 64;
+  resizeWindow();
+};

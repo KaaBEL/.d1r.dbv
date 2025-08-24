@@ -2,7 +2,7 @@
 /// <reference path="./defs.d.ts" />
 "use strict";
 /** @readonly */
-var version_code_js = "v.0.2.14";
+var version_code_js = "v.0.2.17";
 /** @TODO check @see {Ship.VERSION} */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
@@ -1388,7 +1388,8 @@ Block.rotate = function (rot, x, y, z) {
       turn =
         /** @type {0|1|2|3} */
         (turn + n & 3);
-    } else if ('I have no idea')
+    } else
+      // if ('I have no idea') // newer ts doesn't like this I guess
       throw new Error("Not implemented.");
   }
   return [rot[0] = face, rot[1] = side, rot[2] = turn];
@@ -1751,7 +1752,8 @@ Block.Properties.getInputOptions = function (prop) {
 };
 /** visualising for collisions data (Block.Box2d.VALUE) */
 var test_collbxs = false,
-  /** @type {typeof F|((rend?:any)=>true|undefined)} */
+  // @type {typeof F|((rend?:any)=>true|undefined)} not work in ts v.5.9.2
+  /** @type {(rend?:any)=>boolean|void} */
   test_debugbox2collisions = F;
 /** instance is frozen
  * @readonly Point @param {number} x @param {number} y */
