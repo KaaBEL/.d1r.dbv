@@ -2,7 +2,7 @@
 /// <reference path="./editor.html.ts" />
 "use strict";
 /** @readonly */
-var version__k_api_js = "v.0.2.17";
+var version__k_api_js = "v.0.2.18";
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -142,7 +142,8 @@ var test_debug = false;
  * @typedef {{immutable?:boolean,listeners?:AddEventListenerOptions,
  * start?:ActionsExec,move?:ActionsExec,end?:ActionsExec,claim?:ActionsClaim,
  * filterClaimed?:boolean,touchIndex0:boolean,target?:EventTarget|null,
- * wheelException?:boolean}} ActionsOptions
+ * wheelException?:boolean,mouseButton?:boolean,
+ * preventTarget?:EventTarget|null}} ActionsOptions
  */
 /** @callback ActionsHandler @param {ActionsEvent} ev @this {HTMLElement} */
 /** UI API class/namespace, support either use of mouse or touches
@@ -262,14 +263,17 @@ Actions.default = Object.freeze(
 /** shortens the code amount burder per precossing state.state string
  * @param {Actions} action @param {ActionsEvent} event
  * @param {Actions.State} state @param {Actions|null} previous */
-Actions.updateState = function  (action, event, state, previous) {
+Actions.updateState = function (action, event, state, previous) {
+  var allowed = event.type.slice(0, 5) === "touch" ?
+    state.touch :
+    event.type.slice(0, 5) === "mouse" ? state.mouse : state.other;
   if (!previous) {
     var lastEnd = state.endTimeStamps[action.index],
       lastPosition = state.endPositions[action.index],
       x = action.x - (lastPosition || [0])[0],
       y = action.y - (lastPosition || [0, 0])[1];
-    return lastEnd && lastEnd + state.doubleTouchTime > event.timeStamp &&
-      lastPosition && Math.sqrt(x * x + y * y) < state.shortTouchMove ?
+    return lastEnd && lastEnd + allowed.doubleTime > event.timeStamp &&
+      lastPosition && Math.sqrt(x * x + y * y) < allowed.shortMove ?
         "double " :
         "single ";
   }
@@ -278,12 +282,12 @@ Actions.updateState = function  (action, event, state, previous) {
   /** is how the interactions evolves after start short|long|drag|longdrag */
   var hold = both[1] || "";
   var drag = hold.slice(-4) === "drag",
-    long = hold.slice(0, 4) === "long" || !drag &&
-      event.timeStamp > action.startTimeStamp + state.shortTouchTime;
+    longer = hold.slice(0, 4) === "long" || !drag &&
+      event.timeStamp > action.startTimeStamp + allowed.shortTime;
   // TODO: use of state.pixelRatio sounds like it could improve experience
-  drag = drag || Math.sqrt(x * x + y * y) > state.shortTouchMove;
+  drag = drag || Math.sqrt(x * x + y * y) > allowed.shortMove;
   return click + " " +
-    ((long ? "long" : "") + (drag ? "drag" : "") || "short");
+    ((longer ? "long" : "") + (drag ? "drag" : "") || "short");
 };
 /** updates by mutating, or just mutates to create given Actions instance
  * @param {Actions|null} action @param {number} index
@@ -349,6 +353,7 @@ Actions.update = function (action, index, state, event, previous, touch) {
  * @param {ActionsEvent} ev */
 Actions.touchGrab = function (state, all, ev) {
   var touch0 = all[0], touch1 = all[1];
+  ev.cancelable && ev.preventDefault();
   if (!touch0 && touch1)
     touch0 = touch1;
   else if (!touch1 && touch0)
@@ -358,13 +363,10 @@ Actions.touchGrab = function (state, all, ev) {
   var canvas = state.target instanceof HTMLCanvasElement ?
     state.target :
     {width: window.innerWidth, height: window.innerHeight};
-  //console.log(state.grabAction);
-  ev.cancelable && ev.preventDefault();
   var x0 = touch0.moveX, y0 = touch0.moveY;
   var x1 = touch1.moveX, y1 = touch1.moveY;
   if (state.grabAction.slice(0, 4) === "move") {
     var n = state.grabAction === "moveorzoom" ? 4 : 2;
-    //console.log(x0 +' '+ x1 +' '+ y0+' '+ y1+' '+ n);
     vX += (x0 + x1) / n;
     vY += (y0 + y1) / n;
   }
@@ -382,7 +384,7 @@ Actions.touchGrab = function (state, all, ev) {
     if (state.grabAction === "moveorzoom")
       ++state.grabCount > 4 ?
         state.grabAction =
-          Math.abs(state.grabScore) > state.shortTouchMove / 2 ?
+          Math.abs(state.grabScore) > state.touch.shortMove / 2 ?
             state.grabScore > 0 ? "move" : "zoom" :
         "movezoom" :
       state.grabScore += Math.abs(x0 + x1 + y0 + y1) -
@@ -457,11 +459,17 @@ Actions.init = function (root, options) {
     /** @type {EventListener} *///@ts-expect-error
     var eventHandler = handler;
     if (state.wheelException && type === "wheel" && state.target) {
-      state.target.addEventListener("wheel", eventHandler, {
-        passive: false
-      });
+      (listeners || (listeners = {})).passive = false;
+      state.target.addEventListener("wheel", eventHandler, listeners);
       return handler;
     }
+    if (type.slice(0, 5) === "touch" && state.preventTarget)
+      target = state.preventTarget;
+    //-if (state.preventTarget && type === "touchstart" && state.target)
+    //-  state.target.addEventListener("touchstart", function (ev) {
+    //-    ev.target === state.target &&
+    //-      ev.cancelable && ev.preventDefault();
+    //-  }, {passive: false});
     target = target || root;
     listeners ?
       target.addEventListener(type, eventHandler, listeners) :
@@ -499,12 +507,15 @@ Actions.init = function (root, options) {
     if (state.claim === "move" || state.claim === "unclaimed")
       if (
         all.length > 1 && all[0] && all[1] &&
-        Date.now() < state.grabTime + state.shortTouchTime &&
-        all[0].startTarget === state.root && all[1].target === state.root
+        Date.now() < state.grabTime + state.touch.shortTime &&
+        all[0].startTarget === state.target &&
+        all[1].target === state.target
       ) {
+        // ev.cancelable && ev.preventDefault();
         state.claim = "grab";
         state.grabAction = "movezoom";
         state.grabCount = 0;
+        Actions.touchGrab(state, all, ev);
       }
     action ?
       !(state.filterClaimed && state.claim.length === 4) &&
@@ -682,20 +693,11 @@ Actions.init = function (root, options) {
     // detects Edge and IE11 scrolly/zooomy(lol) scroll
     // why? well... there's no F-ing js standard for touch/trackpads
     if ("wheelDelta" in ev) {
-      //- /** first initiation of delta is temp value for detecting scroll */
-      //- var delta = (Math.abs(ev.wheelDelta * devicePixelRatio) + 2) % 120;
-      //- console.debug(delta);
-      //- if (delta <= 2 && delta > 0)
-      //-   delta = -ev.wheelDelta;
       var x = "wheelDeltaX" in ev ? ev.wheelDeltaX : UDF;
       if (!x && state.wheelScore < 32) {
         var delta = -ev.wheelDelta;
       } else {
         state.wheelScore = 32;
-      //- console.debug("wheel+");
-      //- var x = "wheelDeltaX" in ev ? ev.wheelDeltaX : UDF,
-      //-   y = "wheelDeltaY" in ev ? ev.wheelDeltaY : UDF;
-      //-  x && (state.wheelScore = 32);
         var y = "wheelDeltaY" in ev ? ev.wheelDeltaY : UDF;
         vX += state.wheelOffset *
           (typeof x == "number" ? x || 0 : ev.deltaX ? +ev.deltaX : 0);
@@ -737,11 +739,19 @@ Actions.init = function (root, options) {
       y = (e.pageY - offset.offsetTop) * pR;
     contextmenu(x, y, e);
   }, window);
-  return state.generateAccessors();
+  state.preventTarget && !(listeners && listeners.passive === false) &&
+    console.log("jiuhus" + root.addEventListener("touchstart", F, {
+      passive: false
+    }));
+  return state.generateAccessors(function () {
+    throw new Error("Unimplemented");
+  });
 };
 /** @param {ActionsOptions} options */
 Actions.State = function (options) {
-  /** @param {string} setting @param {any} fallback */
+  /**
+   * @template {keyof ActionsOptions} T @param {T} setting
+   * @param {ActionsOptions[T]} fallback @returns {ActionsOptions[T]} */
   function checkOptions(setting, fallback) {
     return setting in options ? options[setting] : fallback;
   }
@@ -766,6 +776,7 @@ Actions.State = function (options) {
   this.onend = options.end || F;
   this.oncancel = options.end || F;
   this.onclaim = options.claim || F;
+  //-this.onmenu = options.menu || F;
   /** @type {EventTarget} the element that gets events assigned */
   this.root = EL("unknown");
   /** @deprecated gesture "<single|double> <short|long|drag|longdrag>" */
@@ -794,29 +805,15 @@ Actions.State = function (options) {
   this.wheelTime = 0;
   /** after reaching score of 32 touch/trackpad is detected */
   this.wheelScore = 0;
-  
-  /** allowed time for active (started) action to get state...short" */
-  this.shortTouchTime = 350;
-  /** allowed distance for active action to get state "...short" */
-  this.shortTouchMove = 13;
-  /** allowed time between actions to get state "double..." */
-  this.doubleTouchTime = 300;
-  /** allowed time for active (started) action to get state...short" */
-  this.shortMouseTime = 350;
-  /** allowed distance for active action to get state "...short" */
-  this.shortMouseMove = 2;
-  /** allowed time between actions to get state "double..." */
-  this.doubleMouseTime = 300;
-  /** allowed time for active (started) action to get state...short" */
-  this.shortOtherTime = 350;
-  /** allowed distance for active action to get state "...short" */
-  this.shortOtherMove = 5;
-  /** allowed time between actions to get state "double..." */
-  this.doubleOtherTime = 300;
+
+  this.touch = new Actions.State.Allowed(350, 13, 300);
+  this.mouse = new Actions.State.Allowed(350, 2, 300);
+  this.other = new Actions.State.Allowed(350, 9, 300);
   /** multiplier for scroll wheel's 120 per tick or sum of deltas */
   this.wheelDelta = 8;
   /** multiplier for touchpad drag */
   this.wheelOffset = 1;
+  /** filters out all actions "claimed by the API experiment" */
   this.filterClaimed = checkOptions("filterClaimed", true);
   /** filters out all actions that don't have all[0] as source.source */
   this.touchIndex0 = checkOptions("touchIndex0", true);
@@ -824,14 +821,16 @@ Actions.State = function (options) {
   this.mouseButton = checkOptions("mouseButton", this.touchIndex0);
   /** onwheel and onmousewheel root exception because passive scrolling */
   this.wheelException = checkOptions("wheelException", true);
+  /** lucky magic with main#8 element, prevents touchscreen zoom/scroll */
+  this.preventTarget = checkOptions("preventTarget", null);
   Object.seal(this);
 };
-/** @this {Actions.State} */
-Actions.State.prototype.generateAccessors = function () {
+/** @this {Actions.State} @param {typeof F} destroy */
+Actions.State.prototype.generateAccessors = function (destroy) {
   /**
    * @type {{get:<K extends keyof Actions.State>(key:K)=>Actions.State[K],
    * set:<K extends keyof Actions.State>(key:K,value:Actions.State[K])=>void,
-   * keys:()=>(keyof Actions.State)[]}}
+   * keys:()=>(keyof Actions.State)[],destroy:typeof F}}
    */
   var accessors = {
     get: function (key) {
@@ -847,9 +846,26 @@ Actions.State.prototype.generateAccessors = function () {
         if (Object.prototype.hasOwnProperty.call(self, p))
           keys.push(p);
       return keys;
-    }
+    },
+    destroy: destroy
   }, self = this;
     return Object.freeze(accessors);
+};
+/** @param {number} time  @param {number} move  @param {number} doubleTime */
+Actions.State.Allowed = function (time, move, doubleTime) {
+  /** allowed time for active (started) action to get state...short" */
+  this.shortTime = time;
+  /** allowed distance for active action to get state "...short" */
+  this.shortMove = move;
+  /** allowed time between actions to get state "double..." */
+  this.doubleTime = doubleTime;
+  /** not used yet */
+  this.doubleMove = -1;
+  Object.seal(this);
+};
+Actions.State.Allowed.prototype.toString = function () {
+  return "st:" + this.shortTime + "sm:" + this.shortMove + "dt:" +
+    this.doubleTime + "dm:" + this.doubleMove + ";";
 };
 Actions.logMax = 32;
 /** spaghetti Actions debugging utility
@@ -894,14 +910,15 @@ Actions.log = function (tem, evt, typ, stat, src) {
   }
 };
 Actions.logLivevil = true;
-Actions.logImmutable =
-  (Date.now() / (24 * 3600 * 1000)) % 2 < 1;
+Actions.logImmutable = (Date.now() / (24 * 3600 * 1000)) % 2 < 1;
+// Actions.logImmutable = !Actions.logImmutable;
 console.log((Actions.logImmutable ? "Imm" : "M") + "utable today!");
 var juhus = Actions.init(document, {
   target: canvas,
   immutable: Actions.logImmutable,
   filterClaimed: true,
-  touchIndex0: true
+  touchIndex0: true,
+  preventTarget: bd
 });
 // v.0.2.16 for acode stuff
 
