@@ -2,7 +2,8 @@
 /// <reference path="./editor.html.ts" />
 "use strict";
 /** @readonly */
-var version__k_api_js = "v.0.2.18";
+/** @TODO check @see {Actions.API_VERSION} */
+var version__k_api_js = "v.0.2.19";
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -214,7 +215,7 @@ function Actions(event, index, state, previous, touch) {
   Object.seal(this);
 }
 /** @readonly *///@ts-expect-error
-Actions.API_VERSION = "0.3.5";
+Actions.API_VERSION = "0.3.6";
 Actions.default = Object.freeze(
   /** @type {{[K in ActionsDefault]:(MouseEvent|ScrollWheel|PointerEvent)[K]}} */
   ({
@@ -465,11 +466,6 @@ Actions.init = function (root, options) {
     }
     if (type.slice(0, 5) === "touch" && state.preventTarget)
       target = state.preventTarget;
-    //-if (state.preventTarget && type === "touchstart" && state.target)
-    //-  state.target.addEventListener("touchstart", function (ev) {
-    //-    ev.target === state.target &&
-    //-      ev.cancelable && ev.preventDefault();
-    //-  }, {passive: false});
     target = target || root;
     listeners ?
       target.addEventListener(type, eventHandler, listeners) :
@@ -519,7 +515,7 @@ Actions.init = function (root, options) {
       }
     action ?
       !(state.filterClaimed && state.claim.length === 4) &&
-        !(state.touchIndex0 && action !== temp[0]) &&
+        !(state.touchIndex0 && action.index !== 0) &&
         state.onstart(action.x, action.y, source) :
       console.error("very strange error, action is null0");
     Actions.log(temp, ev, "srt", state, source);
@@ -565,7 +561,7 @@ Actions.init = function (root, options) {
     }
     action ?
       !(state.filterClaimed && state.claim.length === 4) &&
-        !(state.touchIndex0 && action !== temp[0]) &&
+        !(state.touchIndex0 && action.index !== 0) &&
         state.onmove(action.x, action.y, source) :
       console.error("very strange error, action is null1");
     Actions.log(temp, ev, "mov", state, source);
@@ -602,7 +598,7 @@ Actions.init = function (root, options) {
       (all[0] || all[1]) && Actions.touchGrab(state, all, ev);
     action ?
       !(state.filterClaimed && state.claim.length === 4) &&
-        !(state.touchIndex0 && action !== temp[0]) &&
+        !(state.touchIndex0 && action.index !== 0) &&
         state.onend(action.x, action.y, source) :
       console.error("very strange error, action is null2");
     Actions.log(temp, ev, "end", state, source);
@@ -776,7 +772,6 @@ Actions.State = function (options) {
   this.onend = options.end || F;
   this.oncancel = options.end || F;
   this.onclaim = options.claim || F;
-  //-this.onmenu = options.menu || F;
   /** @type {EventTarget} the element that gets events assigned */
   this.root = EL("unknown");
   /** @deprecated gesture "<single|double> <short|long|drag|longdrag>" */
@@ -872,6 +867,9 @@ Actions.logMax = 32;
  * @param {(Actions|null)[]} tem typeof temp @param {ActionsEvent} evt
  * @param {string} typ @param {Actions.State} stat @param {AllActions} src */
 Actions.log = function (tem, evt, typ, stat, src) {
+  //for (var i = tem.length, obj; i-- > 0;)
+  //  if (obj = tem[i])
+  //    test_log.push({i: i, l: obj.identifier, x: obj.x, y: obj.y});
   var max = 16;
   //, alias = JSON.parse("{x:vX,y:vY,}".replace(/:/g, ':"').replace(/,/g, '",');
   //Actions.logMax-- > 0 && console.log
@@ -902,16 +900,31 @@ Actions.log = function (tem, evt, typ, stat, src) {
       src.all.count + '(state+claim+temp.count)\n' : "";
     //action ? JSON.stringify(action.state) + (action.timeStamp | 0) + '\n' : "";
     //JSON.stringify(stat.endPositions);
-  if (Actions.logLivevil && action && "evil_input" in window) {
-    var input = window.evil_input;
-    (input instanceof HTMLInputElement ||
-      input instanceof HTMLTextAreaElement ?
-      input : EL("input")).value = inpLog;
-  }
+  //if (Actions.logLivevil && action && "evil_input" in window) {
+  //  var input = window.evil_input;
+  //  (input instanceof HTMLInputElement ||
+  //    input instanceof HTMLTextAreaElement ?
+  //    input : EL("input")).value = inpLog;
+  //}
 };
+//utilities.rend_UI = function () {
+//  for (var i = test_log.length; i-- > 0;) {
+//    ctx.beginPath();
+//    ctx.strokeStyle = "#" + "f55 5f5 55f ff0 f0f 0ff".split(" ")[test_log[i].i || 0];
+//    ctx.moveTo(test_log[i].x + 64, test_log[i].y);
+//    ctx.arc(test_log[i].x, test_log[i].y, 64, 0, Math.PI * 2);
+//    ctx.stroke();
+//    ctx.beginPath();
+//    ctx.strokeStyle = "#" + "f55 5f5 55f ff0 f0f 0ff".split(" ")[test_log[i].l || 0];
+//    ctx.moveTo(test_log[i].x + 60, test_log[i].y);
+//    ctx.arc(test_log[i].x, test_log[i].y, 60, 0, Math.PI * 2);
+//    ctx.stroke();
+//  }
+//  test_log.length = 0;
+//};
 Actions.logLivevil = true;
 Actions.logImmutable = (Date.now() / (24 * 3600 * 1000)) % 2 < 1;
-// Actions.logImmutable = !Actions.logImmutable;
+Actions.logImmutable = !Actions.logImmutable;
 console.log((Actions.logImmutable ? "Imm" : "M") + "utable today!");
 var juhus = Actions.init(document, {
   target: canvas,
@@ -925,7 +938,8 @@ var juhus = Actions.init(document, {
 (document.body || EL()).onload = initDoc;
 function initDoc() {
   function resizeWindow() {
-    console.log("resizing");
+    // TODO: change debug to log someday
+    console.debug("%cresizing", "color:#58f");
     var w = window.innerWidth * pR,
       h = window.innerHeight * pR;
     if (w > 4096 || h > 4096)

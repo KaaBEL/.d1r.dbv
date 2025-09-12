@@ -1,7 +1,7 @@
 /// <reference path="editor.js"/>
 "use strict";
 /** @readonly *///@ts-expect-error
-var version_alphalunar_js = "v.0.2.18";
+var version_alphalunar_js = "v.0.2.19";
 var test_ship = {"name":"Starter Droneboi","gameVersion":[],"dateTime":"05.05.2024 21:12:18","blocks":[{"internalName":"__placeholder856__","position":[0,-9,-52],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-50],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-48],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
 {"internalName":"__placeholder856__","position":[0,-9,-46],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-44],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-42],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-40],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
 {"internalName":"__placeholder856__","position":[0,-9,-38],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-52],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-50],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-48],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-46],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-44],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
@@ -261,28 +261,27 @@ Command.push("Evil Addon", function (items, collapsed) {
     time < lastTexted + 50 ? tO = setTimeout(evilPrint, 50) : evilPrint();
     lastTexted = time;
   }
+  var isPC = /http:..localhost:5500/.test(location.href);
   "oldLog" in console || (console.oldLog = console.log);
-  console.log = function () {
+  console.log = isPC ? console.oldLog : function () {
     var args = [].slice.apply(arguments);
     console.oldLog && console.oldLog.apply(console, args);
     text("" + args);
   };
-  "oldWarn" in console || (console.oldWarn = console.log);
-  console.warn = function () {
+  "oldWarn" in console || (console.oldWarn = console.warn);
+  console.warn = isPC ? console.oldWarn : function () {
     var args = [].slice.apply(arguments);
     console.oldWarn && console.oldWarn.apply(console, args);
     text("[w:]" + args);
   };
-  "oldError" in console || (console.oldError = console.log);
-  console.error = function () {
+  "oldError" in console || (console.oldError = console.error);
+  console.error = isPC ? console.oldError : function () {
     var args = [].slice.apply(arguments);
     console.oldError && console.oldError.apply(console, args);
     text("[err:]" + args);
     // var e = (document.body.querySelector(".items") || {}).lastChild;
     // e && (e.data += "\nError: " + args);
   };
-  var manifest = document.querySelector("link[rel=\"manifest\"]");
-  manifest.parentNode && manifest.parentNode.removeChild(manifest);
 }, "Gives access to eval.");
 setTimeout(function () {
   var ch = (document.querySelector("#commandsTab .content") || EL()).childNodes;

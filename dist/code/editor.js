@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.17";
+var version_editor_js = "v.0.2.19";
 /** 3h_ @TODO check @see {Editor} for setting a setting without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -70,7 +70,9 @@ Editor.backgroundColor = "#111111";
 /** (default) 0: dbc, 1: db, ... 63: unassigned */
 Editor.backgroundImage = 0;
 //** mumst be in #xxxxxx hex color format */
-Editor.highlightColor = "#ff0000";
+Editor.highlightRed = "#dd3333";
+Editor.highlightGreen = "#33bb33";
+Editor.highlightYellow = "#db9725";
 Editor.highlightWidth = 2;
 Editor.logicPreviewAlpha = .5;
 Editor.buildReplace = !1;
@@ -1376,7 +1378,7 @@ Command.push("Setup Properties", function (items, collapsed) {
       rot === (block.rotation[1] ? 1 : 3) ?
         dy += (32 - w - tiny) * sc / 16 :
         0;
-    ctx.strokeStyle = Editor.highlightColor;
+    ctx.strokeStyle = Editor.highlightRed;
     ctx.lineWidth = Editor.highlightWidth;
     ctx.strokeRect(dx, dy, (rot & 1 ? h : w) * sc / 16,
       (rot & 1 ? w : h) * sc / 16);
@@ -2048,7 +2050,7 @@ Command.push("Transform tool", function (items, collapsed) {
     var x = Math.max(xy[0], xy[2]), y = Math.min(xy[1], xy[3]);
     var w = x - Math.min(xy[0], xy[2]), h = Math.max(xy[1], xy[3]) - y;
     var dx = -x * sc + vX, dy = y * sc + vY;
-    ctx.strokeStyle = Editor.highlightColor;
+    ctx.strokeStyle = Editor.highlightRed;
     ctx.lineWidth = Editor.highlightWidth;
     if (selecting) {
       ctx.beginPath();
@@ -2637,6 +2639,8 @@ function Tool(name, icon, init, exec, destroy) {
   this.init = exec === UDF ? Tool.execClick(initialize) : initialize;
   this.exec = exec || F;
   this.destroy = destroy || F;
+  /** @type {ToolExec} */
+  this.preview = F;
   /** used to determim whether (true) the tile gets enebled instantly
    * (for DefaultUI it's clickedTile property) or
    * (false) the tile is enabled until deselected (selected in
@@ -3182,7 +3186,8 @@ Tool.list.push(new Tool("Erase", "M21cbd,3933e c-fa8,c27,-2353,1363,-38af,13\
 7f,-1a57,40a9,-1a57 c17a9,0,2d40,8e1,3d9d,177e l13941,13b1d cd12,ff5,14eb,24\
 5d,14eb,3a9a c0,16b2,-82c,2b7d,-15bc,3b96 z M1e360,34780 l96a9,-935f l-12979\
 ,-12ae9 l-eff8,ee4e ld536,d073 z", F, function (x, y) {
-  var found = DefaultUI.found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
+  var found = DefaultUI.found =
+    ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
   if (!found)
     return;
   ship.removeBlocks([found.id]);
@@ -3348,11 +3353,11 @@ DefaultUI.clickedTile = -1;
 DefaultUI.inventoryTile = !Editor.hideInventoryTile;
 DefaultUI.createTile = function () {
   /** @type {XYZPosition} */
-  var pos = [0, 0, 0], id = 0;
+  var pos = [0, 0, 0], id = 0, name;
   /** @param {unknown} val */
   return function (val) {
     if (typeof val == "number" && typeof Block.NAME[val] == "string")
-      var name = Block.NAME[id = val];
+      name = Block.NAME[id = val];
     else if (typeof (id = Block.ID["" + val]) == "number")
       name = Block.NAME[id];
     if (typeof name == "string")
@@ -3412,13 +3417,15 @@ DefaultUI.defaultFoldersData = [
 /** @type {ToolExec} */
 DefaultUI.defaultPress = function (_x, _y) {};
 DefaultUI.canDefaultPress = true;
-/** @type {Block.Selected|null} */
+/** @type {Block.Selected|null} temporary visualising */
 DefaultUI.found = null;
 /** used to visualise where DefaultUI.Drag.dragged will be placed, is
  * like @see {DefaultUI.clickedTile} @see {DefaultUI.selectedTile} */
 DefaultUI.replacingTile = -1;
 /** obsolete as of right now @deprecated */
 DefaultUI.insertedTile = -1;
+/** used for placing preview @type {DefaultUI.Highlight[]} */
+DefaultUI.highlights = [];
 /** @param {number|string} type @param {unknown[]} [tiles=[]] */
 DefaultUI.createFolder = function (type, tiles) {
   var folder =
@@ -3790,19 +3797,12 @@ DefaultUI.renderHotBars = function (w, h) {
   var dragged = DefaultUI.Drag.dragged;
   tx = dragged.x;
   ty = dragged.y;
-  if (dragged.placing) {
-    var size =
-        Block.Size.VALUE[Block.ID[DefaultUI.getCode(dragged.tile)]],
-      xFix = size ? size.w / 32 + .5 : 2,
-      yFix = size ? -size.h / 32 + .5 : 0;
-    Renderer.drawBlock(
-      Math.floor((vX - xFix) / sc + xFix),
-      Math.floor((yFix - vY) / sc + yFix),
-      dragged.tile
-    );
-  } else
-    drawTileCtx(dragged.tile, false);
+  if (DefaultUI.Drag.isPreview)
+    ctx.lineWidth = 1E-11;
+  //-if (dragged.replacing)
+  drawTileCtx(dragged.tile, false);
   if ((i = DefaultUI.replacingTile) !== -1) {
+    console.assert(!DefaultUI.Drag.isPreview, "lineWidth = 0");
     ctx.strokeStyle = "#ff5533";
     b = (i & 3) === 0;
     // v.0.2.16 constants same as ones for calculating
@@ -3842,9 +3842,32 @@ DefaultUI.basePress = function (blockPlacing, canDefault) {
       DefaultUI.canDefaultPress && DefaultUI.defaultPress(x, y);
   };
 };
-// DefaultUI.baseMove = F;
-// DefaultUI.baseContextmenu = F;
-// DefaultUI.baseOver = F;
+/** @param {number} x @param {number} y @param {ShipBlock} block */
+DefaultUI.previewPlacing = function (x, y, block) {
+  var dragged = DefaultUI.Drag.dragged, size =
+      Block.Size.VALUE[Block.ID[DefaultUI.getCode(block)]],
+    xFix = size ? size.w / 32 + .5 : 2,
+    yFix = size ? -size.h / 32 + .5 : 0;
+  DefaultUI.highlights.length = 0;
+  DefaultUI.highlights.push(new DefaultUI.Highlight(
+    Editor.highlightGreen,
+    0,
+    0,
+    0,
+    0
+  ));
+};
+/**
+ * @param {string} color @param {number} x @param {number} y
+ * @param {number} w @param {number} h */
+DefaultUI.Highlight = function (color, x, y, w, h) {
+  this.color = color;
+  this.x = x;
+  this.y = y;
+  this.w = w;
+  this.h = h;
+  Object.seal(this);
+};
 DefaultUI.Drag = function () {
   this.x = 0;
   this.y = 0;
@@ -3853,7 +3876,7 @@ DefaultUI.Drag = function () {
   this.folder = -1;
   /** @type {TileType|null} */
   this.tile = null;
-  this.placing = false;
+  //-this.replacing = true;
   Object.seal(this);
 };
 // #unsealed regexp for finding unsealed instances (sub/class definitions)
@@ -3869,6 +3892,7 @@ DefaultUI.Drag.dragged = new DefaultUI.Drag();
 DefaultUI.Drag.pointed = new DefaultUI.Drag();
 /** @see {DefaultUI.selectedTile} original item placement */
 DefaultUI.Drag.original = -1;
+DefaultUI.Drag.isPreview = false;
 /** @param {number} from @param {number} to @param {TileType[]} hotbar */
 DefaultUI.Drag.shiftDragged = function (from, to, hotbar) {
   var dragged = DefaultUI.Drag.dragged;
@@ -3906,6 +3930,7 @@ DefaultUI.Drag.reset = function (notTile) {
 DefaultUI.Drag.finish = function (action) {
   if (juhus.get("claim") !== "movetile")
     return false;
+  DefaultUI.highlights = [];
   var replacing = DefaultUI.replacingTile;
   if (replacing === -1 || action.type === "mouseleave")
     return DefaultUI.Drag.reset();
@@ -3953,9 +3978,14 @@ DefaultUI.Drag.detect = function (x, y, action) {
     var from = dragged.item >> 2, hotbar = (dragged.item & 3) === 1 ?
       DefaultUI.blockBars[DefaultUI.openedFolder] || [] :
       (dragged.item & 3) === 0 ? DefaultUI.toolBar : [];
-    if (pointed.item === -1)
-      void 0;
-    else if ((pointed.item & 3) !== (dragged.item & 3)) {
+    if (DefaultUI.Drag.isPreview = pointed.item === -1) {
+      if (dragged.tile instanceof Block)
+        DefaultUI.previewPlacing(x + Editor.placingOffsetX, y +
+          Editor.placingOffsetY, dragged.tile);
+      else if (dragged.tile instanceof Tool)
+        dragged.tile.preview(x + Editor.placingOffsetX, y +
+          Editor.placingOffsetY);
+    } else if ((pointed.item & 3) !== (dragged.item & 3)) {
       DefaultUI.Drag.shiftDragged(from, 0, hotbar);
     } else if (pointed.item < dragged.item)
       this.shiftDragged(from, (pointed.item >> 2) + 1, hotbar);
@@ -4137,12 +4167,17 @@ function enableShipEditing() {
   };
   DefaultUI.rend = function () {
     var found = DefaultUI.found;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.lineWidth = Editor.highlightWidth;
     if (found) {
-      ctx.lineWidth = Editor.highlightWidth;
-      ctx.strokeStyle = Editor.highlightColor;
+      ctx.strokeStyle = Editor.highlightRed;
       var dx = found.x * sc + vX, dy = found.y * sc + vY;
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.strokeRect(dx, dy, found.w * sc, found.h * sc);
+    }
+    for (var i = DefaultUI.highlights.length; i--;) {
+      var rect = DefaultUI.highlights[i], x = rect.x * sc + vX;
+      ctx.strokeStyle = rect.color;
+      ctx.strokeRect(x, rect.y * sc + vX, rect.w * sc, rect.h * sc);
     }
     DefaultUI.reflowBlockBars(canvas.width);
     DefaultUI.renderHotBars(canvas.width, canvas.height);
@@ -4270,7 +4305,7 @@ function enableLogicEditing() {
   DefaultUI.rend = function () {
     if (found) {
       ctx.lineWidth = Editor.highlightWidth;
-      ctx.strokeStyle = Editor.highlightColor;
+      ctx.strokeStyle = Editor.highlightRed;
       var dx = found.x * sc + vX, dy = found.y * sc + vY;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.strokeRect(dx, dy, found.w * sc, found.h * sc);
@@ -4322,7 +4357,13 @@ var rend_backgHangar = F, rend_request = "", init_started = false;
     script.type = "text/javascript";
     script.src = "./code/alphalunar.js";
     document.body.appendChild(script);
-    console.info("loading local alphalunar.js fallback");
+    console.info("loading local alphalunar.js fallback, removing rels");
+    var spare = document.querySelector("link[rel=\"manifest\"]");
+    spare && spare.parentNode && spare.parentNode.removeChild(spare);
+    spare = document.querySelector("link[rel=\"icon shortcut\"]");
+    spare && spare.parentNode && spare.parentNode.removeChild(spare);
+    spare = document.querySelector("link[rel=\"apple-touch-icon\"]");
+    spare && spare.parentNode && spare.parentNode.removeChild(spare);
     return;
   }
   var xhr = new XMLHttpRequest();
@@ -4604,9 +4645,63 @@ Renderer.queue = function () {
     });
   };
 }();
-/** @param {number} x @param {number} y @param {TileType} block */
-Renderer.drawBlock = function (x, y, block) {
-  ;
+/** $param {number} x $param {number} y @param {ShipBlock} block */
+Renderer.drawBlock = function (block) {
+  var AT = "Renderer.drawBlock.";
+  var id = 0, mult = sc / 16, pos = block.position;
+  if ((id = Block.ID[block.internalName]) < 12) {
+    ctx.save();
+    B64Key.drawBlock(rc, block);
+    ctx.globalAlpha = .7;
+    ctx.scale(mult + 1E-7, mult + 1E-7);
+    ctx.drawImage(rc.canvas,
+      -pos[0] * 16 + vX / mult - 24, pos[2] * 16 + vY / mult - 24);
+    ctx.restore();
+    return;
+  }
+  /** @see {Block} @see {Block.Size.VALUE} */
+  var size = Block.Size.VALUE[id], logic = Logic.VALUE[id] || [];
+  if (!size) {
+    rend_logs > 0 && rend_logs-- && console.error(block, AT);
+    return;
+  } else if (size.w <= 0 || size.h <= 0)
+    return;
+  var rot = 10 - block.rotation[2] & 3;
+  var ow = size.w, oh = size.h, sw = 0, sh = 0;
+  var w = ow + (ow & 16), h = oh + (oh & 16);
+  // position to draw block in canvas
+  
+  var dx = -pos[1] * sc + vX, dy = pos[2] * sc + vY;
+  // position correction for tiny blocks and rotations
+  dy -= rot === (block.rotation[1] ? 1 : 3) ?
+    (w - 32) * sc / 16 :
+    rot === 0 ? (h - 32) * sc / 16 : 0;
+  dx -= rot === (block.rotation[1] ? 0 : 2) ?
+    (w - 32) * sc / 16 :
+    rot === 3 ? (h - 32) * sc / 16 : 0;
+  helpCanvas.width = sw = rot & 1 ? h : w;
+  helpCanvas.height = sh = rot & 1 ? w : h;
+  // apply color texture
+  if (block.rotation[1]) {
+    // handles block flipping
+    rc.scale(1 - (~rot << 1 & 2), 1 - (rot << 1 & 2));
+    rc.translate(~rot & 1 ? -w : 0, rot & 1 ? -w : 0);
+  }
+  // apply rotation
+  rc.rotate(rot * Math.PI / 2);
+  rc.translate(rot > 1 ? -w : 0, rot && rot < 3 ? -h : 0);
+  // apply textures
+  rc.fillStyle = rend_colors[Color.ID[block.properties.color || ""]];
+  id !== 794 && rc.fillRect(0, 0, w, h);
+  rc.globalCompositeOperation = "destination-in";
+  rc.drawImage(imgMask, size.x, size.y, w, h, 0, 0, w, h);
+  rc.globalCompositeOperation = "source-over";
+  rc.drawImage(imgOverlay, size.x, size.y, w, h, 0, 0, w, h);
+  ctx.drawImage(helpCanvas, dx, dy, sw * sc / 16, sh * sc / 16);
+  if (test_debug) {
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(-pos[1] * sc + vX - 7, pos[2] * sc + vY - 7, 14, 14);
+  }
 };
 
 render = Renderer.queue;
@@ -4749,7 +4844,7 @@ function expensiveRenderer() {
   }
   ctx.globalAlpha = 1;
   if (Editor.launchpadBorder) {
-    ctx.strokeStyle = Editor.highlightColor;
+    ctx.strokeStyle = Editor.highlightRed;
     ctx.lineWidth = 2;
     var grid = (ship.prop && ship.prop.gridSize || OC()).box2d,
       box2d = grid instanceof Array ? grid : Block.Box2d.GRID.Small;
@@ -4826,7 +4921,9 @@ Block.Box2d.visualize = function (path, x, y, green) {
     return;
   var coll = green === UDF ? x === UDF ? path.slice(2, 4) : [] : null;
   ctx.beginPath();
-  ctx.strokeStyle = green ? "#33bb33" : coll ? "#db9725" : "#bb3333";
+  ctx.strokeStyle = green ?
+    Editor.highlightGreen :
+    coll ? Editor.highlightYellow : Editor.highlightRed;
   if (coll && coll.length > 1) {
     path.length = 2;
     ctx.moveTo(vX - (coll[0].x - 2) * sc, (coll[0].y + 2) * sc + vY);

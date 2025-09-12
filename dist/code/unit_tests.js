@@ -1,7 +1,7 @@
 //@ts-nocheck
 /// <reference path="./editor.js" />
 "use strict";
-// v.0.2.16 (global version of project when last changes were done)
+// v.0.2.19 (global version of project when last changes were done)
 var utst_ = true;
 function BError (message) {
   console.error(this.message = message);
@@ -71,15 +71,23 @@ try {
   console.error("Block.arrayFromObjects:");console.error(e);}
 console.warn = utst_consoleWarn;
 // TEST: Command.list[].items() //
-var utst_i = 0;
+var utst_i = 0, utst_errorCatcher = function () {
+    var str = [].map.call(arguments, String).join("");
+    if (!utst_arr2.length || !utst_arr2.pop().test(str))
+      utst_ = utst_consoleError("Unexpected error(s)!? : " + str);
+    else
+      console.debug("Expected error: " + str);
+  };
 function utst_testCommands() {
   for (utst_i = Command.list.length; utst_i-- > 0;) {
     var utst_fn = Command.list[utst_i].items, utst_div = EL();
+    console.error = utst_errorCatcher;
     typeof utst_fn == "function" && utst_fn(utst_div);
     for (var utst_j = utst_div.childNodes.length; utst_j-- > 0;) {
       var utst_el0 = utst_div.childNodes[utst_j];
       if (utst_el0 instanceof HTMLLIElement && utst_el0.firstChild)
         utst_el0 = utst_el0.firstChild;
+      console.error = utst_errorCatcher;
       utst_el0 instanceof HTMLElement && 
         typeof (utst_fn = utst_el0.onclick) == "function" && utst_fn();
     }
@@ -96,13 +104,7 @@ var utst_consoleError = console.error, utst_arr2 = [
   /Error: unexpected end of data/
 ];
 try {
-  console.error = function () {
-    var str = [].map.call(arguments, String).join("");
-    if (!utst_arr2.length || !utst_arr2.pop().test(str))
-      utst_ = utst_consoleError("Unexpected error(s)!? : " + str);
-    else
-      console.debug("Expected error: " + str);
-  };
+  console.error = utst_errorCatcher;
   utst_testCommands();
   ship = Ship.fromObject(B64Key.decode(
     B64Key.b64ToU8arr("gAALU3RhcnRlclNoaXCAAQBnyR+wATjRE/MIg+/jGIhC4AC4AAgsI\
