@@ -2,7 +2,7 @@
 /// <reference path="./defs.d.ts" />
 "use strict";
 /** @readonly */
-var version_code_js = "v.0.2.17";
+var version_code_js = "v.0.2.20";
 /** @TODO check @see {Ship.VERSION} */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
@@ -46,6 +46,18 @@ if (typeof Initial != "function")
     this.data = null;
   };
 
+/**
+ * @typedef {number|[number,number]} UseData
+ * @typedef {{id:number,weight?:number,strength?:number,cost?:number,
+ * energy_use?:UseData,energy_store?:number,fuel_use?:UseData,
+ * fuel_store?:number,cargo_use?:UseData,cargo_store?:number,
+ * draw?:number[],now?:number,bitmap:PreciseDef|SizeDef}} BlockData
+ * @typedef {{id:number,weight?:number,strength?:number,cost?:number,
+ * energy_use?:number|number[],energy_store?:number,
+ * fuel_use?:number|number[],fuel_store?:number,cargo_use?:number|number[],
+ * cargo_store?:number,draw?:number[],now?:number,
+ * bitmap:(number|string)[]}} BlockDataSimple
+ */
 function Data() {
   throw new TypeError("Illegal constructor");
   this.data = null;
@@ -121,17 +133,7 @@ Data.groups = [
   ",128,0,0,0,0]", "[[3],128,0,0,0,0]", "[[28],0,29,0,[27],0,18,0,[26]," +
   "96,164,96,2,1]"
 ];
-/**
- * @typedef {number|[number,number]} UseData
- * @typedef {{id:number,weight?:number,strength?:number,cost?:number,
- * energy_use?:UseData,energy_store?:number,fuel_use?:UseData,
- * fuel_store?:number,cargo_use?:UseData,cargo_store?:number,
- * draw?:number[],now?:number}} BlockData
- * @typedef {{id:number,weight?:number,strength?:number,cost?:number,
- * energy_use?:number|number[],energy_store?:number,
- * fuel_use?:number|number[],fuel_store?:number,cargo_use?:number|number[],
- * cargo_store?:number,draw?:number[],now?:number}} BlockDataSimple
- */
+// search / ?([^]{20,74}[,{;]) ?/ replace "  $1\n "
 Data.blocks =
   /** @type {const} */
   ({block: {id: 0, draw: [14, 14, 14, 14, 14, 14]},
@@ -147,102 +149,128 @@ Data.blocks =
   cockpit_fighter: {id: 10, draw: [9, 10, 11, 9, 12, 13]},
   cockpit_cruiser: {id: 11, draw: [26, 27, 28, 26, 29, 30]},
   __unknown__: {id: 511},
-  Core: {id: 690, weight: 2, strength: 10, cost: -1,
-  cargo_store: 5}, Block: {id: 691, weight: 1, strength: 10, cost: 100},
-  Wedge: {id: 692, weight: 0.5, strength: 5, cost: 100}, "Wedge 1x2": {
-  id: 693, weight: 1, strength: 10, cost: 100}, "Wedge 1x4": {id: 694,
-  weight: 2, strength: 20, cost: 100}, Pyramid: {id: 695, weight: 0.5,
-  strength: 5, cost: 100}, Slab: {id: 696, weight: 0.5, strength: 5,
-  cost: 100}, "Smooth Corner": {id: 697, weight: 0.5, strength: 10,
-  cost: 100}, "Smooth Corner 1x2": {id: 698, weight: 1, strength: 10,
-  cost: 100}, "Smooth Corner 1x4": {id: 699, weight: 2, strength: 20,
-  cost: 100}, Struct: {id: 700, weight: 0.5, strength: 5, cost: 100},
-  "Glass Block": {id: 701, weight: 1, strength: 1, cost: 100},
-  "Glass Wedge": {id: 702, weight: 0.5, strength: 0.5, cost: 100},
-  "Slab Wedge": {id: 703, weight: 0.5, strength: 5, cost: 100},
-  "Tiny Hydrogen Thruster": {id: 738, weight: 0.5, strength: 2.5,
-  cost: 100, fuel_use: 175},
+  Core: {id: 690, weight: 2, strength: 10, cost: -1, cargo_store: 5,
+  bitmap: [128]}, Block: {id: 691, weight: 1, strength: 10, cost: 100,
+  bitmap: [52]}, Wedge: {id: 692, weight: 0.5, strength: 5, cost: 100,
+  bitmap: [53]}, "Wedge 1x2": {id: 693, weight: 1, strength: 10, cost: 100,
+  bitmap: [54, 1, 2]}, "Wedge 1x4": {id: 694, weight: 2, strength: 20,
+  cost: 100, bitmap: [55, 1, 4]}, Pyramid: {id: 695, weight: .5, strength: 5,
+  cost: 100, bitmap: [56]}, Slab: {id: 696, weight: .5, strength: 5,
+  cost: 100, bitmap: [57, 1, .5]}, "Smooth Corner": {id: 697, weight: .5,
+  strength: 10, cost: 100, bitmap: [60]}, "Smooth Corner 1x2": {id: 698,
+  weight: 1, strength: 10, cost: 100, bitmap: [61, 1, 2]},
+  "Smooth Corner 1x4": {id: 699, weight: 2, strength: 20, cost: 100,
+  bitmap: [71, 1, 4]}, Struct: {id: 700, weight: .5, strength: 5, cost: 100,
+  bitmap: [35]}, "Glass Block": {id: 701, weight: 1, strength: 1, cost: 100,
+  bitmap: [150]}, "Glass Wedge": {id: 702, weight: .5, strength: .5,
+  cost: 100, bitmap: [151]}, "Slab Wedge": {id: 703, weight: .5, strength: 5,
+  cost: 100, bitmap: [62, 1, .5]}, "Tiny Hydrogen Thruster": {id: 738,
+  weight: .5, strength: 2.5, cost: 100, fuel_use: 175, bitmap: [8, .5, .5]},
   "Small Hydrogen Thruster": {id: 739, weight: 2, strength: 10, cost: 100,
-  fuel_use: 150}, "Medium Hydrogen Thruster": {id: 740, weight: 8,
-  strength: 40, cost: 400, fuel_use: 125}, "Large Hydrogen Thruster":
-  {id: 741, weight: 24, strength: 120, cost: 800, fuel_use: 100},
-  "Tiny Ion Thruster": {id: 742, weight: 0.75, strength: 2.5, cost: 100,
-  energy_use: 275}, "Small Ion Thruster": {id: 743, weight: 3, strength: 10,
-  cost: 100, energy_use: 250}, "Medium Ion Thruster": {id: 744, weight: 6,
-  strength: 20, cost: 400, energy_use: 225}, "Large Ion Thruster": {id: 745,
-  weight: 18, strength: 60, cost: 800, energy_use: 200}, "Reaction Wheel": {
-  id: 746, weight: 2, strength: 10, cost: 100, energy_use: 100},
+  fuel_use: 150, bitmap: [4]}, "Medium Hydrogen Thruster": {id: 740,
+  weight: 8, strength: 40, cost: 400, fuel_use: 125, bitmap: [28, 2, 2]},
+  "Large Hydrogen Thruster": {id: 741, weight: 24, strength: 120, cost: 800,
+  fuel_use: 100, bitmap: [13, 3, 4]}, "Tiny Ion Thruster": {id: 742,
+  weight: .75, strength: 2.5, cost: 100, energy_use: 275, bitmap: [9, .5,
+  .5]}, "Small Ion Thruster": {id: 743, weight: 3, strength: 10, cost: 100,
+  energy_use: 250, bitmap: [0]}, "Medium Ion Thruster": {id: 744, weight: 6,
+  strength: 20, cost: 400, energy_use: 225, bitmap: [1, 1, 2]},
+  "Large Ion Thruster": {id: 745, weight: 18, strength: 60, cost: 800,
+  energy_use: 200, bitmap: [2, 2, 3]}, "Reaction Wheel": {id: 746, weight: 2,
+  strength: 10, cost: 100, energy_use: 100, bitmap: [34]},
   "Small Hydrogen Tank": {id: 754, weight: 2, strength: 10, cost: 100,
-  fuel_store: 30}, "Medium Hydrogen Tank": {id: 755, weight: 8, strength: 40,
-  cost: 400, fuel_store: 150}, "Large Hydrogen Tank": {id: 756, weight: 18,
-  strength: 90, cost: 900, fuel_store: 375}, "Small Battery": {id: 757,
-  weight: 3, strength: 10, cost: 100, energy_store: 20}, "Medium Battery": {
-  id: 758, weight: 12, strength: 40, cost: 400, energy_store: 100},
-  "Large Battery": {id: 759, weight: 18, strength: 60, cost: 600,
-  energy_store: 175}, "Small Storage Rack": {id: 760, weight: 3,
-  strength: 10, cost: 100, cargo_store: 20}, "Medium Storage Rack": {id: 761,
-  weight: 12, strength: 40, cost: 400, cargo_store: 100},
+  fuel_store: 30, bitmap: [89]}, "Medium Hydrogen Tank": {id: 755, weight: 8,
+  strength: 40, cost: 400, fuel_store: 150, bitmap: [86, 2, 2]},
+  "Large Hydrogen Tank": {id: 756, weight: 18, strength: 90, cost: 900,
+  fuel_store: 375, bitmap: [92, 3, 3]}, "Small Battery": {id: 757, weight: 3,
+  strength: 10, cost: 100, energy_store: 20, bitmap: [41]},
+  "Medium Battery": {id: 758, weight: 12, strength: 40, cost: 400,
+  energy_store: 100, bitmap: [44, 2, 2]}, "Large Battery": {id: 759,
+  weight: 18, strength: 60, cost: 600, energy_store: 175, bitmap: [42, 2,
+  3]}, "Small Storage Rack": {id: 760, weight: 3, strength: 10, cost: 100,
+  cargo_store: 20, bitmap: [88]}, "Medium Storage Rack": {id: 761,
+  weight: 12, strength: 40, cost: 400, cargo_store: 100, bitmap: [80, 2, 2]},
   "Large Storage Rack": {id: 762, weight: 27, strength: 90, cost: 900,
-  cargo_store: 250}, "Small Hydraulic Drill": {id: 770, weight: 3,
-  strength: 10, cost: 100, energy_use: 1, cargo_use: [-1,1.02]}, Cannon: {
-  id: 771, weight: 2, strength: 10, cost: 100}, "Rotary Cannon": {id: 772,
-  weight: 2, strength: 10, cost: 200}, "Plasma Cannon": {id: 773, weight: 2,
-  strength: 10, cost: 200, energy_use: [10,1.02]}, "Pulse Laser": {id: 774,
-  weight: 2, strength: 10, cost: 200, energy_use: [2,0.52]}, "Beam Laser": {
-  id: 775, weight: 2, strength: 10, cost: 200, energy_use: 4},
-  __placeholder776__: {id: 776}, "Weight Block": {id: 786, weight: 10,
-  strength: 10, cost: 100}, "Armor Block": {id: 787, weight: 5, strength: 50,
-  cost: 100}, "Solar Block": {id: 788, weight: 1, strength: 2, cost: 100,
-  energy_use: -0.25}, "Small Solar Panel": {id: 789, weight: 1,
-  strength: 0.5, cost: 100, energy_use: -0.75}, Hinge: {id: 790, weight: 5,
-  strength: 10, cost: 100}, Separator: {id: 791, weight: 1, strength: 1,
-  cost: 100}, Piston: {id: 792, weight: 5, strength: 10, cost: 100},
-  "Camera Block": {id: 793, weight: 1, strength: 10, cost: 100},
-  "Ghost Block": {id: 794, weight: 1, strength: 10, cost: 100},
-  Dock: {id: 795, weight: 1, strength: 10, cost: 100}, "Small Rift Drive": {
-  id: 796, weight: 5, strength: 10, cost: 500}, __placeholder798__: {
-  id: 798}, __placeholder799__: {id: 799}, "Constant On Signal": {id: 802,
-  weight: 0.25, strength: 2.5, cost: 100}, "Control Block": {id: 803,
-  weight: 1, strength: 10, cost: 100}, "AND Gate": {id: 804, weight: 1,
-  strength: 10, cost: 100}, "NAND Gate": {id: 805, weight: 1, strength: 10,
-  cost: 100}, "OR Gate": {id: 806, weight: 1, strength: 10, cost: 100},
-  "NOR Gate": {id: 807, weight: 1, strength: 10, cost: 100}, "XOR Gate": {
-  id: 808, weight: 1, strength: 10, cost: 100}, "XNOR Gate": {id: 809,
-  weight: 1, strength: 10, cost: 100}, "NOT Gate": {id: 810, weight: 0.5,
-  strength: 5, cost: 100}, LED: {id: 811, weight: 0.25, strength: 2.5,
-  cost: 100}, Delay: {id: 812, weight: 0.5, strength: 5, cost: 100},
-  "Constant Number": {id: 813, weight: 0.25, strength: 2.5, cost: 100},
-  "Speed Sensor": {id: 814, weight: 1, strength: 10, cost: 100},
-  "Tilt Sensor": {id: 815, weight: 1, strength: 10, cost: 100},
-  "Distance Sensor": {id: 816, weight: 1, strength: 10, cost: 100},
-  "GPS Sensor": {id: 817, weight: 1, strength: 10, cost: 100},
-  "Numerical Inverter": {id: 818, weight: 0.5, strength: 5, cost: 100},
-  Clamp: {id: 819, weight: 0.5, strength: 5, cost: 100}, Abs: {id: 820,
-  weight: 0.5, strength: 5, cost: 100}, "Threshold Gate": {id: 821,
-  weight: 0.5, strength: 5, cost: 100}, "Numerical Switchbox": {id: 822,
-  weight: 1, strength: 10, cost: 100}, "Function Block": {id: 823, weight: 1,
-  strength: 10, cost: 100}, "Memory Register": {id: 824, weight: 1,
-  strength: 10, cost: 100}, Gauge: {id: 825, weight: 0.5, strength: 5,
-  cost: 100}, Dial: {id: 826, weight: 0.25, strength: 2.5, cost: 100},
-  "Digital Display": {id: 827, weight: 0.5, strength: 5, cost: 100},
-  "Push To Toggle": {id: 828, weight: 0.5, strength: 5, cost: 100},
-  __placeholder834__: {id: 834}, __placeholder835__: {id: 835},
-  __placeholder836__: {id: 836}, __placeholder837__: {id: 837},
-  __placeholder838__: {id: 838}, __placeholder839__: {id: 839},
-  __placeholder840__: {id: 840}, __placeholder841__: {id: 841},
-  __placeholder842__: {id: 842}, __placeholder843__: {id: 843},
-  __placeholder844__: {id: 844}, __placeholder845__: {id: 845},
-  __placeholder846__: {id: 846}, __placeholder847__: {id: 847},
-  __placeholder848__: {id: 848}, __placeholder849__: {id: 849},
-  __placeholder850__: {id: 850}, __placeholder851__: {id: 851},
-  __placeholder852__: {id: 852}, __placeholder853__: {id: 853},
-  __placeholder854__: {id: 854}, __placeholder855__: {id: 855},
-  __placeholder856__: {id: 856}, __placeholder857__: {id: 857},
-  __NULL__: {id: 1023}, Afterburner: {id: 1035, weight: 2, strength: 10,
-  cost: 70}, "Dynamo Thruster": {id: 1037, weight: 3, strength: 15,
-  cost: 90}, "T1 Rammer": {id: 1043, weight: 1, strength: 20, cost: 70},
-  "T1 Nano Healer": {id: 1060, weight: 1, strength: 10, cost: 130},
-  __placeholder969__: {id: 969, weight: .169, cost: 6969}});
+  cargo_store: 250, bitmap: [68, 3, 3]}, "Small Hydraulic Drill": {id: 770,
+  weight: 3, strength: 10, cost: 100, energy_use: 1, cargo_use: [-1, 1.02],
+  bitmap: [24]}, Cannon: {id: 771, weight: 2, strength: 10, cost: 100,
+  bitmap: [36]}, "Rotary Cannon": {id: 772, weight: 2, strength: 10,
+  cost: 200, bitmap: [37]}, "Plasma Cannon": {id: 773, weight: 2,
+  strength: 10, cost: 200, energy_use: [10, 1.02], bitmap: [38]},
+  "Pulse Laser": {id: 774, weight: 2, strength: 10, cost: 200,
+  energy_use: [2, .52], bitmap: [39]}, "Beam Laser": {id: 775, weight: 2,
+  strength: 10, cost: 200, energy_use: 4, bitmap: [40]},
+  __placeholder776__: {id: 776, bitmap: [167]}, "Weight Block": {id: 786,
+  weight: 10, strength: 10, cost: 100, bitmap: [172]},
+  "Armor Block": {id: 787, weight: 5, strength: 50, cost: 100,
+  bitmap: [173]}, "Solar Block": {id: 788, weight: 1, strength: 2, cost: 100,
+  energy_use: -.25, bitmap: [136]}, "Small Solar Panel": {id: 789, weight: 1,
+  strength: .5, cost: 100, energy_use: -.75, bitmap: [133, 1, 2]},
+  Hinge: {id: 790, weight: 5, strength: 10, cost: 100, bitmap: [12]},
+  Separator: {id: 791, weight: 1, strength: 1, cost: 100, bitmap: [132]},
+  Piston: {id: 792, weight: 5, strength: 10, cost: 100, bitmap: [31]},
+  "Camera Block": {id: 793, weight: 1, strength: 10, cost: 100,
+  bitmap: [171]}, "Ghost Block": {id: 794, weight: 1, strength: 10,
+  cost: 100, bitmap: [174]}, Dock: {id: 795, weight: 1, strength: 10,
+  cost: 100, bitmap: [129, 1, .5]}, "Small Rift Drive": {id: 796, weight: 5,
+  strength: 10, cost: 500, bitmap: [175]}, __placeholder798__: {id: 798,
+  bitmap: [131, 1, .5]}, __placeholder799__: {id: 799, bitmap: [130, 1, .5]},
+  "Constant On Signal": {id: 802, weight: .25, strength: 2.5, cost: 100,
+  bitmap: [95, .5, .5]}, "Control Block": {id: 803, weight: 1, strength: 10,
+  cost: 100, bitmap: [99]}, "AND Gate": {id: 804, weight: 1, strength: 10,
+  cost: 100, bitmap: [103]}, "NAND Gate": {id: 805, weight: 1, strength: 10,
+  cost: 100, bitmap: [104]}, "OR Gate": {id: 806, weight: 1, strength: 10,
+  cost: 100, bitmap: [105]}, "NOR Gate": {id: 807, weight: 1, strength: 10,
+  cost: 100, bitmap: [106]}, "XOR Gate": {id: 808, weight: 1, strength: 10,
+  cost: 100, bitmap: [107]}, "XNOR Gate": {id: 809, weight: 1, strength: 10,
+  cost: 100, bitmap: [108]}, "NOT Gate": {id: 810, weight: .5, strength: 5,
+  cost: 100, bitmap: [109, 1, .5]}, LED: {id: 811, weight: .25,
+  strength: 2.5, cost: 100, bitmap: [110, .5, .5]}, Delay: {id: 812,
+  weight: .5, strength: 5, cost: 100, bitmap: [111, 1, .5]},
+  "Constant Number": {id: 813, weight: .25, strength: 2.5, cost: 100,
+  bitmap: [112, .5, .5]}, "Speed Sensor": {id: 814, weight: 1, strength: 10,
+  cost: 100, bitmap: [113]}, "Tilt Sensor": {id: 815, weight: 1,
+  strength: 10, cost: 100, bitmap: [114]}, "Distance Sensor": {id: 816,
+  weight: 1, strength: 10, cost: 100, bitmap: [115]}, "GPS Sensor": {id: 817,
+  weight: 1, strength: 10, cost: 100, bitmap: [116]}, "Numerical Inverter": {
+  id: 818, weight: .5, strength: 5, cost: 100, bitmap: [117, 1, .5]}, Clamp: {
+  id: 819, weight: .5, strength: 5, cost: 100, bitmap: [118, 1, .5]}, Abs: {
+  id: 820, weight: .5, strength: 5, cost: 100, bitmap: [119, 1, .5]},
+  "Threshold Gate": {id: 821, weight: .5, strength: 5, cost: 100,
+  bitmap: [120, 1, .5]}, "Numerical Switchbox": {id: 822, weight: 1,
+  strength: 10, cost: 100, bitmap: [121]}, "Function Block": {id: 823,
+  weight: 1, strength: 10, cost: 100, bitmap: [122]}, "Memory Register": {
+  id: 824, weight: 1, strength: 10, cost: 100, bitmap: [123]}, Gauge: {
+  id: 825, weight: .5, strength: 5, cost: 100, bitmap: [124, .5, 1]},
+  Dial: {id: 826, weight: .25, strength: 2.5, cost: 100, bitmap: [125, .5,
+  .5]}, "Digital Display": {id: 827, weight: .5, strength: 5, cost: 100,
+  bitmap: [126, 1, .5]}, "Push To Toggle": {id: 828, weight: .5,
+  strength: 5, cost: 100, bitmap: [127, 1, .5]}, __placeholder834__: {
+  id: 834, bitmap: [176]}, __placeholder835__: {id: 835, bitmap: [177]},
+  __placeholder836__: {id: 836, bitmap: [178]}, __placeholder837__: {id: 837,
+  bitmap: [179]}, __placeholder838__: {id: 838, bitmap: [180]},
+  __placeholder839__: {id: 839, bitmap: [181]}, __placeholder840__: {id: 840,
+  bitmap: [134, 2, 2]}, __placeholder841__: {id: 841, bitmap: [164, 1, 2]},
+  __placeholder842__: {id: 842, bitmap: [165, 1, 2]}, __placeholder843__: {
+  id: 843, bitmap: [166, 1, 2]}, __placeholder844__: {id: 844,
+  bitmap: [183]}, __placeholder845__: {id: 845, bitmap: [184, 2, 2]},
+  __placeholder846__: {id: 846, bitmap: [186, 2, 2]}, __placeholder847__: {
+  id: 847, bitmap: [160]}, __placeholder848__: {id: 848, bitmap: [161]},
+  __placeholder849__: {id: 849, bitmap: [162]}, __placeholder850__: {id: 850,
+  bitmap: [144, 4, 1]}, __placeholder851__: {id: 851, bitmap: [158, 2, 1]},
+  __placeholder852__: {id: 852, bitmap: [148, 2, 3]}, __placeholder853__: {
+  id: 853, bitmap: [163]}, __placeholder854__: {id: 854, bitmap: [140, 4,
+  1]}, __placeholder855__: {id: 855, bitmap: [182]}, __placeholder856__: {
+  id: 856, bitmap: [155]}, __placeholder857__: {id: 857, bitmap: [154]},
+  __NULL__: {id: 1023, bitmap: [-1, -1, -1]}, Afterburner: {id: 1035,
+  weight: 2, strength: 10, cost: 70, bitmap: [16]}, "Dynamo Thruster": {
+  id: 1037, weight: 3, strength: 15, cost: 90, bitmap: [30]}, "T1 Rammer": {
+  id: 1043, weight: 1, strength: 20, cost: 70, bitmap: [64]},
+  "T1 Nano Healer": {id: 1060, weight: 1, strength: 10, cost: 130,
+  bitmap: [66]}, __placeholder969__: {id: 969, weight: .169, cost: 6969,
+  bitmap: [82]}, ControlBlock: {id: 1 + 1280, bitmap: [476]}, ControlBlock_Probe: {id: 10 + 1280, bitmap: ["19 1552"]}, Camera: {id: 20 + 1280, bitmap: ["45 1552"]}, Beacon: {id: 96 + 1280, bitmap: ["32 1552"]}, FuelTank0: {id: 2 + 1280, bitmap: [484]}, FuelTank1: {id: 42 + 1280, bitmap: ["7 1567", 2, 2]}, FuelTank2: {id: 12 + 1280, bitmap: ["7 1592", 2, 2]}, FuelTank4: {id: 128 + 1280, bitmap: ["32 1567", 3, 3]}, FuelTank3: {id: 129 + 1280, bitmap: ["72 1567", 4, 4]}, DeutTank0: {id: 130 + 1280}, DeutTank1: {id: 131 + 1280}, DeutTank2: {id: 132 + 1280}, DeutTank4: {id: 133 + 1280}, DeutTank3: {id: 134 + 1280}, ExotTank0: {id: 135 + 1280}, ExotTank1: {id: 136 + 1280}, ExotTank2: {id: 137 + 1280}, ExotTank4: {id: 138 + 1280}, ExotTank3: {id: 139 + 1280}, GlowTank0: {id: 140 + 1280}, GlowTank2: {id: 141 + 1280}, GlowTank4: {id: 142 + 1280}, Battery0: {id: 16 + 1280}, Battery1: {id: 22 + 1280}, Battery2: {id: 17 + 1280}, Battery4: {id: 143 + 1280}, Battery3: {id: 144 + 1280}, Pipe: {id: 145 + 1280, bitmap: ["53 1552"]}, Engine_Fuel1: {id: 3 + 1280}, Engine_Fuel2: {id: 7 + 1280}, Engine_Fuel4: {id: 160 + 1280}, Engine_Fuel3: {id: 24 + 1280}, Engine_Hybrid1: {id: 8 + 1280}, Engine_Exot1: {id: 161 + 1280}, Engine_Power1: {id: 4 + 1280}, Engine_Power2: {id: 6 + 1280}, Engine_Power3: {id: 5 + 1280}, Engine_Power4: {id: 25 + 1280}, Engine_Big1: {id: 162 + 1280}, Engine_Big2: {id: 163 + 1280}, Engine_Big3: {id: 164 + 1280}, Engine_Solid1: {id: 61 + 1280}, Reactor0: {id: 15 + 1280, bitmap: ["32 1697"], editor: "SolarPanel"}, SolarPanel1: {id: 192 + 1280, editor: "SolarPanelMed"}, SolarPanel2: {id: 193 + 1280, editor: "SolarPanelBig"}, Reactor1: {id: 11 + 1280, bitmap: ["99 1995"]}, Reactor2: {id: 194 + 1280}, Reactor3: {id: 14 + 1280}, Reactor4: {id: 23 + 1280}, Reactor5: {id: 21 + 1280}, Reactor8: {id: 195 + 1280}, Reactor6: {id: 196 + 1280}, Reactor7: {id: 197 + 1280}, Armor_Basic: {id: 13 + 1280}, Armor_BasicBig: {id: 224 + 1280}, Armor_Laser1: {id: 26 + 1280}, Armor_LaserWedge0: {id: 225 + 1280}, Armor_LaserWedge1: {id: 226 + 1280}, Armor_LaserWedge2: {id: 227 + 1280}, Armor_LaserWedge3: {id: 228 + 1280}, Armor_LaserWedge4: {id: 229 + 1280}, Armor_Heavy: {id: 27 + 1280, bitmap: ["20 1852"]}, Armor_HeavyWedge0: {id: 230 + 1280, bitmap: ["32 1851"]}, Armor_HeavyWedge1: {id: 231 + 1280},
+  Armor_HeavyWedge2: {id: 232 + 1280}, Armor_HeavyWedge3: {id: 233 + 1280}, Armor_HeavyWedge4: {id: 234 + 1280}, Armor_Laser2: {id: 28 + 1280}, Armor_Laser2Wedge0: {id: 235 + 1280}, Armor_Laser2Wedge1: {id: 236 + 1280}, Armor_Laser2Wedge2: {id: 237 + 1280}, Armor_Laser2Wedge3: {id: 238 + 1280}, Armor_Laser2Wedge4: {id: 239 + 1280}, Armor_Regen: {id: 29 + 1280}, Shield1: {id: 31 + 1280}, Shield2: {id: 240 + 1280}, Shield3: {id: 241 + 1280},Weapon_bomb1: {id: 19 + 1280}, Weapon_bomb2: {id: 37 + 1280}, Weapon_Laser1: {id: 35 + 1280}, Weapon_Laser2: {id: 56 + 1280}, Weapon_Laser3: {id: 60 + 1280}, Weapon_Machinegun1: {id: 55 + 1280}, Weapon_Machinegun2: {id: 256 + 1280}, Weapon_Cannon1: {id: 257 + 1280, bitmap: ["45 1969", 1, 3]}, Weapon_Cannon2: {id: 258 + 1280}, Weapon_PlasmaCannon1: {id: 259 + 1280}, Weapon_PlasmaCannon2: {id: 260 + 1280}, Weapon_NeutCannon1: {id: 261 + 1280}, Weapon_DMG1: {id: 58 + 1280}, Weapon_Rocket1: {id: 64 + 1280}, Weapon_Rocket2: {id: 262 + 1280}, Weapon_Railgun1: {id: 263 + 1280}, Utility_Decoupler: {id: 34 + 1280}, Utility_Hinge: {id: 288 + 1280}, Utility_Piston: {id: 289 + 1280}, Utility_Rotor: {id: 290 + 1280, bitmap: ["45 2137"]}, Utility_Pump: {id: 291 + 1280}, Utility_SolidPump: {id: 292 + 1280}, Utility_VOID: {id: 293 + 1280}, /*Utility_PipeRotor: {id:  + 1280}, Utility_PipePiston: {id:  + 1280},*/ Utility_Docking1: {id: 36 + 1280, bitmap: ["58 2217"]}, Utility_Docking2: {id: 54 + 1280}, Utility_GPMP: {id: 62 + 1280}, Utility_Decelerator: {id: 294 + 1280}, Utility_MobileSpawn: {id: 295 + 1280}, Utility_Wheel1: {id: 65 + 1280, bitmap: ["32 2113"]}, Utility_Wheel2: {id: 296 + 1280}, Drill1: {id: 320 + 1280}, Drill2: {id: 321 + 1280}, Drill3: {id: 322 + 1280}, Excavator1: {id: 323 + 1280}, Excavator2: {id: 324 + 1280}, ExotCollector1: {id: 325 + 1280}, Cargo0: {id: 326 + 1280, bitmap: ["99 2269"]},Cargo1: {id: 327 + 1280}, Cargo2: {id: 328 + 1280}, Converter_Electrolyzer1: {id: 329 + 1280}, Converter_Electrolyzer2: {id: 330 + 1280}, Converter_Electrolyzer3: {id: 331 + 1280}, Converter_Deut1: {id: 332 + 1280}, Converter_Deut2: {id: 333 + 1280}, Converter_Deut3: {id: 334 + 1280}, onverter_Exot1: {id: 335 + 1280}, Converter_Exot2: {id: 336 + 1280}, Converter_Smelter1: {id: 337 + 1280}, Converter_Smelter2: {id: 338 + 1280}, Converter_Smelter3: {id: 339 + 1280}, Logic_LaserSensor: {id: 352 + 1280}, Logic_VelocitySensor: {id: 353 + 1280}, Logic_AngVelocitySensor: {id: 354 + 1280}, Logic_ResourceSensor: {id: 355 + 1280},
+  Logic_Button: {id: 356 + 1280}, Logic_Screen: {id: 357 + 1280}, Logic_Timer: {id: 358 + 1280}, Logic_Switch: {id: 359 + 1280}, Logic_Randomizer: {id: 360 + 1280}, Logic_AndGate: {id: 361 + 1280, bitmap: ["71 1552"]}, Logic_OrGate: {id: 362 + 1280, bitmap: ["84 1552"]}, Logic_XorGate: {id: 363 + 1280, bitmap: ["97 1552"]}, Decorative_Nose0: {id: 43 + 1280}, Decorative_Nose1: {id: 46 + 1280}, Decorative_Nose2: {id: 45 + 1280}, Decorative_BackgroundBlock1: {id: 384 + 1280}, Decorative_Block1: {id: 49 + 1280}, Decorative_Block2: {id: 50 + 1280}, Decorative_Wedge0: {id: 44 + 1280}, Decorative_Wedge3: {id: 385 + 1280}, Decorative_Wedge1: {id: 47 + 1280}, Decorative_Wedge2: {id: 48 + 1280},  Decorative_Wedge4: {id: 356 + 1280}, Decorative_Wedge7: {id: 387 + 1280}, Decorative_Wedge5: {id: 389 + 1280}, Decorative_Wedge8: {id: 390 + 1280}, Decorative_Wedge6: {id: 391 + 1280}, Decorative_Wedge9: {id: 392 + 1280}, Decorative_Antenna0: {id: 51 + 1280}, Decorative_Antenna1: {id: 59 + 1280}});
 Data.titles =
   /** @type {const} */
   ({
@@ -446,10 +474,12 @@ Data.generateValues = function (type) {
     /** @type {BlockDataSimple[keyof BlockData]} */
     val;
   for (var p in data)
-    if (val = data[p][type])
+    if (val = data[p][type]) {
       values[data[p].id] =
+        // v.0.2.20 cast because of touples, assuming shallow copy won't bug
         /** @type {BlockData[T]} */
-        (val instanceof Array ? [val[0], val[1]] : val);
+        (val instanceof Array ? val.slice() : val);
+    }
   return values;
 };
 /** @param {typeof Edit|typeof Ship} namespace */
@@ -490,6 +520,9 @@ Object.freeze(Data);
 
 /** @typedef {Block|LogicBlock} ShipBlock */
 /**
+ * @callback LExec @param {Logic<2|3>[]} arg
+ * @param {LogicBlock} block @param {Ship} ship @returns {void} */
+/**
  * @template {0|1|2|3} T
  * @param {T} type @param {number} x @param {number} y as definition
  * x, y is position relative to middle, else used by rendering method,
@@ -516,9 +549,6 @@ function Logic(type, x, y) {
 Logic.dashOff = 0;
 /** specifies when logic nodes and connections should be rendered */
 Logic.rend = !1;
-/**
- * @callback LExec @param {Logic<2|3>[]} arg
- * @param {LogicBlock} block @param {Ship} ship @returns {void} */
 /** @param {...{k:number,x:number,y:number}[]|string|number|LExec} args */
 Logic.generateLogic = function () {
   /** @type {{[key:number]:Logic[]&{exec:LExec|LExec&safe}|undefined}} */
@@ -1315,7 +1345,33 @@ s|c|ni|invalidName|getPhysics|logicPosition|logicBlockIndex)$");
 };
 /** @readonly @param {number} n @param {Logic<any>[]} [logics] */
 Block.generateArray = function generateArray(n, logics) {
-  if (n !== -69)
+  if (n === -1)
+    return "DecoLayer_Half1|5,0|180,-1,1|c16;&DecoLayer_Half1|4,0|180,-1,1|c\
+16;&DecoLayer_Half1|3,0|180,-1,1|c16;&DecoLayer_Half1|2,0|180,-1,1|c16;&Reac\
+tor0|0,1|90,1,1|1|512,0,0,0|2|0|0|;&Utility_Docking1|2,3|0,-1,1|1|512,512,0,\
+0|2|2|5|;&DecoLayer3_Half1|4,2|90,1,1|c13;&DecoLayer_Texure1|3,1|0,-1,1|c1;&\
+Decolayer2_Block2|4,2|270,1,1|c1;&Armor_HeavyWedge0|5,1|0,-1,1|1|0|0|0|;&Wea\
+pon_Cannon1|4,2|270,1,1|2|64,0,0,0|1|0|0|;&Utility_Rotor|3,2|270,1,1|3|16,32\
+,0,0|1|720|90|;&Cargo0|2,1|0,1,1|1|0|0|0|Iron:50;&ControlBlock|3,1|0,1,1|1|3\
+2,16,0,0|0|4|0|;&Reactor1|2,2|0,1,1|1|512,0,0,0|0|0|0|;&Armor_HeavyWedge0|1,\
+2|0,1,1|1|0|0|0|;&Armor_Heavy|1,1|0,1,1|1|0|0|0|;&Armor_Heavy|4,1|0,1,1|1|0|\
+0|0|;&Utility_Wheel1|1,0|0,1,1|1|4,8,0,0|1|10|0|;&DecoLayer_Texure1|1,2|0,-1\
+,1|c10;&DecoLayer_Texure6|3,2|0,-1,1|c1;&Decolayer2_Block1|1,2|0,-1,1|c1;&De\
+coLayer_Texure7|2,2|0,-1,1|c1;&DecoLayer_Half1|5,1|0,-1,1|c7;&Decolayer2_Wed\
+ge0|5,1|0,-1,1|c1;&DecoLayer_Half1|1,0|180,-1,1|c16;&Decolayer3_Wedge0|1,2|0\
+,1,1|c1;&DecoLayer_Texure7|4,1|0,1,1|c1;&DecoLayer_Texure7|1,1|0,-1,1|c1;&Ut\
+ility_Wheel1|2,0|0,1,1|1|4,8,0,0|1|10|0|;&Utility_Wheel1|3,0|0,1,1|1|4,8,0,0\
+|1|10|0|;&Utility_Wheel1|4,0|0,1,1|1|4,8,0,0|1|10|0|;&Utility_Wheel1|5,0|0,1\
+,1|1|4,8,0,0|1|10|0|;".split("&").map(function (e) {
+      var prop = e.split("|"), rot = prop[2].split(",");
+      /** @type {Rotation} */
+      var rotation = [0, +rot[1] < 0, 0], pos = prop[1].split(",");
+      rotation[2] =
+        /** @type {0|1|2|3} */
+        (+rot[0] / 90 + 4.5 & 3);
+      return new Block(prop[0], [0, +pos[0] * 2, +pos[1] * 2], rotation);
+    });
+  else if (n !== -69)
     throw new Error("Not implemented. (only arg0: n = -69 works)");
   var i = 12, idx = 0, SH = "Small Hydrogen ";
   /** @type {Block[]} */
@@ -1395,10 +1451,10 @@ Block.rotate = function (rot, x, y, z) {
   return [rot[0] = face, rot[1] = side, rot[2] = turn];
 };
 /** instance is frozen
- * @readonly @typedef {{x:number,y:number,w:number,h:number}}
- * @param {number} x @param {number} y
- * @param {number} w @param {number} h */
-Block.Size = function Size(x, y, w, h) {
+ * @readonly @typedef {{x:number,y:number,w:number,h:number,res:number}}
+ * @param {number} x @param {number} y @param {number} w @param {number} h
+ * @param {number} resolution (res) */
+Block.Size = function Size(x, y, w, h, resolution) {
   /** @readonly */
   this.x = x;
   /** @readonly */
@@ -1407,6 +1463,8 @@ Block.Size = function Size(x, y, w, h) {
   this.w = w;
   /** @readonly */
   this.h = h;
+  /** stands for resolution @readonly */
+  this.res = resolution;
   Object.freeze(this);
 };
 Block.Size.width = 4;
@@ -1414,67 +1472,40 @@ Block.Size.height = 48;
 /**
  * @typedef {[number,number,number,number,number]} PreciseDef
  * @typedef {[number|string]|[number|string,number,number]} SizeDef
- * @typedef {(SizeDef|PreciseDef)|(SizeDef|PreciseDef)[]} SizesArg
- * @type {(...arg:SizesArg[])=>{[key:number]:Block.Size|undefined}} */
-Block.Size.genterateSizes = function () {
-  var r = {690: new this(0, 0, 2, 2)},
-    /** @type {{[key:number]:SizeDef|SizeDef[],length:number}} */
-    a = arguments;
-  // by replacing nw = 0 with nw = [] it will log sizes and do 'reflow'
-  for (var i = 0, j = 0, l = 690, nw = 0; l < Block.NAME.length; l++)
+ * @typedef {{[key:number]:SizeDef|PreciseDef|undefined}} SizesArg
+ * @type {(arg:SizesArg)=>{[key:number]:Block.Size|undefined}} */
+Block.Size.generate = function (arg) {
+  var r = {690: new this(0, 0, 2, 2, 32)};
+  // by replacing nw = a with nw = {} it will log sizes and do 'reflow'
+  for (var l = 690, nw = {}; l < Block.NAME.length; l++)
     if (Block.NAME[l]) {
-      /** @type {[number]|[number,number,number]|PreciseDef} */
-      //@ts-expect-error
-      var v = a[i];
-      //@ts-expect-error
-      v instanceof Array && v[j] instanceof Array ? v = v[j++] : j = 3;
+      var v = arg[l], res = l > 1279 ? 13 : 32;
+      if (!v)
+        continue;
       if (typeof v[0] == "number")
-        var x = (v[0] % this.width) * 32, y = v[0] / this.width << 5;
+        var x = v[0] % this.width * res,
+          y = (v[0] / this.width | 0) * res;
       else {
-        x = +(v[0] + " ").split(" ")[0] >>> 5 << 5;
-        y = +(v[0] + " ").split(" ")[1] >>> 5 << 5;
-        v[0] = (x >>> 5) + (y >>> 5) * this.width;
+        x = (+(v[0] + " ").split(" ")[0] / res | 0) * res;
+        y = (+(v[0] + " ").split(" ")[1] / res | 0) * res;
+        v[0] = (x / res | 0) + (y / res | 0) * this.width;
       }
-      if (typeof nw == "object") {
-        var vup = v[0] / this.width << 0;
-        console.log(Block.NAME[l], v[0] % this.width, vup, v);
-        // Block.Size must be change as well for resing to work
-        v[0] += vup * 0;
-        //@ts-expect-error
-        nw.push(v);
+      if (nw !== arg) {
+        var offsetY = v[0] / this.width << 0;
+        console.log(v[0] % this.width, offsetY, Block.NAME[l], v);
+        nw instanceof Array && nw.push(v);
       }
       if (((v[1] || 1) < 0 || (v[2] || 1) < 0) && v[0] !== -1)
         throw new Error("Neither width nor height can be negative.");
-      r[l] = new this(x, y, (v[1] || 1) * 32, (v[2] || 1) * 32);
-      if (j >= a[i].length)
-        if (++i < a.length)
-          j = 0;
-        else
-          break;
+      r[l] = new this(x, y, (v[1] || 1) * res, (v[2] || 1) * res, res);
     }
-  typeof nw == "object" &&
+  nw instanceof Array &&
     console.log(JSON.stringify(nw).replace(/,/g, ", "));
   return r;
 };
 // (TODO:) blocks were still not tested properly all at once, one more
 // undetected bug with block or texture and adding unit test for it
-Block.Size.VALUE = Block.Size.genterateSizes([[128], [52], [53]],
-  [[54, 1, 2], [55, 1, 4], [56], [57, 1, 0.5], [60], [61, 1, 2]],
-  [[71, 1, 4], [35], [150], [151], [62, 1, 0.5], [8, 0.5, 0.5], [4]],
-  [[28, 2, 2], [13, 3, 4], [9, 0.5, 0.5], [0], [1, 1, 2], [2, 2, 3]],
-  [[34], [89], [86, 2, 2], [92, 3, 3], [41], [44, 2, 2], [42, 2, 3]],
-  [[88], [80, 2, 2], [68, 3, 3], [24], [36], [37], [38], [39], [40]],
-  [[167], [172], [173], [136], [133, 1, 2], [12], [132], [31], [171]],
-  [[174], [129, 1, 0.5], [175], [131, 1, 0.5], [130, 1, 0.5]],
-  [[95, 0.5, 0.5], [99], [103], [104], [105], [106], [107], [108]],
-  [[109, 1, 0.5], [110, 0.5, 0.5], [111, 1, 0.5], [112, 0.5, 0.5]],
-  [[113], [114], [115], [116], [117, 1, 0.5], [118, 1, 0.5]],
-  [[119, 1, 0.5], [120, 1, 0.5], [121], [122], [123], [124, 0.5, 1]],
-  [[125, 0.5, 0.5], [126, 1, 0.5], [127, 1, 0.5], [176], [177], [178]],
-  [[179], [180], [181], [134, 2, 2], [164, 1, 2], [165, 1, 2]],
-  [[166, 1, 2], [183], [184, 2, 2], [186, 2, 2], [160], [161], [162]],
-  [[144, 4, 1], [158, 2, 1], [148, 2, 3], [163], [140, 4, 1], [182]],
-  [[155], [154], [82], [-1, -1, -1], [16], [30], [64], [66]]);
+Block.Size.VALUE = Block.Size.generate(Data.generateValues("bitmap"));
 /**
  * @typedef {{block:ShipBlock,id:number,x:number,y:number,w:number,
  * h:number}} Block.Selected @see {Block.Size.highlight}
@@ -2718,7 +2749,7 @@ Edit.oldUIRotate = function (ids) {
         "Smooth Corner 1x2",
         "Smooth Corner 1x4",
         "Glass Wedge"
-      ].indexOf(o.internalName) < 0 || rot === 3) {
+      ].indexOf(o.internalName) >= 0 && rot === 3) {
       o.rotation[1] = !o.rotation[1];
     }
     //@ts-expect-error
@@ -2767,8 +2798,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @readonly @type {36} significantVersion: 36 (integer) */// @ts-ignore
-Ship.VERSION = 36;
+/** @readonly @type {37} significantVersion: 37 (integer) */// @ts-ignore
+Ship.VERSION = 37;
 Ship.propertyNames = new RegExp("^(?:nodeList|nodeConnections|customI" +
   "nputs|gridSize)$");
 // Ship.PROPERTIES = {
@@ -3259,7 +3290,8 @@ Ship.fromObject = function fromObject(object) {
     }(),
     blocks = o.blocks instanceof Array ?
       Block.arrayFromObjects(o.blocks, logics) :
-      Block.generateArray(-69, logics);
+      Block.generateArray(("" + o.blocks).toUpperCase() ===
+        "PAZIK" ? -1 : -69, logics);
   delete logics.nc;
   Logic.reassemble(blocks, logics);
   if (o.add) {
@@ -3502,28 +3534,6 @@ Ship.dateTime = function (t, f) {
   t += 1 + +(n % 1461 === 789);
   return (t > 9 ? "" : "0") + t + s;
 };
-// /**
-//  * @template {string} T @param {Ship} ship @param {T} property
-//  * @returns {T extends keyof KnownShipProperties?KnownShipProperties[T]:null} */
-// Ship.getProperty = function (ship, property) {
-//   var shipProp = ship.prop || {};
-//   switch (property) {
-//     case "nodeList": return shipProp.nodeList || null;
-//     case "nodeConnections": return shipProp.nodeConnections || null;
-//     case "customInputs": return shipProp.customInputs || null;
-//     case "gridSize": return shipProp.gridSize || null;
-//   }
-//   return null;
-// }
-//   /** @typedef {KnownShipProperties} Knowns */
-//   /** @template {keyof KnownShipProperties} B */
-//   var kownProperty =
-//     /** @type {T extends "gridSize"?Knowns[B]:null} */
-//     (Ship.propertyNames.test(property) &&
-//       ship.prop && ship.prop[property] || null);
-//   return kownProperty;
-// };
-// var hello = Ship.getProperty(new Ship("", [], "", []), "gridSize");
 /** @param {string} name @param {number} type */
 Ship.CustomInput = function CustomInput(name, type) {
   this.name = name;
@@ -3645,7 +3655,7 @@ Object.freeze(Ship.Grid);
 
 // generating Droneboi
 /** global ship that's being rendered and edited */
-var ship = Ship.fromObject({name: "Starter Droneboi", ci: []});
+var ship = Ship.fromObject({name: "Pazik_Mk1_Emil_", blocks: "Pazik"});
 // var block = new Block("Block", [0, 0, 0], [0, !0, 0]),
 //   ship = new Ship("None", [0, 9], "never", [block]);
 
@@ -3692,7 +3702,7 @@ B64Key.b64ToU8arr = function base64ToUint8array(base64) {
   }
   return new Uint8Array(uint8array);
 };
-/** @function uint8arrayToBase64 */
+/** @function uint8arrayToBase64 @param {Uint8Array} uint8array */
 B64Key.u8arrToB64 = function uint8arrayToBase64(uint8array) {
   var string = "", buffer = 0, i = 0, p = 0, c;
   function codeChar() {
