@@ -2,7 +2,7 @@
 /// <reference path="./defs.d.ts" />
 "use strict";
 /** @readonly */
-var version_code_js = "v.0.2.21";
+var version_code_js = "v.0.2.22";
 /** @TODO check @see {Ship.VERSION} */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
@@ -3596,7 +3596,7 @@ Ship.fromObject = function fromObject(object) {
     blocks = o.blocks instanceof Array ?
       Block.arrayFromObjects(o.blocks, logics) :
       Block.generateArray(("" + o.blocks).toUpperCase() ===
-        "PAZIK" ? -1 : -69, logics);
+        "PAZIK" ? -7 : -69, logics);
   delete logics.nc;
   Logic.reassemble(blocks, logics);
   if (o.add) {
