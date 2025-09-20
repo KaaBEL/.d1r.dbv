@@ -3,7 +3,7 @@
 "use strict";
 /** @readonly */
 /** @TODO check @see {Actions.API_VERSION} */
-var version__k_api_js = "v.0.2.19";
+var version__k_api_js = "v.0.2.21";
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -204,10 +204,8 @@ function Actions(event, index, state, previous, touch) {
   this.startX = previous ? previous.startX : this.x;
   /** @type {number} */
   this.startY = previous ? previous.startY : this.y;
-  this.moveX = source instanceof Touch ? (previous ?
-    this.x - previous.x : 0) : this.movementX * pR;
-  this.moveY = source instanceof Touch ? (previous ?
-    this.y - previous.y : 0) : this.movementY * pR;
+  this.moveX = previous ? this.x - previous.x : 0;
+  this.moveY = previous ? this.y - previous.y : 0;
   /** short double for example, check naming in scratch projects */
   this.state = Actions.updateState(this, event, state, previous);
   /** @TODO it is possible for extra touches to exist due to missing touchend event */
@@ -215,7 +213,7 @@ function Actions(event, index, state, previous, touch) {
   Object.seal(this);
 }
 /** @readonly *///@ts-expect-error
-Actions.API_VERSION = "0.3.6";
+Actions.API_VERSION = "0.3.7";
 Actions.default = Object.freeze(
   /** @type {{[K in ActionsDefault]:(MouseEvent|ScrollWheel|PointerEvent)[K]}} */
   ({
@@ -335,17 +333,13 @@ Actions.update = function (action, index, state, event, previous, touch) {
   action.movementY = previous ? action.screenY - previousY : 0;
   previousX = previous ? previous.x : NaN;
   previousY = previous ? previous.y : NaN;
-  action.x = (source.pageX - offset.offsetLeft) * pR;
-  action.y = (source.pageY - offset.offsetTop) * pR;
+  action.x = (source.pageX * pR - offset.offsetLeft) * pR;
+  action.y = (source.pageY * pR - offset.offsetTop) * pR;
   action.startX = previous ? previous.startX : action.x;
   action.startY = previous ? previous.startY : action.y;
   // in case of mutable version previous === action, old x, y need variables
-  action.moveX = source instanceof Touch ? (previous ?
-    action.x - previousX :
-    0) : action.movementX * pR;
-  action.moveY = source instanceof Touch ? (previous ?
-    action.y - previousY :
-    0) : action.movementY * pR;
+  action.moveX = previous ? action.x - previousX : 0;
+  action.moveY = previous ? action.y - previousY : 0;
   action.state = Actions.updateState(action, event, state, previous);
   return action;
 };

@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.20";
+var version_editor_js = "v.0.2.21";
 /** 3h_ @TODO check @see {Editor} for setting a setting without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -917,7 +917,6 @@ AwAfQD0ABrV+EXNC+QogPxqXwNo7QAwiS5AO7RleAo7ENP3OeCvf/hCANifM3lx4wB26tEWiAUwP\
 +iyuHsAOPvPy6Sl2XkwAByZxM1oQwA1dDPVA0fEFYDJACuNA6DIAPDQAHA0CoCXmJW5n1YCwDTFm\
 kzBwYjxXYAEZzBqEr0J55ADwAEH0NEAAHoAPL4VAL6CraCv8KS0I9MPsOk3CXEHRHBaDmQzsKwrM\
 vq/gEVfwYUJovIzUABvvfXWW2/9R/oDNyHKYSGSaWkAAAAASUVORK5CYII=";
-// TODO: fix uncompressed mask
 Editor.imgMask.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAApA\
 AQMAAABMaLJyAAAABlBMVEVHcEwAQABvU8tUAAAAAXRSTlMAQObYZgAABINJREFUeNrt3MuK4zAQ\
 heECbwV6FUG2hnp1QbaBvIrA24Kaha+xJZcnttNO9/mhYfhgEvnS8UVOE5mxqnQ/qqqyhMAq3c/F\
@@ -1012,7 +1011,8 @@ imgBackg.src = "./assets/_" + [
   "db",
   "editor",
   "dbve2",
-  "dbve"
+  "dbve",
+  "ms"
 ][Editor.backgroundImage] + "_background.png";
 
 /** @this {any} */
@@ -1387,8 +1387,47 @@ Command.push("Select Block", function (items, collapsed) {
       "Droneboi (classic)",
       "Droneboi (classic)",
       "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
       "MS1",
-      "MS1"
+      "MS1",
+      "MS1",
+      "MS1",
+      "MS1",
+      "MS1",
+      "MS1",
+      "MS1",
+      "Control",
+      "Control",
+      "Fuel",
+      "Fuel",
+      "Engines",
+      "Engines",
+      "Generators",
+      "Generators",
+      "Defense",
+      "Defense",
+      "Weapons",
+      "Weapons",
+      "MS_Misc",
+      "MS_Misc",
+      "Mining",
+      "Mining",
+      "MS_Logic",
+      "MS_Logic",
+      "Decorative",
+      "Decorative",
+      "Decorative",
+      "Decorative"
     ],
     /** @type {{[kye:string]:[HTMLButtonElement,HTMLDivElement]}} */
     groups = {
@@ -1401,7 +1440,16 @@ Command.push("Select Block", function (items, collapsed) {
       "Station parts": collapsed("Station parts"),
       "Droneboi (classic)": collapsed("Droneboi (classic)"),
       "Juhus": collapsed("Juhus"),
-      "MS1": collapsed("MS1")
+      "MS1": collapsed("MS1 old"),
+      "Control": collapsed("Control"),
+      "Fuel": collapsed("Fuel and batteries"),
+      "Engines": collapsed("Engines"),
+      "Generators": collapsed("Generators"),
+      "Defense": collapsed("Defense"),
+      "Weapons": collapsed("Weapons"),
+      "MS_Misc": collapsed("Miscellaneous"),
+      "Mining": collapsed("Mining and production"),
+      "Decorative": collapsed("Decorative structures")
     }, btn = EL("button");
   btn.appendChild(tN("remove block"));
   btn.onclick = blockBind("remove", !1);
@@ -1419,10 +1467,8 @@ Command.push("Select Block", function (items, collapsed) {
     for (var i = 0; i < arguments.length;)
       Array.prototype.push.apply(items, arguments[i++]);
   }
-  pushCollapsed(groups["Core and Basic"], groups.Movement);
-  pushCollapsed(groups.Storage, groups["Drills and Weapons"]);
-  pushCollapsed(groups.Misc, groups.Logic, groups["Station parts"]);
-  pushCollapsed(groups["Droneboi (classic)"], groups.Juhus, groups.MS1);
+  for (s in groups)
+    OP.call(groups, s) && pushCollapsed(groups[s])
   var opt = EL("input");
   opt.type = "checkbox";
   opt.checked = blockBind.changingPosition;
@@ -2219,10 +2265,11 @@ Command.push("Transform tool", function (items, collapsed) {
     var i = 4, input = selectX0, units = +Editor.meterPositions + 1;
     while (input = [selectX0, selectY0, selectX1, selectY1][--i])
       this !== input ?
-        input.value = "" + (xy[i] = +input.value * units || 0) * units :
+        // I swear i've been fixing this sh** already >:O
+        input.value = "" + ((xy[i] = +input.value * units || 0) / units) :
         isNaN(+input.value) ?
           0 :
-          xy[i] = +input.value / units || 0;
+          xy[i] = +input.value * units || 0;
     if (xy[0] !== xy[2] && xy[1] !== xy[3])
       selecting = 0;
     render();
@@ -2844,7 +2891,7 @@ Command.push("Change editor background", function (items, collapsed) {
     render();
   };
   var select = EL("select"), option = EL("option");
-  option.label = option.value = "_dbc_background";
+  option.label = option.value = "_ms_background";
   select.add(option);
   option = EL("option");
   option.label = option.value = "_db_background";
@@ -2857,6 +2904,9 @@ Command.push("Change editor background", function (items, collapsed) {
   select.add(option);
   option = EL("option");
   option.label = option.value = "_dbve_background";
+  select.add(option);
+  option = EL("option");
+  option.label = option.value = "_dbc_background";
   select.add(option);
   option = select.item(Editor.backgroundImage) || option;
   option.selected = !0;
@@ -3738,7 +3788,6 @@ DefaultUI.toolBar = [
 ];
 //** used at #SeeRenderingFolders */
 DefaultUI.offsetsFolders = 0;
-/** @TODO fix teh wierdly working previousFolders nextFolders collisions *///-
 /** previousFolders and nextFolders: are displaying Next and Previous
  * Tool icon buttons to navigate to overflowed folders */
 DefaultUI.previousFolders = false;
@@ -3752,19 +3801,40 @@ DefaultUI.contextmenu = contextmenu;
 DefaultUI.over = over;
 /** @see {DefaultUI.createTile} @see {DefaultUI.createFolder} */
 DefaultUI.defaultFoldersData = [
-  {type: "Core", tiles: [690, 691, 692, 739, 746, 754, 757], range: []},
+  {type: 1281, tiles: [1281, 1290, 1300, 1394]},
+  {type: 1282, tiles: [1282, 1322, 1292], range: [1426, 1441]},
+  {type: 1282, tiles: [1296, 1302, 1297], range: [1441, 1444]},
+  {type: 1283, tiles: [1283, 1287, 1458, 1304, 1288, 1459, 1284]},
+  {type: 1283, tiles: [1286, 1285, 1305, 1460, 1461, 1462, 1341]},
+  {type: 11 + 1280, tiles: [1295, 1490, 1491, 1291, 1492, 1294]},
+  {type: 11 + 1280, tiles: [1303, 1301, 1493, 1494, 1495]},
+  {type: 1528, tiles: [1293, 1522, 1306], range: [1523, 1528]},
+  {type: 1528, tiles: [1307], range: [1528, 1533]},
+  {type: 1528, tiles: [1308], range: [1533, 1538]},
+  {type: 1528, tiles: [1309, 1311, 1538, 1539]},
+  {type: 274 + 1280, tiles: [1299, 1317, 1315, 1336, 1340, 1335]},
+  {type: 274 + 1280, tiles: [], range: [1554, 1560]},
+  {type: 274 + 1280, tiles: [1338, 1344, 1560, 1561]},
+  {type: 1314, tiles: [1314], range: [1586, 1592]},
+  {type: 1314, tiles: [1316, 1334, 1342, 1592, 1593, 1345, 1594]},
+  {type: 356 + 1280, tiles: [], range: [338 + 1280, 358 + 1280]},
+  {type: 381 + 1280, tiles: [], range: [1650, 382 + 1280]},
+  {type: 49 + 1280, tiles: [1323, 1326, 1325, 1682, 1329, 1330]},
+  {type: 49 + 1280, tiles: [1324, 1683, 1327, 1328, 1684, 1685]},
+  {type: 49 + 1280, tiles: [1686, 1687, 1688, 1689, 1331, 1339]},
+  {type: "Core", tiles: [690, 691, 692, 739, 746, 754, 757]},
   {type: "Wedge", tiles: [703], range: [692, 703]},
   {type: "Small Hydrogen Thruster", tiles: [], range: [738, 747]},
   {type: "Small Hydrogen Tank", tiles: [], range: [754, 763]},
   {type: "Cannon", tiles: [], range: [771, 777]},
-  {type: "Small Hydraulic Drill", tiles: [770], range: []},
+  {type: "Small Hydraulic Drill", tiles: [770]},
   {type: "Separator", tiles: [796, -1], range: [786, 790]},
   {type: "Separator", tiles: [791, 790], range: [792, 796]},
   {type: "AND Gate", tiles: [], range: [802, 813]},
   {type: "AND Gate", tiles: [828], range: [813, 817]},
   {type: "AND Gate", tiles: [-1, 817, -1], range: [818, 828]},
   {type: "__placeholder853__", tiles: [], range: [834, 858]},
-  {type: "Afterburner", tiles: [1035, 1037, 1043, 1060], range: []}
+  {type: "Afterburner", tiles: [1035, 1037, 1043, 1060]}
 ];
 /** @type {ToolExec} */
 DefaultUI.defaultPress = function (_x, _y) {};
@@ -3858,7 +3928,8 @@ DefaultUI.handleGUIArea = function (x, y, reference) {
       reference.folder = folder;
       return true;
     }
-    if (DefaultUI.previousFolders && x < 333)
+    // v.0.2.21 293 = end of first tile selection for moving to previous
+    if (DefaultUI.previousFolders && x < 294)
       DefaultUI.offsetsFolders -= 57;
     else if (DefaultUI.nextFolders && x > canvas.width - 61)
       DefaultUI.offsetsFolders += 57;
@@ -3969,10 +4040,10 @@ DefaultUI.getDefaultFolders = function (logicOnly) {
   DefaultUI.selectedTile = -1;
   for (var i = DefaultUI.defaultFoldersData.length, yk = []; i-- > 0;) {
     var the = DefaultUI.defaultFoldersData[i], tiles = [];
-    for (var j = 0; j < the.tiles.length; j++)
+    for (var j = 0, range = the.range || []; j < the.tiles.length; j++)
       (!logicOnly || Logic.VALUE[the.tiles[j]] || the.tiles[j] === -1) &&
         tiles.push(the.tiles[j] > -1 ? the.tiles[j] : null);
-    for (j = the.range[0]; the.range.length && j < the.range[1]; j++)
+    for (j = range[0]; range.length && j < range[1]; j++)
       (!logicOnly || Logic.VALUE[j]) && tiles.push(j);
     yk[i] = DefaultUI.createFolder(the.type || "unknown", tiles);
   }
@@ -4677,6 +4748,13 @@ var edit_logicmove = function (x, y, e) {
 };
 
 function rend_backgPattern() {
+  if (Editor.backgroundImage === 0) {
+    canvas.style.backgroundImage = "url(./assets/_ms_background.jpg)";
+    canvas.style.backgroundSize = "cover";
+    canvas.style.backgroundPosition = "center center";
+    Editor.backgroundStage && rend_backgHangar();
+    return;
+  }
   try {
     var width = imgBackg.naturalWidth || imgBackg.offsetWidth;
     ctx.fillStyle = ctx.createPattern(imgBackg, "repeat") || "";
@@ -4700,6 +4778,7 @@ function rend_backgColor() {
   if (Editor.backgroundStage)
     rend_backgHangar();
   canvas.style.backgroundColor = Editor.backgroundColor;
+  canvas.style.backgroundImage = "";
 }
 // #rendlog
 var rend_backgHangar = F, rend_request = "", init_started = false;
@@ -5113,7 +5192,12 @@ function expensiveRenderer() {
     /** @see {Block} @see {Block.Size.VALUE} */
     var size = Block.Size.VALUE[id], logic = Logic.VALUE[id] || [];
     if (!size) {
-      rend_logs > 0 && rend_logs-- && console.error(objs[i], AT);
+      // TODO: idea to add less logging for unknowns and
+      // additional rend_logs for errors
+      rend_logs > 0 && rend_logs-- &&
+        (objs[i].internalName === "__unknown__" ?
+          console.debug("lack of size definition id" + id + " i" + i) :
+          console.error(objs[i], AT));
       continue;
     } else if (size.w <= 0 || size.h <= 0)
       continue;
