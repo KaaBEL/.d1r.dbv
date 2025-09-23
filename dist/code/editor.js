@@ -2,8 +2,9 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.21";
-/** 3h_ @TODO check @see {Editor} for setting a setting without saveSettings */
+var version_editor_js = "v.0.2.23";
+/** 3h_ @TODO check @see {Editor} for assignment without saveSettings */
+// TODO v.0.2.8 has defected commit message, also 0.2.13 - 0.2.15 namings
 /** @param {string} data */
 var tN = function (data) {
   return document.createTextNode(data);
@@ -70,7 +71,7 @@ function Editor() {
 Editor.background = typeof DOMMatrix == "function";
 /** mumst be in #xxxxxx hex color format */
 Editor.backgroundColor = "#111111";
-/** (default) 0: dbc, 1: db, ... 63: unassigned */
+/** (default) 0: ms, 1: db, ..., 5: dbc, ... 63: unassigned */
 Editor.backgroundImage = 0;
 //** mumst be in #xxxxxx hex color format */
 Editor.highlightRed = "#dd3333";
@@ -79,8 +80,8 @@ Editor.highlightYellow = "#db9725";
 Editor.highlightWidth = 2;
 Editor.logicPreviewAlpha = .5;
 Editor.buildReplace = !1;
-/** (default) 1: Lunar, 0: none, ... 31: unassigned */
-Editor.backgroundStage = 1;
+/** (default) 0: Lunar, 0: none, ... 31: unassigned */
+Editor.backgroundStage = 0;
 /** (default) false: PC, true: touchscreen device detected */
 Editor.fullscreenInitialized = false;
 /** (default) false: enabled, true: disabled */
@@ -1006,13 +1007,14 @@ var helpCanvas = document.createElement("canvas"),
 
 canvas.style.backgroundColor = document.body.style.backgroundColor =
   Editor.background ? "#132122" : Editor.backgroundColor;
+imgBackg.loading = "lazy";
 imgBackg.src = "./assets/_" + [
-  "dbc",
+  "ms",
   "db",
   "editor",
   "dbve2",
   "dbve",
-  "ms"
+  "dbc"
 ][Editor.backgroundImage] + "_background.png";
 
 /** @this {any} */
@@ -1198,7 +1200,7 @@ function dragDrop(e) {
   el.style.display = "none";
   bd && bd.appendChild(el);
   file.open.length = 0;
-  btn.appendChild(tN("Upload DBV+JSON from file/files"));
+  btn.appendChild(tN("Upload DBV+JSON+MSSSS from file(s)"));
   btn.onclick = function () {
     if (delay < Date.now()) {
       file.input.click();
@@ -2010,64 +2012,6 @@ Inputs not yet with tags are listed with option field to select logic output\
  of the same type.");
 
 Command.push("Import/Export DBV", function (items, collapsed) {
-  /** @param {Uint8Array|ArrayBuffer} buffer @param {number} [i=0] */
-  function utf8ToString(buffer, i) {
-    var bytes = buffer instanceof Uint8Array ?
-      buffer :
-      new Uint8Array(buffer);
-    // lb = lower boundary, ub = upper boundary, cp = code point, more
-    var n = 0, lb = 128, ub = 191, cp = 0, more = 0, s = "";
-    for (i = i || 0; i < bytes.length; s += String.fromCharCode(cp)) {
-      if ((cp = bytes[i++]) < 128)
-        continue;
-      if (cp < 194) {
-        cp = 0xFFFD;
-        continue;
-      }
-      if (cp < 224) {
-        cp = cp - 192 << 6;
-        more = 1;
-      } else if (cp < 240) {
-        cp === 224 ?
-          lb = 160 :
-          cp === 239 && (ub = 191);
-        cp = cp - 224 << 12;
-        more = 2;
-      } else if (cp < 245) {
-        cp === 240 ?
-          lb = 144 :
-          cp === 244 && (ub = 143);
-        cp = cp - 240 << 18;
-        more = 3;
-      } else if (cp < 256) {
-        cp = 0xFFFD;
-        continue;
-      } else {
-        debugger;
-        console.error("debugger HuHh!?");
-      } 
-      while (more) {
-        if (i >= bytes.length) {
-          cp = 0xFFFD;
-          continue;
-        }
-        n = bytes[i++];
-        n < lb || n > ub ? more = 0 : 0;
-        lb = 128;
-        ub = 191;
-        if (!more) {
-          i--;
-          more = 0;
-          cp = 0xFFFD;
-          continue;
-        }
-        cp = cp + (n - 128 << --more * 6);
-      }
-      if (0xffff0000 & cp)
-        throw new Error("[v.0.2.9]Code point out of decodable range!");
-    }
-    return s;
-  }
   var dbv = EL("input"), elBtn = EL("button"), error = EL();
   var gridCheck = EL("input"), grid = EL("select");
   gridCheck.type = "checkbox";
@@ -2122,15 +2066,23 @@ Command.push("Import/Export DBV", function (items, collapsed) {
   elBtn.appendChild(tN("Import"));
   error.style.color = "red";
   onFile.temporaray = function (buffer) {
+    function checkMSSSS() {
+      var temporaray = s && Ship.fromMSSSS(s) || Ship.fromMSSSS(buffer);
+      temporaray ? ship = temporaray : 0;
+      render();
+      return !!temporaray;
+    }
     if (buffer[0] !== 123 || buffer[buffer.length - 1] !== 125)
-      return false;
+      return checkMSSSS();
     var s = "";
     try {
-      s = utf8ToString(buffer);
+      s = Ship.utf8ToString(buffer);
       var obj = JSON.parse(s);
       Ship.fromObject(obj);
       !(obj.significantVersion > 15) && ship.fixPositionAdjustment(!0);
     } catch (err) {
+      if (checkMSSSS())
+        return !0;
       error.innerText = "" + err;
       console.error(err);
       console.log(s);
@@ -2145,16 +2097,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
   (elBtn = EL("button")).onclick = function () {
     error.innerText = "";
     try {
-      var logics = ship.prop && ship.prop.nodeList || [];
-      if (ship.prop && ship.prop.nodeList) {
-        ship.prop.nodeConnections = logics.map(function (e, i) {
-          var node = e || {pairs: []}, n = node.pairs;
-          return !!(typeof n == "number" && logics[n]) && [i, n] || [];
-        })
-        ship.prop.nodeList = UDF;
-      }
       var s = JSON.stringify(ship);
-      ship.prop && (ship.prop.nodeList = logics);
       download.href = URL.createObjectURL(
         new Blob([s], {type: "application/json"})
       );
@@ -2563,7 +2506,7 @@ Command.push("Vehicle stats", function (items, collapsed) {
       var n = +(prop.customParameter || [])[0];
       return useVal = val instanceof Array ?
         val[0] / val[1] :
-        // TODO: what about this, will it do? I should test it...
+        // #riptesting what about this, will it do? I should test it...
         isNaN(n) ? val : n / 1E6 * val;
     }
     sums = JSON.parse(stringify);
@@ -3801,7 +3744,7 @@ DefaultUI.contextmenu = contextmenu;
 DefaultUI.over = over;
 /** @see {DefaultUI.createTile} @see {DefaultUI.createFolder} */
 DefaultUI.defaultFoldersData = [
-  {type: 1281, tiles: [1281, 1290, 1300, 1394]},
+  {type: 1281, tiles: [1281, 1289, 1300, 1394, -1, 1290]},
   {type: 1282, tiles: [1282, 1322, 1292], range: [1426, 1441]},
   {type: 1282, tiles: [1296, 1302, 1297], range: [1441, 1444]},
   {type: 1283, tiles: [1283, 1287, 1458, 1304, 1288, 1459, 1284]},
@@ -4743,7 +4686,6 @@ function enableLogicEditing() {
 /** @param {number} x @param {number} y @param {MouseEvent} e */
 var edit_logicmove = function (x, y, e) {
   //?? #compactDownToExecTiel
-  // TODO: for implementing tile drag, handleGUIArea needs upgrade
   return e.type === "mousedown" ? DefaultUI.handleGUIArea(x, y) : false;
 };
 
@@ -4966,8 +4908,7 @@ var old_UI = DefaultUI.press = press = function (x, y) {
     return render();
   }
   if (rand !== "remove") {
-    // BLOK for real!!!
-    // TODO: now I could use some unit test for logic,
+    // #riptesting now I could use some unit test for logic,
     // but... how the hack am I supposed to do that
     ship.placeBlock(0, x * 2, y * 2, Block.ID[rand]);
   }
@@ -5192,21 +5133,15 @@ function expensiveRenderer() {
     /** @see {Block} @see {Block.Size.VALUE} */
     var size = Block.Size.VALUE[id], logic = Logic.VALUE[id] || [];
     if (!size) {
-      // TODO: idea to add less logging for unknowns and
-      // additional rend_logs for errors
-      rend_logs > 0 && rend_logs-- &&
-        (objs[i].internalName === "__unknown__" ?
+      (objs[i].internalName === "__unknown__" ?
+        rend_logs > 32 && rend_logs-- &&
           console.debug("lack of size definition id" + id + " i" + i) :
-          console.error(objs[i], AT));
+        rend_logs > 0 && rend_logs-- && console.error(objs[i], AT));
       continue;
     } else if (size.w <= 0 || size.h <= 0)
       continue;
     var rot = 10 - objs[i].rotation[2] & 3, dw = 0, dh = 0;
     var ow = (size.w << 5) / size.res, oh = (size.h << 5) / size.res;
-    // if (id > 1279) {
-    //   ow = ow * 32 / 7;
-    //   oh = oh * 32 / 7;
-    // }
     var w = ow + (ow & 16), h = oh + (oh & 16);
     // position to draw block in canvas
     var dx = -pos[1] * sc + vX, dy = pos[2] * sc + vY;
@@ -5405,6 +5340,12 @@ init = function () {
     DefaultUI.setSelectedTile(i << 2 | 1);
   else if ((i = DefaultUI.toolBar.indexOf(classic)) !== 1)
     DefaultUI.setSelectedTile(i << 2 | 0);
+  if (ship.name === "Pazik_Mk1_Emil_") {
+    DefaultUI.tilesRotation[2] = 2;
+    DefaultUI.tilesFlippableRotation[2] = 2;
+    ship.selectRect();
+    Edit.rotate(ship, 2);
+  }
   rend_checkColors();
   init_funMode();
   check_contentScript();

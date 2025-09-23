@@ -2,7 +2,7 @@
 /// <reference path="./defs.d.ts" />
 "use strict";
 /** @readonly */
-var version_code_js = "v.0.2.22";
+var version_code_js = "v.0.2.23";
 /** @TODO check @see {Ship.VERSION} */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
@@ -51,12 +51,12 @@ if (typeof Initial != "function")
  * @typedef {{id:number,weight?:number,strength?:number,cost?:number,
  * energy_use?:UseData,energy_store?:number,fuel_use?:UseData,
  * fuel_store?:number,cargo_use?:UseData,cargo_store?:number,
- * draw?:number[],now?:number,bitmap:PreciseDef|SizeDef}} BlockData
+ * draw?:number[],now?:number,bitmap:ShortDef|SizeDef}} BlockData
  * @typedef {{id:number,weight?:number,strength?:number,cost?:number,
  * energy_use?:number|number[],energy_store?:number,
  * fuel_use?:number|number[],fuel_store?:number,cargo_use?:number|number[],
  * cargo_store?:number,draw?:number[],now?:number,
- * bitmap:(number|string)[]}} BlockDataSimple
+ * bitmap:number|(number|string)[]}} BlockDataSimple
  */
 function Data() {
   throw new TypeError("Illegal constructor");
@@ -134,6 +134,7 @@ Data.groups = [
   "96,164,96,2,1]"
 ];
 // search / ?([^]{20,74}[,{;]) ?/ replace "  $1\n "
+// search /"\d+ \d+"/ replace <number with texture index>
 Data.blocks =
   /** @type {const} */
   ({block: {id: 0, draw: [14, 14, 14, 14, 14, 14]},
@@ -150,269 +151,251 @@ Data.blocks =
   cockpit_cruiser: {id: 11, draw: [26, 27, 28, 26, 29, 30]},
   __unknown__: {id: 511},
   Core: {id: 690, weight: 2, strength: 10, cost: -1, cargo_store: 5,
-  bitmap: [128]}, Block: {id: 691, weight: 1, strength: 10, cost: 100,
-  bitmap: [52]}, Wedge: {id: 692, weight: 0.5, strength: 5, cost: 100,
-  bitmap: [53]}, "Wedge 1x2": {id: 693, weight: 1, strength: 10, cost: 100,
+  bitmap: 128}, Block: {id: 691, weight: 1, strength: 10, cost: 100,
+  bitmap: 52}, Wedge: {id: 692, weight: 0.5, strength: 5, cost: 100,
+  bitmap: 53}, "Wedge 1x2": {id: 693, weight: 1, strength: 10, cost: 100,
   bitmap: [54, 1, 2]}, "Wedge 1x4": {id: 694, weight: 2, strength: 20,
   cost: 100, bitmap: [55, 1, 4]}, Pyramid: {id: 695, weight: .5, strength: 5,
-  cost: 100, bitmap: [56]}, Slab: {id: 696, weight: .5, strength: 5,
+  cost: 100, bitmap: 56}, Slab: {id: 696, weight: .5, strength: 5,
   cost: 100, bitmap: [57, 1, .5]}, "Smooth Corner": {id: 697, weight: .5,
-  strength: 10, cost: 100, bitmap: [60]}, "Smooth Corner 1x2": {id: 698,
+  strength: 10, cost: 100, bitmap: 60}, "Smooth Corner 1x2": {id: 698,
   weight: 1, strength: 10, cost: 100, bitmap: [61, 1, 2]},
   "Smooth Corner 1x4": {id: 699, weight: 2, strength: 20, cost: 100,
   bitmap: [71, 1, 4]}, Struct: {id: 700, weight: .5, strength: 5, cost: 100,
-  bitmap: [35]}, "Glass Block": {id: 701, weight: 1, strength: 1, cost: 100,
-  bitmap: [150]}, "Glass Wedge": {id: 702, weight: .5, strength: .5,
-  cost: 100, bitmap: [151]}, "Slab Wedge": {id: 703, weight: .5, strength: 5,
+  bitmap: 35}, "Glass Block": {id: 701, weight: 1, strength: 1, cost: 100,
+  bitmap: 150}, "Glass Wedge": {id: 702, weight: .5, strength: .5,
+  cost: 100, bitmap: 151}, "Slab Wedge": {id: 703, weight: .5, strength: 5,
   cost: 100, bitmap: [62, 1, .5]}, "Tiny Hydrogen Thruster": {id: 738,
   weight: .5, strength: 2.5, cost: 100, fuel_use: 175, bitmap: [8, .5, .5]},
   "Small Hydrogen Thruster": {id: 739, weight: 2, strength: 10, cost: 100,
-  fuel_use: 150, bitmap: [4]}, "Medium Hydrogen Thruster": {id: 740,
+  fuel_use: 150, bitmap: 4}, "Medium Hydrogen Thruster": {id: 740,
   weight: 8, strength: 40, cost: 400, fuel_use: 125, bitmap: [28, 2, 2]},
   "Large Hydrogen Thruster": {id: 741, weight: 24, strength: 120, cost: 800,
   fuel_use: 100, bitmap: [13, 3, 4]}, "Tiny Ion Thruster": {id: 742,
   weight: .75, strength: 2.5, cost: 100, energy_use: 275, bitmap: [9, .5,
   .5]}, "Small Ion Thruster": {id: 743, weight: 3, strength: 10, cost: 100,
-  energy_use: 250, bitmap: [0]}, "Medium Ion Thruster": {id: 744, weight: 6,
+  energy_use: 250, bitmap: 0}, "Medium Ion Thruster": {id: 744, weight: 6,
   strength: 20, cost: 400, energy_use: 225, bitmap: [1, 1, 2]},
   "Large Ion Thruster": {id: 745, weight: 18, strength: 60, cost: 800,
   energy_use: 200, bitmap: [2, 2, 3]}, "Reaction Wheel": {id: 746, weight: 2,
-  strength: 10, cost: 100, energy_use: 100, bitmap: [34]},
+  strength: 10, cost: 100, energy_use: 100, bitmap: 34},
   "Small Hydrogen Tank": {id: 754, weight: 2, strength: 10, cost: 100,
-  fuel_store: 30, bitmap: [89]}, "Medium Hydrogen Tank": {id: 755, weight: 8,
+  fuel_store: 30, bitmap: 89}, "Medium Hydrogen Tank": {id: 755, weight: 8,
   strength: 40, cost: 400, fuel_store: 150, bitmap: [86, 2, 2]},
   "Large Hydrogen Tank": {id: 756, weight: 18, strength: 90, cost: 900,
   fuel_store: 375, bitmap: [92, 3, 3]}, "Small Battery": {id: 757, weight: 3,
-  strength: 10, cost: 100, energy_store: 20, bitmap: [41]},
+  strength: 10, cost: 100, energy_store: 20, bitmap: 41},
   "Medium Battery": {id: 758, weight: 12, strength: 40, cost: 400,
   energy_store: 100, bitmap: [44, 2, 2]}, "Large Battery": {id: 759,
   weight: 18, strength: 60, cost: 600, energy_store: 175, bitmap: [42, 2,
   3]}, "Small Storage Rack": {id: 760, weight: 3, strength: 10, cost: 100,
-  cargo_store: 20, bitmap: [88]}, "Medium Storage Rack": {id: 761,
+  cargo_store: 20, bitmap: 88}, "Medium Storage Rack": {id: 761,
   weight: 12, strength: 40, cost: 400, cargo_store: 100, bitmap: [80, 2, 2]},
   "Large Storage Rack": {id: 762, weight: 27, strength: 90, cost: 900,
   cargo_store: 250, bitmap: [68, 3, 3]}, "Small Hydraulic Drill": {id: 770,
   weight: 3, strength: 10, cost: 100, energy_use: 1, cargo_use: [-1, 1.02],
-  bitmap: [24]}, Cannon: {id: 771, weight: 2, strength: 10, cost: 100,
-  bitmap: [36]}, "Rotary Cannon": {id: 772, weight: 2, strength: 10,
-  cost: 200, bitmap: [37]}, "Plasma Cannon": {id: 773, weight: 2,
-  strength: 10, cost: 200, energy_use: [10, 1.02], bitmap: [38]},
+  bitmap: 24}, Cannon: {id: 771, weight: 2, strength: 10, cost: 100,
+  bitmap: 36}, "Rotary Cannon": {id: 772, weight: 2, strength: 10,
+  cost: 200, bitmap: 37}, "Plasma Cannon": {id: 773, weight: 2,
+  strength: 10, cost: 200, energy_use: [10, 1.02], bitmap: 38},
   "Pulse Laser": {id: 774, weight: 2, strength: 10, cost: 200,
-  energy_use: [2, .52], bitmap: [39]}, "Beam Laser": {id: 775, weight: 2,
-  strength: 10, cost: 200, energy_use: 4, bitmap: [40]},
-  __placeholder776__: {id: 776, bitmap: [167]}, "Weight Block": {id: 786,
-  weight: 10, strength: 10, cost: 100, bitmap: [172]},
+  energy_use: [2, .52], bitmap: 39}, "Beam Laser": {id: 775, weight: 2,
+  strength: 10, cost: 200, energy_use: 4, bitmap: 40},
+  __placeholder776__: {id: 776, bitmap: 167}, "Weight Block": {id: 786,
+  weight: 10, strength: 10, cost: 100, bitmap: 172},
   "Armor Block": {id: 787, weight: 5, strength: 50, cost: 100,
-  bitmap: [173]}, "Solar Block": {id: 788, weight: 1, strength: 2, cost: 100,
-  energy_use: -.25, bitmap: [136]}, "Small Solar Panel": {id: 789, weight: 1,
+  bitmap: 173}, "Solar Block": {id: 788, weight: 1, strength: 2, cost: 100,
+  energy_use: -.25, bitmap: 136}, "Small Solar Panel": {id: 789, weight: 1,
   strength: .5, cost: 100, energy_use: -.75, bitmap: [133, 1, 2]},
-  Hinge: {id: 790, weight: 5, strength: 10, cost: 100, bitmap: [12]},
-  Separator: {id: 791, weight: 1, strength: 1, cost: 100, bitmap: [132]},
-  Piston: {id: 792, weight: 5, strength: 10, cost: 100, bitmap: [31]},
+  Hinge: {id: 790, weight: 5, strength: 10, cost: 100, bitmap: 12},
+  Separator: {id: 791, weight: 1, strength: 1, cost: 100, bitmap: 132},
+  Piston: {id: 792, weight: 5, strength: 10, cost: 100, bitmap: 31},
   "Camera Block": {id: 793, weight: 1, strength: 10, cost: 100,
-  bitmap: [171]}, "Ghost Block": {id: 794, weight: 1, strength: 10,
-  cost: 100, bitmap: [174]}, Dock: {id: 795, weight: 1, strength: 10,
+  bitmap: 171}, "Ghost Block": {id: 794, weight: 1, strength: 10,
+  cost: 100, bitmap: 174}, Dock: {id: 795, weight: 1, strength: 10,
   cost: 100, bitmap: [129, 1, .5]}, "Small Rift Drive": {id: 796, weight: 5,
-  strength: 10, cost: 500, bitmap: [175]}, __placeholder798__: {id: 798,
+  strength: 10, cost: 500, bitmap: 175}, __placeholder798__: {id: 798,
   bitmap: [131, 1, .5]}, __placeholder799__: {id: 799, bitmap: [130, 1, .5]},
   "Constant On Signal": {id: 802, weight: .25, strength: 2.5, cost: 100,
   bitmap: [95, .5, .5]}, "Control Block": {id: 803, weight: 1, strength: 10,
-  cost: 100, bitmap: [99]}, "AND Gate": {id: 804, weight: 1, strength: 10,
-  cost: 100, bitmap: [103]}, "NAND Gate": {id: 805, weight: 1, strength: 10,
-  cost: 100, bitmap: [104]}, "OR Gate": {id: 806, weight: 1, strength: 10,
-  cost: 100, bitmap: [105]}, "NOR Gate": {id: 807, weight: 1, strength: 10,
-  cost: 100, bitmap: [106]}, "XOR Gate": {id: 808, weight: 1, strength: 10,
-  cost: 100, bitmap: [107]}, "XNOR Gate": {id: 809, weight: 1, strength: 10,
-  cost: 100, bitmap: [108]}, "NOT Gate": {id: 810, weight: .5, strength: 5,
+  cost: 100, bitmap: 99}, "AND Gate": {id: 804, weight: 1, strength: 10,
+  cost: 100, bitmap: 103}, "NAND Gate": {id: 805, weight: 1, strength: 10,
+  cost: 100, bitmap: 104}, "OR Gate": {id: 806, weight: 1, strength: 10,
+  cost: 100, bitmap: 105}, "NOR Gate": {id: 807, weight: 1, strength: 10,
+  cost: 100, bitmap: 106}, "XOR Gate": {id: 808, weight: 1, strength: 10,
+  cost: 100, bitmap: 107}, "XNOR Gate": {id: 809, weight: 1, strength: 10,
+  cost: 100, bitmap: 108}, "NOT Gate": {id: 810, weight: .5, strength: 5,
   cost: 100, bitmap: [109, 1, .5]}, LED: {id: 811, weight: .25,
   strength: 2.5, cost: 100, bitmap: [110, .5, .5]}, Delay: {id: 812,
   weight: .5, strength: 5, cost: 100, bitmap: [111, 1, .5]},
   "Constant Number": {id: 813, weight: .25, strength: 2.5, cost: 100,
   bitmap: [112, .5, .5]}, "Speed Sensor": {id: 814, weight: 1, strength: 10,
-  cost: 100, bitmap: [113]}, "Tilt Sensor": {id: 815, weight: 1,
-  strength: 10, cost: 100, bitmap: [114]}, "Distance Sensor": {id: 816,
-  weight: 1, strength: 10, cost: 100, bitmap: [115]}, "GPS Sensor": {id: 817,
-  weight: 1, strength: 10, cost: 100, bitmap: [116]}, "Numerical Inverter": {
+  cost: 100, bitmap: 113}, "Tilt Sensor": {id: 815, weight: 1,
+  strength: 10, cost: 100, bitmap: 114}, "Distance Sensor": {id: 816,
+  weight: 1, strength: 10, cost: 100, bitmap: 115}, "GPS Sensor": {id: 817,
+  weight: 1, strength: 10, cost: 100, bitmap: 116}, "Numerical Inverter": {
   id: 818, weight: .5, strength: 5, cost: 100, bitmap: [117, 1, .5]}, Clamp: {
   id: 819, weight: .5, strength: 5, cost: 100, bitmap: [118, 1, .5]}, Abs: {
   id: 820, weight: .5, strength: 5, cost: 100, bitmap: [119, 1, .5]},
   "Threshold Gate": {id: 821, weight: .5, strength: 5, cost: 100,
   bitmap: [120, 1, .5]}, "Numerical Switchbox": {id: 822, weight: 1,
-  strength: 10, cost: 100, bitmap: [121]}, "Function Block": {id: 823,
-  weight: 1, strength: 10, cost: 100, bitmap: [122]}, "Memory Register": {
-  id: 824, weight: 1, strength: 10, cost: 100, bitmap: [123]}, Gauge: {
+  strength: 10, cost: 100, bitmap: 121}, "Function Block": {id: 823,
+  weight: 1, strength: 10, cost: 100, bitmap: 122}, "Memory Register": {
+  id: 824, weight: 1, strength: 10, cost: 100, bitmap: 123}, Gauge: {
   id: 825, weight: .5, strength: 5, cost: 100, bitmap: [124, .5, 1]},
   Dial: {id: 826, weight: .25, strength: 2.5, cost: 100, bitmap: [125, .5,
   .5]}, "Digital Display": {id: 827, weight: .5, strength: 5, cost: 100,
   bitmap: [126, 1, .5]}, "Push To Toggle": {id: 828, weight: .5,
   strength: 5, cost: 100, bitmap: [127, 1, .5]}, __placeholder834__: {
-  id: 834, bitmap: [176]}, __placeholder835__: {id: 835, bitmap: [177]},
-  __placeholder836__: {id: 836, bitmap: [178]}, __placeholder837__: {id: 837,
-  bitmap: [179]}, __placeholder838__: {id: 838, bitmap: [180]},
-  __placeholder839__: {id: 839, bitmap: [181]}, __placeholder840__: {id: 840,
+  id: 834, bitmap: 176}, __placeholder835__: {id: 835, bitmap: 177},
+  __placeholder836__: {id: 836, bitmap: 178}, __placeholder837__: {id: 837,
+  bitmap: 179}, __placeholder838__: {id: 838, bitmap: 180},
+  __placeholder839__: {id: 839, bitmap: 181}, __placeholder840__: {id: 840,
   bitmap: [134, 2, 2]}, __placeholder841__: {id: 841, bitmap: [164, 1, 2]},
   __placeholder842__: {id: 842, bitmap: [165, 1, 2]}, __placeholder843__: {
   id: 843, bitmap: [166, 1, 2]}, __placeholder844__: {id: 844,
-  bitmap: [183]}, __placeholder845__: {id: 845, bitmap: [184, 2, 2]},
+  bitmap: 183}, __placeholder845__: {id: 845, bitmap: [184, 2, 2]},
   __placeholder846__: {id: 846, bitmap: [186, 2, 2]}, __placeholder847__: {
-  id: 847, bitmap: [160]}, __placeholder848__: {id: 848, bitmap: [161]},
-  __placeholder849__: {id: 849, bitmap: [162]}, __placeholder850__: {id: 850,
+  id: 847, bitmap: 160}, __placeholder848__: {id: 848, bitmap: 161},
+  __placeholder849__: {id: 849, bitmap: 162}, __placeholder850__: {id: 850,
   bitmap: [144, 4, 1]}, __placeholder851__: {id: 851, bitmap: [158, 2, 1]},
   __placeholder852__: {id: 852, bitmap: [148, 2, 3]}, __placeholder853__: {
-  id: 853, bitmap: [163]}, __placeholder854__: {id: 854, bitmap: [140, 4,
-  1]}, __placeholder855__: {id: 855, bitmap: [182]}, __placeholder856__: {
-  id: 856, bitmap: [155]}, __placeholder857__: {id: 857, bitmap: [154]},
+  id: 853, bitmap: 163}, __placeholder854__: {id: 854, bitmap: [140, 4,
+  1]}, __placeholder855__: {id: 855, bitmap: 182}, __placeholder856__: {
+  id: 856, bitmap: 155}, __placeholder857__: {id: 857, bitmap: 154},
   __NULL__: {id: 1023, bitmap: [-1, -1, -1]}, Afterburner: {id: 1035,
-  weight: 2, strength: 10, cost: 70, bitmap: [16]}, "Dynamo Thruster": {
-  id: 1037, weight: 3, strength: 15, cost: 90, bitmap: [30]}, "T1 Rammer": {
-  id: 1043, weight: 1, strength: 20, cost: 70, bitmap: [64]},
+  weight: 2, strength: 10, cost: 70, bitmap: 16}, "Dynamo Thruster": {
+  id: 1037, weight: 3, strength: 15, cost: 90, bitmap: 30}, "T1 Rammer": {
+  id: 1043, weight: 1, strength: 20, cost: 70, bitmap: 64},
   "T1 Nano Healer": {id: 1060, weight: 1, strength: 10, cost: 130,
-  bitmap: [66]}, __placeholder969__: {id: 969, weight: .169, cost: 6969,
-  bitmap: [82]},
-   ControlBlock: {id: 1 + 1280, bitmap: [1071]}, ControlBlock_Probe: {
-  id: 10 + 1280, bitmap: [1072]}, Camera: {id: 20 + 1280, bitmap: [1073]},
-  Beacon: {id: 114 + 1280, bitmap: [1074]},
- 
-  FuelTank0: {id: 2 + 1280, bitmap: [1079]}, FuelTank1: {id: 42 + 1280,
-  bitmap: [1098, 1, 2]}, FuelTank2: {id: 12 + 1280, bitmap: [1080, 2, 2]},
-  FuelTank4: {id: 146 + 1280, bitmap: [1082, 3, 3]}, FuelTank3: {
-  id: 147 + 1280, bitmap: [1085, 4, 4]}, DeutTank0: {id: 148 + 1280,
-  bitmap: [1806]}, DeutTank1: {id: 149 + 1280, bitmap: [1796, 1, 2]},
-  DeutTank2: {id: 150 + 1280, bitmap: [1791, 2, 2]}, DeutTank4: {
-  id: 151 + 1280, bitmap: [1109, 3, 3]}, DeutTank3: {id: 152 + 1280,
-  bitmap: [1121, 4, 4]}, ExotTank0: {id: 153 + 1280, bitmap: [1134]},
-  ExotTank1: {id: 154 + 1280, bitmap: [1099, 1, 2]}, ExotTank2: {
-  id: 155 + 1280, bitmap: [1116, 2, 2]}, ExotTank4: {id: 156 + 1280,
-  bitmap: [514, 3, 3]}, ExotTank3: {id: 157 + 1280, bitmap: [514, 4, 4]},
-  GlowTank0: {id: 158 + 1280, bitmap: [1511]}, GlowTank2: {id: 159 + 1280,
-  bitmap: [1521, 2, 2]}, GlowTank4: {id: 160 + 1280, bitmap: [1494, 3, 3]},
-  Battery0: {id: 16 + 1280, bitmap: [1209]}, Battery1: {id: 22 + 1280,
-  bitmap: [1200, 2, 1]}, Battery2: {id: 17 + 1280, bitmap: [1182, 2, 2]},
-  Battery4: {id: 161 + 1280, bitmap: [1217, 3, 3]}, Battery3: {
-  id: 162 + 1280, bitmap: [1211, 4, 4]}, Pipe: {id: 163 + 1280,
-  bitmap: [1075]},
-   Engine_Fuel1: {id: 3 + 1280, bitmap: [1171]}, Engine_Fuel2: {id: 7 + 1280,
-  bitmap: ["85 1673"]}, Engine_Fuel4: {id: 178 + 1280, bitmap: ["5 1658", 2,
-  2]}, Engine_Fuel3: {id: 24 + 1280, bitmap: ["5 1683", 1, 2]},
-  Engine_Hybrid1: {id: 8 + 1280, bitmap: ["97 1970"]}, Engine_Exot1: {
-  id: 179 + 1280, bitmap: ["20 745", 1, 2]}, Engine_Power1: {id: 4 + 1280,
-  bitmap: ["97 1670"]}, Engine_Power2: {id: 6 + 1280, bitmap: ["111 1670"]},
-  Engine_Power3: {id: 5 + 1280, bitmap: ["71 1671"]}, Engine_Power4: {
-  id: 25 + 1280, bitmap: ["32 1645", 1, 3]}, Engine_Big1: {id: 180 + 1280,
-  bitmap: ["45 1645", 2, 5]}, Engine_Big2: {id: 181 + 1280,
-  bitmap: ["5 1709", 3, 4]}, Engine_Big3: {id: 182 + 1280, bitmap: ["5 1890",
-  4, 5]}, Engine_Solid1: {id: 61 + 1280, bitmap: ["5 1865", 1, 2]},
- 
-  Reactor0: {id: 15 + 1280, bitmap: ["32 1697"], editor: "SolarPanel"},
-  SolarPanel1: {id: 210 + 1280, bitmap: ["18 1682", 2, 1],
-  editor: "SolarPanelMed"}, SolarPanel2: {id: 211 + 1280, bitmap: ["71 1681",
-  4, 1], editor: "SolarPanelBig"}, Reactor1: {id: 11 + 1280,
-  bitmap: ["99 1995"]}, Reactor2: {id: 212 + 1280, bitmap: ["45 2151", 2,
-  1]}, Reactor3: {id: 14 + 1280, bitmap: ["98 1957", 2, 1]}, Reactor4: {
-  id: 23 + 1280, bitmap: ["18 1864", 2, 2]}, Reactor5: {id: 21 + 1280,
-  bitmap: ["20 745", 3, 3]}, Reactor8: {id: 213 + 1280, bitmap: ["59 1959",
-  3, 4]}, Reactor6: {id: 214 + 1280, bitmap: ["70 1694", 4, 4]}, Reactor7: {
-  id: 215 + 1280, bitmap: ["58 1891", 5, 5]},
- 
-  Armor_Basic: {id: 13 + 1280, bitmap: ["71 1839"]}, Armor_BasicBig: {
-  id: 242 + 1280, bitmap: ["45 1864", 2, 2]}, Armor_Laser1: {id: 26 + 1280,
-  bitmap: ["57 1748"]}, Armor_LaserWedge0: {id: 243 + 1280,
-  bitmap: ["7 1761"]}, Armor_LaserWedge1: {id: 244 + 1280, bitmap: ["7 1773",
-  1, 2]}, Armor_LaserWedge2: {id: 245 + 1280, bitmap: ["19 1759", 1, 3]},
-  Armor_LaserWedge3: {id: 246 + 1280, bitmap: ["19 1799", 1, 4]},
-  Armor_LaserWedge4: {id: 247 + 1280, bitmap: ["7 1799", 1, 5]},
-  Armor_Heavy: {id: 27 + 1280, bitmap: ["20 1852"]}, Armor_HeavyWedge0: {
-  id: 248 + 1280, bitmap: ["32 1851"]}, Armor_HeavyWedge1: {id: 249 + 1280,
-  bitmap: ["59 1838", 1, 2]}, Armor_HeavyWedge2: {id: 250 + 1280,
-  bitmap: ["58 1798", 1, 3]}, Armor_HeavyWedge3: {id: 251 + 1280,
-  bitmap: ["32 1798", 1, 4]}, Armor_HeavyWedge4: {id: 252 + 1280,
-  bitmap: ["45 1797", 1, 5]}, Armor_Laser2: {id: 28 + 1280,
-  bitmap: ["84 1839"]}, Armor_Laser2Wedge0: {id: 253 + 1280,
-  bitmap: ["72 1825"]}, Armor_Laser2Wedge1: {id: 254 + 1280,
-  bitmap: ["71 1800", 1, 2]}, Armor_Laser2Wedge2: {id: 255 + 1280,
-  bitmap: ["85 1799", 1, 3]}, Armor_Laser2Wedge3: {id: 256 + 1280,
-  bitmap: ["98 1799", 1, 4]}, Armor_Laser2Wedge4: {id: 257 + 1280,
-  bitmap: ["111 1801", 1, 5]}, Armor_Regen: {id: 29 + 1280,
-  bitmap: ["111 1997"]}, Shield1: {id: 31 + 1280, bitmap: ["111 1877"]},
-  Shield2: {id: 258 + 1280, bitmap: ["111 1864"]}, Shield3: {id: 259 + 1280,
-  bitmap: ["71 1852", 3, 3]},
- 
-  Weapon_bomb1: {id: 19 + 1280, bitmap: ["110 2008"]}, Weapon_bomb2: {
-  id: 37 + 1280, bitmap: ["19 1643"]}, Weapon_Laser1: {id: 35 + 1280,
-  bitmap: ["111 1969"]}, Weapon_Laser2: {id: 56 + 1280, bitmap: ["7 1970", 1,
-  2]}, Weapon_Laser3: {id: 60 + 1280, bitmap: ["19 1969"]},
-  Weapon_Machinegun1: {id: 55 + 1280, bitmap: ["96 1982"]},
-  Weapon_Machinegun2: {id: 274 + 1280, bitmap: ["32 1969", 1, 2]},
-  Weapon_Cannon1: {id: 275 + 1280, bitmap: ["45 1969", 1, 3]},
-  Weapon_Cannon2: {id: 276 + 1280, bitmap: ["6 1994", 2, 6]},
-  Weapon_PlasmaCannon1: {id: 277 + 1280, bitmap: ["99 2008", 1, 2]},
-  Weapon_PlasmaCannon2: {id: 278 + 1280, bitmap: ["32 1994", 1, 4]},
-  Weapon_NeutCannon1: {id: 279 + 1280, bitmap: ["32 2047", 1, 4]},
-  Weapon_DMG1: {id: 58 + 1280, bitmap: ["111 1982"]}, Weapon_Rocket1: {
-  id: 64 + 1280, bitmap: ["32 2126", 1, 3]}, Weapon_Rocket2: {id: 280 + 1280,
-  bitmap: ["7 2072", 2, 7]}, Weapon_Railgun1: {id: 281 + 1280,
-  bitmap: ["111 2085", 1, 7]},
- 
-  Utility_Decoupler: {id: 34 + 1280, bitmap: ["111 2021"]}, Utility_Hinge: {
-  id: 306 + 1280, bitmap: ["45 2137"]}, Utility_Piston: {id: 307 + 1280,
-  bitmap: ["97 2088", 1, 2]}, Utility_Rotor: {id: 308 + 1280,
-  bitmap: ["57 2137"]}, Utility_Pump: {id: 309 + 1280, bitmap: ["32 2216"]},
-  Utility_SolidPump: {id: 310 + 1280, bitmap: ["45 2216"]}, Utility_VOID: {
-  id: 311 + 1280, bitmap: ["32 2202"]}, /*Utility_PipeRotor: {id:  + 1280},
-  Utility_PipePiston: {id:  + 1280},*/ Utility_Docking1: {id: 36 + 1280,
-  bitmap: ["58 2217"]}, Utility_Docking2: {id: 54 + 1280,
-  bitmap: ["97 2280"]}, Utility_GPMP: {id: 62 + 1280, bitmap: ["32 2099"]},
-  Utility_Decelerator: {id: 312 + 1280, bitmap: ["111 2269"]},
-  Utility_MobileSpawn: {id: 313 + 1280, bitmap: ["111 2280"]},
-  Utility_Wheel1: {id: 65 + 1280, bitmap: ["32 2113"]}, Utility_Wheel2: {
-  id: 314 + 1280, bitmap: ["45 2113", 2, 2]},
- 
-  Drill1: {id: 338 + 1280, bitmap: ["111 2192", 1, 2]}, Drill2: {
-  id: 339 + 1280, bitmap: ["45 2164", 2, 4]}, Drill3: {id: 340 + 1280,
-  bitmap: ["71 2111", 3, 8]}, Excavator1: {id: 341 + 1280, bitmap: ["7 2292",
-  3, 2]}, Excavator2: {id: 342 + 1280, bitmap: ["58 2500", 6, 4]},
-  ExotCollector1: {id: 343 + 1280, bitmap: ["5 2227", 5, 5]}, Cargo0: {
-  id: 344 + 1280, bitmap: ["99 2269"]}, Cargo1: {id: 345 + 1280,
-  bitmap: ["72 2269", 2, 2]}, Cargo2: {id: 346 + 1280, bitmap: ["71 2216", 4,
-  4]}, Converter_Electrolyzer1: {id: 347 + 1280, bitmap: ["59 2477", 1, 2]},
-  Converter_Electrolyzer2: {id: 348 + 1280, bitmap: ["32 2476", 2, 4]},
-  Converter_Electrolyzer3: {id: 349 + 1280, bitmap: ["70 2398", 4, 8]},
-  Converter_Deut1: {id: 350 + 1280, bitmap: ["57 2450", 1, 2]},
-  Converter_Deut2: {id: 351 + 1280, bitmap: ["5 2477", 2, 4]},
-  Converter_Deut3: {id: 352 + 1280, bitmap: ["7 2374", 4, 8]},
-  Converter_Exot1: {id: 353 + 1280, bitmap: ["97 2038", 2, 4]},
-  Converter_Exot2: {id: 354 + 1280, bitmap: ["45 2008", 4, 8]},
-  Converter_Smelter1: {id: 355 + 1280, bitmap: ["45 2296", 2, 2]},
-  Converter_Smelter2: {id: 356 + 1280, bitmap: ["7 2323", 4, 4]},
-  Converter_Smelter3: {id: 357 + 1280, bitmap: ["71 2295", 4, 8]},
- 
-  Logic_LaserSensor: {id: 370 + 1280, bitmap: ["58 2320"]},
-  Logic_VelocitySensor: {id: 371 + 1280, bitmap: ["58 2332"]},
-  Logic_AngVelocitySensor: {id: 372 + 1280, bitmap: ["59 2346"]},
-  Logic_ResourceSensor: {id: 373 + 1280, bitmap: ["58 2358"]},
-  Logic_Button: {id: 374 + 1280, bitmap: ["58 2373"]}, Logic_Screen: {
-  id: 375 + 1280, bitmap: ["58 2385"]}, Logic_Timer: {id: 376 + 1280,
-  bitmap: ["58 2398"]}, Logic_Switch: {id: 377 + 1280, bitmap: ["58 2410"]},
-  Logic_Randomizer: {id: 378 + 1280, bitmap: ["58 2424"]}, Logic_AndGate: {
-  id: 379 + 1280, bitmap: ["71 1552"]}, Logic_OrGate: {id: 380 + 1280,
-  bitmap: ["84 1552"]}, Logic_XorGate: {id: 381 + 1280, bitmap: ["97 1552"]},
- 
-  Decorative_Nose0: {id: 43 + 1280, bitmap: [1803]}, Decorative_Nose1: {
-  id: 46 + 1280, bitmap: [1807, 2, 1]}, Decorative_Nose2: {id: 45 + 1280,
-  bitmap: [1748, 2, 2]}, Decorative_BackgroundBlock1: {id: 402 + 1280,
-  bitmap: [1687]}, Decorative_Block1: {id: 49 + 1280, bitmap: [1804]},
-  Decorative_Block2: {id: 50 + 1280, bitmap: [1771, 1, 2]},
-  Decorative_Wedge0: {id: 44 + 1280, bitmap: [1802]}, Decorative_Wedge3: {
-  id: 403 + 1280, bitmap: [1767]}, Decorative_Wedge1: {id: 47 + 1280,
-  bitmap: [1760, 1, 2]}, Decorative_Wedge2: {id: 48 + 1280, bitmap: [1786, 1,
-  2]},  Decorative_Wedge4: {id: 404 + 1280, bitmap: [1769, 1, 3]},
+  bitmap: 66}, __placeholder969__: {id: 969, weight: .169, cost: 6969,
+  bitmap: 82}, ControlBlock: {id: 1 + 1280, bitmap: 1071}, Gyro1: {
+  // Camera and Beacon textures are swapped this will fix itself once
+  // textures are updated in editor.js, fixed in texture_overlay_preview.png
+  id: 9 + 1280, bitmap: 1072}, Camera: {id: 20 + 1280,
+  bitmap: 1073}, Beacon: {id: 114 + 1280, bitmap: 1074}, FuelTank0: {
+  id: 2 + 1280, bitmap: 1079}, FuelTank1: {id: 42 + 1280, bitmap: [1098, 1,
+  2]}, FuelTank2: {id: 12 + 1280, bitmap: [1080, 2, 2]}, FuelTank4: {
+  id: 146 + 1280, bitmap: [1082, 3, 3]}, FuelTank3: {id: 147 + 1280,
+  bitmap: [1085, 4, 4]}, DeutTank0: {id: 148 + 1280, bitmap: 1806},
+  DeutTank1: {id: 149 + 1280, bitmap: [1796, 1, 2]}, DeutTank2: {
+  id: 150 + 1280, bitmap: [1791, 2, 2]}, DeutTank4: {id: 151 + 1280,
+  bitmap: [1109, 3, 3]}, DeutTank3: {id: 152 + 1280, bitmap: [1121, 4, 4]},
+  ExotTank0: {id: 153 + 1280, bitmap: 1134}, ExotTank1: {id: 154 + 1280,
+  bitmap: [1099, 1, 2]}, ExotTank2: {id: 155 + 1280, bitmap: [1116, 2, 2]},
+  ExotTank4: {id: 156 + 1280, bitmap: [514, 3, 3]}, ExotTank3: {
+  id: 157 + 1280, bitmap: [514, 4, 4]}, GlowTank0: {id: 158 + 1280,
+  bitmap: 1511}, GlowTank2: {id: 159 + 1280, bitmap: [1521, 2, 2]},
+  GlowTank4: {id: 160 + 1280, bitmap: [1494, 3, 3]}, Battery0: {
+  id: 16 + 1280, bitmap: 1209}, Battery1: {id: 22 + 1280, bitmap: [1200, 2,
+  1]}, Battery2: {id: 17 + 1280, bitmap: [1182, 2, 2]}, Battery4: {
+  id: 161 + 1280, bitmap: [1217, 3, 3]}, Battery3: {id: 162 + 1280,
+  bitmap: [1211, 4, 4]}, Pipe: {id: 163 + 1280, bitmap: 1075},
+  Engine_Fuel1: {id: 3 + 1280, bitmap: 1171}, Engine_Fuel2: {id: 7 + 1280,
+  bitmap: 1158}, Engine_Fuel4: {id: 178 + 1280, bitmap: [1143, 2, 2]},
+  Engine_Fuel3: {id: 24 + 1280, bitmap: [1161, 1, 2]}, Engine_Hybrid1: {
+  id: 8 + 1280, bitmap: 1366}, Engine_Exot1: {id: 179 + 1280, bitmap: [514,
+  1, 2]}, Engine_Power1: {id: 4 + 1280, bitmap: 1159}, Engine_Power2: {
+  id: 6 + 1280, bitmap: 1160}, Engine_Power3: {id: 5 + 1280, bitmap: 1157},
+  Engine_Power4: {id: 25 + 1280, bitmap: [1136, 1, 3]}, Engine_Big1: {
+  id: 180 + 1280, bitmap: [1137, 2, 5]}, Engine_Big2: {id: 181 + 1280,
+  bitmap: [1179, 3, 4]}, Engine_Big3: {id: 182 + 1280, bitmap: [1305, 4, 5]},
+  Engine_Solid1: {id: 61 + 1280, bitmap: [1287, 1, 2]}, Reactor0: {
+  id: 15 + 1280, bitmap: 1172, editor: "SolarPanel"}, SolarPanel1: {
+  id: 210 + 1280, bitmap: [1162, 2, 1], editor: "SolarPanelMed"},
+  SolarPanel2: {id: 211 + 1280, bitmap: [1166, 4, 1],
+  editor: "SolarPanelBig"}, Reactor1: {id: 11 + 1280, bitmap: 1384},
+  Reactor2: {id: 212 + 1280, bitmap: [1488, 2, 1]}, Reactor3: {id: 14 + 1280,
+  bitmap: [1357, 2, 1]}, Reactor4: {id: 23 + 1280, bitmap: [1288, 2, 2]},
+  Reactor5: {id: 21 + 1280, bitmap: [514, 3, 3]}, Reactor8: {id: 213 + 1280,
+  bitmap: [1354, 3, 4]}, Reactor6: {id: 214 + 1280, bitmap: [1175, 4, 4]},
+  Reactor7: {id: 215 + 1280, bitmap: [1309, 5, 5]}, Armor_Basic: {
+  id: 13 + 1280, bitmap: 1274}, Armor_BasicBig: {id: 242 + 1280,
+  bitmap: [1290, 2, 2]}, Armor_Laser1: {id: 26 + 1280, bitmap: 1210},
+  Armor_LaserWedge0: {id: 243 + 1280, bitmap: 1215}, Armor_LaserWedge1: {
+  id: 244 + 1280, bitmap: [1224, 1, 2]}, Armor_LaserWedge2: {id: 245 + 1280,
+  bitmap: [1216, 1, 3]}, Armor_LaserWedge3: {id: 246 + 1280, bitmap: [1243,
+  1, 4]}, Armor_LaserWedge4: {id: 247 + 1280, bitmap: [1242, 1, 5]},
+  Armor_Heavy: {id: 27 + 1280, bitmap: 1279}, Armor_HeavyWedge0: {
+  id: 248 + 1280, bitmap: 1280}, Armor_HeavyWedge1: {id: 249 + 1280,
+  bitmap: [1273, 1, 2]}, Armor_HeavyWedge2: {id: 250 + 1280, bitmap: [1246,
+  1, 3]}, Armor_HeavyWedge3: {id: 251 + 1280, bitmap: [1244, 1, 4]},
+  Armor_HeavyWedge4: {id: 252 + 1280, bitmap: [1245, 1, 5]}, Armor_Laser2: {
+  id: 28 + 1280, bitmap: 1275}, Armor_Laser2Wedge0: {id: 253 + 1280,
+  bitmap: 1265}, Armor_Laser2Wedge1: {id: 254 + 1280, bitmap: [1247, 1, 2]},
+  Armor_Laser2Wedge2: {id: 255 + 1280, bitmap: [1248, 1, 3]},
+  Armor_Laser2Wedge3: {id: 256 + 1280, bitmap: [1249, 1, 4]},
+  Armor_Laser2Wedge4: {id: 257 + 1280, bitmap: [1250, 1, 5]}, Armor_Regen: {
+  id: 29 + 1280, bitmap: 1385}, Shield1: {id: 31 + 1280, bitmap: 1304},
+  Shield2: {id: 258 + 1280, bitmap: 1295}, Shield3: {id: 259 + 1280,
+  bitmap: [1283, 3, 3]}, Weapon_bomb1: {id: 19 + 1280, bitmap: 1394},
+  Weapon_bomb2: {id: 37 + 1280, bitmap: 1135}, Weapon_Laser1: {id: 35 + 1280,
+  bitmap: 1367}, Weapon_Laser2: {id: 56 + 1280, bitmap: [1359, 1, 2]},
+  Weapon_Laser3: {id: 60 + 1280, bitmap: 1360}, Weapon_Machinegun1: {
+  id: 55 + 1280, bitmap: 1375}, Weapon_Machinegun2: {id: 274 + 1280,
+  bitmap: [1361, 1, 2]}, Weapon_Cannon1: {id: 275 + 1280, bitmap: [1362, 1,
+  3]}, Weapon_Cannon2: {id: 276 + 1280, bitmap: [1377, 2, 6]},
+  Weapon_PlasmaCannon1: {id: 277 + 1280, bitmap: [1393, 1, 2]},
+  Weapon_PlasmaCannon2: {id: 278 + 1280, bitmap: [1379, 1, 4]},
+  Weapon_NeutCannon1: {id: 279 + 1280, bitmap: [1415, 1, 4]}, Weapon_DMG1: {
+  id: 58 + 1280, bitmap: 1376}, Weapon_Rocket1: {id: 64 + 1280,
+  bitmap: [1469, 1, 3]}, Weapon_Rocket2: {id: 280 + 1280, bitmap: [1431, 2,
+  7]}, Weapon_Railgun1: {id: 281 + 1280, bitmap: [1448, 1, 7]},
+  Utility_Decoupler: {id: 34 + 1280, bitmap: 1403}, Utility_Hinge: {
+  id: 306 + 1280, bitmap: 1479}, Utility_Piston: {id: 307 + 1280,
+  bitmap: [1447, 1, 2]}, Utility_Rotor: {id: 308 + 1280, bitmap: 1480},
+  Utility_Pump: {id: 309 + 1280, bitmap: 1532}, Utility_SolidPump: {
+  id: 310 + 1280, bitmap: 1533}, Utility_VOID: {id: 311 + 1280,
+  bitmap: 1523},
+  // Utility_PipeRotor: {id:  + 1280}, Utility_PipePiston: {id:  + 1280},
+  Utility_Docking1: {id: 36 + 1280, bitmap: 1534},
+  Utility_Docking2: {id: 54 + 1280, bitmap: 1582}, Utility_GPMP: {
+  id: 62 + 1280, bitmap: 1451}, Utility_Decelerator: {id: 312 + 1280,
+  bitmap: 1574}, Utility_MobileSpawn: {id: 313 + 1280, bitmap: 1583},
+  Utility_Wheel1: {id: 65 + 1280, bitmap: 1460}, Utility_Wheel2: {
+  id: 314 + 1280, bitmap: [1461, 2, 2]}, Drill1: {id: 338 + 1280,
+  bitmap: [1520, 1, 2]}, Drill2: {id: 339 + 1280, bitmap: [1497, 2, 4]},
+  Drill3: {id: 340 + 1280, bitmap: [1463, 3, 8]}, Excavator1: {
+  id: 341 + 1280, bitmap: [1584, 3, 2]}, Excavator2: {id: 342 + 1280,
+  bitmap: [1732, 6, 4]}, ExotCollector1: {id: 343 + 1280, bitmap: [1539, 5,
+  5]}, Cargo0: {id: 344 + 1280, bitmap: 1573}, Cargo1: {id: 345 + 1280,
+  bitmap: [1571, 2, 2]}, Cargo2: {id: 346 + 1280, bitmap: [1535, 4, 4]},
+  Converter_Electrolyzer1: {id: 347 + 1280, bitmap: [1714, 1, 2]},
+  Converter_Electrolyzer2: {id: 348 + 1280, bitmap: [1712, 2, 4]},
+  Converter_Electrolyzer3: {id: 349 + 1280, bitmap: [1661, 4, 8]},
+  Converter_Deut1: {id: 350 + 1280, bitmap: [1696, 1, 2]}, Converter_Deut2: {
+  id: 351 + 1280, bitmap: [1710, 2, 4]}, Converter_Deut3: {id: 352 + 1280,
+  bitmap: [1638, 4, 8]}, Converter_Exot1: {id: 353 + 1280, bitmap: [1411, 2,
+  4]}, Converter_Exot2: {id: 354 + 1280, bitmap: [1389, 4, 8]},
+  Converter_Smelter1: {id: 355 + 1280, bitmap: [1587, 2, 2]},
+  Converter_Smelter2: {id: 356 + 1280, bitmap: [1602, 4, 4]},
+  Converter_Smelter3: {id: 357 + 1280, bitmap: [1589, 4, 8]},
+  Logic_LaserSensor: {id: 370 + 1280, bitmap: 1606}, Logic_VelocitySensor: {
+  id: 371 + 1280, bitmap: 1615}, Logic_AngVelocitySensor: {id: 372 + 1280,
+  bitmap: 1624}, Logic_ResourceSensor: {id: 373 + 1280, bitmap: 1633},
+  Logic_Button: {id: 374 + 1280, bitmap: 1642}, Logic_Screen: {
+  id: 375 + 1280, bitmap: 1651}, Logic_Timer: {id: 376 + 1280, bitmap: 1660},
+  Logic_Switch: {id: 377 + 1280, bitmap: 1669}, Logic_Randomizer: {
+  id: 378 + 1280, bitmap: 1678}, Logic_AndGate: {id: 379 + 1280,
+  bitmap: 1076}, Logic_OrGate: {id: 380 + 1280, bitmap: 1077},
+  Logic_XorGate: {id: 381 + 1280, bitmap: 1078}, Decorative_Nose0: {
+  id: 43 + 1280, bitmap: 1803}, Decorative_Nose1: {id: 46 + 1280,
+  bitmap: [1807, 2, 1]}, Decorative_Nose2: {id: 45 + 1280, bitmap: [1748, 2,
+  2]}, Decorative_BackgroundBlock1: {id: 402 + 1280, bitmap: 1687},
+  Decorative_Block1: {id: 49 + 1280, bitmap: 1804}, Decorative_Block2: {
+  id: 50 + 1280, bitmap: [1771, 1, 2]}, Decorative_Wedge0: {id: 44 + 1280,
+  bitmap: 1802}, Decorative_Wedge3: {id: 403 + 1280, bitmap: 1767},
+  Decorative_Wedge1: {id: 47 + 1280, bitmap: [1768, 1, 2]},
+  Decorative_Wedge2: {id: 48 + 1280, bitmap: [1786, 1, 2]},
+  Decorative_Wedge4: {id: 404 + 1280, bitmap: [1769, 1, 3]},
   Decorative_Wedge7: {id: 405 + 1280, bitmap: [1776, 1, 3]},
   Decorative_Wedge5: {id: 406 + 1280, bitmap: [1770, 1, 4]},
   Decorative_Wedge8: {id: 407 + 1280, bitmap: [1766, 1, 4]},
   Decorative_Wedge6: {id: 408 + 1280, bitmap: [1746, 1, 5]},
   Decorative_Wedge9: {id: 409 + 1280, bitmap: [1747, 1, 5]},
   Decorative_Antenna0: {id: 51 + 1280, bitmap: [1772, 1, 2]},
-  Decorative_Antenna1: {id: 59 + 1280, bitmap: [1789, 2, 2]}});
+  Decorative_Antenna1: {id: 59 + 1280, bitmap: [1789, 2, 2]},
+  ControlBlock_Probe: {id: 10 + 1280, bitmap: 1074}});
 Data.titles =
   /** @type {const} */
   ({
@@ -579,6 +562,7 @@ Data.titles =
   1286: "Ion engine",
   1287: "Chemical fuel engine MK2",
   1288: "Plasma engine",
+  1289: "Gyroscope",
   1290: "Probe core",
   1291: "Photon reactor",
   1292: "Medium hydrogen tank",
@@ -773,7 +757,7 @@ Data.generateValues = function (type) {
     /** @type {BlockDataSimple[keyof BlockData]} */
     val;
   for (var p in data)
-    if (val = data[p][type]) {
+    if ((val = data[p][type]) !== UDF) {
       values[data[p].id] =
         // v.0.2.20 cast because of touples, assuming shallow copy won't bug
         /** @type {BlockData[T]} */
@@ -794,11 +778,11 @@ Data.nameMethods = function (namespace) {
       proprety.methodName = name + p;
   }
   for (var p in namespace)
-    OP.call(namespace, p) || setMethodName(namespace[p]);
+    OP.call(namespace, p) && setMethodName(namespace[p]);
   name += "prototype.";
   var prototype = namespace.prototype;
   for (var p in prototype)
-    OP.call(prototype, p) || setMethodName(prototype[p]);
+    OP.call(prototype, p) && setMethodName(prototype[p]);
 };
 Data.estimateIdentifier = new RegExp("^[^f]*function\\s+([_$a-zA-Z\\xA0-\
 \\uFFFF][_$a-zA-Z0-9\\xA0-\\uFFFF]*)");
@@ -1404,7 +1388,7 @@ function Block(name, pos, rot, prop, color) {
   this.rotation = rot;
   prop = prop || {};
   prop.color = color !== UDF ?
-    prop.color = color :
+    color :
     prop.color === null || prop.color ? prop.color : "";
   this.properties =
     /** @type {{[key:string]:unknown,color:Colors}&BlockProps} */
@@ -1479,10 +1463,19 @@ Block.db1ToDb3 = Object.freeze({
 });
 /** @readonly settings for @see {Block.arrayFromObjects} *///@ts-expect-error
 Block.creator = {warns: 3};
+//-Block.prototype.toJSON = function () {
+//-  var rot = this.rotation;
+//-  return {
+//-    internalName: this.internalName,
+//-    position: this.position,
+//-    rotation: B64Key.gBlockRotation(rot[2] | +rot[1] << 2 | rot[0] << 3),
+//-    properties: this.properties
+//-  };
+//-};
 /**
  * @readonly @param {any[]|any} blocks
- * @param {Logic<any>[]&{nc?:any}} [logics$] */
-Block.arrayFromObjects = function (blocks, logics$) {
+ * @param {Logic<any>[]&{nc?:any}} [logics] */
+Block.arrayFromObjects = function (blocks, logics) {
   var warn = Block.creator.warns,
     bs = blocks instanceof Array ? blocks : [blocks];
   /** nodeIndex (DBV "ni") property of a block is number[] type:
@@ -1495,14 +1488,13 @@ Block.arrayFromObjects = function (blocks, logics$) {
 @see https://github.com/KaaBEL/.d1r.dbv/blob/1392589299b6/assets/code.js#L112
    * 1392589299b68fb61c1a87bc7e4616f6d20af75d */
   /** in DBV format inputs and output indexes reference indexes of
-   * connections (new DBV "nc") property*/
-  // TODO: change this variable logics to unpack the connections
-  var logics = logics$ || [],
+   * connections (new DBV "nc") property */
+  var rawLogics = logics || [],
     /** maps connections to key:input, value:output map -
      * to be used in @see {extractConnections} */
     ncProperty = function () {
       /** @type {{[key:number]:number|undefined}} [key:input]:output */
-      var map = {}, connections = logics.nc;
+      var map = {}, connections = rawLogics.nc;
       if (!(connections && connections.length))
         return UDF;
       for (var i = connections.length; i-- > 0;) {
@@ -1623,7 +1615,7 @@ s|c|ni|invalidName|getPhysics|logicPosition|logicBlockIndex)$");
           * end up at, input index references connection to output */
           ncProperty && extractConnections(indexes) :
           extractLogic(o.prop.customParameter);
-      Logic.addLogic(name, o.prop, logics, r);
+      Logic.addLogic(name, o.prop, rawLogics, r);
     }
     if (Block.ID[name] > 689 && Block.ID[name] < 947)
       // (v.0.1.64T14) was it really impossible to load wgs from JSON?
@@ -1636,9 +1628,9 @@ s|c|ni|invalidName|getPhysics|logicPosition|logicBlockIndex)$");
   }
   // optionally for preserving old connections, the correct loading of logic
   // nodes will require to assign references after all blocks are loaded
-  Logic.reassemble(r, logics);
+  Logic.reassemble(r, rawLogics);
   logicBlockPositions.forEach(function (e, i) {
-    (r[i] = new LogicBlock(block, i, logics)).logicPosition = e;
+    (r[i] = new LogicBlock(block, i, rawLogics)).logicPosition = e;
   });
   return r;
 };
@@ -1703,10 +1695,10 @@ ility_Wheel1|2,0|0,1,1|1|4,8,0,0|1|10|0|;&Utility_Wheel1|3,0|0,1,1|1|4,8,0,0\
   blocks.length--;
   return blocks;
 };
-/** for DBV blocks @readonly @param {number} id */
+/** for 2D blocks @readonly @param {number} id */
 Block.isFlippable = function (id) {
-  return id < 697 ? id > 691 && id < 695 : id < 700 || id === 703 ||
-    id === 702;
+  return id < 697 ? id > 691 && id < 695 : id > 1279 ||
+    id < 700 || id === 703 || id === 702;
 };
 /** @typedef {0|1|2|3|number} RA Rotation Axis */
 // not tested or debugged at all
@@ -1773,19 +1765,21 @@ Block.Size = function Size(x, y, w, h, resolution) {
 Block.Size.width = 4;
 Block.Size.height = 48;
 /**
- * @typedef {[number,number,number,number,number]} PreciseDef
+ * @typedef {number} ShortDef PreciseDef may be implemented
  * @typedef {[number|string]|[number|string,number,number]} SizeDef
- * @typedef {{[key:number]:SizeDef|PreciseDef|undefined}} SizesArg
+ * @typedef {{[key:number]:SizeDef|ShortDef|undefined}} SizesArg
  * @type {(arg:SizesArg)=>{[key:number]:Block.Size|undefined}} */
 Block.Size.generate = function (arg) {
   var r = {690: new this(0, 0, 2, 2, 32)}, a = arg;
   // by replacing nw = a with nw = {} it will log sizes and do 'reflow'
-  for (var l = 690, nw = {}; l < Block.NAME.length; l++)
+  for (var l = 690, nw = a; l < Block.NAME.length; l++)
     if (Block.NAME[l]) {
       var v = arg[l], res = l > 1279 ? 13 : 32;
       var rowSize = (this.width * 32) / res | 0;
-      if (!v)
+      if (!v && v !== 0)
         continue;
+      if (typeof v == "number")
+        v = [v];
       if (typeof v[0] == "number")
         var x = v[0] % rowSize * res,
           y = (v[0] / rowSize | 0) * res;
@@ -1808,8 +1802,7 @@ Block.Size.generate = function (arg) {
     console.log(JSON.stringify(nw).replace(/,/g, ", "));
   return r;
 };
-// (TODO:) blocks were still not tested properly all at once, one more
-// undetected bug with block or texture and adding unit test for it
+// #riptesting blocks were still not tested properly all at once
 Block.Size.VALUE = Block.Size.generate(Data.generateValues("bitmap"));
 /**
  * @typedef {{block:ShipBlock,id:number,x:number,y:number,w:number,
@@ -2091,6 +2084,8 @@ var test_collbxs = false,
   // @type {typeof F|((rend?:any)=>true|undefined)} not work in ts v.5.9.2
   /** @type {(rend?:any)=>boolean|void} */
   test_debugbox2collisions = F;
+/** @typedef {{x:number,y:number}|[number,number]} PathArg */
+/** @typedef {Block.Box2d[]&{range:number}} Box2dPath */
 /** instance is frozen
  * @readonly Point @param {number} x @param {number} y */
 Block.Box2d = function Point(x, y) {
@@ -2103,8 +2098,6 @@ Block.Box2d = function Point(x, y) {
 Block.Box2d.prototype.toString = function () {
   return "x" + this.x + "y" + this.y;
 };
-/** @typedef {{x:number,y:number}|[number,number]} PathArg */
-/** @typedef {Block.Box2d[]&{range:number}} Box2dPath */
 /** @param {...PathArg[]|string|number} args */
 Block.Box2d.generateBuildBox = function () {
   /**
@@ -2189,7 +2182,7 @@ Block.Box2d.VALUE = Block.Box2d.generateBuildBox(
   // def0: 1x1 block "Block"
   [{x: 0, y: 0}, {x: 0, y: -2}, {x: 2, y: -2}, {x: 2, y: 0}],
   // [{x: 0, y: 0}, {x: 0, y: -1}, {x: 0, y: -2}, {x: 2, y: -2},
-  // {x: 2, y: -1}, {x: 2, y: 0}], TODO: maybe make use of it and test this
+  // {x: 2, y: -1}, {x: 2, y: 0}], #riptesting
   "0",
   // def1: 1x1 wedge "Wedge"
   [
@@ -2717,6 +2710,17 @@ function LogicBlock(block, index, ship) {
   this.logicBlockIndex = index;
   Object.seal(this);
 }
+//-LogicBlock.prototype.toJSON = function () {
+//-  var rot = this.rotation;
+//-  return {
+//-    internalName: this.internalName,
+//-    position: this.position,
+//-    rotation: B64Key.gBlockRotation(rot[2] | +rot[1] << 2 | rot[0] << 3),
+//-    properties: this.properties,
+//-    logicPosition: this.logicPosition,
+//-    logicBlockIndex: this.logicBlockIndex
+//-  };
+//-}
 __extends(LogicBlock, Block);
 
 /** @typedef {0|1|2|3} Edit.Type commands enum @typedef {0} Edit.Save */
@@ -2731,7 +2735,7 @@ __extends(LogicBlock, Block);
  * EditColorCommand} EditThisCommand
  * @typedef {(target:Ship,...args:number[])=>any} EditTargetCommand */
 // A concept for undo redo history implementation
-/**
+/** class/namespace tp handle editing history, toJSON method in use
  * @param {((...args:any[])=>any)&{methodName?:string}} command
  * @param {string} args stringified Array @param {Edit.Type} type */
 function Edit(command, args, type) {
@@ -2760,6 +2764,15 @@ Edit.prototype.toString = function () {
   var s = Data.getFunctionName(this.command) || "(anonymous)";
   return "[" + this.type + ",\"" + s + "\"," + this.args + "]";
 };
+Edit.prototype.toJSON = function () {
+  try {
+    var args = JSON.parse(this.args);
+  } catch (e) {
+    console.error(e);
+    args = this.args;
+  }
+  return [this.type, Data.getFunctionName(this.command), args];
+};
 // @param {Ship} target @param {number} [copy] ? get clone : pass target
 /** @param {Ship} target and also used to reset setting history */
 Edit.save = function (target) {
@@ -2769,7 +2782,7 @@ Edit.save = function (target) {
       new Ship("", [], "", [], null, new Ship.Mode("Save", target));
   if (!copy)
     Edit.settingHistory = false;
-  target.getSelection().length = 0;
+  target.selection.length = 0;
   /** @type {Ship|ShipProperties|null} */
   var prop = target.prop, blocks = target.blocks.map(function (e, i) {
     var block = new Block(
@@ -2811,7 +2824,7 @@ Edit.save = function (target) {
   }(prop.nodeList, prop.customInputs) || null;
   if (copy)
     return clone;
-  target.getHistory().push(new Edit(
+  target.history.push(new Edit(
     function cloneEditSave() {
       return Edit.save(clone);
     },
@@ -2844,7 +2857,7 @@ Edit.capture = (
       command = typeof cmdOrThis == "function" ?
         cmdOrThis :
         typeof targetOrCmd == "function" ? targetOrCmd : console.error;
-    target.getHistory().push(new Edit(
+    target.history.push(new Edit(
       command,
       args,
       /** @type {Edit.Target|Edit.This} */
@@ -2856,7 +2869,7 @@ Edit.capture = (
 );
 /** @param {Ship} target @param {number} index */
 Edit.historyAt = function (target, index) {
-  var edits = target.getHistory(), last = edits[edits.length - 1];
+  var edits = target.history, last = edits[edits.length - 1];
   if (!(index in edits))
     return console.error("Index: " + index +
       " is out of range for editing history");
@@ -2912,7 +2925,7 @@ Edit.historyAt = function (target, index) {
 };
 /** @param {Ship} target */
 Edit.undo = function (target) {
-  var edits = target.getHistory(), last = edits[edits.length - 1];
+  var edits = target.history, last = edits[edits.length - 1];
   var index = last.type === 3 ?
     +last.args.slice(1, -1) :
     edits.length - 1;
@@ -2920,7 +2933,7 @@ Edit.undo = function (target) {
 };
 /** @param {Ship} target */
 Edit.redo = function (target) {
-  var edits = target.getHistory(), last = edits[edits.length - 1];
+  var edits = target.history, last = edits[edits.length - 1];
   var index = last.type === 3 ?
     +last.args.slice(1, -1) :
     edits.length - 1;
@@ -2928,9 +2941,9 @@ Edit.redo = function (target) {
 };
 Edit.rotate = (
   /** rotates Dr ships as well as db vehicles
-   * @overload @param {Ship} target
+   * @overload @param {Ship} target rotate on DBVE Rotation basis
    * @param {number} rx
-   * @overload @param {Ship} target
+   * @overload @param {Ship} target rotate using Block.rotate
    * @param {number} rx @param {number} ry @param {number} rz
    * @returns {void} @param {Ship} target @param {number} rx
    * @param {number} [ny] @param {number} [nz]  */
@@ -2955,7 +2968,7 @@ Edit.rotate = (
     ry >= 0 && ry < 4 ? ry |= 0 : ry = Math.round(ry / 90) % 4 + 4 & 3;
     rz >= 0 && rz < 4 ? rz |= 0 : rz = Math.round(rz / 90) % 4 + 4 & 3;
     var i = 0, edtA = [0, 1, 2, 0, 0, 0];
-    var selection = target.getSelection();
+    var selection = target.selection;
     /** @param {number} ax ; */
     function prcsAxis(ax) {
       if (ax) {
@@ -2987,7 +3000,7 @@ Edit.rotate = (
  * @param {Ship} target
  * @param {number} x @param {number} y @param {number} z */
 Edit.move = function (target, x, y, z) {
-  for (var aar = target.getSelection(), i = aar.length; i-- > 0;) {
+  for (var aar = target.selection, i = aar.length; i-- > 0;) {
     var pos = aar[i].position;
     pos[0] += x;
     pos[1] += y;
@@ -2998,7 +3011,7 @@ Edit.move = function (target, x, y, z) {
 /** @param {Ship} target @param {number} color */
 Edit.paint = function (target, color) {
   var colorName = Color.NAME[color] || null;
-  target.getSelection().forEach(color === -1 ?
+  target.selection.forEach(color === -1 ?
     function (e) {
       e.properties.color = Color.default(e.internalName);
     } :
@@ -3076,7 +3089,7 @@ Data.nameMethods(Edit);
  *   KnownShipProperties[K]}} ShipProperties
  * @see {Logic} @see {Ship.CustomInput}
  * @typedef {"Ship"|"Logic"|"Save"} EditMode */
-/** class is frozen
+/** class is frozen, toJSON methods in use
  * @param {string} name
  * @param {number[]} version
  * @param {string} time
@@ -3094,17 +3107,18 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.prop = properties || null;
   this.getMode = __private(mode || new Ship.Mode("Ship", this));
   this.getPhysics = Physics.Ship.INIT;
-  /** @type {()=>Edit[]} */
-  this.getHistory = __private([]);
-  /** @type {()=>ShipBlock[]} */
-  this.getSelection = __private([]);
+  /** @type {Edit[]} */
+  this.history = [];
+  /** @type {ShipBlock[]} */
+  this.selection = [];
   /** to track Droneboi Vehicles editor version in its JSON savefiles
    * @type {number} */
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @readonly @type {38} significantVersion: 38 (integer) */// @ts-ignore
-Ship.VERSION = 38;
+/** @TODO SKIP VERSION 40 NEXT TIME ! TODO:  */
+/** @readonly @type {39} significantVersion: 39 (integer) */// @ts-ignore
+Ship.VERSION = 39;
 Ship.propertyNames = new RegExp("^(?:nodeList|nodeConnections|customI" +
   "nputs|gridSize)$");
 // Ship.PROPERTIES = {
@@ -3127,7 +3141,7 @@ Ship.prototype.selectRect = (
    * @returns {ShipBlock[]} @this {Ship} */
   function (x0, y0, z0, x1, y1, z1) {
     // n first coordinate is stored as temporary
-    var x = x0, y = y0, z = z0, selected = this.getSelection();
+    var x = x0, y = y0, z = z0, selected = this.selection;
     var i = selected.length = 0, all = this.blocks;
     if (typeof x == "number") {
       // if the second coordinate is greater as supposed
@@ -3155,15 +3169,13 @@ Ship.prototype.selectRect = (
 /** for selectimg all blocks use @see {ship.selectRect}
  * @this {Ship} @param {ShipBlock[]|number[]} selection */
 Ship.prototype.setSelected = function (selection) {
-  var ids = [], selected = this.getSelection(), blocks = this.blocks;
+  var ids = [], selected = this.selection, blocks = this.blocks;
   for (var i = selected.length = selection.length; i-- > 0;) {
     var id = selection[i];
     if ((ids[i] = typeof id == "number" ? id : blocks.indexOf(id)) < 0)
       console.error("Selected ShipBlock was not found:" + id);
     selected[i] = blocks[ids[i]];
   }
-  // TODO: just had mega bug of capturing getSelection instead
-  // of setSelected
   Edit.capture(this, this.setSelected, ids);
 };
 Ship.prototype.removeRect = function (x0, y0, z0, x1, y1, z1) {
@@ -3188,7 +3200,7 @@ Ship.prototype.removeRect = function (x0, y0, z0, x1, y1, z1) {
 /** @this {Ship} */
 Ship.prototype.replaceRect = function (x0, y0, z0, x1, y1, z1) {
   // https://stackoverflow.com/a/424445 backup random number solution
-  var selected = this.getSelection();
+  var selected = this.selection;
   if (!selected.length)
     return console.warn("No blocks selected.");
   var x = x0, y = y0, z = z0, blocks = [], rand = Edit.randSFC32(0);
@@ -3242,7 +3254,7 @@ Ship.prototype.fillRect = function () {
 /**
  * @this {Ship} @param {number} x @param {number} y @param {number} z */
 Ship.prototype.paste = function (x, y, z) {
-  var selected = this.getSelection();
+  var selected = this.selection;
   /** @type {(Logic<any>|undefined)[]} */
   var logics = ship.prop && ship.prop.nodeList || [],
     /** @type {(Logic<any>|undefined)[]} */
@@ -3554,6 +3566,49 @@ Ship.prototype.removeBlocks = function removeBlocks(ids) {
   // (v.0.2.1) is JSON.parse(JSON.stringify(ids)) necessary here?
   Edit.capture(this, removeBlocks, ids);
 };
+Ship.prototype.toJSON = function () {
+  /** @param {ShipProperties["nodeList"]} logics */
+  function parseNodeConnections(logics) {
+    if (!logics)
+      return [];
+    for (var i = logics.length, parsed = []; i-- > 0;) {
+      var node = logics[i], n = node ? node.pairs : [];
+      typeof n == "number" && logics[n] && parsed.push([i, n]);
+    }
+    return parsed;
+  };
+  return {
+    name: this.name,
+    gameVersion: this.gameVersion,
+    dateTime: this.dateTime,
+    blocks: this.blocks.map(function (e) {
+      var r = e.rotation;
+      return e instanceof Block ? {
+        internalName: e.internalName,
+        position: e.position,
+        rotation: B64Key.gBlockRotation(r[2] | +r[1] << 2 | r[0] << 3),
+        properties: e.properties
+      } : {
+        internalName: e.internalName,
+        position: e.position,
+        rotation: B64Key.gBlockRotation(r[2] | +r[1] << 2 | r[0] << 3),
+        properties: e.properties,
+        logicPosition: e.logicPosition,
+        logicBlockIndex: e.logicBlockIndex
+      };
+    }),
+    prop: function (prop) {
+      var obj = {};
+      for (var p in prop)
+        if (OP.call(prop, p))
+          p === "nodeList" ?
+            obj.nodeConnections = parseNodeConnections(prop[p]) :
+            obj[p] = prop[p];
+      return obj;
+    } (this.prop),
+    history: this.history
+  };
+}
 // (v.0.2.8) major refactor after limiting use of type any
 /** @readonly @param {safe} object @see {Block.arrayFromObjects} */
 Ship.fromObject = function fromObject(object) {
@@ -3584,7 +3639,7 @@ Ship.fromObject = function fromObject(object) {
       var arr = [], temporary = (props || {}).nodeList;
       /** @type {unknown[]} */
       var logics = temporary instanceof Array ? temporary : [];
-      arr.nc = o.add && o.add.logic || (logics instanceof Array ?
+      arr.nc = o.add && o.add.logic || (temporary instanceof Array ?
         logics.map(function (e, i) {
           /** @type {{pairs?:unknown}} */
           var node = typeof e == "object" && e || {}, n = node.pairs;
@@ -3705,9 +3760,92 @@ Ship.fromDBKey = function (key) {
   return Edit.save(
     new Ship("[unnamed]", [], Ship.dateTime(1714557750), blocks, obj));
 };
+/** @param {ArrayBuffer|Uint8Array|string} mssss */
+Ship.fromMSSSS = function (mssss) {
+  var singleWarn = 1;
+  /** @param {unknown} raw */
+  function decodePart(raw) {
+    if (typeof raw != "string") {
+      singleWarn && singleWarn-- &&
+        console.warn("MSSSS ship.Parts[x] isn't string");
+      return new Block("__unknown__", [0, 0, 0], [0, !1, 0]);
+    }
+    if (raw[0] !== "{" || raw.slice(-1)[0] !== "}") {
+      var part = raw.split("|"), rot = part[2].split(","), prop = {};
+      if (/Deco[Ll]ayer\d?_/.test(raw)) {
+        prop.invalidName = part[0];
+        part[0] = "__unknown__";
+      }
+      /** @type {Rotation} */
+      var r = [0, +rot[1] < 0, 0], pos = part[1].split(",");
+      if (+rot[2] < 0)
+        r[1] = !r[1];
+      r[2] =
+        /** @type {0|1|2|3} */
+        (+rot[0] / 90 + +(+rot[2] < 0) * 2 + 4.5 & 3);
+      return new Block(part[0], [0, +pos[0] * 2, +pos[1] * 2], r);
+    }
+    try {
+      var result = JSON.parse(raw),
+        /** @type {safe} */
+        obj = result instanceof Object ? result : {};
+    } catch (e) {
+      console.error("parsing a MSSSS object ship.Parts[x]:" + raw);
+      obj = {};
+    }
+    var name = typeof obj.ID == "number" ?
+        Block.NAME[obj.ID + 1280] :
+        "__unknown__",
+      /** @type {XYZPosition} */
+      position = [0, +(obj.X || 0) * 2, +(obj.Y || 0) * 2],
+      rotMirVert = +(obj.MirVert || 0) < 0,
+      rotIndex = 
+        /** @type {0|1|2|3} */
+        (+(obj.Rotation || 0) / 90 + +rotMirVert * 2 + 4.5 & 3),
+      rotFlip = +(obj.MirHor || 0) < 0 ? !rotMirVert : rotMirVert,
+      /** @type {Rotation} */
+      rotation = [0, rotFlip, rotIndex];
+    return new Block(name, position, rotation);
+  }
+  if (typeof mssss != "string") {
+    mssss instanceof Uint8Array ? 0 : mssss = new Uint8Array(mssss);
+    for (var i = mssss.byteLength; i-- > 0;)
+      mssss[i] ^= 19;
+    mssss = Ship.utf8ToString(mssss);
+  }
+  var string = mssss.trim();
+  if (string[0] !== "{")
+    return null;
+  if (string.slice(-1)[0] !== "}") {
+    for (i = string.length; i-- > 0;)
+      if (/\w/.test(String.fromCharCode(string[i].charCodeAt(0) ^ 19)))
+        break;
+    if ((string = string.slice(0, i + 1)).slice(-1)[0] !== "}")
+      return null;
+  }
+  try {
+    var result = JSON.parse(string),
+      /** @type {safe} */
+      o = result instanceof Object ? result : {};
+  } catch (e) {
+    console.error("Parsing .mssss:", e);
+    return;
+  }
+  var name = typeof o.Name == "string" ? o.Name : "Modular Spacship",
+    parts = o.Parts instanceof Array ? o.Parts.map(decodePart) : [],
+    moreParts = o.UncompressedParts;
+  if (moreParts instanceof Array)
+    parts = parts.concat(moreParts.map(function (item) {
+      return new Block("__unknown__", [0, 0, 0], [0, !1, 0], item);
+    }));
+  var spaceship = new Ship(name, [], Ship.dateTime(), parts);
+  spaceship.selectRect();
+  Edit.rotate(spaceship, 2);
+  return Edit.save(spaceship);
+};
 /** @readonly @param {Ship} ship @throws {Error} */
 Ship.checkDBV = function (ship) {
-  /** @TODO finish checkDBV */
+  /** @TODO finish checkDBV (me later: nah, nope) */
   /** @param {Error} err */
   function at(err) {
     if (i !== -1)
@@ -3838,6 +3976,64 @@ Ship.dateTime = function (t, f) {
   s = "." + (++i > 9 ? i : "0" + i) + s;
   t += 1 + +(n % 1461 === 789);
   return (t > 9 ? "" : "0") + t + s;
+};
+/** @param {Uint8Array|ArrayBuffer} buffer @param {number} [i=0] */
+Ship.utf8ToString = function (buffer, i) {
+  var bytes = buffer instanceof Uint8Array ?
+    buffer :
+    new Uint8Array(buffer);
+  // lb = lower boundary, ub = upper boundary, cp = code point, more
+  var n = 0, lb = 128, ub = 191, cp = 0, more = 0, s = "";
+  for (i = i || 0; i < bytes.length; s += String.fromCharCode(cp)) {
+    if ((cp = bytes[i++]) < 128)
+      continue;
+    if (cp < 194) {
+      cp = 0xFFFD;
+      continue;
+    }
+    if (cp < 224) {
+      cp = cp - 192 << 6;
+      more = 1;
+    } else if (cp < 240) {
+      cp === 224 ?
+        lb = 160 :
+        cp === 239 && (ub = 191);
+      cp = cp - 224 << 12;
+      more = 2;
+    } else if (cp < 245) {
+      cp === 240 ?
+        lb = 144 :
+        cp === 244 && (ub = 143);
+      cp = cp - 240 << 18;
+      more = 3;
+    } else if (cp < 256) {
+      cp = 0xFFFD;
+      continue;
+    } else {
+      debugger;
+      console.error("debugger HuHh!?");
+    } 
+    while (more) {
+      if (i >= bytes.length) {
+        cp = 0xFFFD;
+        continue;
+      }
+      n = bytes[i++];
+      n < lb || n > ub ? more = 0 : 0;
+      lb = 128;
+      ub = 191;
+      if (!more) {
+        i--;
+        more = 0;
+        cp = 0xFFFD;
+        continue;
+      }
+      cp = cp + (n - 128 << --more * 6);
+    }
+    if (0xffff0000 & cp)
+      throw new Error("[v.0.2.9]Code point out of decodable range!");
+  }
+  return s;
 };
 /** @param {string} name @param {number} type */
 Ship.CustomInput = function CustomInput(name, type) {
