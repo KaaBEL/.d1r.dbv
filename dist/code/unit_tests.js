@@ -1,13 +1,15 @@
 //@ts-nocheck
 /// <reference path="./editor.js" />
 "use strict";
-// v.0.2.19 (global version of project when last changes were done)
+/** global version of project when last changes were done */
+var version_unit_tests_js = "0.2.25";
+/** @TODO rename this file to bug_tests.js */
 var utst_ = true;
 function BError (message) {
   console.error(this.message = message);
   debugger;
 };
-console.log("Unit tests start:");
+console.log("DevTools bug tests v." + version_unit_tests_js + " start:");
 console.time("Timestamp");
 console.time("Succesful kinda tests, took");
 // TEST: enableLogicEditing //
@@ -38,7 +40,7 @@ try {
   console.warn = function () {
     var str = [].map.call(arguments, String).join("");
     new RegExp(utst_arr1.pop() + "[^]+at: ?0").test(str) ||
-      (utst_ = utst_consoleWarn("Unexpected warning(s)!? : " + str));
+      (utst_ = new BError("Unexpected warning(s)!? : " + str));
   };
   Block.arrayFromObjects({"Item1":84,"Item2":83});
   Block.arrayFromObjects({name:"kurczus",position:{0:1,1:3,2:7},juhus:69});
@@ -66,7 +68,7 @@ try {
   if (utst_arr0[0].rotation[1] !== false)
     "if not boolean, default to false as for now";
   if (utst_arr1.length)
-    utst_ = utst_consoleWarn("Unpresent warning(s) 0x00");
+    utst_ = new BError("Unpresent warning(s) 0x00");
 } catch (e) {utst_ =
   console.error("Block.arrayFromObjects:");console.error(e);}
 console.warn = utst_consoleWarn;
@@ -74,7 +76,7 @@ console.warn = utst_consoleWarn;
 var utst_i = 0, utst_errorCatcher = function () {
     var str = [].map.call(arguments, String).join("");
     if (!utst_arr2.length || !utst_arr2.pop().test(str))
-      utst_ = utst_consoleError("Unexpected error(s)!? : " + str);
+      utst_ = new BError("Unexpected error(s)!? : " + str);
     else
       console.debug("Expected error: " + str);
   };
@@ -88,7 +90,7 @@ function utst_testCommands() {
       if (utst_el0 instanceof HTMLLIElement && utst_el0.firstChild)
         utst_el0 = utst_el0.firstChild;
       console.error = utst_errorCatcher;
-      utst_el0 instanceof HTMLElement && 
+      utst_el0 instanceof HTMLElement &&
         typeof (utst_fn = utst_el0.onclick) == "function" && utst_fn();
     }
   }
@@ -117,9 +119,9 @@ AWQAQA4IRawCAkiYWQQhUABUAAQaEQiAwBBoBAoxSIDyABKAAIlTviFogQ=")));
   utst_testCommands();
   Logic.rend = !1;
   if (utst_arr2.length)
-    utst_ = utst_consoleError("Unpresent error(s) 0x02", utst_arr2);
-} catch (e) {utst_ =
-  console.error("itemsInit<\"" + Command.list[utst_i].name + "\">:");
+    utst_ = new BError("Unpresent error(s) 0x02", utst_arr2);
+} catch (e) {utst_ = (console.error =
+  utst_consoleError)("itemsInit<\"" + Command.list[utst_i].name + "\">:");
   console.error(e);
 }
 console.error = utst_consoleError;
@@ -128,7 +130,7 @@ console.error = utst_consoleError;
 // TEST: Edit.historyAt //
 try {
   ship = Ship.fromObject({n: "UndoRedoTest", "ls": 0});
-  ship.getHistory = __private([
+  ship.history = [
     new Edit(Ship.prototype.placeBlock, "[0,0,4,853]", 2),
     new Edit(Edit.undo, "[0]", 3),
     new Edit(Ship.prototype.removeBlocks, "[[3]]", 2),
@@ -138,18 +140,18 @@ try {
     new Edit(Ship.prototype.removeBlocks,"[[8]]", 2),
     new Edit(Edit.oldUIColor,"[[9],13]", 2),
     new Edit(Edit.oldUIColor,"[[8],13]", 2)
-  ]);
+  ];
   Edit.historyAt(ship, 8);
 } catch (e) {utst_ =
   console.error("Edit.historyAt:");console.error(e);}
 // TEST: Ship.fromObject //
-utst_arr1 = ["ControlBlock check1"];
+utst_arr1 = ["ControlBlock check1", "ControlBlock check1"];
 try {
   console.timeEnd("Timestamp");
   console.warn = function () {
     var str = [].map.call(arguments, String).join("");
     new RegExp(utst_arr1.pop() || "^Unexpected warning!$").test(str) ||
-      (utst_ = utst_consoleWarn("Unexpected warning(s)!? : " + str));
+      (utst_ = new BError("Unexpected warning(s)!? : " + str));
   };
   ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr("gIAEDEFOT05fU2h1dH\
 RsZQAEXVy0aoC/TzvnFnWt0z4R4pYUZx2CorwBRXLToKjrQJPehCK9CdKboLhB4MUPQVwDhrgGiG\
@@ -207,9 +209,22 @@ RlSW5kZXhcIjpbOSw4XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb2\
   ship.fixPositionAdjustment(!0);
   enableLogicEditing();
   enableShipEditing();
-  Ship.fromObject(JSON.parse(JSON.stringify(ship)));
+  if (
+    Ship.fromObject(JSON.parse(JSON.stringify(ship))).blocks.map(
+    function (e) {
+      var s = e.internalName;
+      return s.slice(0, 2) + s.slice(-4, -2) + (+Block.ID[s]).toString(36);
+    }) + "" === 'Smo 1je,Tinstki,Bloloj7,SmaTaky,Medstkk,Smo 1je,LarTal0,Lar\
+Tal0,LarTal0,Tinstki,Sepatlz,SlaSljc,SlaSljc,SlaSljc,SlaSljc,SlaSljc,Wed 1j9\
+,SlaSljc,SlaSljc,Pisstm0,SlaSljc,Numhbmu,GPSnsmp,Reahekq,Smatel1,Conmbml,Sma\
+anlx,Larstkp,Conmbml,Conmbml,Conmbml,Conmbml,Tinstkm,Hininly,Conmbml,Conlomb\
+,Tinstkm,Tinstkm,Tinstkm,Tinstkm,Smo 1je,CorCoj6,SlaSljc,SlaSljc,Numhbmu,Spe\
+nsmm,Sollolw,Smaanlx,Smastkn,DocDom3,SlaSljc,Smo 1je,Smornjd'
+  ) {
+    throw new BError("incorrect block types");
+  }
   if (utst_arr1.length)
-    utst_ = utst_consoleWarn("Unpresent warning(s) 0x01");
+    utst_ = new BError("Unpresent warning(s) 0x01");
 } catch (e) {utst_ =
   console.error("Ship.fromObject:");console.error(e);}
 console.warn = utst_consoleWarn;
@@ -225,5 +240,9 @@ else {
   console.error("NOT...");
   console.timeEnd("Succesful kinda tests, took");
   console.groupEnd();
-  new BError("Unsuccessful indeed!");
+  // optionally platform that can't log new Error nicely should be detected
+  if (!"initial solution")
+    new BError("Unsuccessful indeed!");
+  else
+    console.error(new Error("Unsuccessful indeed!"));
 }

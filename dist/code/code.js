@@ -1,8 +1,9 @@
 //@ts-check
 /// <reference path="./defs.d.ts" />
 "use strict";
+/** @TODO ask on dc what song is it in Saul Goodman 3d meme */
 /** @readonly */
-var version_code_js = "v.0.2.23";
+var version_code_js = "v.0.2.25";
 /** @TODO check @see {Ship.VERSION} */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
@@ -58,9 +59,9 @@ if (typeof Initial != "function")
  * cargo_store?:number,draw?:number[],now?:number,
  * bitmap:number|(number|string)[]}} BlockDataSimple
  */
+/** @typedef {never} @returns {never} */
 function Data() {
   throw new TypeError("Illegal constructor");
-  this.data = null;
 }
 /** Changing original values for color IDs breaks rendering and Commands
  * tab, newer property "now" is used for consistent order with games */
@@ -798,6 +799,14 @@ Data.getFunctionName = function (fn) {
     (Data.estimateIdentifier.exec(
       Function.prototype.toString.call(fn)) || ["", ""])[1];
 };
+Data.dispose = function () {
+  if (!Object.keys(Data.blocks).length)
+    return "Data.blocks had already been disposed of";
+  for (var p in Data.blocks)
+    if (OP.call(Data.blocks, p))
+      delete Data.blocks[p];
+  return "disposed of Data.blocks";
+};
 // remove Object.freeze(Data); in case of causing issues
 Object.freeze(Data);
 
@@ -1283,8 +1292,8 @@ Logic.expensiveExec = function (ship) {
 };
 // Logic.checkNodeOwners unused code removed in v.0.2.7
 
+/** @namespace @typedef {never} @returns {never} */
 function Color() {
-  this.prop = !1;
   throw new TypeError("Illegal constructor");
 }
 /** object is frozen */
@@ -1642,7 +1651,7 @@ Block.generateArray = function generateArray(n, logics) {
 tor0|0,1|90,1,1|1|512,0,0,0|2|0|0|;&Utility_Docking1|2,3|0,-1,1|1|512,512,0,\
 0|2|2|5|;&DecoLayer3_Half1|4,2|90,1,1|c13;&DecoLayer_Texure1|3,1|0,-1,1|c1;&\
 Decolayer2_Block2|4,2|270,1,1|c1;&Armor_HeavyWedge0|5,1|0,-1,1|1|0|0|0|;&Wea\
-pon_Cannon1|4,2|270,1,1|2|64,0,0,0|1|0|0|;&Utility_Rotor|3,2|270,1,1|3|16,32\
+pon_Cannon1|6,2|270,1,1|2|64,0,0,0|1|0|0|;&Utility_Rotor|3,2|270,1,1|3|16,32\
 ,0,0|1|720|90|;&Cargo0|2,1|0,1,1|1|0|0|0|Iron:50;&ControlBlock|3,1|0,1,1|1|3\
 2,16,0,0|0|4|0|;&Reactor1|2,2|0,1,1|1|512,0,0,0|0|0|0|;&Armor_HeavyWedge0|1,\
 2|0,1,1|1|0|0|0|;&Armor_Heavy|1,1|0,1,1|1|0|0|0|;&Armor_Heavy|4,1|0,1,1|1|0|\
@@ -1664,7 +1673,7 @@ ility_Wheel1|2,0|0,1,1|1|4,8,0,0|1|10|0|;&Utility_Wheel1|3,0|0,1,1|1|4,8,0,0\
       r[2] =
         /** @type {0|1|2|3} */
         (+rot[0] / 90 + 4.5 & 3);
-      return new Block(part[0], [0, +pos[0] * 2, +pos[1] * 2], r);
+      return new Block(part[0], [0, +pos[0], +pos[1]], r);
     });
   else if (n !== -69)
     throw new Error("Not implemented. (only arg0: n = -69 works)");
@@ -1746,31 +1755,38 @@ Block.rotate = function (rot, x, y, z) {
   return [rot[0] = face, rot[1] = side, rot[2] = turn];
 };
 /** instance is frozen
- * @readonly @typedef {{x:number,y:number,w:number,h:number,res:number}}
+ * @readonly
  * @param {number} x @param {number} y @param {number} w @param {number} h
- * @param {number} resolution (res) */
-Block.Size = function Size(x, y, w, h, resolution) {
+ * @param {number} resolution @param {number} l @param {number} t */
+Block.Size = function Size(x, y, w, h, resolution, l, t) {
+  /** @readonlx */
+  this.l = l | 0;
   /** @readonly */
-  this.x = x;
+  this.t = t | 0;
   /** @readonly */
-  this.y = y;
+  this.x = x | 0;
   /** @readonly */
-  this.w = w;
+  this.y = y | 0;
   /** @readonly */
-  this.h = h;
+  this.w = w | 0;
+  /** @readonly */
+  this.h = h | 0;
   /** stands for resolution @readonly */
-  this.res = resolution;
+  this.res = resolution | 0;
   Object.freeze(this);
 };
 Block.Size.width = 4;
 Block.Size.height = 48;
+Block.Size.prototype.toString = function () {
+  return JSON.stringify(this);
+};
 /**
  * @typedef {number} ShortDef PreciseDef may be implemented
  * @typedef {[number|string]|[number|string,number,number]} SizeDef
  * @typedef {{[key:number]:SizeDef|ShortDef|undefined}} SizesArg
  * @type {(arg:SizesArg)=>{[key:number]:Block.Size|undefined}} */
 Block.Size.generate = function (arg) {
-  var r = {690: new this(0, 0, 2, 2, 32)}, a = arg;
+  var r = {690: new this(0, 0, 2, 2, 32, 0, 0)}, a = arg;
   // by replacing nw = a with nw = {} it will log sizes and do 'reflow'
   for (var l = 690, nw = a; l < Block.NAME.length; l++)
     if (Block.NAME[l]) {
@@ -1788,15 +1804,18 @@ Block.Size.generate = function (arg) {
         y = (+(v[0] + " ").split(" ")[1] / res | 0) * res;
         v[0] = (x / res | 0) + (y / res | 0) * rowSize;
       }
+      if (((v[1] || 1) < 0 || (v[2] || 1) < 0) && v[0] !== -1)
+        throw new Error("Neither width nor height can be negative.");
+      var w = (v[1] || 1), h = (v[2] || 1);
+      r[l] = l > 1279 ?
+        new this(x, y, w * res, h * res, res, w * 2 - 2, h * 2 - 2) :
+        new this(x, y, w * res, h * res, res, 0, 0);
       if (nw !== arg) {
         var offsetY = v[0] / rowSize << 0;
-        console.log(v[0] % rowSize, offsetY, Block.NAME[l], v);
+        console.log(v[0] % rowSize, offsetY, Block.NAME[l], v, r[l]);
         //Data.blocks[Block.NAME[l]].bitmap = v;
         nw instanceof Array && nw.push(v);
       }
-      if (((v[1] || 1) < 0 || (v[2] || 1) < 0) && v[0] !== -1)
-        throw new Error("Neither width nor height can be negative.");
-      r[l] = new this(x, y, (v[1] || 1) * res, (v[2] || 1) * res, res);
     }
   nw instanceof Array &&
     console.log(JSON.stringify(nw).replace(/,/g, ", "));
@@ -1804,15 +1823,59 @@ Block.Size.generate = function (arg) {
 };
 // #riptesting blocks were still not tested properly all at once
 Block.Size.VALUE = Block.Size.generate(Data.generateValues("bitmap"));
+/** creates previously Block.Selected instance
+ * may require inversing pos[1] @param {ShipBlock|null} block
+ * @param {number} [index=-1] @param {XYZPosition} [position] */
+Block.Size.highlightBlock = function (block, index, position) {
+  if (!block)
+    return new Block.Size.Highlight(null, index || 0, position ?
+      position[1] : 0, position ? position[2] : 0, 0, 0, [0, 0, 0]);
+  var id = Block.ID[block.internalName],
+    size = Block.Size.VALUE[id] || {w: 1, h: 1, l: 0, t: 0, res: 1};
+  // calculations from expensiveRenderer
+  var ow = size.w / size.res << 1, oh = size.h / size.res << 1;
+  var pos = position || block.position;
+  var x = -pos[1], y = pos[2], rot = 10 - block.rotation[2] & 3;
+  var w = rot & 1 ? oh : ow, h = rot & 1 ? ow : oh;
+  if (id > 1279) {
+    rot & 1 ? x -= size.t / 2 : x -= size.l / 2;
+    w /= 2;
+    h /= 2;
+  } else {
+    x -= rot === (block.rotation[1] ? 0 : 2) ?
+      (ow - 2) :
+      rot === 3 ? (oh - 2) : 0;
+    y -= rot === (block.rotation[1] ? 1 : 3) ?
+      (ow - 2) :
+      rot === 0 ? (oh - 2) : 0;
+  }
+  var i = typeof index === "number" ? index : -1;
+  return new Block.Size.Highlight(block, i, x, y, w, h, pos);
+};
 /**
- * @typedef {{block:ShipBlock,id:number,x:number,y:number,w:number,
- * h:number}} Block.Selected @see {Block.Size.highlight}
-*/
-/** creates what earilear was instance of Block.Selected
- * @param {ShipBlock} block @param {number} id @param {number} x
- * @param {number} y @param {number} w @param {number} h */
-Block.Size.highlight = function (block, id, x, y, w, h) {
-  return Object.freeze({block: block, id: id, x: x, y: y, w: w, h: h});
+ * @param {ShipBlock|null} block @param {number} i @param {number} x
+ * @param {number} y @param {number} w @param {number} h
+ * @param {XYZPosition} position */
+//-@param {number} xp @param {number} yp
+Block.Size.Highlight = function (block, i, x, y, w, h, position) {
+//-xp, yp) {
+  if (!(block instanceof Block))
+    block = new Block("__NULL__", [0, 0, 0], [0, !1, 0]);
+  this.x = x;
+  this.y = y;
+  this.w = w;
+  this.h = h;
+  this.block = block;
+  this.index = i;
+  this.positionX = position[1];
+  this.positionY = position[2];
+  this.color = "#ffffff";
+  Object.seal(this);
+};
+Block.Size.Highlight.prototype.toString = function () {
+  return [this.x, this.y, this.w, this.h] + "ID: " +
+    [Block.ID[this.block.internalName], "i: " + this.index] +
+    ["pos: " + this.positionX, this.positionY, this.color];
 };
 /** instance is frozen
  * @readonly @template {"BLOCK"|"PYRAMID"|"WEDGE"} T @param {T} type */
@@ -2174,11 +2237,38 @@ Block.Box2d.generateBuildBox = function () {
       OP.call(map, l) ?
         console.error("Property ", l++, "already exists" + AT) :
         setBuildBox(a[i]);
+  // However, Hoare did not say, "Efficiency is the root of all evil."
+  /** @type {((number|undefined)[]|undefined)[]} */
+  var defIndexes = [
+    [36, 37, 23, UDF, 26, 30, 34],
+    [20, 0, UDF, 25, 29, 31, 33],
+    [UDF, 21, 22, 24, UDF, UDF, UDF, 40],
+    [38, UDF, UDF, 39, 28, UDF, UDF, 35],
+    [UDF, UDF, UDF, UDF, 27],
+    [UDF, UDF, UDF, 32],
+  ]
+  /** @param {number|readonly number[]|undefined} data */
+  function setMsBuildBox(data) {
+    if (data instanceof Array)
+      var w = data[1] || 1, h = data[2] || 1;
+    else if (typeof data == "number")
+      w = h = 1;
+    else
+      return;
+    var index = (defIndexes[w - 1] || [])[h - 1];
+    typeof index == "number" ?
+      map[i] = defs[index] :
+      console.warn("Missing Box2d def for ms, w:" + w + " h:" + h);
+    l = i;
+  }
+  for (i = 1280; i < 2048; i++)
+    if (i in Block.NAME)
+      setMsBuildBox((Data.blocks[Block.NAME[i]] || {}).bitmap);
   return map;
 };
 Block.Box2d.VALUE = Block.Box2d.generateBuildBox(
   690,
-  // def<definition index>: <dimensoins> <shape> "<representative block>"
+  // def<definition index>: <dimensions> <shape> "<representative block>"
   // def0: 1x1 block "Block"
   [{x: 0, y: 0}, {x: 0, y: -2}, {x: 2, y: -2}, {x: 2, y: 0}],
   // [{x: 0, y: 0}, {x: 0, y: -1}, {x: 0, y: -2}, {x: 2, y: -2},
@@ -2312,7 +2402,70 @@ Block.Box2d.VALUE = Block.Box2d.generateBuildBox(
     {x: 1.375, y: 4},
     {x: 0.875, y: 5.5},
     {x: 0.25, y: 6}
-  ]
+  ],
+  22 + 1280,
+  // def20: 1x.5 module "Battery1"
+  [{x: 0, y: 0}, {x: 0, y: -1}, {x: 2, y: -1}, {x: 2, y: 0}],
+  341 + 1280,
+  // def21: 1.5x1 module "Excavator1"
+  [{x: 0, y: 0}, {x: 0, y: -2}, {x: 3, y: -2}, {x: 3, y: 0}],
+  146 + 1280,
+  // def22: 1.5x1.5 module "FuelTank4"
+  [{x: 0, y: 0}, {x: 0, y: -3}, {x: 3, y: -3}, {x: 3, y: 0}],
+  5 + 1280,
+  // def23: .5x1.5 module "Engine_Power4"
+  [{x: 0, y: 0}, {x: 0, y: -3}, {x: 1, y: -3}, {x: 1, y: 0}],
+  181 + 1280,
+  // def24: 1.5x2 module "Engine_Big2"
+  [{x: 0, y: 0}, {x: 0, y: -4}, {x: 3, y: -4}, {x: 3, y: 0}],
+  339 + 1280,
+  // def25: 1x2 module "Drill2"
+  [{x: 0, y: 0}, {x: 0, y: -4}, {x: 2, y: -4}, {x: 2, y: 0}],
+  246 + 1280,
+  // def25: .5x2 module "Armor_LaserWedge3"
+  [{x: 0, y: 0}, {x: 0, y: -4}, {x: 1, y: -4}, {x: 1, y: 0}],
+  215 + 1280,
+  // def26: 2.5x2.5 module "Reactor7"
+  [{x: 0, y: 0}, {x: 0, y: -5}, {x: 5, y: -5}, {x: 5, y: 0}],
+  182 + 1280,
+  // def27: 2x2.5 module "Engine_Big3"
+  [{x: 0, y: 0}, {x: 0, y: -5}, {x: 4, y: -5}, {x: 4, y: 0}],
+  180 + 1280,
+  // def28: 1x2.5 module "Engine_Big1"
+  [{x: 0, y: 0}, {x: 0, y: -5}, {x: 2, y: -5}, {x: 2, y: 0}],
+  257 + 1280,
+  // def30: .5x2.5 module "Armor_Laser2Wedge4"
+  [{x: 0, y: 0}, {x: 0, y: -5}, {x: 1, y: -5}, {x: 1, y: 0}],
+  276 + 1280,
+  // def31: 1x3 module "Weapon_Cannon2"
+  [{x: 0, y: 0}, {x: 0, y: -6}, {x: 2, y: -6}, {x: 2, y: 0}],
+  342 + 1280,
+  // def32: 3x2 module "Excavator2"
+  [{x: 0, y: 0}, {x: 0, y: -4}, {x: 6, y: -4}, {x: 6, y: 0}],
+  280 + 1280,
+  // def33: 1x3.5 module "Weapon_Rocket2"
+  [{x: 0, y: 0}, {x: 0, y: -7}, {x: 2, y: -7}, {x: 2, y: 0}],
+  281 + 1280,
+  // def34: .5x3.5 module "Weapon_Railgun1"
+  [{x: 0, y: 0}, {x: 0, y: -7}, {x: 1, y: -7}, {x: 1, y: 0}],
+  349 + 1280,
+  // def35: 2x4 module "Converter_Electrolyzer3"
+  [{x: 0, y: 0}, {x: 0, y: -8}, {x: 4, y: -8}, {x: 4, y: 0}],
+  1 + 1280,
+  // def36: .5x.5 module "ControlBlock"
+  [{x: 0, y: 0}, {x: 0, y: -1}, {x: 1, y: -1}, {x: 1, y: 0}],
+  42 + 1280,
+  // def37: 1x1 module "FuelTank1"
+  [{x: 0, y: 0}, {x: 0, y: -2}, {x: 1, y: -2}, {x: 1, y: 0}],
+  211 + 1280,
+  // def38: 2x.5 module "SolarPanel2"
+  [{x: 0, y: 0}, {x: 0, y: -1}, {x: 4, y: -1}, {x: 4, y: 0}],
+  147 + 1280,
+  // def39: 2x2 module "FuelTank3"
+  [{x: 0, y: 0}, {x: 0, y: -4}, {x: 4, y: -4}, {x: 4, y: 0}],
+  340 + 1280,
+  // def40: 1.5x4 module "Drill3"
+  [{x: 0, y: 0}, {x: 0, y: -8}, {x: 3, y: -8}, {x: 3, y: 0}]
 );
 Block.Box2d.warn = test_collbxs;
 /** @param {[number,number][]} item */
@@ -2954,7 +3107,8 @@ Edit.rotate = (
           /** @type {0|1|2|3} */
           (rot[2] + rx & 3);
       };
-      Edit.capture(Edit.rotate, target, rx *= 90);
+      Edit.capture(Edit.rotate, target, rx);
+      rx *= 90;
     } else {
       ry = ny;
       rz = nz || 0;
@@ -3116,9 +3270,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @TODO SKIP VERSION 40 NEXT TIME ! TODO:  */
-/** @readonly @type {39} significantVersion: 39 (integer) */// @ts-ignore
-Ship.VERSION = 39;
+/** @readonly @type {41} significantVersion: 41 (integer) */// @ts-ignore
+Ship.VERSION = 41;
 Ship.propertyNames = new RegExp("^(?:nodeList|nodeConnections|customI" +
   "nputs|gridSize)$");
 // Ship.PROPERTIES = {
@@ -3423,24 +3576,14 @@ Ship.prototype.blockAtPonit2d = function (x, y, nonull) {
   if (nonull === UDF)
     nonull = true;
   for (var bs = ship.blocks, i = bs.length; i-- > 0;) {
-    var block = bs[i], pos = block.position;
+    var block = bs[i];
     if (block.internalName === "__NULL__" && nonull)
       continue;
-    // calculations from expensiveRenderer
-    var size = Block.Size.VALUE[Block.ID[block.internalName]] ||
-      {w: 1, h: 1, res: 1};
-    var w = size.w / size.res << 1, h = size.h / size.res << 1;
-    var cx = -pos[1], cy = pos[2], rot = 10 - block.rotation[2] & 3;
-    cy -= rot === (block.rotation[1] ? 1 : 3) ?
-      (w - 2) :
-      rot === 0 ? (h - 2) : 0;
-    cx -= rot === (block.rotation[1] ? 0 : 2) ?
-      (w - 2) :
-      rot === 3 ? (h - 2) : 0;
-    var cw = rot & 1 ? h : w, ch = rot & 1 ? w : h;
-    if (-x < cx || y < cy || -x > cx + cw || y > cy + ch)
+    var rect = Block.Size.highlightBlock(block, i);
+    var rx = rect.x, ry = rect.y;
+    if (-x < rx || y < ry || -x > rx + rect.w || y > ry + rect.h)
       continue;
-    return Block.Size.highlight(block, i, cx, cy, cw, ch);
+    return rect;
   }
   return null;
 };
@@ -3783,7 +3926,7 @@ Ship.fromMSSSS = function (mssss) {
       r[2] =
         /** @type {0|1|2|3} */
         (+rot[0] / 90 + +(+rot[2] < 0) * 2 + 4.5 & 3);
-      return new Block(part[0], [0, +pos[0] * 2, +pos[1] * 2], r);
+      return new Block(part[0], [0, +pos[0], +pos[1]], r);
     }
     try {
       var result = JSON.parse(raw),
@@ -3797,9 +3940,9 @@ Ship.fromMSSSS = function (mssss) {
         Block.NAME[obj.ID + 1280] :
         "__unknown__",
       /** @type {XYZPosition} */
-      position = [0, +(obj.X || 0) * 2, +(obj.Y || 0) * 2],
+      position = [0, +(obj.X || 0), +(obj.Y || 0)],
       rotMirVert = +(obj.MirVert || 0) < 0,
-      rotIndex = 
+      rotIndex =
         /** @type {0|1|2|3} */
         (+(obj.Rotation || 0) / 90 + +rotMirVert * 2 + 4.5 & 3),
       rotFlip = +(obj.MirHor || 0) < 0 ? !rotMirVert : rotMirVert,
@@ -4012,7 +4155,7 @@ Ship.utf8ToString = function (buffer, i) {
     } else {
       debugger;
       console.error("debugger HuHh!?");
-    } 
+    }
     while (more) {
       if (i >= bytes.length) {
         cp = 0xFFFD;
@@ -4114,7 +4257,7 @@ Ship.Mode.useParser = function (mode, globalShip, parse) {
 };
 /** insctace is frozen, class is frozen
  * @param {{dbv?:number,grid?:number}} indexes @param {string} game
- * @param {string} name @param {Box2dPath|null} box2d */
+ * @param {string} name @param {Box2dPath|null} box2d @typedef */
 Ship.Grid = function Grid(game, name, box2d, indexes) {
   /** @readonly */
   this.game = game;
@@ -4128,9 +4271,6 @@ Ship.Grid = function Grid(game, name, box2d, indexes) {
   this.gridIndex = indexes.grid;
   Object.freeze(this);
 };
-// TODO: https://github.com/microsoft/TypeScript/issues/57523
-Ship.Grid.prototype.beingClass =
-  "Why TF can't ts accept nested class without such prototype property";
 /** GG @param {{[key:number]:[game:string,name:string,dbvId:number]}} data */
 Ship.Grid.generateGrids = function (data) {
   /** @type {(Ship.Grid|undefined)[]} */
@@ -4154,16 +4294,16 @@ Data.nameMethods(Ship);
 Object.freeze(Object.freeze(Ship).Mode);
 Object.freeze(Ship.Grid);
 
-// generating Droneboi
+// generating Eagle's Pazik (Modular Spaceships Space Ship)
 /** global ship that's being rendered and edited */
 var ship = Ship.fromObject({name: "Pazik_Mk1_Emil_", blocks: "Pazik"});
 // var block = new Block("Block", [0, 0, 0], [0, !0, 0]),
 //   ship = new Ship("None", [0, 9], "never", [block]);
 
-/** class for old Deltarealm base64 prototype keys code */
+/** class for old Deltarealm base64 prototype keys code
+ * @namespace @typedef {never} @returns {never} */
 function B64Key() {
   throw new TypeError("Illegal constructor");
-  this.value = null;
 }
 B64Key.i = 0;
 B64Key.j = 0;
@@ -5024,6 +5164,12 @@ B64Key.drawBlock = function (rc, block) {
   }
 }
 
+if (ship.name === "Pazik_Mk1_Emil_") {
+  ship.selectRect();
+  Edit.rotate(ship, 2);
+}
+Data.dispose();
+
 //@ts-expect-error exporting but not exports weird stuff
 var api = typeof module == "undefined" ? {} : module.exports;
 api.version_code_js = version_code_js;
@@ -5045,3 +5191,10 @@ api.Edit = Edit;
 api.Ship = Ship;
 api.ship = ship;
 api.B64Key = B64Key;
+
+// #funny script:
+// (function (j){Object.keys(Block.NAME).map(function (e, i, a) {
+// var s = ""+Block.NAME[e];return s.slice(0, 3) + s.slice(-4, -2) +
+// (+Block.ID[s]).toString(36);}).sort(function (a, b) {
+// if (a === b && ++j) console.log(a, b);return a.localeCompare(b);});
+// return j;})(0);

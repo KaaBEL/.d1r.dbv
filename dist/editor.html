@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.2.21 -->
+<!-- v.0.2.25 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -9,10 +9,10 @@
   <link rel="icon" href="https://kaabel.github.io/.d1r.dbv/favicon.png" type="image/png" />
   <link rel="icon shortcut" href="https://kaabel.github.io/.d1r.dbv/favicon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" sizes="180x180" href="https://kaabel.github.io/.d1r.dbv/apple-touch-icon.png" />
-  <title>Droneboi Vehicles Editor (DBVE)</title>
+  <title>Droneboi Vehicles and Modular Spaceships Editor (DBVE)</title>
   <meta name="description" content="Check out the early state of opensource Droneboi Vehicles Editor." />
   <meta property="og:image" content="https://kaabel.github.io/.d1r.dbv/favicon.png" />
-  <meta name="theme-color" content="#111111" />
+  <meta name="theme-color" content="#152036" />
   <meta name="apple-mobile-web-app-title" content="D1R DBV Editor" />
   <link rel="manifest" type="application/manifest+json" href="https://kaabel.github.io/.d1r.dbv/manifest.json" />
   <link rel="canonical" href="https://kaabel.github.io/.d1r.dbv/editor.html" />
@@ -20,7 +20,7 @@
     body {
       position: relative;
       margin: 0;
-      background-color: #012;
+      background-color: #123;
       overflow: hidden;
     }
     canvas {
@@ -109,8 +109,8 @@
         parentNode instanceof Object && "className" in parentNode)
         parentNode.className = "no-info";
 
-      if (/bot\.html|Google-Inspect/.test(navigator.userAgent))
-        document.title = "D1R DBV Editor";
+      if (!/bot\.html|Google-Inspect|bingbot/.test(navigator.userAgent))
+        document.title = "D1R DBV +MSSSS Editor";
 
       h && h.appendChild(document.createComment(navigator.userAgent +
         JSON.stringify(navigator["userAgent" + "Data"] || {})));
@@ -129,13 +129,13 @@
     <a class="no-script" href="https://www.enable-javascript.com/">
       Enable javascript to view all of this page's content.
     </a>
-    <h1>Welcome to Dead (droneBoi) Vehicles Editor</h1>
+    <h1>Welcome to DroneBoi vehicles and Modular Spaceships Editor</h1>
     <h2>What is it?</h2>
-    It is a fan made art as
+    Outdated description, but anyway... It is a fan made art as
     <a href="https://github.com/KaaBEL/.d1r.dbv?tab=readme-ov-file">
       opensource tool
     </a>
-    for modifying and creating<!-- in the motive of, -->
+    for modifying and creating (also)<!-- in the motive of, -->
     <a href="https://rizenplanet.com/droneboi.html">Droneboi</a>
     Vehicles online, recreation of the game editor using the same assets.
     <a href="https://rizenplanet.com/droneboi.html">DBC</a>
@@ -199,7 +199,7 @@
     <a href="https://discord.gg/Nb2jAgVHm5">
       Deltarealm fanclub
     </a>.
-    <footer id="info_auth" itemprop="dateModified" content="2025-09-14" datetime="2025-09-14">Made by:
+    <footer id="info_auth" itemprop="dateModified" content="2025-09-30" datetime="2025-09-30">Made by:
       <!-- link is unproperly displayed when whitespace is outside svg and pre -->
       <a href="https://github.com/KaaBEL"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="16" height="16" viewBox="0,0,16,16">
           <g data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill-rule="nonzero" stroke="none" style="mix-blend-mode: normal">
@@ -207,7 +207,7 @@
             <path d="M3,2h5v4h4v-4h1v5h-2l2,7h-1.3l-2,-7h-1.7v7h-5z" fill="#000" />
           </g>
       </svg><pre>KaaBEL</pre></a>
-      <time itemprop="dateModified" content="2025-09-14" datetime="2025-09-14">Last updated September 14, 2025</time>
+      <time itemprop="dateModified" content="2025-09-30" datetime="2025-09-30">Last updated September 30, 2025</time>
     </footer>
     <div class="space" data="bottom_margin_workaround">0</div>
   </article>

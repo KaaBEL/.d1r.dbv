@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.23";
+var version_editor_js = "v.0.2.25";
 /** 3h_ @TODO check @see {Editor} for assignment without saveSettings */
 // TODO v.0.2.8 has defected commit message, also 0.2.13 - 0.2.15 namings
 /** @param {string} data */
@@ -61,11 +61,11 @@ if (/^http:\/\/(?:\d+\.\d+\.\d+\.\d+|localhost:\d+)/.exec(location.href))
  * @typedef {HTMLImageElement|HTMLVideoElement|HTMLCanvasElement} IMGElement
  * @typedef {{}|null} MSPaintTextureGenOptions */
 /** juss a lille wild experiment mixing settings into Editor class, any
- * property not typeof function is considered Editor setting (defaults) */
+ * property not typeof function is considered Editor setting (defaults)
+ * @typedef {never} @returns {never} */
 function Editor() {
-  console.error("Create new Window for more editor instances dumass/j");
+  console.error("open new Window/browser tab for more editors dumass/j");
   throw new TypeError("Illegal constructor");
-  this.data = null;
 };
 /** (default) true: image pattern, false: color */
 Editor.background = typeof DOMMatrix == "function";
@@ -1006,7 +1006,9 @@ var helpCanvas = document.createElement("canvas"),
     {willReadFrequently: true}));
 
 canvas.style.backgroundColor = document.body.style.backgroundColor =
-  Editor.background ? "#132122" : Editor.backgroundColor;
+  Editor.background ?
+    Editor.backgroundImage === 0 ? "#152036" : "#132122" :
+    Editor.backgroundColor;
 imgBackg.loading = "lazy";
 imgBackg.src = "./assets/_" + [
   "ms",
@@ -1360,6 +1362,40 @@ Command.push = function (name, initialize, description, settings) {
 Command.initItem = function (cmd) {
   return cmd;
 };
+Command.old_UI = function (x, y) {
+  x = Math.floor((vX - x) / 2 / sc + 1);
+  y = Math.floor((y - vY) / 2 / sc);
+  var found = [0].slice(1);
+  for (var i = 0, arr = ship.blocks; i < arr.length; i++)
+    if (Math.floor((arr[i].position[1]) / 2) === x &&
+      Math.floor((arr[i].position[2]) / 2) === y) {
+        found.unshift(i);
+    }
+  var rand = placingBlock();
+  if (rand === "remove") {
+    ship.removeBlocks(found);
+    return render();
+  }
+  if (blockBind.changingColor)
+    var oldCmd = Edit.oldUIColor.bind(ship, found, Color.ID[rand]);
+  else if (blockBind.changingPosition)
+    oldCmd = Edit.oldUIMove.bind(ship, found);
+  else
+    oldCmd = Edit.oldUIRotate.bind(ship, found);
+  // placingBlock function modified blockBind.changingColor at beggining
+  if (found.length || blockBind.changingColor) {
+    oldCmd();
+    return render();
+  }
+  if (rand !== "remove") {
+    // #riptesting now I could use some unit test for logic,
+    // but... how the hack am I supposed to do that
+    ship.placeBlock(0, x * 2, y * 2, Block.ID[rand]);
+  }
+  render();
+};
+/** requires calling once DefaultUI properties are defined! */
+Command.goHome = F;
 Object.seal(Command);
 
 Command.push("Select Block", function (items, collapsed) {
@@ -2264,7 +2300,7 @@ Command.push("Transform tool", function (items, collapsed) {
         } else {
           selectX1.value = (xy[2] = x) / units + "";
           selectY1.value = (xy[3] = y) / units + "";
-          press = old_UI;
+          press = Command.old_UI;
         }
       render();
     };
@@ -2487,8 +2523,8 @@ Command.push("Vehicle stats", function (items, collapsed) {
           " doesn't require any Rift Crystals since you don't seem go" +
             "ing anywhere." :
           " Distance format is not a number." :
-        " Type desired Rift Driving Light Years (LY) distance into th" +
-          "e input.";
+        " Enter desired Rift Driving Light Years (LY) distance into t" +
+          "he input.";
     if (sums.blocks[796] > 1)
       red.data += " You can't buy more then one Small Rift Drive in C" +
         "onquest! ";
@@ -2969,6 +3005,102 @@ nfo to skip it.\n");
 // Also thank to cacat9999 for sharing block capacity/use stats from source
 // code in Discord, you all for using DBVE, your feedback, and db
 // suggestions to take inspiration from.
+
+Command.goHome = (function () {
+  /** DefaultUI properties might are not initialized initially
+   * for #commandsTab styles @see {Editor.addingStyles} */
+  function goHome() {
+    Command.head.innerText = "[Commands tab]";
+    content.style.display = "";
+    items.style.display = "none";
+    back.style.visibility = "hidden";
+    utilities.rend_UI = F;
+    press = DefaultUI.press || F;
+    move = DefaultUI.move || F;
+    render();
+  }
+  /** navigation element returned to set cmds variable */
+  var menu = Command.el;
+  menu.id = "commandsTab";
+  menu.style.display = "none";
+  var el = menu.appendChild(EL("header")),
+    back = el.appendChild(EL("button"));
+  back.appendChild(tN("<"));
+  back.onclick = goHome;
+  el.appendChild(Command.head);
+  el = el.appendChild(EL("button"));
+  el.appendChild(tN("X"));
+  el.onclick = function () {
+    menu.style.display = "none";
+  };
+  var content = menu.appendChild(EL()), items = menu.appendChild(EL());
+  content.className = "content";
+  items.className = "items";
+  goHome();
+  (el = menu.appendChild(EL())).style.display = "none";
+  el.appendChild(tN("Search commads... coming spoon"));
+  /** @param {Command} item */
+  function initItems(item) {
+    function ending() {
+      var el = items.appendChild(EL());
+      el.innerText = "Description:\n" + item.description;
+      el.style.color = "#879b90";
+    }
+    return function () {
+      Command.head.innerText = item.name;
+      content.style.display = "none";
+      items.style.display = "";
+      back.style.visibility = "visible";
+      for (; items.firstChild;)
+        items.removeChild(items.firstChild);
+      var arr = item.items;
+      if (typeof arr == "function")
+        return arr(items), ending();
+      for (var i = 0; i < arr.length; i++) {
+        var s = arr[i].type, isBtn = s === "button";
+        var isChck = s === "checkbox", e = EL(isChck ? "input" : s);
+        if (isChck && e instanceof HTMLInputElement)
+          e.type = "checkbox";
+        e[isBtn ?
+          "onclick" :
+          isChck ? "onchange" : "oninput"] = arr[i].fn;
+        (isBtn ? e : items).appendChild(tN(
+          arr[i].name + (isBtn ? "" : ": ")));
+        items.appendChild(EL("li")).appendChild(e);
+        !isBtn && items.appendChild(EL("br"));
+      }
+      ending();
+    }
+  }
+  var group = utilities("");
+  Command.initItem = function (item) {
+    if (item.group && item.group !== groupName) {
+      group = utilities(groupName = item.group);
+      content.appendChild(group[0]);
+      content.appendChild(group[1]);
+    }
+    (item.group ? group[1] : content).appendChild(el = EL("li"));
+    el = el.appendChild(EL("button"));
+    el.appendChild(tN(item.name));
+    el.onclick = initItems(item);
+    el.appendChild(EL()).appendChild(tN(">"));
+    return item;
+  };
+  for (var i = 0, groupName = ""; i < Command.list.length; i++)
+    Command.initItem(Command.list[i]);
+  window.onerror = function (m,s,l,c,e) {
+    var pre = content.appendChild(EL("div"));
+    pre.style.overflowWrap = "break-word";
+    pre.style.wordBreak = "break-all";
+    pre.appendChild(tN(e && e.stack ?
+      "" + m + "\n" + e.stack :
+      "" + m + "\n\t" + s + ":" + l + ":" + c));
+    if ("test_log" in window && window.test_log instanceof Array)
+      window.test_log.push("[w.err]");
+  };
+  (bd || EL()).appendChild(menu)
+  return goHome;
+})();
 
 /** @callback ToolExec @param {number} x @param {number} y @returns {void} */
 /** @typedef {ToolExec|Tool.Tab} ToolMethods */
@@ -3533,7 +3665,7 @@ Tool.list.push(new Tool("Erase", "M21cbd,3933e c-fa8,c27,-2353,1363,-38af,13\
     ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
   if (!found)
     return;
-  ship.removeBlocks([found.id]);
+  ship.removeBlocks([found.index]);
   render();
 }));
 Tool.list.push(new Tool("Classic", "M4030e,2bac1 c-1838,-80aa,-8930,-e200,-1\
@@ -3547,7 +3679,7 @@ be8b,554f,be8b,be8b z M33a,c1a9 l0,0 c0,-693b,554f,-be8b,be8b,-be8b h3299 l-\
 57,0,-2873,121c,-2873,2873 v6982 c0,1657,121c,2873,2873,2873 h5090 c1657,0,2\
 873,-121c,2873,-2873 c0,-1657,-121c,-2873,-2873,-2873 h-282b z", F,
 function (x, y) {
-  old_UI(x, y);
+  Command.old_UI(x, y);
 }));
 Tool.list.push(new Tool("Oldschool", "M105e7,3d210 c-3a97,3a97,-9997,3a97,-d\
 42f,0 c-3a97,-3a97,-3a97,-9997,0,-d42f l1b0b,-1b0b ld429,d429 z M803a,2adde \
@@ -3661,9 +3793,9 @@ function devt_bug_testing() {
 var devt_debugger = false;
 
 /** @typedef {Block|LogicBlock|Tool|null} TileType (tile variable name) */
+/** @namespace @typedef {never} @returns {never} */
 function DefaultUI() {
   throw new TypeError("Illegal constructor");
-  this.mode = "any";
 }
 /** used in DefaultUI.createTile for rotatable blocks */
 DefaultUI.tilesRotation =
@@ -3679,7 +3811,7 @@ DefaultUI.blockBars = [];
 DefaultUI.openedFolder = 0;
 /**
  * use @see {DefaultUI.setSelectedTile} to select selectable tile
- * The positon (item variable name) of selected tile consists of:
+ * The position (item variable name) of selected tile consists of:
  * enum `value & 3` where 0 = selected in toolBar, 1 = selected in blockBar,
  * 2 = selected inventoryTile, 3 = reserved for selected in inventory,
  * `value >> 2` gives index of selected tile,
@@ -3782,14 +3914,14 @@ DefaultUI.defaultFoldersData = [
 /** @type {ToolExec} */
 DefaultUI.defaultPress = function (_x, _y) {};
 DefaultUI.canDefaultPress = true;
-/** @type {Block.Selected|null} temporary visualising */
+/** @type {Block.Size.Highlight|null} temporary visualising */
 DefaultUI.found = null;
 /** used to visualise where DefaultUI.Drag.dragged will be placed, is
  * like @see {DefaultUI.clickedTile} @see {DefaultUI.selectedTile} */
 DefaultUI.replacingTile = -1;
 /** obsolete as of right now @deprecated */
 DefaultUI.insertedTile = -1;
-/** used for placing preview @type {DefaultUI.Highlight[]} */
+/** used for placing preview @type {(Block.Size.Highlight|undefined)[]} */
 DefaultUI.highlights = [];
 /** @param {number|string} type @param {unknown[]} [tiles=[]] */
 DefaultUI.createFolder = function (type, tiles) {
@@ -3827,7 +3959,7 @@ DefaultUI.setSelectedTile = function (item, x, y) {
  * @returns {boolean} over GUI area */
 DefaultUI.handleGUIArea = function (x, y, reference) {
   // NOTE will probably require option for getactionArea
-  /** number positoin of tile @see {DefaultUI.selectedTile} */
+  /** number position of tile @see {DefaultUI.selectedTile} */
   var item = reference ? reference.item = reference.folder = -1 : -1;
   var fraction = 0.5;
   // v.0.2.10 237 = interactable witdh/height for toolBar
@@ -4002,7 +4134,7 @@ DefaultUI.renderHotBars = function (w, h) {
     if (!size) {
       console.warn("No Block.Size definition for: " +
         block.internalName);
-      size = {x: 0, y: 0, w: 0, h: 0, res: 1};
+      size = {x: 0, y: 0, w: 0, h: 0, l: 0, t: 0, res: 1};
     }
     if (size.h <= 0 || size.w <= 0)
       return void (rc.canvas.width = rc.canvas.width);
@@ -4210,30 +4342,57 @@ DefaultUI.basePress = function (blockPlacing, canDefault) {
 };
 /** @param {number} x @param {number} y @param {ShipBlock} block */
 DefaultUI.previewPlacing = function (x, y, block) {
-  var dragged = DefaultUI.Drag.dragged, size =
-      Block.Size.VALUE[Block.ID[DefaultUI.getCode(block)]],
-    xFix = size ? size.w / 32 + .5 : 2,
-    yFix = size ? -size.h / 32 + .5 : 0;
+  var size = Block.Size.VALUE[Block.ID[block.internalName]];
+  var rot = 10 - block.rotation[2] & 3,
+    xFix = size ? size.w / size.res + .5 : 2,
+    yFix = size ? -size.h / size.res + .5 : 0,
+    hx = (vX - x) / sc,
+    hy = (y - vY) / sc;
+  var rect = Block.Size.highlightBlock(block, -1, [0, hx + xFix |
+    0, hy + yFix | 0]);
+  //-var id = Block.ID[DefaultUI.getCode(block)], sz = Block.Size.VALUE[id];
+  //-var rot = 10 - block.rotation[2] & 3,
+  //-  xFix = sz ? sz.w / sz.res + .5 : 2,
+  //-  yFix = sz ? -sz.h / sz.res + .5 : 0,
+  //-  hx = Math.floor((vX - x) / sc + xFix),
+  //-  hy = Math.floor((y - vY) / sc + yFix);
+  //-var w = sz.w / sz.res * 2, h = sz.h / sz.res * 2;
+  //-// rot === 0 ? hy += sz.t * sc : rot === 1 ? hx -= sz.t * sc : 0;
+  //-// rot === (block.rotation[1] ? 1 : 3) ?
+  //-//   hy += sz.l * sc :
+  //-//   rot === (block.rotation[1] ? 2 : 0) ? hx -= sz.l * sc : 0;
+  //-var hw = rot & 1 ? h : w, hh = rot & 1 ? w : h;
   DefaultUI.highlights.length = 0;
-  DefaultUI.highlights.push(new DefaultUI.Highlight(
-    Editor.highlightGreen,
-    0,
-    0,
-    0,
-    0
-  ));
+  rect.color = Editor.highlightGreen;
+  // for (var i = ship.blocks.length; i-- > 0;)
+    // var box = Block.Size.Highlight(ship.blocks[i]);
+  // rendering script at DefaultUI.rend
+  DefaultUI.highlights.push(Block.Size.highlightBlock(null, 0, [0, hx |
+    0, hy | 0]), rect);
 };
-/**
- * @param {string} color @param {number} x @param {number} y
- * @param {number} w @param {number} h */
-DefaultUI.Highlight = function (color, x, y, w, h) {
-  this.color = color;
-  this.x = x;
-  this.y = y;
-  this.w = w;
-  this.h = h;
-  Object.seal(this);
-};
+//-/** @param {number} x placement = new DefaultUI.Highlight(cx, cy)
+//-@param {number} y placement = new DefaultUI.Highlight(cx, cy) */
+//-DefaultUI.Highlight = function (x, y) {
+//-  this.color = "#ffffff";
+//-  this.x = x || 0;
+//-  this.y = y || 0;
+//-  this.hx = x || 0;
+//-  this.hy = y || 0;
+//-  this.hw = 3;
+//-  this.hh = 3;
+//-  Object.seal(this);
+//-};
+//-/**
+//- * @param {number} x @param {number} y
+//- * @param {number} w @param {number} h  @param {string} color */
+//-DefaultUI.Highlight.prototype.rect = function (x, y, w, h, color) {
+//-  this.hx = x;
+//-  this.hy = y;
+//-  this.hw = w;
+//-  this.hh = h;
+//-  this.color = color;
+//-  return this;
+//-};
 DefaultUI.Drag = function () {
   this.x = 0;
   this.y = 0;
@@ -4296,11 +4455,17 @@ DefaultUI.Drag.reset = function (notTile) {
 DefaultUI.Drag.finish = function (action) {
   if (juhus.get("claim") !== "movetile")
     return false;
-  DefaultUI.highlights = [];
-  var replacing = DefaultUI.replacingTile;
-  if (replacing === -1 || action.type === "mouseleave")
+  var replacing = DefaultUI.replacingTile,
+    dragged = DefaultUI.Drag.dragged;
+  if (replacing === -1 || action.type === "mouseleave") {
+    var rect = DefaultUI.highlights[1] || action;
+    if (dragged.tile instanceof Block && "positionX" in rect)
+      ship.placeBlock(0, rect.positionX, rect.positionY, dragged.tile);
+    else if (dragged.tile instanceof Tool)
+      dragged.tile.exec(rect.x, rect.y);
     return DefaultUI.Drag.reset();
-  var dragged = DefaultUI.Drag.dragged;
+  }
+  DefaultUI.highlights = [];
   if (replacing !== dragged.item)
     DefaultUI.Drag.reset(true);
   var hotbar = dragged.item !== -1 && (dragged.item & 3) === 1 ?
@@ -4327,7 +4492,6 @@ DefaultUI.Drag.finish = function (action) {
   render();
   return true;
 };
-'3h_'
 /** for all magical number constants used in bitwise operations
  * and comparsion of the results @see {DefaultUI.selectedTile}
  * @param {number} x @param {number} y @param {Actions} action */
@@ -4360,7 +4524,7 @@ DefaultUI.Drag.detect = function (x, y, action) {
     render();
     return true;
   }
-  if (claim !== "unclaimed" || action.state.slice(-4) !== "drag")
+  if (claim !== "unclaimed" || action.state.slice(-4) !== "move")
     return false;
   DefaultUI.Drag.reset();
   if (!DefaultUI.handleGUIArea(action.startX, action.startY, dragged))
@@ -4375,6 +4539,12 @@ DefaultUI.Drag.detect = function (x, y, action) {
   juhus.set("claim", "movetile");
   return true;
 };
+//-/** @namespace @typedef {never} @returns {never} */
+//-DefaultUI.Binds = function () {
+//-  throw new TypeError("Illegal constructor");
+//-};
+//-DefaultUI.Binds.shipPress = function () {};
+//-DefaultUI.Binds.shipPress = DefaultUI.basePress(UDF);
 
 // #IDK move elsewhere maybe
 juhus.set("onclaim", function (x, y, source) {
@@ -4424,100 +4594,6 @@ juhus.set("onend", function (x, y, source) {
   }
 });
 
-(function () {
-  /** for #commandsTab styles @see {Editor.addingStyles} */
-  function goHome() {
-    Command.head.innerText = "[Commands tab]";
-    content.style.display = "";
-    items.style.display = "none";
-    back.style.visibility = "hidden";
-    utilities.rend_UI = F;
-    press = DefaultUI.press;
-    move = DefaultUI.move;
-    render();
-  }
-  /** navigation element returned to set cmds variable */
-  var menu = Command.el;
-  menu.id = "commandsTab";
-  menu.style.display = "none";
-  var el = menu.appendChild(EL("header")),
-    back = el.appendChild(EL("button"));
-  back.appendChild(tN("<"));
-  back.onclick = goHome;
-  el.appendChild(Command.head);
-  el = el.appendChild(EL("button"));
-  el.appendChild(tN("X"));
-  el.onclick = function () {
-    menu.style.display = "none";
-  };
-  var content = menu.appendChild(EL()), items = menu.appendChild(EL());
-  content.className = "content";
-  items.className = "items";
-  goHome();
-  (el = menu.appendChild(EL())).style.display = "none";
-  el.appendChild(tN("Search commads... coming spoon"));
-  /** @param {Command} item */
-  function initItems(item) {
-    function ending() {
-      var el = items.appendChild(EL());
-      el.innerText = "Description:\n" + item.description;
-      el.style.color = "#879b90";
-    }
-    return function () {
-      Command.head.innerText = item.name;
-      content.style.display = "none";
-      items.style.display = "";
-      back.style.visibility = "visible";
-      for (; items.firstChild;)
-        items.removeChild(items.firstChild);
-      var arr = item.items;
-      if (typeof arr == "function")
-        return arr(items), ending();
-      for (var i = 0; i < arr.length; i++) {
-        var s = arr[i].type, isBtn = s === "button";
-        var isChck = s === "checkbox", e = EL(isChck ? "input" : s);
-        if (isChck && e instanceof HTMLInputElement)
-          e.type = "checkbox";
-        e[isBtn ?
-          "onclick" :
-          isChck ? "onchange" : "oninput"] = arr[i].fn;
-        (isBtn ? e : items).appendChild(tN(
-          arr[i].name + (isBtn ? "" : ": ")));
-        items.appendChild(EL("li")).appendChild(e);
-        !isBtn && items.appendChild(EL("br"));
-      }
-      ending();
-    }
-  }
-  var group = utilities("");
-  Command.initItem = function (item) {
-    if (item.group && item.group !== groupName) {
-      group = utilities(groupName = item.group);
-      content.appendChild(group[0]);
-      content.appendChild(group[1]);
-    }
-    (item.group ? group[1] : content).appendChild(el = EL("li"));
-    el = el.appendChild(EL("button"));
-    el.appendChild(tN(item.name));
-    el.onclick = initItems(item);
-    el.appendChild(EL()).appendChild(tN(">"));
-    return item;
-  };
-  for (var i = 0, groupName = ""; i < Command.list.length; i++)
-    Command.initItem(Command.list[i]);
-  window.onerror = function (m,s,l,c,e) {
-    var pre = content.appendChild(EL("div"));
-    pre.style.overflowWrap = "break-word";
-    pre.style.wordBreak = "break-all";
-    pre.appendChild(tN(e && e.stack ?
-      "" + m + "\n" + e.stack :
-      "" + m + "\n\t" + s + ":" + l + ":" + c));
-    if ("test_log" in window && window.test_log instanceof Array)
-      window.test_log.push("[w.err]");
-  };
-  return (bd || EL()).appendChild(menu);
-})();
-
 function enableShipEditing() {
   var mode = ship.getMode();
   ship = mode.getShip();
@@ -4532,19 +4608,26 @@ function enableShipEditing() {
     return false;
   };
   DefaultUI.rend = function () {
-    var found = DefaultUI.found;
+    /** @type {Block.Size.Highlight|null} */
+    var rect = DefaultUI.found;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.lineWidth = Editor.highlightWidth;
-    if (found) {
+    if (rect) {
       ctx.strokeStyle = Editor.highlightRed;
-      var dx = found.x * sc + vX, dy = found.y * sc + vY;
-      ctx.strokeRect(dx, dy, found.w * sc, found.h * sc);
+      var dx = rect.x * sc + vX, dy = rect.y * sc + vY;
+      ctx.strokeRect(dx, dy, rect.w * sc, rect.h * sc);
     }
-    for (var i = DefaultUI.highlights.length; i--;) {
-      var rect = DefaultUI.highlights[i], x = rect.x * sc + vX;
+    for (var i = DefaultUI.highlights.length; i-- > 0;) {
+      if (!(rect = DefaultUI.highlights[i] || null))
+        continue;
       ctx.strokeStyle = rect.color;
-      ctx.strokeRect(x, rect.y * sc + vX, rect.w * sc, rect.h * sc);
+      var x = rect.x * sc + vX, y = rect.y * sc + vY;
+      ctx.strokeRect(x, y, rect.w * sc, rect.h * sc);
     }
+    // if (rect = DefaultUI.highlights[0]) {
+    //   ctx.strokeStyle = rect.color;
+    //   ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+    // }
     DefaultUI.reflowBlockBars(canvas.width);
     DefaultUI.renderHotBars(canvas.width, canvas.height);
   };
@@ -4607,7 +4690,7 @@ function enableLogicEditing() {
       return global;
     }
   ));
-  /** @type {Block.Selected|null} */
+  /** @type {Block.Size.Highlight|null} */
   var found = null, movingId = -1;
   DefaultUI.press = press = DefaultUI.basePress(function (x, y, tile) {
     ship.placeBlock(0, (vX - x) / sc + 2, (y - vY) / sc, tile);
@@ -4627,8 +4710,8 @@ function enableLogicEditing() {
       oX = (vX - x) / sc - found.block.position[1];
       oY = (y - vY) / sc - found.block.position[2];
       blocks = ship.blocks;
-      blocks[movingId = blocks.length] = blocks[found.id];
-      blocks[found.id] = new Block("__NULL__", [0, 0, 0], [0, !1, 0]);
+      blocks[movingId = blocks.length] = blocks[found.index];
+      blocks[found.index] = new Block("__NULL__", [0, 0, 0], [0, !1, 0]);
       render();
       return !0;
     } else if (e.type === "mousemove" || e.type === "touchmove") {
@@ -4646,8 +4729,8 @@ function enableLogicEditing() {
         movingId = blocks.indexOf(found.block)) === -1) {
         throw new Error("Block found not found, at edit_logicmove.");
       }
-      if ((blocks[found.id] || {}).internalName === "__NULL__") {
-        blocks[found.id] = found.block;
+      if ((blocks[found.index] || {}).internalName === "__NULL__") {
+        blocks[found.index] = found.block;
         del.call(blocks, movingId);
       } else
         throw new Error("Block __NULL__ not found, at edit_logicmove.");
@@ -4688,6 +4771,24 @@ var edit_logicmove = function (x, y, e) {
   //?? #compactDownToExecTiel
   return e.type === "mousedown" ? DefaultUI.handleGUIArea(x, y) : false;
 };
+
+(function initDefaultUI() {
+  Command.goHome();
+  if (ship.name === "Pazik_Mk1_Emil_") {
+    DefaultUI.tilesRotation[2] = 2;
+    DefaultUI.tilesFlippableRotation[2] = 2;
+  }
+  if (init_funMode !== F)
+    return init_funMode();
+  enableShipEditing();
+  var i = 0, classic = DefaultUI.createTile("Classic");
+  i = DefaultUI.blockBars[DefaultUI.openedFolder].indexOf(classic);
+  if (i !== -1)
+    DefaultUI.setSelectedTile(i << 2 | 1);
+  else if ((i = DefaultUI.toolBar.indexOf(classic)) !== 1)
+    DefaultUI.setSelectedTile(i << 2 | 0);
+  juhus.get("resize")();
+})();
 
 function rend_backgPattern() {
   if (Editor.backgroundImage === 0) {
@@ -4812,15 +4913,20 @@ rend_initialized.push(function () {
 });
 function rend_initColors() {
   helpCanvas.width = helpCanvas.height = 32;
-  for (var i = Color.NAME.length, patterns = []; i-- > 0;) {
-    try {
+  var i = Color.NAME.length, patterns = []
+  try {
+    for (; i-- > 0;) {
       rc.drawImage(imgColor, 0, i * -32);
-    } catch (e) {}
-    patterns[i] = rc.createPattern(helpCanvas, "repeat") || "";
+      patterns[i] = rc.createPattern(helpCanvas, "repeat") || "";
+    }
+  } catch (e) {
+    console.warn(e);
   }
   return patterns;
 }
 function rend_checkColors() {
+  /** @TODO fix all of loading spaghetti together with Renderer somehow */
+  imgColor.onload = null;
   rc.fillStyle = rend_colors[0];
   rc.fillRect(0, 0, 32, 32);
   var dat = rc.getImageData(0, 0, 32, 32).data;
@@ -4854,6 +4960,7 @@ function rend_checkColors() {
       });
 }
 var rend_colors = rend_initColors();
+imgColor.onload = rend_checkColors;
 
 /** @type {(click?: true | undefined) => void} */
 function init_touchScreen(click) {
@@ -4881,39 +4988,6 @@ function init_touchScreen(click) {
   Editor.setPixelRatio();
 }
 touchdevice = init_touchScreen;
-
-var old_UI = DefaultUI.press = press = function (x, y) {
-  x = Math.floor((vX - x) / 2 / sc + 1);
-  y = Math.floor((y - vY) / 2 / sc);
-  var found = [0].slice(1);
-  for (var i = 0, arr = ship.blocks; i < arr.length; i++)
-    if (Math.floor((arr[i].position[1]) / 2) === x &&
-      Math.floor((arr[i].position[2]) / 2) === y) {
-        found.unshift(i);
-    }
-  var rand = placingBlock();
-  if (rand === "remove") {
-    ship.removeBlocks(found);
-    return render();
-  }
-  if (blockBind.changingColor)
-    var oldCmd = Edit.oldUIColor.bind(ship, found, Color.ID[rand]);
-  else if (blockBind.changingPosition)
-    oldCmd = Edit.oldUIMove.bind(ship, found);
-  else
-    oldCmd = Edit.oldUIRotate.bind(ship, found);
-  // placingBlock function modified blockBind.changingColor at beggining
-  if (found.length || blockBind.changingColor) {
-    oldCmd();
-    return render();
-  }
-  if (rand !== "remove") {
-    // #riptesting now I could use some unit test for logic,
-    // but... how the hack am I supposed to do that
-    ship.placeBlock(0, x * 2, y * 2, Block.ID[rand]);
-  }
-  render();
-};
 
 /** @type {(x:number,y:number,e:MouseEvent)=>void} */
 function commands(x, y, e) {
@@ -5042,7 +5116,6 @@ Renderer.drawBlock = function (block) {
   var ow = size.w, oh = size.h, sw = 0, sh = 0;
   var w = ow + (ow & 16), h = oh + (oh & 16);
   // position to draw block in canvas
-  
   var dx = -pos[1] * sc + vX, dy = pos[2] * sc + vY;
   // position correction for tiny blocks and rotations
   dy -= rot === (block.rotation[1] ? 1 : 3) ?
@@ -5145,13 +5218,31 @@ function expensiveRenderer() {
     var w = ow + (ow & 16), h = oh + (oh & 16);
     // position to draw block in canvas
     var dx = -pos[1] * sc + vX, dy = pos[2] * sc + vY;
-    // position correction for tiny blocks and rotations
-    dy -= rot === (objs[i].rotation[1] ? 1 : 3) ?
-      (w - 32) * sc / 16 :
-      rot === 0 ? (h - 32) * sc / 16 : 0;
-    dx -= rot === (objs[i].rotation[1] ? 0 : 2) ?
-      (w - 32) * sc / 16 :
-      rot === 3 ? (h - 32) * sc / 16 : 0;
+    // apply rotation to destination rectangle
+    if (id > 1279) {
+      // position correction for ms blocks
+      rot & 1 ? dx -= size.t * sc / 2 : dx -= size.l * sc / 2;
+      //-rot === 0 ? dy += size.t * sc : rot === 1 ? dx -= size.t * sc : 0;
+      //-rot === (objs[i].rotation[1] ? 1 : 3) ?
+      //-  dy += size.l * sc :
+      //-  rot === (objs[i].rotation[1] ? 2 : 0) ? dx -= size.l * sc : 0;
+      dw = (rot & 1 ? h : w) / 2;
+      dh = (rot & 1 ? w : h) / 2;
+      w = w * size.res >>> 5;
+      h = h * size.res >>> 5;
+      helpCanvas.width = rot & 1 ? h : w;
+      helpCanvas.height = rot & 1 ? w : h;
+    } else {
+      // position correction for db tiny blocks and rotations
+      dy -= rot === (objs[i].rotation[1] ? 1 : 3) ?
+        (w - 32) * sc / 16 :
+        rot === 0 ? (h - 32) * sc / 16 : 0;
+      dx -= rot === (objs[i].rotation[1] ? 0 : 2) ?
+        (w - 32) * sc / 16 :
+        rot === 3 ? (h - 32) * sc / 16 : 0;
+      helpCanvas.width = dw = rot & 1 ? h : w;
+      helpCanvas.height = dh = rot & 1 ? w : h;
+    }
     // update logic nodes render posiotions
     /** @type {typeof logics[number]} */
     var node, indexes = objs[i].properties.nodeIndex;
@@ -5172,24 +5263,15 @@ function expensiveRenderer() {
         // @ts-expect-error
         logic[j] || (logic[j] = {x: j / 3, y: j / 3});
         // facepalm No.1: works now actually
-        var x = logic[j].x - (ow & 16) / 32,
-          y = logic[j].y - (oh & 16) / 32,
+        var x = logic[j].x - (id > 1279 ? ow & 16 : 0) / size.res,
+          y = logic[j].y - (id > 1279 ? oh & 16 : 0) / size.res,
           /** @type {number[]} */
           xys = [x, y, -x, -y];
-        x = (rot & 1 ? h / 32 : w / 32) + xys[rot];
-        y = (rot & 1 ? w / 32 : h / 32) + xys[rot + 3 & 3];
+        x = w / size.res + xys[rot];
+        y = h / size.res + xys[rot + 3 & 3];
         node.x = dx + x * sc;
         node.y = dy + y * sc;
       };
-    // apply rotation to destination rectangle ()
-    dw = rot & 1 ? h : w;
-    dh = rot & 1 ? w : h;
-    w = w * size.res >>> 5;
-    h = h * size.res >>> 5;
-    helpCanvas.width = rot & 1 ? h : w;
-    helpCanvas.height = rot & 1 ? w : h;
-    // helpCanvas.width = id > 1279 ? sw * 7 / 32 : sw;
-    // helpCanvas.height = id > 1279 ? sh * 7 / 32 : sh;
     // apply color texture
     if (objs[i].rotation[1]) {
       // handles block flipping
@@ -5333,20 +5415,6 @@ Block.Box2d.visualize = function (path, x, y, green) {
 };
 
 init = function () {
-  enableShipEditing();
-  var i = 0, classic = DefaultUI.createTile("Classic");
-  i = DefaultUI.blockBars[DefaultUI.openedFolder].indexOf(classic);
-  if (i !== -1)
-    DefaultUI.setSelectedTile(i << 2 | 1);
-  else if ((i = DefaultUI.toolBar.indexOf(classic)) !== 1)
-    DefaultUI.setSelectedTile(i << 2 | 0);
-  if (ship.name === "Pazik_Mk1_Emil_") {
-    DefaultUI.tilesRotation[2] = 2;
-    DefaultUI.tilesFlippableRotation[2] = 2;
-    ship.selectRect();
-    Edit.rotate(ship, 2);
-  }
-  rend_checkColors();
-  init_funMode();
+  imgColor.onload && rend_checkColors();
   check_contentScript();
 };

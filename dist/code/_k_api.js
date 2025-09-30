@@ -3,7 +3,7 @@
 "use strict";
 /** @readonly */
 /** @TODO check @see {Actions.API_VERSION} */
-var version__k_api_js = "v.0.2.24";
+var version__k_api_js = "v.0.2.25";
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -64,7 +64,7 @@ if (/http:..localhost:815[89]/.test(location.href))
 // sc = scale
 // pR = pixel ratio (computed)
 // mouseStamp = press start
-var vX = 0, vY = 0, fX, fY, gX, gY, sc = 16, pR = 1;
+var vX = 0, vY = 64, fX, fY, gX, gY, sc = 64, pR = 1;
 /**
  * @type {HTMLElement&{onmousewheel?:(this: GlobalEventHandlers,
  * ev:WheelEvent&{wheelDelta?:number})=>any}|null}
@@ -75,12 +75,12 @@ var bd = GE(8);
 /** @type {((click?:true)=>void)|null} */
 var touchdevice = null;
 
-/** signals UI API click on canvas */
+/** @deprecated signals UI API click on canvas */
 var press = function press(x, y) {
   return console.debug(x, y);
 };
 
-/** return true if move is used outside UI API */
+/** @deprecated return true if move is used outside UI API */
 var move = function move(x, y, e) {
   return Boolean(console.debug(x, y));
 };
@@ -89,6 +89,7 @@ var contextmenu = function contextmenu(x, y, ev) {
   return console.debug(x, y);
 };
 
+/** @deprecated */
 var over = function (ev) {
   return console.debug(ev);
 };
@@ -121,7 +122,7 @@ if (typeof EventTarget != "function")
 
 var test_debug = false;
 
-/** 
+/**
  * @typedef {Exclude<keyof (MouseEvent|WheelEvent|PointerEvent),"initEvent"|
  * "initUIEvent"|"preventDefault"|"stopImmediatePropagation"|"composedPath"|
  * "stopPropagation"|"getModifierState"|"initMouseEvent">} ActionsDefault
@@ -154,7 +155,7 @@ var test_debug = false;
 function Actions(event, index, state, previous, touch) {
   /** @type {Touch|typeof Actions.default} */
   var source = touch || (event instanceof TouchEvent ?
-    Actions.default : 
+    Actions.default :
     event);
   var offset = state.root instanceof HTMLElement ?
     state.root :
@@ -213,7 +214,7 @@ function Actions(event, index, state, previous, touch) {
   Object.seal(this);
 }
 /** @readonly *///@ts-expect-error
-Actions.API_VERSION = "0.3.7";
+Actions.API_VERSION = "0.3.8";
 Actions.default = Object.freeze(
   /** @type {{[K in ActionsDefault]:(MouseEvent|ScrollWheel|PointerEvent)[K]}} */
   ({
@@ -278,15 +279,15 @@ Actions.updateState = function (action, event, state, previous) {
   }
   x = action.x - previous.startX, y = action.y - previous.startY;
   var both = previous.state.split(" "), click = both[0] || "single";
-  /** is how the interactions evolves after start short|long|drag|longdrag */
+  /** is how the interactions evolves after start short|long|move|longmove */
   var hold = both[1] || "";
-  var drag = hold.slice(-4) === "drag",
-    longer = hold.slice(0, 4) === "long" || !drag &&
+  var move = hold.slice(-4) === "move",
+    longer = hold.slice(0, 4) === "long" || !move &&
       event.timeStamp > action.startTimeStamp + allowed.shortTime;
   // TODO: use of state.pixelRatio sounds like it could improve experience
-  drag = drag || Math.sqrt(x * x + y * y) > allowed.shortMove;
+  move = move || Math.sqrt(x * x + y * y) > allowed.shortMove;
   return click + " " +
-    ((longer ? "long" : "") + (drag ? "drag" : "") || "short");
+    ((longer ? "long" : "") + (move ? "move" : "") || "short");
 };
 /** updates by mutating, or just mutates to create given Actions instance
  * @param {Actions|null} action @param {number} index
@@ -297,7 +298,7 @@ Actions.update = function (action, index, state, event, previous, touch) {
     throw new TypeError("action undefined at Actions.update");
   // the order of updating properties is depended by previous === action
   var source = touch || (event instanceof TouchEvent ?
-    Actions.default : 
+    Actions.default :
     event);
   var offset = state.root instanceof HTMLElement ?
     state.root :
@@ -547,7 +548,7 @@ Actions.init = function (root, options) {
     if (state.claim === "grab")
       (all[0] || all[1]) && Actions.touchGrab(state, all, ev);
     else if (
-      source.source.state === "single drag" &&
+      source.source.state === "single move" &&
       state.claim === "unclaimed"
     ) {
       if (dispatchClaim(ev, "grab"))
@@ -630,7 +631,7 @@ Actions.init = function (root, options) {
         mutable[-1] = new Actions(ev, -1, state, all[-1]);
     // #mmove beggining of mouse action
     if (
-      source.source.state === "single drag" &&
+      source.source.state === "single move" &&
       state.claim === "unclaimed" && action.buttons === 1
     ) {
       dispatchClaim(ev, "move");
@@ -718,7 +719,7 @@ Actions.init = function (root, options) {
     for (var el = e.target; el instanceof Node;)
       if (!(el = el.parentNode))
         return;
-      else if (el === bd)
+      else if (el === state.preventTarget)
         break;
     if (!(e instanceof MouseEvent))
       return;
@@ -729,10 +730,35 @@ Actions.init = function (root, options) {
       y = (e.pageY - offset.offsetTop) * pR;
     contextmenu(x, y, e);
   }, window);
+
   state.preventTarget && !(listeners && listeners.passive === false) &&
     console.log("jiuhus" + root.addEventListener("touchstart", F, {
       passive: false
     }));
+  state.resize = function resizeWindow() {
+    // TODO: change debug to log someday
+    // or just add console.debug to alphalunar.js and remove the TODO?
+    console.debug("%cresizing", "color:#58f");
+    var w = window.innerWidth * pR,
+      h = window.innerHeight * pR;
+    if (w > 4096 || h > 4096)
+      if (w > h) {
+        h = h * 4096 / w;
+        w = 4096;
+      } else {
+        w = w * 4096 / h;
+        h = 4096;
+      }
+    vX -= (canvas.width - w) / 2;
+    vY -= (canvas.height - h) / 2;
+    canvas.width = w;
+    canvas.height = h;
+    render();
+  }
+  "onresize" in window && !window.onresize ?
+    window.onresize = state.resize :
+    window.addEventListener("resize", state.resize);
+
   return state.generateAccessors(function () {
     throw new Error("Unimplemented");
   });
@@ -766,9 +792,13 @@ Actions.State = function (options) {
   this.onend = options.end || F;
   this.oncancel = options.end || F;
   this.onclaim = options.claim || F;
+  this.resize = function () {
+    /** @type {(this:GlobalEventHandlers,ev:any)=>void} */
+    (window.onresize).call(window,{});
+  };
   /** @type {EventTarget} the element that gets events assigned */
   this.root = EL("unknown");
-  /** @deprecated gesture "<single|double> <short|long|drag|longdrag>" */
+  /** @deprecated gesture "<single|double> <short|long|move|longmove>" */
   this.state = " ";
   /** so far only for one/two finger moving around "move"/"grab",
    * "custom" means the actons are in use outside API, "unclaimed"
@@ -800,7 +830,7 @@ Actions.State = function (options) {
   this.other = new Actions.State.Allowed(350, 9, 300);
   /** multiplier for scroll wheel's 120 per tick or sum of deltas */
   this.wheelDelta = 8;
-  /** multiplier for touchpad drag */
+  /** multiplier for touchpad move */
   this.wheelOffset = 1;
   /** filters out all actions "claimed by the API experiment" */
   this.filterClaimed = checkOptions("filterClaimed", true);
@@ -840,7 +870,7 @@ Actions.State.prototype.generateAccessors = function (destroy) {
   }, self = this;
     return Object.freeze(accessors);
 };
-/** @param {number} time  @param {number} move  @param {number} doubleTime */
+/** @param {number} time @param {number} move @param {number} doubleTime */
 Actions.State.Allowed = function (time, move, doubleTime) {
   /** allowed time for active (started) action to get state...short" */
   this.shortTime = time;
@@ -931,28 +961,6 @@ var juhus = Actions.init(document, {
 
 (document.body || EL()).onload = initDoc;
 function initDoc() {
-  function resizeWindow() {
-    // TODO: change debug to log someday
-    console.debug("%cresizing", "color:#58f");
-    var w = window.innerWidth * pR,
-      h = window.innerHeight * pR;
-    if (w > 4096 || h > 4096)
-      if (w > h) {
-        h = h * 4096 / w;
-        w = 4096;
-      } else {
-        w = w * 4096 / h;
-        h = 4096;
-      }
-    vX -= (canvas.width - w) / 2;
-    vY -= (canvas.height - h) / 2;
-    canvas.width = w;
-    canvas.height = h;
-    render();
-  }
-
-  window.onresize = resizeWindow;
-
   /** also called first touch, used to initiate fullscreen */
   window.ontouchend = function () {
     touchdevice && touchdevice();
@@ -972,7 +980,5 @@ function initDoc() {
 
   init();
 
-  vX = 128;
-  vY = 64;
-  resizeWindow();
+  juhus.get("resize")();
 };
