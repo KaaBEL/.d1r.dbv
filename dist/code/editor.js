@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.25";
+var version_editor_js = "v.0.2.26";
 /** 3h_ @TODO check @see {Editor} for assignment without saveSettings */
 // TODO v.0.2.8 has defected commit message, also 0.2.13 - 0.2.15 namings
 /** @param {string} data */
@@ -197,7 +197,6 @@ Editor.d1rTexturesToSource = function (images, opt) {
   if (!ctx)
     return console.error("missing ctx");
   var parameters = [{width: 0, height: 0, type: ""}].slice(1);
-  //-images = [Editor.imgOverlay, Editor.imgMask].concat(images);
   for (var i = images.length; i-- > 0;) {
     var w = 0, h = 0, src = images[i], data = null;
     if (src instanceof HTMLImageElement) {
@@ -225,22 +224,18 @@ Editor.d1rTexturesToSource = function (images, opt) {
           continue;
       }
       if (checkImgMask(data)) {
-        //-Editor.imgMask = src;
         parameters[mask = i].type = "mask";
       }
     }
   };
   if (mask === -1)
     return console.error("couldn't find textures mask");
-  //-if (mask !== parameters.length - 1)
-  //-  console.log("removed default:", parameters.pop());
   w = parameters[mask].width;
   h = parameters[mask].height;
   for (i = images.length; i-- > 0;) {
     if (parameters[i].type)
       continue;
     if (parameters[i].width === w && parameters[i].height === h) {
-      //-Editor.imgOverlay = images[i];
       parameters[overlay = i].type = "overlay";
     }
   }
@@ -3773,7 +3768,7 @@ test_debugbox2collisions = function (rend) {
     rend_collisions = devt_debugger = true;
     running = true;
     typeof rend == "function" ? rend() :
-      Block.Box2d.collisions(Block.Box2d.GRID.Small,
+      Block.Box2d.collide(Block.Box2d.GRID.Small,
         // does this work? (v.0.1.69.K1)
         ship.blocks, true);
     running = false;
@@ -3921,7 +3916,8 @@ DefaultUI.found = null;
 DefaultUI.replacingTile = -1;
 /** obsolete as of right now @deprecated */
 DefaultUI.insertedTile = -1;
-/** used for placing preview @type {(Block.Size.Highlight|undefined)[]} */
+/** used for placing preview, second and following items is for placing block,
+ * the first... idk@type {(Block.Size.Highlight|undefined)[]} */
 DefaultUI.highlights = [];
 /** @param {number|string} type @param {unknown[]} [tiles=[]] */
 DefaultUI.createFolder = function (type, tiles) {
@@ -4291,13 +4287,11 @@ DefaultUI.renderHotBars = function (w, h) {
     } else
       tx -= 74;
   }
-  '3h_'
   var dragged = DefaultUI.Drag.dragged;
   tx = dragged.x;
   ty = dragged.y;
   if (DefaultUI.Drag.isPreview)
     ctx.lineWidth = 1E-11;
-  //-if (dragged.replacing)
   drawTileCtx(dragged.tile, false);
   if ((i = DefaultUI.replacingTile) !== -1) {
     console.assert(!DefaultUI.Drag.isPreview, "lineWidth = 0");
@@ -4315,15 +4309,9 @@ DefaultUI.renderHotBars = function (w, h) {
  * @param {boolean} [canDefault=true] @returns {typeof press} */
 DefaultUI.basePress = function (blockPlacing, canDefault) {
   var placing = blockPlacing || function (x, y, tile) {
-    var size = Block.Size.VALUE[Block.ID[tile.internalName]],
-      xFix = size ? size.w / 32 + .5 : 2,
-      yFix = size ? -size.h / 32 + .5 : 0;
-    ship.placeBlock(
-      0,
-      Math.floor((vX - x) / sc + xFix),
-      Math.floor((y - vY) / sc + yFix),
-      tile
-    );
+    DefaultUI.previewPlacing(x, y, tile, !0);
+    var rect = DefaultUI.highlights[1];
+    rect && ship.placeBlock(0, rect.positionX, rect.positionY, tile);
     render();
   };
   DefaultUI.canDefaultPress = canDefault !== UDF ? canDefault : false;
@@ -4340,59 +4328,33 @@ DefaultUI.basePress = function (blockPlacing, canDefault) {
       DefaultUI.canDefaultPress && DefaultUI.defaultPress(x, y);
   };
 };
-/** @param {number} x @param {number} y @param {ShipBlock} block */
-DefaultUI.previewPlacing = function (x, y, block) {
-  var size = Block.Size.VALUE[Block.ID[block.internalName]];
-  var rot = 10 - block.rotation[2] & 3,
-    xFix = size ? size.w / size.res + .5 : 2,
-    yFix = size ? -size.h / size.res + .5 : 0,
-    hx = (vX - x) / sc,
-    hy = (y - vY) / sc;
-  var rect = Block.Size.highlightBlock(block, -1, [0, hx + xFix |
-    0, hy + yFix | 0]);
-  //-var id = Block.ID[DefaultUI.getCode(block)], sz = Block.Size.VALUE[id];
-  //-var rot = 10 - block.rotation[2] & 3,
-  //-  xFix = sz ? sz.w / sz.res + .5 : 2,
-  //-  yFix = sz ? -sz.h / sz.res + .5 : 0,
-  //-  hx = Math.floor((vX - x) / sc + xFix),
-  //-  hy = Math.floor((y - vY) / sc + yFix);
-  //-var w = sz.w / sz.res * 2, h = sz.h / sz.res * 2;
-  //-// rot === 0 ? hy += sz.t * sc : rot === 1 ? hx -= sz.t * sc : 0;
-  //-// rot === (block.rotation[1] ? 1 : 3) ?
-  //-//   hy += sz.l * sc :
-  //-//   rot === (block.rotation[1] ? 2 : 0) ? hx -= sz.l * sc : 0;
-  //-var hw = rot & 1 ? h : w, hh = rot & 1 ? w : h;
+/**
+ * @param {number} x @param {number} y @param {ShipBlock} block
+ * @param {boolean} [offset] */
+DefaultUI.previewPlacing = function (x, y, block, offset) {
+  var size = Block.Size.VALUE[Block.ID[block.internalName]],
+    rot = 10 - block.rotation[2] & 3,
+    xFix = size ? size.w / size.res : 2,
+    yFix = size ? -size.h / size.res : 0,
+    hx = Math.round(offset ? (vX - x) / sc - xFix / 2.5 + 1:
+      (vX - x) / sc + xFix),
+    hy = Math.round(offset ? (y - vY) / sc + yFix / 2.5 - .5:
+      (y - vY) / sc + yFix),
+    rect = Block.Size.highlightBlock(block, -1, [
+      0,
+      block.position[1] = hx,
+      block.position[2] = hy
+    ]);
   DefaultUI.highlights.length = 0;
-  rect.color = Editor.highlightGreen;
-  // for (var i = ship.blocks.length; i-- > 0;)
-    // var box = Block.Size.Highlight(ship.blocks[i]);
+  var colliding = Block.Box2d.collide(block, ship.blocks).length;
+  rect.color = colliding ? Editor.highlightYellow : Editor.highlightGreen;
   // rendering script at DefaultUI.rend
-  DefaultUI.highlights.push(Block.Size.highlightBlock(null, 0, [0, hx |
-    0, hy | 0]), rect);
+  DefaultUI.highlights[1 + +!!colliding] = rect;
+  // .push(
+  //   Block.Size.highlightBlock(null, 0, [0, hx | 0, hy | 0]),
+  //   rect
+  // );
 };
-//-/** @param {number} x placement = new DefaultUI.Highlight(cx, cy)
-//-@param {number} y placement = new DefaultUI.Highlight(cx, cy) */
-//-DefaultUI.Highlight = function (x, y) {
-//-  this.color = "#ffffff";
-//-  this.x = x || 0;
-//-  this.y = y || 0;
-//-  this.hx = x || 0;
-//-  this.hy = y || 0;
-//-  this.hw = 3;
-//-  this.hh = 3;
-//-  Object.seal(this);
-//-};
-//-/**
-//- * @param {number} x @param {number} y
-//- * @param {number} w @param {number} h  @param {string} color */
-//-DefaultUI.Highlight.prototype.rect = function (x, y, w, h, color) {
-//-  this.hx = x;
-//-  this.hy = y;
-//-  this.hw = w;
-//-  this.hh = h;
-//-  this.color = color;
-//-  return this;
-//-};
 DefaultUI.Drag = function () {
   this.x = 0;
   this.y = 0;
@@ -4401,7 +4363,6 @@ DefaultUI.Drag = function () {
   this.folder = -1;
   /** @type {TileType|null} */
   this.tile = null;
-  //-this.replacing = true;
   Object.seal(this);
 };
 // #unsealed regexp for finding unsealed instances (sub/class definitions)
@@ -4451,21 +4412,23 @@ DefaultUI.Drag.reset = function (notTile) {
   render();
   return true;
 };
-/** @param {Actions} action */
+/** movetile claim end handler @param {Actions} action */
 DefaultUI.Drag.finish = function (action) {
   if (juhus.get("claim") !== "movetile")
     return false;
+  // placing inventory tile over building area
   var replacing = DefaultUI.replacingTile,
     dragged = DefaultUI.Drag.dragged;
   if (replacing === -1 || action.type === "mouseleave") {
     var rect = DefaultUI.highlights[1] || action;
-    if (dragged.tile instanceof Block && "positionX" in rect)
+    if (dragged.tile instanceof Block && "block" in rect)
       ship.placeBlock(0, rect.positionX, rect.positionY, dragged.tile);
     else if (dragged.tile instanceof Tool)
       dragged.tile.exec(rect.x, rect.y);
     return DefaultUI.Drag.reset();
   }
-  DefaultUI.highlights = [];
+  // placing inventory tile over toolBar area
+  DefaultUI.highlights.length = 0;
   if (replacing !== dragged.item)
     DefaultUI.Drag.reset(true);
   var hotbar = dragged.item !== -1 && (dragged.item & 3) === 1 ?
@@ -4474,12 +4437,6 @@ DefaultUI.Drag.finish = function (action) {
   for (var i = hotbar.length; --i > 0 && !hotbar[i];)
     0;
   hotbar.length = i + 1;
-  if (DefaultUI.insertedTile !== -1) {
-    DefaultUI.insertedTile = -1;
-    dragged.tile = null;
-    render();
-    return true;
-  }
   hotbar = replacing !== -1 && dragged.tile && (replacing & 3) === 1 ?
     DefaultUI.blockBars[DefaultUI.openedFolder] || [] :
     (replacing & 3) === 0 ? DefaultUI.toolBar : [];
@@ -4492,7 +4449,8 @@ DefaultUI.Drag.finish = function (action) {
   render();
   return true;
 };
-/** for all magical number constants used in bitwise operations
+/** movetile claim start+move handler
+ * for all magical number constants used in bitwise operations
  * and comparsion of the results @see {DefaultUI.selectedTile}
  * @param {number} x @param {number} y @param {Actions} action */
 DefaultUI.Drag.detect = function (x, y, action) {
@@ -4502,8 +4460,7 @@ DefaultUI.Drag.detect = function (x, y, action) {
     dragged.update(x, y);
     var pointed = DefaultUI.Drag.pointed;
     DefaultUI.handleGUIArea(action.x, action.y, pointed);
-    if (!dragged.tile)
-      return true;
+    // #whatsthisfor if (!dragged.tile) return true;
     DefaultUI.replacingTile = pointed.item;
     var from = dragged.item >> 2, hotbar = (dragged.item & 3) === 1 ?
       DefaultUI.blockBars[DefaultUI.openedFolder] || [] :
@@ -4539,13 +4496,8 @@ DefaultUI.Drag.detect = function (x, y, action) {
   juhus.set("claim", "movetile");
   return true;
 };
-//-/** @namespace @typedef {never} @returns {never} */
-//-DefaultUI.Binds = function () {
-//-  throw new TypeError("Illegal constructor");
-//-};
-//-DefaultUI.Binds.shipPress = function () {};
-//-DefaultUI.Binds.shipPress = DefaultUI.basePress(UDF);
 
+DefaultUI.shipPress = DefaultUI.basePress(UDF);
 // #IDK move elsewhere maybe
 juhus.set("onclaim", function (x, y, source) {
   if (source.source.startTarget !== canvas)
@@ -4590,7 +4542,8 @@ juhus.set("onend", function (x, y, source) {
     return;
   if (action.state.slice(-5) === "short") {
     action.event.cancelable && action.event.preventDefault();
-    DefaultUI.press(x, y);
+    // runs same as: DefaultUI.basePress(UDF)(x, y);
+    DefaultUI.shipPress(x, y);
   }
 });
 
@@ -4624,6 +4577,7 @@ function enableShipEditing() {
       var x = rect.x * sc + vX, y = rect.y * sc + vY;
       ctx.strokeRect(x, y, rect.w * sc, rect.h * sc);
     }
+    /** @see {DefaultUI.highlights} highlights[0] probably some log */
     // if (rect = DefaultUI.highlights[0]) {
     //   ctx.strokeStyle = rect.color;
     //   ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
@@ -5222,10 +5176,6 @@ function expensiveRenderer() {
     if (id > 1279) {
       // position correction for ms blocks
       rot & 1 ? dx -= size.t * sc / 2 : dx -= size.l * sc / 2;
-      //-rot === 0 ? dy += size.t * sc : rot === 1 ? dx -= size.t * sc : 0;
-      //-rot === (objs[i].rotation[1] ? 1 : 3) ?
-      //-  dy += size.l * sc :
-      //-  rot === (objs[i].rotation[1] ? 2 : 0) ? dx -= size.l * sc : 0;
       dw = (rot & 1 ? h : w) / 2;
       dh = (rot & 1 ? w : h) / 2;
       w = w * size.res >>> 5;
@@ -5362,10 +5312,10 @@ function expensiveRenderer() {
   }
   utilities.rend_UI();
   if ((test_collbxs) && objs[0])
-    Block.Box2d.collisions(objs[0], objs);
+    Block.Box2d.collide(objs[0], objs);
   else if (rend_collisions)
     for (i = objs.length; i-- > 0;)
-      Block.Box2d.collisions(objs[i], objs);
+      Block.Box2d.collide(objs[i], objs);
   DefaultUI.rend();
   if (rend_180 || 0) {
     ctx.setTransform(1, 0, 0, 1, canvas.width, canvas.height);
@@ -5405,8 +5355,8 @@ Block.Box2d.visualize = function (path, x, y, green) {
   ctx.closePath();
   if (!("range" in path))
     return ctx.stroke();
-  x = (x || 0) - 2;
-  y = (y || 0) + 2;
+  x = (x || 0) - 1;
+  y = (y || 0) + 1;
   ctx.moveTo(vX - (x - path.range) * sc, (y) * sc + vY);
   ctx.arc(vX - (x) * sc, (y) * sc + vY, path.range * sc, 0, Math.PI * 2);
   ctx.stroke();
@@ -5414,7 +5364,14 @@ Block.Box2d.visualize = function (path, x, y, green) {
   //}catch(e){console.error(e && e.message || e);}
 };
 
+var test_val;// test_evil = "ship = Ship.fromObject({});render();", ;
 init = function () {
+  for (var i = ship.blocks.length, clean = []; i-- > 0;)
+    ship.blocks[i].internalName !== "__unknown__" &&
+      clean.push(ship.blocks[i]);
+  ship.blocks = clean;
+  rend_collisions = true;
+  console.log("set up collision testing(editor)=" + ship.blocks[0].internalName);
   imgColor.onload && rend_checkColors();
   check_contentScript();
 };

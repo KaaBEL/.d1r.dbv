@@ -1,10 +1,9 @@
 //@ts-check
 /// <reference path="./defs.d.ts" />
 "use strict";
-/** @TODO ask on dc what song is it in Saul Goodman 3d meme */
 /** @readonly */
-var version_code_js = "v.0.2.25";
-/** @TODO check @see {Ship.VERSION} */
+var version_code_js = "v.0.2.26";
+/** 3h_  @TODO check @see {Ship.VERSION} */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
 // B) create chrome extensions with custom modifications for live page
@@ -332,7 +331,7 @@ Data.blocks =
   bitmap: [1283, 3, 3]}, Weapon_bomb1: {id: 19 + 1280, bitmap: 1394},
   Weapon_bomb2: {id: 37 + 1280, bitmap: 1135}, Weapon_Laser1: {id: 35 + 1280,
   bitmap: 1367}, Weapon_Laser2: {id: 56 + 1280, bitmap: [1359, 1, 2]},
-  Weapon_Laser3: {id: 60 + 1280, bitmap: 1360}, Weapon_Machinegun1: {
+  Weapon_Laser3: {id: 60 + 1280, bitmap: [1360, 1, 2]}, Weapon_Machinegun1: {
   id: 55 + 1280, bitmap: 1375}, Weapon_Machinegun2: {id: 274 + 1280,
   bitmap: [1361, 1, 2]}, Weapon_Cannon1: {id: 275 + 1280, bitmap: [1362, 1,
   3]}, Weapon_Cannon2: {id: 276 + 1280, bitmap: [1377, 2, 6]},
@@ -1472,15 +1471,6 @@ Block.db1ToDb3 = Object.freeze({
 });
 /** @readonly settings for @see {Block.arrayFromObjects} *///@ts-expect-error
 Block.creator = {warns: 3};
-//-Block.prototype.toJSON = function () {
-//-  var rot = this.rotation;
-//-  return {
-//-    internalName: this.internalName,
-//-    position: this.position,
-//-    rotation: B64Key.gBlockRotation(rot[2] | +rot[1] << 2 | rot[0] << 3),
-//-    properties: this.properties
-//-  };
-//-};
 /**
  * @readonly @param {any[]|any} blocks
  * @param {Logic<any>[]&{nc?:any}} [logics] */
@@ -1759,7 +1749,7 @@ Block.rotate = function (rot, x, y, z) {
  * @param {number} x @param {number} y @param {number} w @param {number} h
  * @param {number} resolution @param {number} l @param {number} t */
 Block.Size = function Size(x, y, w, h, resolution, l, t) {
-  /** @readonlx */
+  /** @readonly */
   this.l = l | 0;
   /** @readonly */
   this.t = t | 0;
@@ -1833,7 +1823,7 @@ Block.Size.highlightBlock = function (block, index, position) {
   var id = Block.ID[block.internalName],
     size = Block.Size.VALUE[id] || {w: 1, h: 1, l: 0, t: 0, res: 1};
   // calculations from expensiveRenderer
-  var ow = size.w / size.res << 1, oh = size.h / size.res << 1;
+  var ow = size.w / size.res * 2, oh = size.h / size.res * 2;
   var pos = position || block.position;
   var x = -pos[1], y = pos[2], rot = 10 - block.rotation[2] & 3;
   var w = rot & 1 ? oh : ow, h = rot & 1 ? ow : oh;
@@ -2149,6 +2139,10 @@ var test_collbxs = false,
   test_debugbox2collisions = F;
 /** @typedef {{x:number,y:number}|[number,number]} PathArg */
 /** @typedef {Block.Box2d[]&{range:number}} Box2dPath */
+/**
+ * @typedef {readonly[Box2dPath,Box2dPath,Box2dPath,Box2dPath,
+ * Box2dPath,Box2dPath,Box2dPath,Box2dPath]} Box2dDefinition
+ */
 /** instance is frozen
  * @readonly Point @param {number} x @param {number} y */
 Block.Box2d = function Point(x, y) {
@@ -2163,24 +2157,19 @@ Block.Box2d.prototype.toString = function () {
 };
 /** @param {...PathArg[]|string|number} args */
 Block.Box2d.generateBuildBox = function () {
-  /**
-   * @type {{[key:number]:[Box2dPath,Box2dPath,Box2dPath,Box2dPath,
-   * Box2dPath,Box2dPath,Box2dPath,Box2dPath]|undefined}}
-   */
+  /** @type {{[key:number]:Box2dDefinition|undefined}} */
   var map = {},
-    /**
-     * @type {[Box2dPath,Box2dPath,Box2dPath,Box2dPath,Box2dPath,
-     * Box2dPath,Box2dPath,Box2dPath][]}
-     */
+    /** @type {Box2dDefinition[]} */
     defs = [],
     /** @type {{[key:string]:Block.Box2d|undefined}} */
     points = {},
-    /** @constant */
+    /** @readonly */
     AT = " at Block.Box2d.generateBuildBox.";
   /** @param {{x:number,y:number}[]} path @param {boolean} [flip] */
   function box2dArray(path, flip) {
     function box2dItem() {
-      var x = path[j].x, y = path[j].y, n = Math.sqrt(x * x + y * y);
+      var x = path[j].x, y = path[j].y;
+      var n = Math.sqrt((x - 1) * (x - 1) + (y + 1) * (y + 1));
       n > max ? max = n : 0;
       frozen.push(points[x + "_" + y] ||
         (points[x + "_" + y] = new Block.Box2d(x, y)));
@@ -2208,13 +2197,13 @@ Block.Box2d.generateBuildBox = function () {
     }) : null;
     if (!path)
       return map[l++] = defs[+arg];
-    for (var n = 3, rots = [box2dArray(path, true)]; n-- > 0;) {
+    for (var n = 3, rotations = [box2dArray(path, true)]; n-- > 0;) {
       path.forEach(function (e) {
         var x = -e.y;
         e.y = e.x - 2;
         e.x = x;
       });
-      rots.push(box2dArray(path, true));
+      rotations.push(box2dArray(path, true));
     }
     path.forEach(function (e) {
       // vertical mirror, but it's done in horizontal position
@@ -2226,10 +2215,14 @@ Block.Box2d.generateBuildBox = function () {
         e.y = e.x - 2;
         e.x = x;
       });
-      rots.push(box2dArray(path));
+      rotations.push(box2dArray(path));
     }
-    //@ts-expect-error
-    map[l++] = defs[defs.length] = Object.freeze(rots);
+    if (rotations.length === 8)
+      map[l++] = defs[defs.length] =
+        /** @type {Box2dDefinition} */
+        (Object.freeze(rotations));
+    else
+      throw new Error("the Box2dPath[] isn't 8 element tuple");
   }
   for (var i = 0, l = 690, a = arguments; i < a.length; i++)
     typeof a[i] == "number" ?
@@ -2237,33 +2230,35 @@ Block.Box2d.generateBuildBox = function () {
       OP.call(map, l) ?
         console.error("Property ", l++, "already exists" + AT) :
         setBuildBox(a[i]);
-  // However, Hoare did not say, "Efficiency is the root of all evil."
-  /** @type {((number|undefined)[]|undefined)[]} */
-  var defIndexes = [
-    [36, 37, 23, UDF, 26, 30, 34],
-    [20, 0, UDF, 25, 29, 31, 33],
-    [UDF, 21, 22, 24, UDF, UDF, UDF, 40],
-    [38, UDF, UDF, 39, 28, UDF, UDF, 35],
-    [UDF, UDF, UDF, UDF, 27],
-    [UDF, UDF, UDF, 32],
-  ]
-  /** @param {number|readonly number[]|undefined} data */
-  function setMsBuildBox(data) {
-    if (data instanceof Array)
-      var w = data[1] || 1, h = data[2] || 1;
-    else if (typeof data == "number")
-      w = h = 1;
-    else
-      return;
-    var index = (defIndexes[w - 1] || [])[h - 1];
-    typeof index == "number" ?
-      map[i] = defs[index] :
-      console.warn("Missing Box2d def for ms, w:" + w + " h:" + h);
-    l = i;
+  /** @type {{[key:string]:typeof defs[number]}} */
+  var msDefs = {}, ba = box2dArray([]);
+  /** @param {keyof Block.ID} name 3h_ */
+  function setMsBuildBox(name) {
+    /** @type {{-readonly[T in keyof Box2dDefinition]:Box2dDefinition[T]}} */
+    var rotations = [ba, ba, ba, ba, ba, ba, ba, ba], j = 8;
+    for (; j-- > 0;) {
+      var rect = Block.Size.highlightBlock(new Block(
+          name,
+          [0, 2, -2],
+          /** @type {Rotation} */
+          ([0, j < 4, 8 - j & 3])
+        ));
+      rotations[j] = box2dArray([
+          {x: -rect.x, y: rect.y + rect.h},
+          {x: -rect.x, y: rect.y},
+          {x: -rect.x - rect.w, y: rect.y},
+          {x: -rect.x - rect.w, y: rect.y + rect.h}
+        ]);
+    }
+    var json = JSON.stringify(rotations[0]);
+    map[i] = json in msDefs ?
+      msDefs[json] :
+      msDefs[json] = Object.freeze(rotations);
   }
+  defs.length = 0;
   for (i = 1280; i < 2048; i++)
     if (i in Block.NAME)
-      setMsBuildBox((Data.blocks[Block.NAME[i]] || {}).bitmap);
+      setMsBuildBox(Block.NAME[i]);
   return map;
 };
 Block.Box2d.VALUE = Block.Box2d.generateBuildBox(
@@ -2402,70 +2397,7 @@ Block.Box2d.VALUE = Block.Box2d.generateBuildBox(
     {x: 1.375, y: 4},
     {x: 0.875, y: 5.5},
     {x: 0.25, y: 6}
-  ],
-  22 + 1280,
-  // def20: 1x.5 module "Battery1"
-  [{x: 0, y: 0}, {x: 0, y: -1}, {x: 2, y: -1}, {x: 2, y: 0}],
-  341 + 1280,
-  // def21: 1.5x1 module "Excavator1"
-  [{x: 0, y: 0}, {x: 0, y: -2}, {x: 3, y: -2}, {x: 3, y: 0}],
-  146 + 1280,
-  // def22: 1.5x1.5 module "FuelTank4"
-  [{x: 0, y: 0}, {x: 0, y: -3}, {x: 3, y: -3}, {x: 3, y: 0}],
-  5 + 1280,
-  // def23: .5x1.5 module "Engine_Power4"
-  [{x: 0, y: 0}, {x: 0, y: -3}, {x: 1, y: -3}, {x: 1, y: 0}],
-  181 + 1280,
-  // def24: 1.5x2 module "Engine_Big2"
-  [{x: 0, y: 0}, {x: 0, y: -4}, {x: 3, y: -4}, {x: 3, y: 0}],
-  339 + 1280,
-  // def25: 1x2 module "Drill2"
-  [{x: 0, y: 0}, {x: 0, y: -4}, {x: 2, y: -4}, {x: 2, y: 0}],
-  246 + 1280,
-  // def25: .5x2 module "Armor_LaserWedge3"
-  [{x: 0, y: 0}, {x: 0, y: -4}, {x: 1, y: -4}, {x: 1, y: 0}],
-  215 + 1280,
-  // def26: 2.5x2.5 module "Reactor7"
-  [{x: 0, y: 0}, {x: 0, y: -5}, {x: 5, y: -5}, {x: 5, y: 0}],
-  182 + 1280,
-  // def27: 2x2.5 module "Engine_Big3"
-  [{x: 0, y: 0}, {x: 0, y: -5}, {x: 4, y: -5}, {x: 4, y: 0}],
-  180 + 1280,
-  // def28: 1x2.5 module "Engine_Big1"
-  [{x: 0, y: 0}, {x: 0, y: -5}, {x: 2, y: -5}, {x: 2, y: 0}],
-  257 + 1280,
-  // def30: .5x2.5 module "Armor_Laser2Wedge4"
-  [{x: 0, y: 0}, {x: 0, y: -5}, {x: 1, y: -5}, {x: 1, y: 0}],
-  276 + 1280,
-  // def31: 1x3 module "Weapon_Cannon2"
-  [{x: 0, y: 0}, {x: 0, y: -6}, {x: 2, y: -6}, {x: 2, y: 0}],
-  342 + 1280,
-  // def32: 3x2 module "Excavator2"
-  [{x: 0, y: 0}, {x: 0, y: -4}, {x: 6, y: -4}, {x: 6, y: 0}],
-  280 + 1280,
-  // def33: 1x3.5 module "Weapon_Rocket2"
-  [{x: 0, y: 0}, {x: 0, y: -7}, {x: 2, y: -7}, {x: 2, y: 0}],
-  281 + 1280,
-  // def34: .5x3.5 module "Weapon_Railgun1"
-  [{x: 0, y: 0}, {x: 0, y: -7}, {x: 1, y: -7}, {x: 1, y: 0}],
-  349 + 1280,
-  // def35: 2x4 module "Converter_Electrolyzer3"
-  [{x: 0, y: 0}, {x: 0, y: -8}, {x: 4, y: -8}, {x: 4, y: 0}],
-  1 + 1280,
-  // def36: .5x.5 module "ControlBlock"
-  [{x: 0, y: 0}, {x: 0, y: -1}, {x: 1, y: -1}, {x: 1, y: 0}],
-  42 + 1280,
-  // def37: 1x1 module "FuelTank1"
-  [{x: 0, y: 0}, {x: 0, y: -2}, {x: 1, y: -2}, {x: 1, y: 0}],
-  211 + 1280,
-  // def38: 2x.5 module "SolarPanel2"
-  [{x: 0, y: 0}, {x: 0, y: -1}, {x: 4, y: -1}, {x: 4, y: 0}],
-  147 + 1280,
-  // def39: 2x2 module "FuelTank3"
-  [{x: 0, y: 0}, {x: 0, y: -4}, {x: 4, y: -4}, {x: 4, y: 0}],
-  340 + 1280,
-  // def40: 1.5x4 module "Drill3"
-  [{x: 0, y: 0}, {x: 0, y: -8}, {x: 3, y: -8}, {x: 3, y: 0}]
+  ]
 );
 Block.Box2d.warn = test_collbxs;
 /** @param {[number,number][]} item */
@@ -2509,7 +2441,7 @@ Block.Box2d.visualize = function (path, x, y, isBlock1) {};
 /** if using Box2dPath as collider, last point is the reference point
  * @param {ShipBlock|Box2dPath} forShape @param {ShipBlock[]} within
  * @param {boolean} [inside] @param {boolean} [inverted] */
-Block.Box2d.collisions = function (forShape, within, inside, inverted) {
+Block.Box2d.collide = function (forShape, within, inside, inverted) {
   /** @typedef {{ax:number,by:number,c:number}} VRP */
   /** @param {Block.Box2d} pointA @param {Block.Box2d} pointB */
   function someVRPthing(pointA, pointB) {
@@ -2739,7 +2671,7 @@ Block.Box2d.collisions = function (forShape, within, inside, inverted) {
     }
     return null;
   }
-  /** @param {ShipBlock} block @param {Box2dPath[]|undefined} def */
+  /** @param {ShipBlock} block @param {readonly Box2dPath[]|undefined} def */
   function transformPath(block, def) {
     if (!def)
       return;
@@ -2806,7 +2738,7 @@ Block.Box2d.collisions = function (forShape, within, inside, inverted) {
       if (!result)
         result = insides(path1, path2) || insides(path2, path1);
     }
-    // inverted negates the condition for adding a block
+    // inverted negates the condition for detecting a block
     !inverted === !!result && colliding.push(block2);
     if (!devt_debugger && result && test_bugged)
       test_bugged[block2.internalName + ' ' + block2.position + ' ' +
@@ -2863,17 +2795,6 @@ function LogicBlock(block, index, ship) {
   this.logicBlockIndex = index;
   Object.seal(this);
 }
-//-LogicBlock.prototype.toJSON = function () {
-//-  var rot = this.rotation;
-//-  return {
-//-    internalName: this.internalName,
-//-    position: this.position,
-//-    rotation: B64Key.gBlockRotation(rot[2] | +rot[1] << 2 | rot[0] << 3),
-//-    properties: this.properties,
-//-    logicPosition: this.logicPosition,
-//-    logicBlockIndex: this.logicBlockIndex
-//-  };
-//-}
 __extends(LogicBlock, Block);
 
 /** @typedef {0|1|2|3} Edit.Type commands enum @typedef {0} Edit.Save */
@@ -3270,22 +3191,10 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @readonly @type {41} significantVersion: 41 (integer) */// @ts-ignore
-Ship.VERSION = 41;
+/** @readonly @type {42} significantVersion: 42 (integer) */// @ts-ignore
+Ship.VERSION = 42;
 Ship.propertyNames = new RegExp("^(?:nodeList|nodeConnections|customI" +
   "nputs|gridSize)$");
-// Ship.PROPERTIES = {
-//   // nodeList?:(Logic|undefined)[]
-//   nodeList: Logic.VALUE[0] ? Logic.VALUE[0].map(function (e) {
-//     return +"0" ? e : undefined;
-//   }) : undefined,
-//   // nodeConnections?:number[][]
-//   nodeConnections: +"0" ? [[0]] : undefined,
-//   // customInputs?:Ship.CustomInput[]
-//   customInputs: +"0" ? [new Ship.CustomInput("", 0)] : undefined,
-//   // gridSize?:Ship.Grid
-//   gridSize: +"0" ? new Ship.Grid("", "", null, null) : undefined
-// };
 Ship.prototype.selectRect = (
   /**
    * @overload @returns {ShipBlock[]}
@@ -4073,7 +3982,7 @@ Ship.checkDBV = function (ship) {
       throw at(new Error("The \"ni\" property can be (int) number[]"));
     }
     /** @TODO investigate bottom lines parallel collisions */
-    var colliding = Block.Box2d.collisions(b[i], b);
+    var colliding = Block.Box2d.collide(b[i], b);
     if (colliding.length)
       throw at(new Error("There is some overlapping with \"" +
         colliding.map(function (e) {
@@ -4085,7 +3994,7 @@ Ship.checkDBV = function (ship) {
     throw new Error("Can do only .DBV grids for now :(");
   if (typeof ship.name != "string")
     throw new Error("ship.name must be of type string.");
-  colliding = Block.Box2d.collisions(Block.Box2d.GRID.Small,
+  colliding = Block.Box2d.collide(Block.Box2d.GRID.Small,
     ship.blocks, true);
   if (colliding && colliding.length)
     throw new Error("Detected block(s) reaching outside small grid: " +
@@ -5191,10 +5100,3 @@ api.Edit = Edit;
 api.Ship = Ship;
 api.ship = ship;
 api.B64Key = B64Key;
-
-// #funny script:
-// (function (j){Object.keys(Block.NAME).map(function (e, i, a) {
-// var s = ""+Block.NAME[e];return s.slice(0, 3) + s.slice(-4, -2) +
-// (+Block.ID[s]).toString(36);}).sort(function (a, b) {
-// if (a === b && ++j) console.log(a, b);return a.localeCompare(b);});
-// return j;})(0);
