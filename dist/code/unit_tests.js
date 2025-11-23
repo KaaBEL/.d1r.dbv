@@ -2,7 +2,7 @@
 /// <reference path="./editor.js" />
 "use strict";
 /** global version of project when last changes were done */
-var version_unit_tests_js = "0.2.25";
+var version_unit_tests_js = "0.2.27";
 /** @TODO rename this file to bug_tests.js */
 var utst_ = true;
 function BError (message) {
@@ -15,6 +15,7 @@ console.time("Succesful kinda tests, took");
 // TEST: enableLogicEditing //
 press = F;
 try {
+  console.log(Data.dispose());
   ship = Ship.fromObject({});
   enableLogicEditing();
   if (ship.getMode().mode !== "Logic")

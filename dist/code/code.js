@@ -2,7 +2,7 @@
 /// <reference path="./defs.d.ts" />
 "use strict";
 /** @readonly */
-var version_code_js = "v.0.2.26";
+var version_code_js = "v.0.2.27";
 /** 3h_  @TODO check @see {Ship.VERSION} */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
@@ -58,7 +58,7 @@ if (typeof Initial != "function")
  * cargo_store?:number,draw?:number[],now?:number,
  * bitmap:number|(number|string)[]}} BlockDataSimple
  */
-/** @typedef {never} @returns {never} */
+/** @typedef {never} Data @returns {never} */
 function Data() {
   throw new TypeError("Illegal constructor");
 }
@@ -133,8 +133,200 @@ Data.groups = [
   ",128,0,0,0,0]", "[[3],128,0,0,0,0]", "[[28],0,29,0,[27],0,18,0,[26]," +
   "96,164,96,2,1]"
 ];
+// script used for generating missing ms1 blocks data
+// if (typeof doc == "undefined")
+//   var doc = document;
+// var obj = {}, temp1 = temp1 || [], def = [
+//   {name: "ControlBlock", id: 1 + 1280, bitmap: 1071}, {name: "Gyro1", 
+//   // Camera and Beacon textures are swapped this will fix itself once
+//   // textures are updated in editor.js, fixed in texture_overlay_preview.png
+//   id: 9 + 1280, bitmap: 1072}, {name: "Camera", id: 20 + 1280,
+//   bitmap: 1073}, {name: "Beacon", id: 114 + 1280, bitmap: 1074}, {name: "FuelTank0", 
+//   id: 2 + 1280, bitmap: 1079}, {name: "FuelTank1", id: 42 + 1280, bitmap: [1098, 1,
+//   2]}, {name: "FuelTank2", id: 12 + 1280, bitmap: [1080, 2, 2]}, {name: "FuelTank4", 
+//   id: 146 + 1280, bitmap: [1082, 3, 3]}, {name: "FuelTank3", id: 147 + 1280,
+//   bitmap: [1085, 4, 4]}, {name: "DeutTank0", id: 148 + 1280, bitmap: 1806},
+//   {name: "DeutTank1", id: 149 + 1280, bitmap: [1796, 1, 2]}, {name: "DeutTank2", 
+//   id: 150 + 1280, bitmap: [1791, 2, 2]}, {name: "DeutTank4", id: 151 + 1280,
+//   bitmap: [1109, 3, 3]}, {name: "DeutTank3", id: 152 + 1280, bitmap: [1121, 4, 4]},
+//   {name: "ExotTank0", id: 153 + 1280, bitmap: 1134}, {name: "ExotTank1", id: 154 + 1280,
+//   bitmap: [1099, 1, 2]}, {name: "ExotTank2", id: 155 + 1280, bitmap: [1116, 2, 2]},
+//   {name: "ExotTank4", id: 156 + 1280, bitmap: [514, 3, 3]}, {name: "ExotTank3", 
+//   id: 157 + 1280, bitmap: [514, 4, 4]}, {name: "GlowTank0", id: 158 + 1280,
+//   bitmap: 1511}, {name: "GlowTank2", id: 159 + 1280, bitmap: [1521, 2, 2]},
+//   {name: "GlowTank4", id: 160 + 1280, bitmap: [1494, 3, 3]}, {name: "Battery0", 
+//   id: 16 + 1280, bitmap: 1209}, {name: "Battery1", id: 22 + 1280, bitmap: [1200, 2,
+//   1]}, {name: "Battery2", id: 17 + 1280, bitmap: [1182, 2, 2]}, {name: "Battery4", 
+//   id: 161 + 1280, bitmap: [1217, 3, 3]}, {name: "Battery3", id: 162 + 1280,
+//   bitmap: [1211, 4, 4]}, {name: "Pipe", id: 163 + 1280, bitmap: 1075},
+//   {name: "Engine_Fuel1", id: 3 + 1280, bitmap: 1171}, {name: "Engine_Fuel2", id: 7 + 1280,
+//   bitmap: 1158}, {name: "Engine_Fuel4", id: 178 + 1280, bitmap: [1143, 2, 2]},
+//   {name: "Engine_Fuel3", id: 24 + 1280, bitmap: [1161, 1, 2]}, {name: "Engine_Hybrid1", 
+//   id: 8 + 1280, bitmap: 1366}, {name: "Engine_Exot1", id: 179 + 1280, bitmap: [514,
+//   1, 2]}, {name: "Engine_Power1", id: 4 + 1280, bitmap: 1159}, {name: "Engine_Power2", 
+//   id: 6 + 1280, bitmap: 1160}, {name: "Engine_Power3", id: 5 + 1280, bitmap: 1157},
+//   {name: "Engine_Power4", id: 25 + 1280, bitmap: [1136, 1, 3]}, {name: "Engine_Big1", 
+//   id: 180 + 1280, bitmap: [1137, 2, 5]}, {name: "Engine_Big2", id: 181 + 1280,
+//   bitmap: [1179, 3, 4]}, {name: "Engine_Big3", id: 182 + 1280, bitmap: [1305, 4, 5]},
+//   {name: "Engine_Solid1", id: 61 + 1280, bitmap: [1287, 1, 2]}, {name: "Reactor0", 
+//   id: 15 + 1280, bitmap: 1172, editor: "SolarPanel"}, {name: "SolarPanel1", 
+//   id: 210 + 1280, bitmap: [1162, 2, 1], editor: "SolarPanelMed"},
+//   {name: "SolarPanel2", id: 211 + 1280, bitmap: [1166, 4, 1],
+//   editor: "SolarPanelBig"}, {name: "Reactor1", id: 11 + 1280, bitmap: 1384},
+//   {name: "Reactor2", id: 212 + 1280, bitmap: [1488, 2, 1]}, {name: "Reactor3", id: 14 + 1280,
+//   bitmap: [1357, 2, 1]}, {name: "Reactor4", id: 23 + 1280, bitmap: [1288, 2, 2]},
+//   {name: "Reactor5", id: 21 + 1280, bitmap: [514, 3, 3]}, {name: "Reactor8", id: 213 + 1280,
+//   bitmap: [1354, 3, 4]}, {name: "Reactor6", id: 214 + 1280, bitmap: [1175, 4, 4]},
+//   {name: "Reactor7", id: 215 + 1280, bitmap: [1309, 5, 5]}, {name: "Armor_Basic", 
+//   id: 13 + 1280, bitmap: 1274}, {name: "Armor_BasicBig", id: 242 + 1280,
+//   bitmap: [1290, 2, 2]}, {name: "Armor_Laser1", id: 26 + 1280, bitmap: 1210},
+//   {name: "Armor_LaserWedge0", id: 243 + 1280, bitmap: 1215}, {name: "Armor_LaserWedge1", 
+//   id: 244 + 1280, bitmap: [1224, 1, 2]}, {name: "Armor_LaserWedge2", id: 245 + 1280,
+//   bitmap: [1216, 1, 3]}, {name: "Armor_LaserWedge3", id: 246 + 1280, bitmap: [1243,
+//   1, 4]}, {name: "Armor_LaserWedge4", id: 247 + 1280, bitmap: [1242, 1, 5]},
+//   {name: "Armor_Heavy", id: 27 + 1280, bitmap: 1279}, {name: "Armor_HeavyWedge0", 
+//   id: 248 + 1280, bitmap: 1280}, {name: "Armor_HeavyWedge1", id: 249 + 1280,
+//   bitmap: [1273, 1, 2]}, {name: "Armor_HeavyWedge2", id: 250 + 1280, bitmap: [1246,
+//   1, 3]}, {name: "Armor_HeavyWedge3", id: 251 + 1280, bitmap: [1244, 1, 4]},
+//   {name: "Armor_HeavyWedge4", id: 252 + 1280, bitmap: [1245, 1, 5]}, {name: "Armor_Laser2", 
+//   id: 28 + 1280, bitmap: 1275}, {name: "Armor_Laser2Wedge0", id: 253 + 1280,
+//   bitmap: 1265}, {name: "Armor_Laser2Wedge1", id: 254 + 1280, bitmap: [1247, 1, 2]},
+//   {name: "Armor_Laser2Wedge2", id: 255 + 1280, bitmap: [1248, 1, 3]},
+//   {name: "Armor_Laser2Wedge3", id: 256 + 1280, bitmap: [1249, 1, 4]},
+//   {name: "Armor_Laser2Wedge4", id: 257 + 1280, bitmap: [1250, 1, 5]}, {name: "Armor_Regen", 
+//   id: 29 + 1280, bitmap: 1385}, {name: "Shield1", id: 31 + 1280, bitmap: 1304},
+//   {name: "Shield2", id: 258 + 1280, bitmap: 1295}, {name: "Shield3", id: 259 + 1280,
+//   bitmap: [1283, 3, 3]}, {name: "Weapon_bomb1", id: 19 + 1280, bitmap: 1394},
+//   {name: "Weapon_bomb2", id: 37 + 1280, bitmap: 1135}, {name: "Weapon_Laser1", id: 35 + 1280,
+//   bitmap: 1367}, {name: "Weapon_Laser2", id: 56 + 1280, bitmap: [1359, 1, 2]},
+//   {name: "Weapon_Laser3", id: 60 + 1280, bitmap: [1360, 1, 2]}, {name: "Weapon_Machinegun1", 
+//   id: 55 + 1280, bitmap: 1375}, {name: "Weapon_Machinegun2", id: 274 + 1280,
+//   bitmap: [1361, 1, 2]}, {name: "Weapon_Cannon1", id: 275 + 1280, bitmap: [1362, 1,
+//   3]}, {name: "Weapon_Cannon2", id: 276 + 1280, bitmap: [1377, 2, 6]},
+//   {name: "Weapon_PlasmaCannon1", id: 277 + 1280, bitmap: [1393, 1, 2]},
+//   {name: "Weapon_PlasmaCannon2", id: 278 + 1280, bitmap: [1379, 1, 4]},
+//   {name: "Weapon_NeutCannon1", id: 279 + 1280, bitmap: [1415, 1, 4]}, {name: "Weapon_DMG1", 
+//   id: 58 + 1280, bitmap: 1376}, {name: "Weapon_Rocket1", id: 64 + 1280,
+//   bitmap: [1469, 1, 3]}, {name: "Weapon_Rocket2", id: 280 + 1280, bitmap: [1431, 2,
+//   7]}, {name: "Weapon_Railgun1", id: 281 + 1280, bitmap: [1448, 1, 7]},
+//   {name: "Utility_Decoupler", id: 34 + 1280, bitmap: 1403}, {name: "Utility_Hinge", 
+//   id: 306 + 1280, bitmap: 1479}, {name: "Utility_Piston", id: 307 + 1280,
+//   bitmap: [1447, 1, 2]}, {name: "Utility_Rotor", id: 308 + 1280, bitmap: 1480},
+//   {name: "Utility_Pump", id: 309 + 1280, bitmap: 1532}, {name: "Utility_SolidPump", 
+//   id: 310 + 1280, bitmap: 1533}, {name: "Utility_VOID", id: 311 + 1280,
+//   bitmap: 1523},
+//   // {name: "Utility_PipeRotor", id:  + 1280}, {name: "Utility_PipePiston", id:  + 1280},
+//   {name: "Utility_Docking1", id: 36 + 1280, bitmap: 1534},
+//   {name: "Utility_Docking2", id: 54 + 1280, bitmap: 1582}, {name: "Utility_GPMP", 
+//   id: 62 + 1280, bitmap: 1451}, {name: "Utility_Decelerator", id: 312 + 1280,
+//   bitmap: 1574}, {name: "Utility_MobileSpawn", id: 313 + 1280, bitmap: 1583},
+//   {name: "Utility_Wheel1", id: 65 + 1280, bitmap: 1460}, {name: "Utility_Wheel2", 
+//   id: 314 + 1280, bitmap: [1461, 2, 2]}, {name: "Drill1", id: 338 + 1280,
+//   bitmap: [1520, 1, 2]}, {name: "Drill2", id: 339 + 1280, bitmap: [1497, 2, 4]},
+//   {name: "Drill3", id: 340 + 1280, bitmap: [1463, 3, 8]}, {name: "Excavator1", 
+//   id: 341 + 1280, bitmap: [1584, 3, 2]}, {name: "Excavator2", id: 342 + 1280,
+//   bitmap: [1732, 6, 4]}, {name: "ExotCollector1", id: 343 + 1280, bitmap: [1539, 5,
+//   5]}, {name: "Cargo0", id: 344 + 1280, bitmap: 1573}, {name: "Cargo1", id: 345 + 1280,
+//   bitmap: [1571, 2, 2]}, {name: "Cargo2", id: 346 + 1280, bitmap: [1535, 4, 4]},
+//   {name: "Converter_Electrolyzer1", id: 347 + 1280, bitmap: [1714, 1, 2]},
+//   {name: "Converter_Electrolyzer2", id: 348 + 1280, bitmap: [1712, 2, 4]},
+//   {name: "Converter_Electrolyzer3", id: 349 + 1280, bitmap: [1661, 4, 8]},
+//   {name: "Converter_Deut1", id: 350 + 1280, bitmap: [1696, 1, 2]}, {name: "Converter_Deut2", 
+//   id: 351 + 1280, bitmap: [1710, 2, 4]}, {name: "Converter_Deut3", id: 352 + 1280,
+//   bitmap: [1638, 4, 8]}, {name: "Converter_Exot1", id: 353 + 1280, bitmap: [1411, 2,
+//   4]}, {name: "Converter_Exot2", id: 354 + 1280, bitmap: [1389, 4, 8]},
+//   {name: "Converter_Smelter1", id: 355 + 1280, bitmap: [1587, 2, 2]},
+//   {name: "Converter_Smelter2", id: 356 + 1280, bitmap: [1602, 4, 4]},
+//   {name: "Converter_Smelter3", id: 357 + 1280, bitmap: [1589, 4, 8]},
+//   {name: "Logic_LaserSensor", id: 370 + 1280, bitmap: 1606}, {name: "Logic_VelocitySensor", 
+//   id: 371 + 1280, bitmap: 1615}, {name: "Logic_AngVelocitySensor", id: 372 + 1280,
+//   bitmap: 1624}, {name: "Logic_ResourceSensor", id: 373 + 1280, bitmap: 1633},
+//   {name: "Logic_Button", id: 374 + 1280, bitmap: 1642}, {name: "Logic_Screen", 
+//   id: 375 + 1280, bitmap: 1651}, {name: "Logic_Timer", id: 376 + 1280, bitmap: 1660},
+//   {name: "Logic_Switch", id: 377 + 1280, bitmap: 1669}, {name: "Logic_Randomizer", 
+//   id: 378 + 1280, bitmap: 1678}, {name: "Logic_AndGate", id: 379 + 1280,
+//   bitmap: 1076}, {name: "Logic_OrGate", id: 380 + 1280, bitmap: 1077},
+//   {name: "Logic_XorGate", id: 381 + 1280, bitmap: 1078}, {name: "Decorative_Nose0", 
+//   id: 43 + 1280, bitmap: 1803}, {name: "Decorative_Nose1", id: 46 + 1280,
+//   bitmap: [1807, 2, 1]}, {name: "Decorative_Nose2", id: 45 + 1280, bitmap: [1748, 2,
+//   2]}, {name: "Decorative_BackgroundBlock1", id: 402 + 1280, bitmap: 1687},
+//   {name: "Decorative_Block1", id: 49 + 1280, bitmap: 1804}, {name: "Decorative_Block2", 
+//   id: 50 + 1280, bitmap: [1771, 1, 2]}, {name: "Decorative_Wedge0", id: 44 + 1280,
+//   bitmap: 1802}, {name: "Decorative_Wedge3", id: 403 + 1280, bitmap: 1767},
+//   {name: "Decorative_Wedge1", id: 47 + 1280, bitmap: [1768, 1, 2]},
+//   {name: "Decorative_Wedge2", id: 48 + 1280, bitmap: [1786, 1, 2]},
+//   {name: "Decorative_Wedge4", id: 404 + 1280, bitmap: [1769, 1, 3]},
+//   {name: "Decorative_Wedge7", id: 405 + 1280, bitmap: [1776, 1, 3]},
+//   {name: "Decorative_Wedge5", id: 406 + 1280, bitmap: [1770, 1, 4]},
+//   {name: "Decorative_Wedge8", id: 407 + 1280, bitmap: [1766, 1, 4]},
+//   {name: "Decorative_Wedge6", id: 408 + 1280, bitmap: [1746, 1, 5]},
+//   {name: "Decorative_Wedge9", id: 409 + 1280, bitmap: [1747, 1, 5]},
+//   {name: "Decorative_Antenna0", id: 51 + 1280, bitmap: [1772, 1, 2]},
+//   {name: "Decorative_Antenna1", id: 59 + 1280, bitmap: [1789, 2, 2]},
+//   {name: "ControlBlock_Probe", id: 10 + 1280, bitmap: 1074}
+// ];
+// var types = "cat_control cat_fuelandbatteries cat_engines cat_generators cat\
+// _armor cat_weapons cat_utility cat_resources cat_logic cat_structural cat_ch\
+// eats !cat_decolayer Lcat_decolayer2 !cat_decolayer3 cat_editoronly Xcat_hide\
+// ".split(" "), cut_useless = 0;
+// doc === document ? Acode.upload(1, function (e) {
+//     doc = Document.parseHTMLUnsafe(e);
+//   }) :
+//   temp1 = [].map.call(doc.querySelectorAll("PartConfig"), function (E, i) {
+//     var type = (E.querySelector("EditorType") || {}).textContent;
+//     if (type.slice(0, 13) === "cat_decolayer" && (i < cut_useless || cut_useless === -1))
+//       cut_useless = i;
+//     return {name: (E.querySelector("PartID") || {}).textContent,
+//       id: (E.querySelector("SpriteID") || {}).textContent,
+//       old: (E.querySelector("OldID") || {}).textContent, type: type,
+//       title: (E.querySelector("EditorName") || {}).textContent};
+//   }).sort(function (a, b) {
+//     return types.indexOf(a.type) - types.indexOf(b.type);
+//     // var atmp = +a.old, btmp = +b.old;
+//     // return isNaN(atmp) ?
+//     //   isNaN(btmp) ? 0 : 1:
+//     //   isNaN(btmp) ? -1 : atmp - btmp;
+//   });
+
+// // temp1.sort(function (a, b) {
+// //   return types.indexOf(a.type) - types.indexOf(b.type);
+// // });
+// //.forEach(function (e, i) {
+// //   obj[e.name] = e.name !== (def[0] || {}).name ? def.shift() : {id: 0};
+// // });
+// // temp1.slice(0, 53).forEach(function (e) {
+// //   obj[e.name] = {id: e.old + " + " + (1024 + 256)};
+// // });
+// // console.log(JSON.stringify(obj).replace(/"/g, "").replace(/:|,/g, function (m) {
+// //   return m + " ";
+// // }).replace(/id: *0/g, "id:  + 1280"));
+// var result = [];
+// temp1.forEach(function (e, i) {
+//   if (types.indexOf(e.type) === -1)
+//     return;
+//   var container = {},
+//     obj = container[e.name] = e.name === (def[0] || {}).name ?
+//       def.shift() :
+//       {id: 0, bitmap: ["_FIX_"]};
+//   if (obj.bitmap === -1 && def.indexOf(e.name) > -1)
+//     console.error(e.name, "is at different position");
+//   if (!obj)
+//     obj = container[e.name] = {id: 0};
+//   //obj.title = e.title;
+//   delete obj.name;
+//   result.push(JSON.stringify(container).slice(1, -1));
+// });
+// console.log(result.join(",").replace(/[{,] *"([^"]+)" *: *|,/g, function (m, g1) {
+//   return m === "," ? ", " : m[0] + (m[0] === "," ? " " : "") + g1 + ": ";
+// }).replace(/id: *(\d+)/g, function (m, g1) {
+//   return "id: " + (+g1 < 1280 ? "__NEW__" : +g1 - 1280) + " + 1280";
+// }) + "}");
+/** was used to show ts errors where block IDs weren't assigned (case of new
+ * blocks), but still can be tested in browser @TODO remove in v.0.2.28 */
+//var __NEW__ = {valueOf: Math.random};
+
 // search / ?([^]{20,74}[,{;]) ?/ replace "  $1\n "
-// search /"\d+ \d+"/ replace <number with texture index>
+// search /\["\d+ \d+"\]|"\d+ \d+"/ replace <number with texture index>
 Data.blocks =
   /** @type {const} */
   ({block: {id: 0, draw: [14, 14, 14, 14, 14, 14]},
@@ -269,45 +461,44 @@ Data.blocks =
   id: 1043, weight: 1, strength: 20, cost: 70, bitmap: 64},
   "T1 Nano Healer": {id: 1060, weight: 1, strength: 10, cost: 130,
   bitmap: 66}, __placeholder969__: {id: 969, weight: .169, cost: 6969,
-  bitmap: 82}, ControlBlock: {id: 1 + 1280, bitmap: 1071}, Gyro1: {
-  // Camera and Beacon textures are swapped this will fix itself once
-  // textures are updated in editor.js, fixed in texture_overlay_preview.png
-  id: 9 + 1280, bitmap: 1072}, Camera: {id: 20 + 1280,
-  bitmap: 1073}, Beacon: {id: 114 + 1280, bitmap: 1074}, FuelTank0: {
-  id: 2 + 1280, bitmap: 1079}, FuelTank1: {id: 42 + 1280, bitmap: [1098, 1,
-  2]}, FuelTank2: {id: 12 + 1280, bitmap: [1080, 2, 2]}, FuelTank4: {
-  id: 146 + 1280, bitmap: [1082, 3, 3]}, FuelTank3: {id: 147 + 1280,
-  bitmap: [1085, 4, 4]}, DeutTank0: {id: 148 + 1280, bitmap: 1806},
-  DeutTank1: {id: 149 + 1280, bitmap: [1796, 1, 2]}, DeutTank2: {
-  id: 150 + 1280, bitmap: [1791, 2, 2]}, DeutTank4: {id: 151 + 1280,
-  bitmap: [1109, 3, 3]}, DeutTank3: {id: 152 + 1280, bitmap: [1121, 4, 4]},
-  ExotTank0: {id: 153 + 1280, bitmap: 1134}, ExotTank1: {id: 154 + 1280,
-  bitmap: [1099, 1, 2]}, ExotTank2: {id: 155 + 1280, bitmap: [1116, 2, 2]},
-  ExotTank4: {id: 156 + 1280, bitmap: [514, 3, 3]}, ExotTank3: {
-  id: 157 + 1280, bitmap: [514, 4, 4]}, GlowTank0: {id: 158 + 1280,
-  bitmap: 1511}, GlowTank2: {id: 159 + 1280, bitmap: [1521, 2, 2]},
-  GlowTank4: {id: 160 + 1280, bitmap: [1494, 3, 3]}, Battery0: {
-  id: 16 + 1280, bitmap: 1209}, Battery1: {id: 22 + 1280, bitmap: [1200, 2,
-  1]}, Battery2: {id: 17 + 1280, bitmap: [1182, 2, 2]}, Battery4: {
-  id: 161 + 1280, bitmap: [1217, 3, 3]}, Battery3: {id: 162 + 1280,
-  bitmap: [1211, 4, 4]}, Pipe: {id: 163 + 1280, bitmap: 1075},
+  bitmap: 82}, "ControlBlock": {id: 1 + 1280, bitmap: 1071}, Gyro1: {
+  id: 9 + 1280, bitmap: 1072}, Camera: {id: 20 + 1280, bitmap: 1073},
+  Scope: {id: 115 + 1280, bitmap: 1075}, Beacon: {id: 114 + 1280,
+  bitmap: 1074}, FuelTank0: {id: 2 + 1280, bitmap: 1079}, FuelTank1: {
+  id: 42 + 1280, bitmap: [1098, 1, 2]}, FuelTank2: {id: 12 + 1280,
+  bitmap: [1080, 2, 2]}, FuelTank4: {id: 146 + 1280, bitmap: [1082, 3, 3]},
+  FuelTank3: {id: 147 + 1280, bitmap: [1085, 4, 4]}, DeutTank0: {
+  id: 148 + 1280, bitmap: 1806}, DeutTank1: {id: 149 + 1280, bitmap: [1796,
+  1, 2]}, DeutTank2: {id: 150 + 1280, bitmap: [1791, 2, 2]}, DeutTank4: {
+  id: 151 + 1280, bitmap: [1809, 3, 3]}, DeutTank3: {id: 152 + 1280,
+  bitmap: [1812, 4, 4]}, ExotTank0: {id: 153 + 1280, bitmap: 1134},
+  ExotTank1: {id: 154 + 1280, bitmap: [1099, 1, 2]}, ExotTank2: {
+  id: 155 + 1280, bitmap: [1116, 2, 2]}, ExotTank4: {id: 156 + 1280,
+  bitmap: [1109, 3, 3]}, ExotTank3: {id: 157 + 1280, bitmap: [1121, 4, 4]},
+  GlowTank0: {id: 158 + 1280, bitmap: 1511}, GlowTank2: {id: 159 + 1280,
+  bitmap: [1521, 2, 2]}, GlowTank4: {id: 160 + 1280, bitmap: [1494, 3, 3]},
+  Battery0: {id: 16 + 1280, bitmap: 1209}, Battery1: {id: 22 + 1280,
+  bitmap: [1200, 2, 1]}, Battery2: {id: 17 + 1280, bitmap: [1182, 2, 2]},
+  Battery4: {id: 161 + 1280, bitmap: [1217, 3, 3]}, Battery3: {
+  id: 162 + 1280, bitmap: [1211, 4, 4]}, Pipe: {id: 163 + 1280,
+  bitmap: 1384}, BackgroundPipe: {id: 164 + 1280, bitmap: 1974},
   Engine_Fuel1: {id: 3 + 1280, bitmap: 1171}, Engine_Fuel2: {id: 7 + 1280,
   bitmap: 1158}, Engine_Fuel4: {id: 178 + 1280, bitmap: [1143, 2, 2]},
   Engine_Fuel3: {id: 24 + 1280, bitmap: [1161, 1, 2]}, Engine_Hybrid1: {
-  id: 8 + 1280, bitmap: 1366}, Engine_Exot1: {id: 179 + 1280, bitmap: [514,
+  id: 8 + 1280, bitmap: 1366}, Engine_Exot1: {id: 179 + 1280, bitmap: [1963,
   1, 2]}, Engine_Power1: {id: 4 + 1280, bitmap: 1159}, Engine_Power2: {
   id: 6 + 1280, bitmap: 1160}, Engine_Power3: {id: 5 + 1280, bitmap: 1157},
   Engine_Power4: {id: 25 + 1280, bitmap: [1136, 1, 3]}, Engine_Big1: {
   id: 180 + 1280, bitmap: [1137, 2, 5]}, Engine_Big2: {id: 181 + 1280,
-  bitmap: [1179, 3, 4]}, Engine_Big3: {id: 182 + 1280, bitmap: [1305, 4, 5]},
-  Engine_Solid1: {id: 61 + 1280, bitmap: [1287, 1, 2]}, Reactor0: {
-  id: 15 + 1280, bitmap: 1172, editor: "SolarPanel"}, SolarPanel1: {
-  id: 210 + 1280, bitmap: [1162, 2, 1], editor: "SolarPanelMed"},
-  SolarPanel2: {id: 211 + 1280, bitmap: [1166, 4, 1],
-  editor: "SolarPanelBig"}, Reactor1: {id: 11 + 1280, bitmap: 1384},
+  bitmap: [1179, 3, 4]}, Engine_Big3: {id: 182 + 1280, bitmap: [1305, 4, 6]},
+  Engine_Solid1: {id: 61 + 1280, bitmap: [1287, 1, 2]}, SolarBlock: {
+  id: 216 + 1280, bitmap: 1988}, Reactor0: {id: 15 + 1280, bitmap: 1172,
+  editor: "SolarPanel"}, SolarPanel1: {id: 210 + 1280, bitmap: [1162, 2, 1],
+  editor: "SolarPanelMed"}, SolarPanel2: {id: 211 + 1280, bitmap: [1166, 4,
+  1], editor: "SolarPanelBig"}, Reactor1: {id: 11 + 1280, bitmap: 1986},
   Reactor2: {id: 212 + 1280, bitmap: [1488, 2, 1]}, Reactor3: {id: 14 + 1280,
   bitmap: [1357, 2, 1]}, Reactor4: {id: 23 + 1280, bitmap: [1288, 2, 2]},
-  Reactor5: {id: 21 + 1280, bitmap: [514, 3, 3]}, Reactor8: {id: 213 + 1280,
+  Reactor5: {id: 21 + 1280, bitmap: [1959, 3, 3]}, Reactor8: {id: 213 + 1280,
   bitmap: [1354, 3, 4]}, Reactor6: {id: 214 + 1280, bitmap: [1175, 4, 4]},
   Reactor7: {id: 215 + 1280, bitmap: [1309, 5, 5]}, Armor_Basic: {
   id: 13 + 1280, bitmap: 1274}, Armor_BasicBig: {id: 242 + 1280,
@@ -341,47 +532,57 @@ Data.blocks =
   id: 58 + 1280, bitmap: 1376}, Weapon_Rocket1: {id: 64 + 1280,
   bitmap: [1469, 1, 3]}, Weapon_Rocket2: {id: 280 + 1280, bitmap: [1431, 2,
   7]}, Weapon_Railgun1: {id: 281 + 1280, bitmap: [1448, 1, 7]},
-  Utility_Decoupler: {id: 34 + 1280, bitmap: 1403}, Utility_Hinge: {
-  id: 306 + 1280, bitmap: 1479}, Utility_Piston: {id: 307 + 1280,
-  bitmap: [1447, 1, 2]}, Utility_Rotor: {id: 308 + 1280, bitmap: 1480},
-  Utility_Pump: {id: 309 + 1280, bitmap: 1532}, Utility_SolidPump: {
-  id: 310 + 1280, bitmap: 1533}, Utility_VOID: {id: 311 + 1280,
-  bitmap: 1523},
-  // Utility_PipeRotor: {id:  + 1280}, Utility_PipePiston: {id:  + 1280},
-  Utility_Docking1: {id: 36 + 1280, bitmap: 1534},
-  Utility_Docking2: {id: 54 + 1280, bitmap: 1582}, Utility_GPMP: {
-  id: 62 + 1280, bitmap: 1451}, Utility_Decelerator: {id: 312 + 1280,
-  bitmap: 1574}, Utility_MobileSpawn: {id: 313 + 1280, bitmap: 1583},
-  Utility_Wheel1: {id: 65 + 1280, bitmap: 1460}, Utility_Wheel2: {
-  id: 314 + 1280, bitmap: [1461, 2, 2]}, Drill1: {id: 338 + 1280,
+  Utility_Decoupler: {id: 34 + 1280, bitmap: 1403}, Utility_PipeDecoupler: {
+  id: 315 + 1280, bitmap: 1966}, Utility_Hinge: {id: 306 + 1280,
+  bitmap: 1479}, Utility_Piston: {id: 307 + 1280, bitmap: [1447, 1, 2]},
+  Utility_Rotor: {id: 308 + 1280, bitmap: 1480}, Utility_Pump: {
+  id: 309 + 1280, bitmap: 1532}, Utility_SolidPump: {id: 310 + 1280,
+  bitmap: 1533}, Utility_VOID: {id: 311 + 1280, bitmap: 1523},
+  Utility_PipePiston: {id: 316 + 1280, bitmap: [1964, 1, 2]},
+  Utility_PipeRotor: {id: 317 + 1280, bitmap: 1965}, Utility_Docking1: {
+  id: 36 + 1280, bitmap: 1534}, Utility_Docking2: {id: 54 + 1280,
+  bitmap: 1582}, Utility_GPMP: {id: 62 + 1280, bitmap: 1451},
+  Utility_Decelerator: {id: 312 + 1280, bitmap: 1574},
+  Utility_DirectionalDecelerator: {id: 318 + 1280, bitmap: 2012},
+  Utility_MobileSpawn: {id: 313 + 1280, bitmap: 1583}, Utility_Wheel1: {
+  id: 65 + 1280, bitmap: 1460}, Utility_Wheel2: {id: 314 + 1280,
+  bitmap: [1461, 2, 2]}, Utility_Sign: {id: 319 + 1280, bitmap: 1990},
+  Utility_TogglableCollider: {id: 320 + 1280, bitmap: 1987}, Drill0: {
+  id: 321 + 1280, bitmap: 1816, editor: "Anchor"}, Drill1: {id: 338 + 1280,
   bitmap: [1520, 1, 2]}, Drill2: {id: 339 + 1280, bitmap: [1497, 2, 4]},
-  Drill3: {id: 340 + 1280, bitmap: [1463, 3, 8]}, Excavator1: {
-  id: 341 + 1280, bitmap: [1584, 3, 2]}, Excavator2: {id: 342 + 1280,
-  bitmap: [1732, 6, 4]}, ExotCollector1: {id: 343 + 1280, bitmap: [1539, 5,
-  5]}, Cargo0: {id: 344 + 1280, bitmap: 1573}, Cargo1: {id: 345 + 1280,
-  bitmap: [1571, 2, 2]}, Cargo2: {id: 346 + 1280, bitmap: [1535, 4, 4]},
-  Converter_Electrolyzer1: {id: 347 + 1280, bitmap: [1714, 1, 2]},
-  Converter_Electrolyzer2: {id: 348 + 1280, bitmap: [1712, 2, 4]},
-  Converter_Electrolyzer3: {id: 349 + 1280, bitmap: [1661, 4, 8]},
-  Converter_Deut1: {id: 350 + 1280, bitmap: [1696, 1, 2]}, Converter_Deut2: {
-  id: 351 + 1280, bitmap: [1710, 2, 4]}, Converter_Deut3: {id: 352 + 1280,
-  bitmap: [1638, 4, 8]}, Converter_Exot1: {id: 353 + 1280, bitmap: [1411, 2,
-  4]}, Converter_Exot2: {id: 354 + 1280, bitmap: [1389, 4, 8]},
-  Converter_Smelter1: {id: 355 + 1280, bitmap: [1587, 2, 2]},
-  Converter_Smelter2: {id: 356 + 1280, bitmap: [1602, 4, 4]},
-  Converter_Smelter3: {id: 357 + 1280, bitmap: [1589, 4, 8]},
-  Logic_LaserSensor: {id: 370 + 1280, bitmap: 1606}, Logic_VelocitySensor: {
-  id: 371 + 1280, bitmap: 1615}, Logic_AngVelocitySensor: {id: 372 + 1280,
-  bitmap: 1624}, Logic_ResourceSensor: {id: 373 + 1280, bitmap: 1633},
-  Logic_Button: {id: 374 + 1280, bitmap: 1642}, Logic_Screen: {
-  id: 375 + 1280, bitmap: 1651}, Logic_Timer: {id: 376 + 1280, bitmap: 1660},
-  Logic_Switch: {id: 377 + 1280, bitmap: 1669}, Logic_Randomizer: {
-  id: 378 + 1280, bitmap: 1678}, Logic_AndGate: {id: 379 + 1280,
-  bitmap: 1076}, Logic_OrGate: {id: 380 + 1280, bitmap: 1077},
-  Logic_XorGate: {id: 381 + 1280, bitmap: 1078}, Decorative_Nose0: {
-  id: 43 + 1280, bitmap: 1803}, Decorative_Nose1: {id: 46 + 1280,
-  bitmap: [1807, 2, 1]}, Decorative_Nose2: {id: 45 + 1280, bitmap: [1748, 2,
-  2]}, Decorative_BackgroundBlock1: {id: 402 + 1280, bitmap: 1687},
+  Drill3: {id: 340 + 1280, bitmap: [1463, 3, 8]}, Grinder: {id: 358 + 1280,
+  bitmap: 1817}, Excavator1: {id: 341 + 1280, bitmap: [1584, 3, 2]},
+  Excavator2: {id: 342 + 1280, bitmap: [1732, 6, 4]}, ExotCollector1: {
+  id: 343 + 1280, bitmap: [1539, 5, 5]}, Cargo0: {id: 344 + 1280,
+  bitmap: 1573}, Cargo1: {id: 345 + 1280, bitmap: [1571, 2, 2]}, Cargo2: {
+  id: 346 + 1280, bitmap: [1535, 4, 4]}, Converter_Electrolyzer1: {
+  id: 347 + 1280, bitmap: [1714, 1, 2]}, Converter_Electrolyzer2: {
+  id: 348 + 1280, bitmap: [1712, 2, 4]}, Converter_Electrolyzer3: {
+  id: 349 + 1280, bitmap: [1661, 4, 8]}, Converter_Deut1: {id: 350 + 1280,
+  bitmap: [1696, 1, 2]}, Converter_Deut2: {id: 351 + 1280, bitmap: [1710, 2,
+  4]}, Converter_Deut3: {id: 352 + 1280, bitmap: [1638, 4, 8]},
+  Converter_Exot1: {id: 353 + 1280, bitmap: [1411, 2, 4]}, Converter_Exot2: {
+  id: 354 + 1280, bitmap: [1389, 4, 8]}, Converter_Smelter1: {id: 355 + 1280,
+  bitmap: [1587, 2, 2]}, Converter_Smelter2: {id: 356 + 1280, bitmap: [1602,
+  4, 4]}, Converter_Smelter3: {id: 357 + 1280, bitmap: [1589, 4, 8]},
+  Logic_LaserSensor: {id: 370 + 1280, bitmap: 1606}, Logic_LaserEmitter: {
+  id: 382 + 1280, bitmap: 2013}, Logic_LaserReciever: {id: 383 + 1280,
+  bitmap: 1980}, Logic_VelocitySensor: {id: 371 + 1280, bitmap: 1615},
+  Logic_AngVelocitySensor: {id: 372 + 1280, bitmap: 1624},
+  Logic_ResourceSensor: {id: 373 + 1280, bitmap: 1633}, Logic_HPSensor: {
+  id: 384 + 1280, bitmap: 2014}, Logic_AngleSensor: {id: 385 + 1280,
+  bitmap: 1995}, Logic_CoordSensor: {id: 386 + 1280, bitmap: 1989},
+  Logic_AltitudeSensor: {id: 387 + 1280, bitmap: 1996}, Logic_Button: {
+  id: 374 + 1280, bitmap: 1642}, Logic_Antenna: {id: 388 + 1280,
+  bitmap: [1962, 1, 2]}, Logic_Screen: {id: 375 + 1280, bitmap: 1651},
+  Logic_Timer: {id: 376 + 1280, bitmap: 1660}, Logic_Switch: {id: 377 + 1280,
+  bitmap: 1669}, Logic_Randomizer: {id: 378 + 1280, bitmap: 1678},
+  Logic_AndGate: {id: 379 + 1280, bitmap: 1076}, Logic_OrGate: {
+  id: 380 + 1280, bitmap: 1077}, Logic_XorGate: {id: 381 + 1280,
+  bitmap: 1078}, Decorative_Nose0: {id: 43 + 1280, bitmap: 1803},
+  Decorative_Nose1: {id: 46 + 1280, bitmap: [1807, 2, 1]},
+  Decorative_Nose2: {id: 45 + 1280, bitmap: [1748, 2, 2]},
+  Decorative_BackgroundBlock1: {id: 402 + 1280, bitmap: 1687},
   Decorative_Block1: {id: 49 + 1280, bitmap: 1804}, Decorative_Block2: {
   id: 50 + 1280, bitmap: [1771, 1, 2]}, Decorative_Wedge0: {id: 44 + 1280,
   bitmap: 1802}, Decorative_Wedge3: {id: 403 + 1280, bitmap: 1767},
@@ -393,12 +594,89 @@ Data.blocks =
   Decorative_Wedge8: {id: 407 + 1280, bitmap: [1766, 1, 4]},
   Decorative_Wedge6: {id: 408 + 1280, bitmap: [1746, 1, 5]},
   Decorative_Wedge9: {id: 409 + 1280, bitmap: [1747, 1, 5]},
+  Decorative_ConvexCurvedArmor1: {id: 410 + 1280, bitmap: 1914},
+  Decorative_HollowConvexCurvedArmor1: {id: 411 + 1280, bitmap: 1851},
+  Decorative_ConvexCurvedArmor2: {id: 412 + 1280, bitmap: [1915, 1, 2]},
+  Decorative_HollowConvexCurvedArmor2: {id: 413 + 1280, bitmap: [1837, 1,
+  2]}, Decorative_ConvexCurvedArmor3: {id: 414 + 1280, bitmap: [1921, 1, 3]},
+  Decorative_HollowConvexCurvedArmor3: {id: 415 + 1280, bitmap: [1850, 1,
+  3]}, Decorative_ConvexCurvedArmor4: {id: 416 + 1280, bitmap: [1923, 1, 4]},
+  Decorative_HollowConvexCurvedArmor4: {id: 417 + 1280, bitmap: [1849, 1,
+  4]}, Decorative_ConvexCurvedArmor5: {id: 418 + 1280, bitmap: [1916, 1, 5]},
+  Decorative_HollowConvexCurvedArmor5: {id: 419 + 1280, bitmap: [1836, 1,
+  5]}, Decorative_ConcaveCurvedArmor1: {id: 420 + 1280, bitmap: 1955},
+  Decorative_HollowConcaveCurvedArmor1: {id: 421 + 1280, bitmap: 1880},
+  Decorative_ConcaveCurvedArmor2: {id: 422 + 1280, bitmap: [1948, 1, 2]},
+  Decorative_HollowConcaveCurvedArmor2: {id: 423 + 1280, bitmap: [1870, 1,
+  2]}, Decorative_ConcaveCurvedArmor3: {id: 424 + 1280, bitmap: [1940, 1,
+  3]}, Decorative_HollowConcaveCurvedArmor3: {id: 425 + 1280, bitmap: [1860,
+  1, 3]}, Decorative_ConcaveCurvedArmor4: {id: 426 + 1280, bitmap: [1919, 1,
+  4]}, Decorative_HollowConcaveCurvedArmor4: {id: 427 + 1280, bitmap: [1826,
+  1, 4]}, Decorative_ConcaveCurvedArmor5: {id: 428 + 1280, bitmap: [1920, 1,
+  5]}, Decorative_HollowConcaveCurvedArmor5: {id: 429 + 1280, bitmap: [1825,
+  1, 5]}, Decorative_HalfSpikeArmor: {id: 430 + 1280, bitmap: 1911},
+  Decorative_HollowHalfSpikeArmor: {id: 431 + 1280, bitmap: 1881},
+  Decorative_SpikeArmor1: {id: 432 + 1280, bitmap: 1913},
+  Decorative_HollowSpikeArmor1: {id: 433 + 1280, bitmap: 1877},
+  Decorative_SpikeArmor2: {id: 434 + 1280, bitmap: [1922, 1, 2]},
+  Decorative_HollowSpikeArmor2: {id: 435 + 1280, bitmap: [1862, 1, 2]},
+  Decorative_SpikeArmor3: {id: 436 + 1280, bitmap: [1933, 1, 3]},
+  Decorative_HollowSpikeArmor3: {id: 437 + 1280, bitmap: [1855, 1, 3]},
+  Decorative_SpikeArmor4: {id: 438 + 1280, bitmap: [1917, 1, 4]},
+  Decorative_HollowSpikeArmor4: {id: 439 + 1280, bitmap: [1848, 1, 4]},
+  Decorative_SpikeArmor5: {id: 440 + 1280, bitmap: [1918, 1, 5]},
+  Decorative_HollowSpikeArmor5: {id: 441 + 1280, bitmap: [1838, 1, 5]},
+  Decorative_RoundSpikeArmor5: {id: 442 + 1280, bitmap: 1912},
+  Decorative_HollowRoundSpikeArmor5: {id: 443 + 1280, bitmap: 1882},
+  Decorative_TitaniumBeamArmor1: {id: 444 + 1280, bitmap: 1899},
+  Decorative_HollowTitaniumBeamArmor1: {id: 445 + 1280, bitmap: 1888},
+  Decorative_TitaniumBeamArmor2: {id: 446 + 1280, bitmap: 1898},
+  Decorative_HollowTitaniumBeamArmor2: {id: 447 + 1280, bitmap: 1889},
+  Decorative_TitaniumBeamArmor3: {id: 448 + 1280, bitmap: 1894},
+  Decorative_HollowTitaniumBeamArmor3: {id: 449 + 1280, bitmap: 1890},
+  Decorative_TitaniumBeamArmor4: {id: 450 + 1280, bitmap: 1895},
+  Decorative_HollowTitaniumBeamArmor4: {id: 451 + 1280, bitmap: 1891},
+  Decorative_TitaniumBeamArmor5: {id: 452 + 1280, bitmap: 1896},
+  Decorative_HollowTitaniumBeamArmor5: {id: 453 + 1280, bitmap: 1892},
+  Decorative_TitaniumDiamondShapedArmor: {id: 454 + 1280, bitmap: 1897},
+  Decorative_HollowTitaniumDiamondShapedArmor: {id: 455 + 1280,
+  bitmap: 1893}, Decorative_WireConnector1: {id: 456 + 1280, bitmap: 1883},
+  Decorative_WireConnector2: {id: 457 + 1280, bitmap: 1884},
+  Decorative_WireConnector3: {id: 458 + 1280, bitmap: 1885},
+  Decorative_WireConnector4: {id: 459 + 1280, bitmap: 1886},
+  Decorative_ThinDiagonalBeam1: {id: 460 + 1280, bitmap: 1953},
+  Decorative_SmallTriangle1: {id: 461 + 1280, bitmap: 1900},
+  Decorative_SmallSquare1: {id: 462 + 1280, bitmap: 1901},
+  Decorative_DiagonalBeam1: {id: 463 + 1280, bitmap: 1902},
+  Decorative_DiagonalBeam2: {id: 464 + 1280, bitmap: 1903},
+  Decorative_HalfSquare1: {id: 465 + 1280, bitmap: 1904},
+  Decorative_HalfSharpSquare1: {id: 466 + 1280, bitmap: 1905},
+  Decorative_LongSmallTriangle1: {id: 467 + 1280, bitmap: 1906},
+  Decorative_LBeam1: {id: 468 + 1280, bitmap: 1907},
+  Decorative_DiagonalLBeam1: {id: 469 + 1280, bitmap: 1908},
+  Decorative_InDentedTriangle1: {id: 470 + 1280, bitmap: 1909},
+  Decorative_OutDentedTriangle1: {id: 471 + 1280, bitmap: 1910},
   Decorative_Antenna0: {id: 51 + 1280, bitmap: [1772, 1, 2]},
-  Decorative_Antenna1: {id: 59 + 1280, bitmap: [1789, 2, 2]},
-  ControlBlock_Probe: {id: 10 + 1280, bitmap: 1074}});
+  Decorative_Antenna1: {id: 59 + 1280, bitmap: [1789, 2, 2]}, Cheat_Source: {
+  id: 472 + 1280, bitmap: 1997}, Cheat_Laser: {id: 473 + 1280, bitmap: 1998},
+  Cheat_Engine: {id: 474 + 1280, bitmap: 1999}, Cheat_Gyro: {id: 475 + 1280,
+  bitmap: 2000}, Cheat_GPMP: {id: 476 + 1280, bitmap: 2005},
+  Cheat_Decelerator: {id: 477 + 1280, bitmap: 2006}, Cheat_ImmobilityBlock: {
+  id: 478 + 1280, bitmap: 2007}, Cheat_IndestructibilityBlock: {
+  id: 479 + 1280, bitmap: 2008}, Cheat_Ballast: {id: 480 + 1280,
+  bitmap: 2009}, Cheat_Shield: {id: 481 + 1280, bitmap: 2010}, Cheat_Bomb: {
+  id: 482 + 1280, bitmap: 2011}, Cheat_Structure: {id: 483 + 1280,
+  bitmap: 1887}, Armor_Cheat1: {id: 484 + 1280, bitmap: 2004},
+  Armor_CheatWedge0: {id: 485 + 1280, bitmap: 1981}, Armor_CheatWedge1: {
+  id: 486 + 1280, bitmap: [1982, 1, 2]}, Armor_CheatWedge2: {id: 487 + 1280,
+  bitmap: [1983, 1, 3]}, Armor_CheatWedge3: {id: 488 + 1280, bitmap: [1975,
+  1, 4]}, Armor_CheatWedge4: {id: 489 + 1280, bitmap: [1967, 1, 5]},
+  ControlBlock_Probe: {id: 10 + 1280, bitmap: 1074}
+});
 Data.titles =
   /** @type {const} */
   ({
+  
   0: "block",
   1: "wedge",
   2: "wedge_1x2",
@@ -585,6 +863,7 @@ Data.titles =
   1311: "Basic force shield",
   1314: "Decoupler",
   1315: "Basic laser",
+  1316: "Docking unit",
   1317: "Deuterium bomb",
   1322: "Small hydrogen tank",
   1323: "Small nose",
@@ -607,6 +886,7 @@ Data.titles =
   1344: "Missile launcher",
   1345: "Small wheel",
   1394: "Beacon",
+  1395: "Scope",
   1426: "Large hydrogen tank",
   1427: "Huge hydrogen tank",
   1428: "Tiny deuterium tank",
@@ -625,6 +905,7 @@ Data.titles =
   1441: "Large battery",
   1442: "Huge battery",
   1443: "Pipe",
+  1444: "Background pipe",
   1458: "Chemical fuel engine MK3",
   1459: "Exotic matter engine",
   1460: "Deuterium engine MK2",
@@ -636,6 +917,7 @@ Data.titles =
   1493: "Deuterium reactor",
   1494: "Fusion reactor",
   1495: "Unstable matter reactor",
+  1496: "Solar block",
   1522: "Heavy titanium armor",
   1523: "1*1 insulator wedge",
   1524: "1*2 insulator wedge",
@@ -671,6 +953,13 @@ Data.titles =
   1592: "Decelerator",
   1593: "Mobile spawnpoint",
   1594: "Big wheel",
+  1595: "Pipe decoupler",
+  1596: "Pipe piston",
+  1597: "Pipe rotor",
+  1598: "Directional decelerator",
+  1599: "Sign",
+  1600: "Togglable collider",
+  1601: "Anchor",
   1618: "Small drill",
   1619: "Medium drill",
   1620: "Large drill",
@@ -691,6 +980,7 @@ Data.titles =
   1635: "Small smelter",
   1636: "Medium smelter",
   1637: "Large smelter",
+  1638: "Grinder",
   1650: "Laser sensor",
   1651: "Velocity sensor",
   1652: "Angular velocity sensor",
@@ -703,13 +993,101 @@ Data.titles =
   1659: "AND-gate",
   1660: "OR-gate",
   1661: "XOR-gate",
+  1662: "Beam emitter",
+  1663: "Beam reciever",
+  1664: "Health sensor",
+  1665: "Angle sensor",
+  1666: "Position sensor",
+  1667: "Altitude sensor",
+  1668: "Antenna",
   1682: "Background block",
-  1683: "1*1 wedge ",
+  1683: "1*1 wedge",
+  1684: "1*3 wedge",
   1685: "1*3 wedge",
+  1686: "1*4 wedge",
   1687: "1*4 wedge",
-  1688: "1*4 wedge",
+  1688: "1*5 wedge",
   1689: "1*5 wedge",
-  1690: "1*5 wedge"
+  1690: "1*1 Convex curved armor",
+  1691: "1*1 Convex curved armor",
+  1692: "1*2 Convex curved armor",
+  1693: "1*2 Convex curved armor",
+  1694: "1*3 Convex curved armor",
+  1695: "1*3 Convex curved armor",
+  1696: "1*4 Convex curved armor",
+  1697: "1*4 Convex curved armor",
+  1698: "1*5 Convex curved armor",
+  1699: "1*5 Convex curved armor",
+  1700: "1*1 Concave curved armor",
+  1701: "1*1 Concave curved armor",
+  1702: "1*2 Concave curved armor",
+  1703: "1*2 Concave curved armor",
+  1704: "1*3 Concave curved armor",
+  1705: "1*3 Concave curved armor",
+  1706: "1*4 Concave curved armor",
+  1707: "1*4 Concave curved armor",
+  1708: "1*5 Concave curved armor",
+  1709: "1*5 Concave curved armor",
+  1710: "Half spike",
+  1711: "Half spike",
+  1712: "Spike",
+  1713: "Spike",
+  1714: "Spike",
+  1715: "Spike",
+  1716: "Spike",
+  1717: "Spike",
+  1718: "Spike",
+  1719: "Spike",
+  1720: "Spike",
+  1721: "Spike",
+  1722: "Round spike",
+  1723: "Round spike",
+  1724: "Titanium beam",
+  1725: "Titanium beam",
+  1726: "Titanium beam",
+  1727: "Titanium beam",
+  1728: "Titanium beam",
+  1729: "Titanium beam",
+  1730: "Titanium beam",
+  1731: "Titanium beam",
+  1732: "Titanium beam",
+  1733: "Titanium beam",
+  1734: "Titanium diamond shaped armor",
+  1735: "Titanium diamond shaped armor",
+  1736: "Wire connector",
+  1737: "Wire connector",
+  1738: "Wire connector",
+  1739: "Wire connector",
+  1740: "Thin diagonal beam",
+  1741: "Small triangle",
+  1742: "Small square",
+  1743: "Diagonal beam",
+  1744: "Diagonal beam",
+  1745: "Half square",
+  1746: "Half sharp square",
+  1747: "Long small triangle",
+  1748: "L-beam",
+  1749: "Diagonal L-beam",
+  1750: "In dented triangle",
+  1751: "Out dented triangle",
+  1752: "Resource source",
+  1753: "Cheat laser",
+  1754: "Cheat engine",
+  1755: "Cheat gyroscpe",
+  1756: "Cheat gravity generator",
+  1757: "Cheat decelerator",
+  1758: "Cheat immobility block",
+  1759: "Cheat indestructibility block",
+  1760: "Cheat ballast",
+  1761: "Cheat force shield",
+  1762: "Cheat bomb",
+  1763: "Cheat structure",
+  1764: "Indestructible armor",
+  1765: "1*1 Indestructible wedge",
+  1766: "1*2 Indestructible wedge",
+  1767: "1*3 Indestructible wedge",
+  1768: "1*4 Indestructible wedge",
+  1769: "1*5 Indestructible wedge"
 });
 /** @type {any} */
 Data.temp = {};
@@ -728,6 +1106,8 @@ Data.generateNames = function (src) {
     /** one data item: color id, block data */
     var item = data[p];
     var id = typeof item == "object" && item ? item.id : item;
+    if (id in names)
+      throw new Error("Duplicit name at id: " + id);
     names[id] = p;
     if (id >= names.length)
       names.length = id + 1;
@@ -758,6 +1138,8 @@ Data.generateValues = function (type) {
     val;
   for (var p in data)
     if ((val = data[p][type]) !== UDF) {
+      if (data[p].id in values)
+        throw new Error("Duplicit value id: " + data[p].id);
       values[data[p].id] =
         // v.0.2.20 cast because of touples, assuming shallow copy won't bug
         /** @type {BlockData[T]} */
@@ -805,6 +1187,43 @@ Data.dispose = function () {
     if (OP.call(Data.blocks, p))
       delete Data.blocks[p];
   return "disposed of Data.blocks";
+};
+/** @throws {Error} */
+Data.checkTitles = function () {
+  if (!Object.keys(Data.blocks).length)
+    throw new Error();
+  var l = 0, defined = [false], blocksData = Data.blocks;
+  /** @type {number[]} */
+  var errors = [];
+  for (var name in blocksData)
+    if (OP.call(blocksData, name)) {
+      var id = blocksData[name].id;
+      defined[id > l ? l = id : id] = true;
+      if (id in Data.titles)
+        continue;
+      errors.push(id);
+      if (errors.length > 5)
+        continue;
+      console.error("missing title of block: " + name + " id: " + id);
+    }
+  if (errors.length > 4) {
+    var blockNames = Block.NAME || Data.generateNames("blocks");
+    for (var i = errors.length, titles = {}; i-- > 0;)
+      titles[errors[i]] = "__NEW__" + blockNames[errors[i]];
+    for (id in Data.titles)
+      if (OP.call(Data.titles, id))
+        titles[id] = Data.titles[id];
+    name = JSON.stringify(titles).slice(1, -1);
+    console.log("{\n  " + name.replace(/"(\d+)": */g, function (m, g1) {
+        return "\n  " + g1 + ": ";
+      }) + "\n}");
+  }
+  for (; l-- > 1280;)
+    if (!defined[l] && l in Data.titles)
+      console.warn("title of undefined block id:" + l + " !");
+  for (l > 1024 ? l = 1024 : 0; l-- > 0;)
+    if (!defined[l] && l in Data.titles)
+      console.warn("title of undefined block id:" + l + " !");
 };
 // remove Object.freeze(Data); in case of causing issues
 Object.freeze(Data);
@@ -1291,7 +1710,7 @@ Logic.expensiveExec = function (ship) {
 };
 // Logic.checkNodeOwners unused code removed in v.0.2.7
 
-/** @namespace @typedef {never} @returns {never} */
+/** @namespace @typedef {never} Color @returns {never} */
 function Color() {
   throw new TypeError("Illegal constructor");
 }
@@ -1325,7 +1744,8 @@ Color.default = function getColor(name) {
     return "Lime";
   if (/__placeholder776__|Afterburner/.test(name))
     return "Red";
-  if (Color.colorlessRegexp.test(name))
+  var id = Block.ID[name];
+  if ((id > 1279 && id < 2048) || Color.colorlessRegexp.test(name))
     return null;
   return "White";
 };
@@ -1784,6 +2204,8 @@ Block.Size.generate = function (arg) {
       var rowSize = (this.width * 32) / res | 0;
       if (!v && v !== 0)
         continue;
+      if (v === -1)
+        throw new Error("Uninitialised bitmap.");
       if (typeof v == "number")
         v = [v];
       if (typeof v[0] == "number")
@@ -3191,8 +3613,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @readonly @type {42} significantVersion: 42 (integer) */// @ts-ignore
-Ship.VERSION = 42;
+/** @readonly @type {43} significantVersion: 43 (integer) */// @ts-ignore
+Ship.VERSION = 43;
 Ship.propertyNames = new RegExp("^(?:nodeList|nodeConnections|customI" +
   "nputs|gridSize)$");
 Ship.prototype.selectRect = (
@@ -4034,9 +4456,13 @@ Ship.utf8ToString = function (buffer, i) {
   var bytes = buffer instanceof Uint8Array ?
     buffer :
     new Uint8Array(buffer);
+  // check BOM
+  i = i || 0;
+  if (bytes[i] === 0xEF && bytes[i + 1] === 0xBB && bytes[i + 2] === 0xBF)
+    i += 3;
   // lb = lower boundary, ub = upper boundary, cp = code point, more
   var n = 0, lb = 128, ub = 191, cp = 0, more = 0, s = "";
-  for (i = i || 0; i < bytes.length; s += String.fromCharCode(cp)) {
+  for (n = 0; i < bytes.length; s += String.fromCharCode(cp)) {
     if ((cp = bytes[i++]) < 128)
       continue;
     if (cp < 194) {
@@ -4083,7 +4509,13 @@ Ship.utf8ToString = function (buffer, i) {
       cp = cp + (n - 128 << --more * 6);
     }
     if (0xffff0000 & cp)
-      throw new Error("[v.0.2.9]Code point out of decodable range!");
+    {
+      if (0xff000000 & cp)
+        throw new Error("[v.0.2.27]Code point out of Unicode range!?");
+      cp -= 0x10000;
+      s += String.fromCharCode((cp >> 10) + 0xD800);
+      cp = (cp & 0x3FF) + 0xDC00;
+    }
   }
   return s;
 };
@@ -4166,7 +4598,7 @@ Ship.Mode.useParser = function (mode, globalShip, parse) {
 };
 /** insctace is frozen, class is frozen
  * @param {{dbv?:number,grid?:number}} indexes @param {string} game
- * @param {string} name @param {Box2dPath|null} box2d @typedef */
+ * @param {string} name @param {Box2dPath|null} box2d */
 Ship.Grid = function Grid(game, name, box2d, indexes) {
   /** @readonly */
   this.game = game;
@@ -4179,6 +4611,9 @@ Ship.Grid = function Grid(game, name, box2d, indexes) {
   /** @readonly */
   this.gridIndex = indexes.grid;
   Object.freeze(this);
+};
+Ship.Grid.prototype.toString = function () {
+  return "[object Ship.Grid " + this.name + "]";
 };
 /** GG @param {{[key:number]:[game:string,name:string,dbvId:number]}} data */
 Ship.Grid.generateGrids = function (data) {
@@ -4210,7 +4645,7 @@ var ship = Ship.fromObject({name: "Pazik_Mk1_Emil_", blocks: "Pazik"});
 //   ship = new Ship("None", [0, 9], "never", [block]);
 
 /** class for old Deltarealm base64 prototype keys code
- * @namespace @typedef {never} @returns {never} */
+ * @namespace @typedef {never} B64Key @returns {never} */
 function B64Key() {
   throw new TypeError("Illegal constructor");
 }
@@ -5077,7 +5512,6 @@ if (ship.name === "Pazik_Mk1_Emil_") {
   ship.selectRect();
   Edit.rotate(ship, 2);
 }
-Data.dispose();
 
 //@ts-expect-error exporting but not exports weird stuff
 var api = typeof module == "undefined" ? {} : module.exports;
