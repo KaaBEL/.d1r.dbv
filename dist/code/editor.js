@@ -2,9 +2,8 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.27";
+var version_editor_js = "v.0.2.28";
 /** 3h_ @TODO check @see {Editor} for assignment without saveSettings */
-// TODO v.0.2.8 has defected commit message, also 0.2.13 - 0.2.15 namings
 /** @param {string} data */
 var tN = function (data) {
   return document.createTextNode(data);
@@ -3170,20 +3169,40 @@ function Tool(name, icon, init, exec, destroy) {
   var initialize = init || F;
   this.name = name;
   this.icon = icon;
-  this.init = exec === UDF ? Tool.execClick(initialize) : initialize;
+  this.init = destroy === UDF ? Tool.execClick(initialize) : initialize;
   this.exec = exec || F;
-  this.destroy = destroy || F;
+  // #tool.resetalternative this.destroy = Tool.execEnd(destroy);
+  this.stop = destroy || F;
   /** @type {ToolExec} */
   this.preview = F;
   /** used to determim whether (true) the tile gets enebled instantly
    * (for DefaultUI it's clickedTile property) or
    * (false) the tile is enabled until deselected (selected in
    * DefaultUI.selectedTile property) */
-  this.clickType = exec === UDF;
+  this.clickType = destroy === UDF;
   Object.seal(this);
 }
+/** tool.reset @param {number} x @param {number} y */
+Tool.prototype.destroy = function (x, y) {
+  this.stop(x, y);
+  Tool.subscribedStart = Tool.subscribedEnd =
+    Tool.subscribedEnd = Tool.subscribedClaim = Tool.unsubscribed;
+  Tool.rend = F;
+};
 /** @type {Tool[]} */
 Tool.list = [];
+Tool.unsubscribed = function () {
+  return false;
+};
+/** @type {(x:number,y:number,actions:AllActions)=>boolean} */
+Tool.subscribedClaim = Tool.unsubscribed;
+/** @type {typeof Tool.subscribedClaim} ?what to name this type? */
+Tool.subscribedStart = Tool.unsubscribed;
+/** @type {typeof Tool.subscribedStart} */
+Tool.subscribedMove = Tool.unsubscribed;
+/** @type {typeof Tool.subscribedStart} */
+Tool.subscribedEnd = Tool.unsubscribed;
+Tool.rend = F;
 /** @param {Tool} tool @param {number} [size] */
 Tool.drawPathRc = function (tool, size) {
   /** @param {string} s */
@@ -3249,6 +3268,16 @@ Tool.execClick = function (execMain) {
         render();
       }
     }, 75);
+  };
+};
+/** #tool.resetalternative @param {ToolExec} [execMain] */
+Tool.execEnd = function (execMain) {
+  if (!execMain)
+    return F;
+  return function (x, y) {
+    execMain(x, y);
+    Tool.subscribedStart = Tool.subscribedEnd =
+      Tool.subscribedEnd = Tool.subscribedClaim = Tool.unsubscribed;
   };
 };
 /**
@@ -3499,6 +3528,12 @@ a2 c78f,0,e71,2d2,1395,771 c6c,61,1e3a,1e85,1e42,1e7e c5b73,-5550,d631,-8984\
   DefaultUI.tilesRotation[2] = DefaultUI.tilesFlippableRotation[2] =
     /** @type {0|1|2|3} */
     (DefaultUI.tilesRotation[2] + 1 & 3);
+}, function exec(x, y) {
+  var found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
+  if (found)
+    found.block.rotation[2] =
+      /** @type {0|1|2|3} */
+      (found.block.rotation[2] + 1 & 3);
 }));
 Tool.list.push(new Tool("Skin", "M2b144,2d362 c0,0,-4d72,4e17,-4d7d,4e21 c-6\
 e7,65c,-1048,a45,-1a9c,a45 c-ab5,0,-1464,-433,-1b5c,-afc c-520,-4fd,-454c,-4\
@@ -3553,9 +3588,13 @@ c1,8ff,2c1,dee c0,1420,-1050,2470,-2470,2470 c-898,0,-15ed5,41,-16752,41 z M\
   "$ins; M22770,14947$ins; M22778,224b6$ins; M22770,3002d$ins; M22770,3db79$\
 ins;".replace(/\$ins;/g, " c0,142a,-1059,2483,-2483,2483 c-142a,0,-2483,-105\
 9,-2483,-2483 v-4949 c0,-142a,1059,-2483,2483,-2483 c142a,0,2483,1059,2483,2\
-483 c0,708,0,4316,0,4949 z"), function () {
+483 c0,708,0,4316,0,4949 z"), function init() {
   DefaultUI.tilesFlippableRotation[1] =
     !DefaultUI.tilesFlippableRotation[1];
+}, function exec(x, y) {
+  var found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
+  if (found)
+    found.block.rotation[1] = !found.block.rotation[1];
 }));
 Tool.list.push(new Tool("Clone", "M2ba5a,2bab5 vda5e c0,33ca,-29fc,5dc6,-5dc\
 6,5dc6 h-1fdbd c-33ca,0,-5dc6,-29fc,-5dc6,-5dc6 v-1fd62 c0,-33ca,29fc,-5dc6,\
@@ -3639,18 +3678,12 @@ Tool.Tab.addItem("Node", function setup(methods, _x, _y) {
   };
   methods.destroy = function () {
     Logic.rend = false;
-    try {
-      //throw new Error();
-    } catch (e) {
-      if (e instanceof Object && "stack" in e)
-        console.debug('destroy '+test_handler+':'+e.stack);
-    }
   };
-}, "Mf70a,34a28 c0,f1b,0,7296,0,8060 c0,1e09,-1859,3663,-3663,3663 c-fa9,0,-\
-73b3,0,-8944,0 c-1e09,0,-3663,-1859,-3663,-3663 c0,-bcb,0,-7be7,0,-89f4 c0,-\
-1e09,1859,-3663,3663,-3663 h81d1 l251bf,-250eb v-81e2 c0,-1e09,1859,-3663,36\
-63,-3663 cb18,0,7b71,0,8944,0 c1e09,0,3663,1859,3663,3663 c0,eac,0,7ff7,0,89\
-f4 c0,1e09,-1859,3663,-3663,3663 h-81b3 z");
+}, ("Mf70a,34a28 c0,f1b,0,7296,0,8060 c0,1e09,-1859,3663,-3663,3663 c-fa9,0,\
+-73b3,0,-8944,0 c-1e09,0,-3663,-1859,-3663,-3663 c0,-bcb,0,-7be7,0,-89f4 c0,\
+-1e09,1859,-3663,3663,-3663 h81d1 l251bf,-250eb v-81e2 c0,-1e09,1859,-3663,3\
+663,-3663 cb18,0,7b71,0,8944,0 c1e09,0,3663,1859,3663,3663 c0,eac,0,7ff7,0,8\
+9f4 c0,1e09,-1859,3663,-3663,3663 h-81b3 z"));
 Tool.list.push(new Tool("History", "Mc400,0 c-238d,0,-4400,2072,-4400,4400 v\
 37800 c0,238d,2072,4400,4400,4400 h27800 c238d,0,4400,-2072,4400,-4400 v-378\
 00 c0,-238d,-2072,-4400,-4400,-4400 z M31beb,a445 c6cc,548,6cc,dd8,0,1320 c-\
@@ -3684,12 +3717,19 @@ M7476,3a5bd l287d3,-10dfa l-287d7,0 z M39250,2274f$ins; M2b6d9,2274f$ins; M1\
 db6b,22757$ins; Mfff3,2274f$ins; M24a8,22169$ins;".replace(/\$ins;/g, " c-14\
 2a,0,-2483,-1059,-2483,-2483 c0,-142a,1059,-2483,2483,-2483 c547,0,422c,0,49\
 49,0 c142a,0,2483,1059,2483,2483 c0,142a,-1059,2483,-2483,2483 c-708,0,-4316\
-,0,-4949,0 z"), function () {
+,0,-4949,0 z"), function init() {
   DefaultUI.tilesRotation[2] = DefaultUI.tilesFlippableRotation[2] =
     /** @type {0|1|2|3} */
     (DefaultUI.tilesRotation[2] + 2 & 3);
   DefaultUI.tilesFlippableRotation[1] =
     !DefaultUI.tilesFlippableRotation[1];
+}, function exec(x, y) {
+  var found = DefaultUI.found =
+    ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
+  if (found)
+    found.block.rotation[2] =
+      /** @type {0|1|2|3} */
+      (found.block.rotation[2] + 2 & 3);
 }));
 Tool.list.push(new Tool("Rotate", "M3ffec,1ffd8 c0,11abb,-e532,1ffee,-1ffee,\
 1ffee c-86ef,0,-101ad,-3434,-15d21,-8984 c-7,-7,-1dd5,1e1c,-1e42,1e7e c-523,\
@@ -3713,20 +3753,26 @@ function () {
   DefaultUI.tilesRotation[2] = DefaultUI.tilesFlippableRotation[2] =
     /** @type {0|1|2|3} */
     (DefaultUI.tilesRotation[2] + 3 & 3);
+}, function exec(x, y) {
+  var found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
+  if (found)
+    found.block.rotation[2] =
+      /** @type {0|1|2|3} */
+      (found.block.rotation[2] + 3 & 3);
 }));
 Tool.list.push(new Tool("Erase", "M21cbd,3933e c-fa8,c27,-2353,1363,-38af,13\
 63 l-affd,11 c-16fe,0,-2c08,-863,-3c37,-1645 l-de68,-da2c c-f83,-108c,-1904,\
 -26cd,-1904,-3f47 c0,-19f4,aaf,-316a,1be6,-4238 l2182b,-219f0 c10ae,-104b,27\
 7f,-1a57,40a9,-1a57 c17a9,0,2d40,8e1,3d9d,177e l13941,13b1d cd12,ff5,14eb,24\
 5d,14eb,3a9a c0,16b2,-82c,2b7d,-15bc,3b96 z M1e360,34780 l96a9,-935f l-12979\
-,-12ae9 l-eff8,ee4e ld536,d073 z", F, function (x, y) {
+,-12ae9 l-eff8,ee4e ld536,d073 z", F, function exec(x, y) {
   var found = DefaultUI.found =
     ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
   if (!found)
     return;
   ship.removeBlocks([found.index]);
   render();
-}));
+}, F));
 Tool.list.push(new Tool("Classic", "M4030e,2bac1 c-1838,-80aa,-8930,-e200,-1\
 10e4,-e200 c-7669,0,-db83,4a1d,-10372,b27c l-a7c8,-a v-2884d h1fd7a c693b,0,\
 be8b,554f,be8b,be8b z M33a,c1a9 l0,0 c0,-693b,554f,-be8b,be8b,-be8b h3299 l-\
@@ -3737,9 +3783,9 @@ be8b,554f,be8b,be8b z M33a,c1a9 l0,0 c0,-693b,554f,-be8b,be8b,-be8b h3299 l-\
 -c42a,-592e,-c42a,-c732 z M3061d,29da1 c0,-1657,-121c,-2873,-2873,-2873 c-16\
 57,0,-2873,121c,-2873,2873 v6982 c0,1657,121c,2873,2873,2873 h5090 c1657,0,2\
 873,-121c,2873,-2873 c0,-1657,-121c,-2873,-2873,-2873 h-282b z", F,
-function (x, y) {
+function exec(x, y) {
   Command.old_UI(x, y);
-}));
+}, F));
 Tool.list.push(new Tool("Oldschool", "M105e7,3d210 c-3a97,3a97,-9997,3a97,-d\
 42f,0 c-3a97,-3a97,-3a97,-9997,0,-d42f l1b0b,-1b0b ld429,d429 z M803a,2adde \
 l7e92,-7e92 ld429,d429 l-7e8b,7e96 z M22c1b,101fd l8428,-8428 ld429,d429 l-8\
@@ -3769,7 +3815,125 @@ ae4,3c11,-3c11 l-148,-f50b c0,-212c,-1ae4,-3c11,-3c11,-3c11 l-f37b,46 c-212c\
 ,0,-3c11,1ae4,-3c11,3c11 l0,2175 c0,212c,1ae4,3c11,3c11,3c11 z M9a47,98ad l9\
 73f,0 c212c,0,3c11,-1ae4,3c11,-3c11 l0,-2175 c0,-212c,-1ae4,-3c11,-3c11,-3c1\
 1 l-f50b,148 c-212c,0,-3c11,1ae4,-3c11,3c11 l46,f37b c0,212c,1ae4,3c11,3c11,\
-3c11 l2175,0 c212c,0,3c11,-1ae4,3c11,-3c11 z"));
+3c11 l2175,0 c212c,0,3c11,-1ae4,3c11,-3c11 z", function init(x, y) {
+  var selecting = false, t = Date.now(), area = {x: 0, y: 0, w: 0, h: 0};
+  Tool.subscribedStart = Tool.subscribedClaim = function (x, y, actions) {
+    area.x = x;//(vX - x) / sc;
+    area.y = y;//(y - vY) / sc;
+    area.w = 0;
+    area.h = 0;
+    //(vX - x) / sc, (y - vY) / sc
+    return true;
+  };
+  Tool.subscribedMove = function (x, y, actions) {
+    area.w = x - area.x;
+    area.h = y - area.y;
+    var delta = Math.min(500, Date.now() - t) / 10;
+    t = Date.now();
+    if (x > canvas.width * .9) {
+      vX -= delta;
+      area.x -= delta;
+    } else if (x < canvas.width * .1) {
+      vX += delta;
+      area.x += delta;
+    }
+    if (y > canvas.height * .9) {
+      vY -= delta;
+      area.y -= delta;
+    } else if (y < canvas.height * .1) {
+      vY += delta;
+      area.y += delta;
+    }
+    render();
+    return selecting = true;
+  };
+//-Watch statement for hovered block:
+//-(function (b) {if (!b)return null;return {x: b.x, y: b.y, _x: b.x +
+//-b.w, _y: b.y + b.h, d: b.block.internalName + " " + b.block.position};})
+//-(ship.blockAtPonit2d((vX - Actions.logX) / sc, (Actions.logY - vY) / sc));
+
+//-function juhusFinitto(a) {
+//-  var x0 = (area.x - vX) / sc
+//-    , x1 = x0 + area.w / sc;
+//-  var y0 = (area.y - vY) / sc
+//-    , y1 = y0 + area.h / sc;
+//-  var right = Math.max(x0, x1), left = Math.min(x0, x1);
+//-  var bottom = Math.max(y0, y1), top = Math.min(y0, y1);
+//-  return {
+//-    l: (left * 10 | 0) / 10,
+//-    r: (right * 10 | 0) / 10,
+//-    t: (top * 10 | 0) / 10,
+//-    b: (bottom * 10 | 0) / 10
+//-  };
+//-};
+//-Watch statement for calculated selection dimensions:
+//-juhusFinitto(area); //{l: 1.3, r: 4.5, t: 2, b: 4.7}
+//-3h_
+  Tool.subscribedEnd = function (x, y, actions) {
+    if (Math.abs(area.w) < sc / 4 && Math.abs(area.h) < sc / 4)
+      return false;
+    var l = ship.blocks.length, index = 0;
+    var x0 = (area.x - vX) / sc, x1 = x0 + area.w / sc;
+    var y0 = (area.y - vY) / sc, y1 = y0 + area.h / sc;
+    var right = Math.max(x0, x1), left = Math.min(x0, x1);
+    var bottom = Math.max(y0, y1), top = Math.min(y0, y1);
+    //-console.log("l:", left|0, "r:", right|0, 't:', top|0, 'b:', bottom|0);
+    if (area.w > 0)
+      for (; l-- > 0;) {
+        var rect = Block.Size.highlightBlock(ship.blocks[l]),
+          leftRight = rect.x > left && rect.x + rect.w < right,
+          topBottom = rect.y > top && rect.y + rect.h < bottom;
+        if (leftRight && topBottom) {
+          index = ship.selection.indexOf(ship.blocks[l]);
+          area.h < 0 ?
+            index > -1 && ship.selection.splice(index, 1) :
+            index < 0 && ship.selection.push(ship.blocks[l]);
+        }
+      }
+    else
+      for (; l-- > 0;) {
+        rect = Block.Size.highlightBlock(ship.blocks[l]);
+        leftRight = rect.x + rect.w > left && rect.x < right;
+        topBottom = rect.y + rect.h > top && rect.y < bottom;
+        if (leftRight && topBottom) {
+          index = ship.selection.indexOf(ship.blocks[l]);
+          area.h < 0 ?
+            index > -1 && ship.selection.splice(index, 1) :
+            index < 0 && ship.selection.push(ship.blocks[l]);
+        }
+      }
+    selecting = false;
+    render();
+    return true;
+  };
+  Tool.rend = function () {
+    if (!selecting)
+      return;
+    ctx.fillStyle = ctx.strokeStyle = area.w > 0 ?
+      /** Editor.selectionBlue */
+      ("#0920de") :
+      Editor.highlightGreen;
+    if (area.h < 0)
+      ctx.setLineDash([8 * pR, 8 * pR]);
+    ctx.lineWidth = 3;
+    ctx.strokeRect(area.x, area.y, area.w, area.h);
+    if (area.h < 0) {
+      ctx.globalAlpha = .3;
+      ctx.fillRect(area.x, area.y, area.w, area.h);
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+    }
+  };
+}, function exec(x, y) {
+  var found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
+  if (!found)
+    return;
+  var index = ship.selection.indexOf(found.block);
+  index > -1 ?
+    ship.selection.splice(index, 1) :
+    ship.selection.push(found.block);
+  render();
+}, function destroy() {}));
 Tool.list.push(new Tool("Move", "M25a0c,1a6e9 v-b7a4 c30fe,0,57ba,0,57ba,0 c\
 10c9,0,1e66,-d9c,1e66,-1e66 c0,-86c,-36d,-100b,-8f5,-158d l-b0c3,-b13e c-589\
 ,-5d2,-d5c,-973,-1607,-973 c-897,0,-105a,390,-15e1,94c l-ad58,b1a9 c-561,57b\
@@ -3940,10 +4104,10 @@ DefaultUI.toolBar = [
   DefaultUI.createTile("Flip180"),
   DefaultUI.createTile("Flip"),
   DefaultUI.createTile("Rotate"),
-  DefaultUI.createTile("Node"),
+  DefaultUI.createTile("Select"),
   DefaultUI.createTile("Classic"),
   DefaultUI.createTile("Erase"),
-  DefaultUI.createTile("Select"),
+  DefaultUI.createTile("Node"),
   DefaultUI.createTile("Move")
 ];
 /**
@@ -4613,8 +4777,9 @@ DefaultUI.shipPress = DefaultUI.basePress(UDF);
 juhus.set("onclaim", function (x, y, source) {
   if (source.source.startTarget !== canvas)
     return source.preventClaim();
-    // if (source.source.startTarget !== Command.head)
   if (DefaultUI.Drag.detect(x, y, source.source))
+    return source.preventClaim();
+  if (Tool.subscribedClaim && Tool.subscribedClaim(x, y, source))
     return source.preventClaim();
 });
 juhus.set("onstart", function (x, y, source) {
@@ -4624,6 +4789,8 @@ juhus.set("onstart", function (x, y, source) {
     var style = Command.el.style;
     style["" + "webkitUserSelect"] = style.userSelect = "none";
   }
+  if (Tool.subscribedStart && Tool.subscribedStart(x, y, source))
+    return;
 });
 juhus.set("onmove", function (x, y, source) {
   var action = source.source;
@@ -4639,6 +4806,8 @@ juhus.set("onmove", function (x, y, source) {
     return;
   if (DefaultUI.Drag.detect(x, y, action))
     return;
+  if (Tool.subscribedMove && Tool.subscribedMove(x, y, source))
+    return;
 });
 juhus.set("onend", function (x, y, source) {
   var action = source.source;
@@ -4650,6 +4819,8 @@ juhus.set("onend", function (x, y, source) {
     return;
   }
   if (DefaultUI.Drag.finish(action))
+    return;
+  if (Tool.subscribedEnd && Tool.subscribedEnd(x, y, source))
     return;
   if (action.state.slice(-5) === "short") {
     action.event.cancelable && action.event.preventDefault();
@@ -5424,7 +5595,19 @@ function expensiveRenderer() {
       ctx.fill();
     }
   }
+  //-3h_ 
+  ctx.globalAlpha = .3;
+  for (j = 0; j < ship.selection.length; j++) {
+    var rect = Block.Size.highlightBlock(ship.selection[j]);
+    var x = rect.x * sc + vX, y = rect.y * sc + vY;
+    ctx.fillStyle = "#45b3ff";
+      //-/** Editor.selectionBlue */
+      //-("#0920de");
+    ctx.fillRect(x, y, rect.w * sc, rect.h * sc);
+  }
+  ctx.globalAlpha = 1;
   utilities.rend_UI();
+  Tool.rend();
   if ((test_collbxs) && objs[0])
     Block.Box2d.collide(objs[0], objs);
   else if (rend_collisions)
@@ -5485,6 +5668,7 @@ init = function () {
       clean.push(ship.blocks[i]);
   ship.blocks = clean;
   rend_collisions = true;
+  ship.setSelected([]);
   console.log("set up collision testing(editor)=" + ship.blocks[0].internalName);
   imgColor.onload && rend_checkColors();
   check_contentScript();

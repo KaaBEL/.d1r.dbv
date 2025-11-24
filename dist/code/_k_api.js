@@ -2,8 +2,8 @@
 /// <reference path="./editor.html.ts" />
 "use strict";
 /** @readonly */
-/** @TODO check @see {Actions.API_VERSION} */
-var version__k_api_js = "v.0.2.25";
+var version__k_api_js = "v.0.2.28";
+/** 3h_ @TODO check @see {Actions.API_VERSION} */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
 /** @overload @param {string} e @returns {HTMLElement} */
@@ -886,6 +886,8 @@ Actions.State.Allowed.prototype.toString = function () {
   return "st:" + this.shortTime + "sm:" + this.shortMove + "dt:" +
     this.doubleTime + "dm:" + this.doubleMove + ";";
 };
+Actions.logX = 0;
+Actions.logY = 0;
 Actions.logMax = 32;
 /** spaghetti Actions debugging utility
  * @param {(Actions|null)[]} tem typeof temp @param {ActionsEvent} evt
@@ -930,6 +932,8 @@ Actions.log = function (tem, evt, typ, stat, src) {
   //    input instanceof HTMLTextAreaElement ?
   //    input : EL("input")).value = inpLog;
   //}
+  Actions.logX = src.source.x;
+  Actions.logY = src.source.y;
 };
 //utilities.rend_UI = function () {
 //  for (var i = test_log.length; i-- > 0;) {
@@ -948,7 +952,6 @@ Actions.log = function (tem, evt, typ, stat, src) {
 //};
 Actions.logLivevil = true;
 Actions.logImmutable = (Date.now() / (24 * 3600 * 1000)) % 2 < 1;
-Actions.logImmutable = !Actions.logImmutable;
 console.log((Actions.logImmutable ? "Imm" : "M") + "utable today!");
 var juhus = Actions.init(document, {
   target: canvas,

@@ -1,7 +1,7 @@
 /// <reference path="editor.js"/>
 "use strict";
 /** @readonly *///@ts-expect-error
-var version_alphalunar_js = "v.0.2.19";
+var version_alphalunar_js = "v.0.2.28";
 var test_ship = {"name":"Starter Droneboi","gameVersion":[],"dateTime":"05.05.2024 21:12:18","blocks":[{"internalName":"__placeholder856__","position":[0,-9,-52],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-50],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-48],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
 {"internalName":"__placeholder856__","position":[0,-9,-46],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-44],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-42],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-40],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
 {"internalName":"__placeholder856__","position":[0,-9,-38],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-52],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-50],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-48],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-46],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-44],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
@@ -281,6 +281,28 @@ Command.push("Evil Addon", function (items, collapsed) {
     text("[err:]" + args);
     // var e = (document.body.querySelector(".items") || {}).lastChild;
     // e && (e.data += "\nError: " + args);
+  };
+  var content = document.querySelector("#commandsTab .content") ||
+      EL("" + alert("alphalunar.js could not QrySelect commandsTab")),
+    /** @type {Text|null} */
+    descriptionText = null;
+  window.onerror = function (m, s, l, c, e) {
+    var pre = content.appendChild(EL("div")), err = e && e.stack ?
+      "" + m + "\n" + e.stack :
+      "" + m + "\n\t" + s + ":" + l + ":" + c;
+    pre.style.overflowWrap = "break-word";
+    pre.style.wordBreak = "break-all"; 
+    pre.appendChild(tN(err));
+    if ("test_log" in window && window.test_log instanceof Array)
+      window.test_log.push("[w.err]");
+    if (!descriptionText) {
+      var child = input.parentNode && input.parentNode.lastChild;
+      if ((child = child.lastChild) instanceof Text)
+        descriptionText = child;
+      else
+        return;
+    }
+    descriptionText.data += "\n[w.err]" + err;
   };
 }, "Gives access to eval.");
 setTimeout(function () {
