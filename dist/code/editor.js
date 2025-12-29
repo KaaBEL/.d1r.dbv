@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.28";
+var version_editor_js = "v.0.2.29";
 /** 3h_ @TODO check @see {Editor} for assignment without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -365,6 +365,7 @@ Editor.addingStyles(
   "#commandsTab input, #commandsTab textarea, #commandsTab select" +
   "{background-color: #000;color: #bbb;border: 1px solid #888;}" +
   "#commandsTab li{display: block;}"
+  //-"main{text-size-adjust: none;-webkit-text-size-adjust: 100%;}"
 );
 
 canvas.addEventListener("contextrestored", Editor.contextrestored);
@@ -1067,15 +1068,14 @@ canvas.style.backgroundColor = document.body.style.backgroundColor =
   Editor.background ?
     Editor.backgroundImage === 0 ? "#152036" : "#132122" :
     Editor.backgroundColor;
-imgBackg.loading = "lazy";
-imgBackg.src = "./assets/_" + [
+imgBackg.setAttribute("data-src", "./assets/_" + [
   "ms",
   "db",
   "editor",
   "dbve2",
   "dbve",
   "dbc"
-][Editor.backgroundImage] + "_background.png";
+][Editor.backgroundImage] + "_background.png");
 
 /** @this {any} */
 function del(i) {
@@ -3171,7 +3171,6 @@ function Tool(name, icon, init, exec, destroy) {
   this.icon = icon;
   this.init = destroy === UDF ? Tool.execClick(initialize) : initialize;
   this.exec = exec || F;
-  // #tool.resetalternative this.destroy = Tool.execEnd(destroy);
   this.stop = destroy || F;
   /** @type {ToolExec} */
   this.preview = F;
@@ -3191,6 +3190,26 @@ Tool.prototype.destroy = function (x, y) {
 };
 /** @type {Tool[]} */
 Tool.list = [];
+/** @type {{[name:string]:number}} */
+Tool.ids = {};
+/** @param {...Tool} tools */
+Tool.list.push = function () {
+  for (var i = 0; i < arguments.length; i++) {
+    var arg = arguments[i];
+    if (!(arg instanceof Tool))
+      throw new TypeError("argument " + i + " is not instanceof Tool");
+    if (arg.name in Tool.ids)
+      throw new Error("can not push tool with existing name");
+    Tool.ids[arg.name] = Tool.list.length;
+    Array.prototype.push.call(Tool.list, arg);
+  }
+  return Tool.list.length;
+};
+/** @param {string} name @returns {Tool|null} */
+Tool.get = function (name) {
+  var id = name in Tool.ids ? Tool.ids[name] : NaN;
+  return typeof id == "number" && id === id ? Tool.list[id] : null;
+};
 Tool.unsubscribed = function () {
   return false;
 };
@@ -3202,6 +3221,8 @@ Tool.subscribedStart = Tool.unsubscribed;
 Tool.subscribedMove = Tool.unsubscribed;
 /** @type {typeof Tool.subscribedStart} */
 Tool.subscribedEnd = Tool.unsubscribed;
+/** @type {typeof F} */
+Tool.selectAllInit = F;
 Tool.rend = F;
 /** @param {Tool} tool @param {number} [size] */
 Tool.drawPathRc = function (tool, size) {
@@ -3268,16 +3289,6 @@ Tool.execClick = function (execMain) {
         render();
       }
     }, 75);
-  };
-};
-/** #tool.resetalternative @param {ToolExec} [execMain] */
-Tool.execEnd = function (execMain) {
-  if (!execMain)
-    return F;
-  return function (x, y) {
-    execMain(x, y);
-    Tool.subscribedStart = Tool.subscribedEnd =
-      Tool.subscribedEnd = Tool.subscribedClaim = Tool.unsubscribed;
   };
 };
 /**
@@ -3670,7 +3681,7 @@ Tool.Tab.addItem("Node", function setup(methods, _x, _y) {
     }).style.backgroundPositionY = (-i * 64) + "px";
   methods.exec = function (_x, _y) {
     try {
-      throw new Error();
+      throw new Error("can not push tool with existing name");
     } catch (e) {
       if (e instanceof Object && "stack" in e)
         console.debug('exec '+test_handler+':'+e.stack);
@@ -3804,28 +3815,29 @@ cd8,-cd8,-21ab,-cd8,-2e83,0 l-2c1a,2bde c-fd3,-fd3,-1eb7,-1eb7,-2c66,-2c66 l\
 4926,-4929 ccd8,-cd8,cd8,-21ab,0,-2e83 c-cd8,-cd8,-21ab,-cd8,-2e83,0 l-4934,\
 491a c-f12,-f12,-1f19,-1f19,-2f2f,-2f2f l2c80,-2caf ccd8,-cd8,cd8,-21ab,0,-2\
 e83 c-cd8,-cd8,-21ab,-cd8,-2e83,0 z"));
-Tool.list.push(new Tool("Select", "M99a1,366e9 v-973f c0,-212c,-1ae4,-3c11,-\
-3c11,-3c11 h-2175 c-212c,0,-3c11,1ae4,-3c11,3c11 l148,f50b c0,212c,1ae4,3c11\
-,3c11,3c11 lf37b,-46 c212c,0,3c11,-1ae4,3c11,-3c11 l0,-2175 c0,-212c,-1ae4,-\
-3c11,-3c11,-3c11 z M367dd,3678f l-973f,0 c-212c,0,-3c11,1ae4,-3c11,3c11 l0,2\
-175 c0,212c,1ae4,3c11,3c11,3c11 lf50b,-148 c212c,0,3c11,-1ae4,3c11,-3c11 l-4\
-6,-f37b c0,-212c,-1ae4,-3c11,-3c11,-3c11 l-2175,0 c-212c,0,-3c11,1ae4,-3c11,\
-3c11 z M36883,9953 l0,973f c0,212c,1ae4,3c11,3c11,3c11 h2175 c212c,0,3c11,-1\
-ae4,3c11,-3c11 l-148,-f50b c0,-212c,-1ae4,-3c11,-3c11,-3c11 l-f37b,46 c-212c\
-,0,-3c11,1ae4,-3c11,3c11 l0,2175 c0,212c,1ae4,3c11,3c11,3c11 z M9a47,98ad l9\
-73f,0 c212c,0,3c11,-1ae4,3c11,-3c11 l0,-2175 c0,-212c,-1ae4,-3c11,-3c11,-3c1\
-1 l-f50b,148 c-212c,0,-3c11,1ae4,-3c11,3c11 l46,f37b c0,212c,1ae4,3c11,3c11,\
-3c11 l2175,0 c212c,0,3c11,-1ae4,3c11,-3c11 z", function init(x, y) {
+Tool.list.push(new Tool("Select", "M4e18,29427 c212c,0,3c11,1ae4,3c11,3c11 l\
+113,311d c0,3ff4,33d8,73cc,73cc,73cc l30c6,bc c212c,0,3c11,1ae4,3c11,3c11 v1\
+19a c0,212c,-1ae4,3c11,-3c11,3c11 l-30c6,4b c-8c98,0,-fe92,-71f9,-fe92,-fe92\
+ l-b,-311d c0,-212c,1ae4,-3c11,3c11,-3c11 z M16be2,4e18 c0,212c,-1ae4,3c11,-\
+3c11,3c11 l-311d,113 c-3ff4,0,-73cc,33d8,-73cc,73cc l-bc,30c6 c0,212c,-1ae4,\
+3c11,-3c11,3c11 l-119a,0 c-212c,0,-3c11,-1ae4,-3c11,-3c11 l-4b,-30c6 c0,-8c9\
+8,71f9,-fe92,fe92,-fe92 l311d,-b c212c,0,3c11,1ae4,3c11,3c11 z M3b1f2,16be2 \
+c-212c,0,-3c11,-1ae4,-3c11,-3c11 l-113,-311d c0,-3ff4,-33d8,-73cc,-73cc,-73c\
+c l-30c6,-bc c-212c,0,-3c11,-1ae4,-3c11,-3c11 v-119a c0,-212c,1ae4,-3c11,3c1\
+1,-3c11 l30c6,-4b c8c98,0,fe92,71f9,fe92,fe92 lb,311d c0,212c,-1ae4,3c11,-3c\
+11,3c11 z M29427,3b1f2 c0,-212c,1ae4,-3c11,3c11,-3c11 l311d,-113 c3ff4,0,73c\
+c,-33d8,73cc,-73cc lbc,-30c6 c0,-212c,1ae4,-3c11,3c11,-3c11 l119a,0 c212c,0,\
+3c11,1ae4,3c11,3c11 l4b,30c6 c0,8c98,-71f9,fe92,-fe92,fe92 l-311d,b c-212c,0\
+,-3c11,-1ae4,-3c11,-3c11 z", function init(_x, _y) {
   var selecting = false, t = Date.now(), area = {x: 0, y: 0, w: 0, h: 0};
-  Tool.subscribedStart = Tool.subscribedClaim = function (x, y, actions) {
-    area.x = x;//(vX - x) / sc;
-    area.y = y;//(y - vY) / sc;
+  Tool.subscribedStart = Tool.subscribedClaim = function (x, y, _a) {
+    area.x = x;
+    area.y = y;
     area.w = 0;
     area.h = 0;
-    //(vX - x) / sc, (y - vY) / sc
     return true;
   };
-  Tool.subscribedMove = function (x, y, actions) {
+  Tool.subscribedMove = function (x, y, _actions) {
     area.w = x - area.x;
     area.h = y - area.y;
     var delta = Math.min(500, Date.now() - t) / 10;
@@ -3847,61 +3859,12 @@ ae4,3c11,-3c11 l-148,-f50b c0,-212c,-1ae4,-3c11,-3c11,-3c11 l-f37b,46 c-212c\
     render();
     return selecting = true;
   };
-//-Watch statement for hovered block:
-//-(function (b) {if (!b)return null;return {x: b.x, y: b.y, _x: b.x +
-//-b.w, _y: b.y + b.h, d: b.block.internalName + " " + b.block.position};})
-//-(ship.blockAtPonit2d((vX - Actions.logX) / sc, (Actions.logY - vY) / sc));
-
-//-function juhusFinitto(a) {
-//-  var x0 = (area.x - vX) / sc
-//-    , x1 = x0 + area.w / sc;
-//-  var y0 = (area.y - vY) / sc
-//-    , y1 = y0 + area.h / sc;
-//-  var right = Math.max(x0, x1), left = Math.min(x0, x1);
-//-  var bottom = Math.max(y0, y1), top = Math.min(y0, y1);
-//-  return {
-//-    l: (left * 10 | 0) / 10,
-//-    r: (right * 10 | 0) / 10,
-//-    t: (top * 10 | 0) / 10,
-//-    b: (bottom * 10 | 0) / 10
-//-  };
-//-};
-//-Watch statement for calculated selection dimensions:
-//-juhusFinitto(area); //{l: 1.3, r: 4.5, t: 2, b: 4.7}
-//-3h_
-  Tool.subscribedEnd = function (x, y, actions) {
+  Tool.subscribedEnd = function (_x, _y, _actions) {
     if (Math.abs(area.w) < sc / 4 && Math.abs(area.h) < sc / 4)
       return false;
-    var l = ship.blocks.length, index = 0;
-    var x0 = (area.x - vX) / sc, x1 = x0 + area.w / sc;
-    var y0 = (area.y - vY) / sc, y1 = y0 + area.h / sc;
-    var right = Math.max(x0, x1), left = Math.min(x0, x1);
-    var bottom = Math.max(y0, y1), top = Math.min(y0, y1);
-    //-console.log("l:", left|0, "r:", right|0, 't:', top|0, 'b:', bottom|0);
-    if (area.w > 0)
-      for (; l-- > 0;) {
-        var rect = Block.Size.highlightBlock(ship.blocks[l]),
-          leftRight = rect.x > left && rect.x + rect.w < right,
-          topBottom = rect.y > top && rect.y + rect.h < bottom;
-        if (leftRight && topBottom) {
-          index = ship.selection.indexOf(ship.blocks[l]);
-          area.h < 0 ?
-            index > -1 && ship.selection.splice(index, 1) :
-            index < 0 && ship.selection.push(ship.blocks[l]);
-        }
-      }
-    else
-      for (; l-- > 0;) {
-        rect = Block.Size.highlightBlock(ship.blocks[l]);
-        leftRight = rect.x + rect.w > left && rect.x < right;
-        topBottom = rect.y + rect.h > top && rect.y < bottom;
-        if (leftRight && topBottom) {
-          index = ship.selection.indexOf(ship.blocks[l]);
-          area.h < 0 ?
-            index > -1 && ship.selection.splice(index, 1) :
-            index < 0 && ship.selection.push(ship.blocks[l]);
-        }
-      }
+    // 3h_
+    var w = area.w, h = area.h;
+    ship.selectArea2d(area.x, area.y, w, h, w < 0, h < 0);
     selecting = false;
     render();
     return true;
@@ -3948,6 +3911,54 @@ Tool.list.push(new Tool("Move", "M25a0c,1a6e9 v-b7a4 c30fe,0,57ba,0,57ba,0 c\
 57ba c0,10c9,d9c,1e66,1e66,1e66 c86c,0,100b,-36d,158d,-8f5 lb13e,-b0c3 c5d2,\
 -589,973,-d5c,973,-1607 c0,-897,-390,-105a,-94c,-15e1 l-b1a9,-ad58 c-57b,-56\
 1,-cff,-8b2,-1549,-8b2 c-10c9,0,-1e66,d9c,-1e66,1e66 c0,0,0,2f8d,0,5325 z"));
+Tool.list.push(new Tool("SelectAll",  "M3ff8e,f246 l105,535f c0,1bfc,-16c9,3\
+2ad,-32e5,32ad c-1c1c,0,-32e5,-16b0,-32e5,-32ad l-f6,-4b72 c0,-5158,-46b7,-9\
+34a,-9df4,-934a l-3fef,-1d c-1bfc,0,-32ad,-16c9,-32ad,-32e5 c0,-1c1c,16b0,-3\
+2e5,32ad,-32e5 h3958 c9398,0,10b3e,6f92,10b3e,f933 Mf1e4,205 l535f,-105 c1bf\
+c,0,32ad,16c9,32ad,32e5 c0,1c1c,-16b0,32e5,-32ad,32e5 l-4b72,f6 c-5158,0,-93\
+4a,46b7,-934a,9df4 l-1d,3fef c0,1bfc,-16c9,32ad,-32e5,32ad c-1c1c,0,-32e5,-1\
+6b0,-32e5,-32ad v-3958 c0,-9398,6f92,-10b3e,f933,-10b3e M1a3,30faf l-105,-53\
+5f c0,-1bfc,16c9,-32ad,32e5,-32ad c1c1c,0,32e5,16b0,32e5,32ad lf6,4b72 c0,51\
+58,46b7,934a,9df4,934a l3fef,1d c1bfc,0,32ad,16c9,32ad,32e5 c0,1c1c,-16b0,32\
+e5,-32ad,32e5 l-3958,0 c-9398,0,-10b3e,-6f92,-10b3e,-f933 M30f4c,3fff0 l-535\
+f,105 c-1bfc,0,-32ad,-16c9,-32ad,-32e5 c0,-1c1c,16b0,-32e5,32ad,-32e5 l4b72,\
+-f6 c5158,0,934a,-46b7,934a,-9df4 l1d,-3fef c0,-1bfc,16c9,-32ad,32e5,-32ad c\
+1c1c,0,32e5,16b0,32e5,32ad l0,3958 c0,9398,-6f92,10b3e,-f933,10b3e"+ " M1b4c\
+f,28d3d c-1d4d,1a38,-43e3,29e5,-714a,29e5 c-6a3c,0,-bb46,-55d6,-bb46,-bfb8 c\
+0,-69e2,5109,-bfb8,bb46,-bfb8 c41d5,0,7bf2,20f6,9e9f,533c l1f37,2fec c0,0,2a\
+9f,-3f0a,4a7a,-5942 c1e5c,-18fc,43e3,-29e5,714a,-29e5 c6a3c,0,ba12,55d6,ba12\
+,bfb8 c0,69e2,-4fd6,bfb8,-ba12,bfb8 c-41d5,0,-7bf2,-20f6,-9e9f,-533c l-1f37,\
+-2fec c0,0,-2d2d,3f0a,-4a7a,5942 z M177fc,1a018 c-dc6,-7c2,-1da6,-ca3,-2f79,\
+-ca3 c-3865,0,-5e74,2d91,-5e74,65c7 c0,3836,260e,65c7,5e74,65c7 ce3c,0,1b91,\
+-373,2819,-825 c34b9,-13c0,54f8,-5ca9,54f8,-5ca9 c0,0,-258f,-438d,-4d98,-5a1\
+c z M2899d,25261 cdc6,7c2,1da6,ca3,2f79,ca3 c3865,0,5f6d,-2d91,5f6d,-65c7 c0\
+,-3836,-2707,-65c7,-5f6d,-65c7 c-e3c,0,-1b91,373,-2819,825 c-34b9,13c0,-54f8\
+,5ca9,-54f8,5ca9 c0,0,258f,438d,4d98,5a1c z",
+Tool.selectAllInit = (function init() {
+  ship.selection.length ? ship.setSelected([]) : ship.setSelected();
+  render();
+})));
+Tool.list.push(new Tool("Expand", "M668c,26001 c7d2,-1815,1e73,-297e,3924,-2\
+97e h119a c212c,0,3c11,1ae4,3c11,3c11 l113,311d c0,3ff4,33d8,73cc,73cc,73cc \
+l30c6,bc c212c,0,3c11,1ae4,3c11,3c11 v119a c0,19e8,-1067,2ffc,-2764,386a l-1\
+5c6b,62e9 c-487,11e,-943,1b6,-e22,1b6 c-2068,0,-3aae,-1a45,-3aae,-3aae c0,-5\
+3a,af,-a4c,1f7,-f1f z M10249,38e90 c-3f09,-1946,-719d,-4b08,-8bf8,-8983 l-37\
+e8,c102 lc3e0,-377f z M1a37c,67ce c1815,7d2,297e,1e73,297e,3924 v119a c0,212\
+c,-1ae4,3c11,-3c11,3c11 l-311d,113 c-3ff4,0,-73cc,33d8,-73cc,73cc l-bc,30c6 \
+c0,212c,-1ae4,3c11,-3c11,3c11 h-119a c-19e8,0,-2ffc,-1067,-386a,-2764 l-62e9\
+,-15c6b c-11e,-487,-1b6,-943,-1b6,-e22 c0,-2068,1a45,-3aae,3aae,-3aae c53a,0\
+,a4c,af,f1f,1f7 z M74ed,1038b c1946,-3f09,4b08,-719d,8983,-8bf8 l-c102,-37e8\
+ l377f,c3e0 z M39baf,1a4be c-7d2,1815,-1e73,297e,-3924,297e h-119a c-212c,0,\
+-3c11,-1ae4,-3c11,-3c11 l-113,-311d c0,-3ff4,-33d8,-73cc,-73cc,-73cc l-30c6,\
+-bc c-212c,0,-3c11,-1ae4,-3c11,-3c11 v-119a c0,-19e8,1067,-2ffc,2764,-386a l\
+15c6b,-62e9 c487,-11e,943,-1b6,e22,-1b6 c2068,0,3aae,1a45,3aae,3aae c0,53a,-\
+af,a4c,-1f7,f1f z M2fff2,762e c3f09,1946,719d,4b08,8bf8,8983 l37e8,-c102 l-c\
+3e0,377f z M25ebf,39cf0 c-1815,-7d2,-297e,-1e73,-297e,-3924 v-119a c0,-212c,\
+1ae4,-3c11,3c11,-3c11 l311d,-113 c3ff4,0,73cc,-33d8,73cc,-73cc lbc,-30c6 c0,\
+-212c,1ae4,-3c11,3c11,-3c11 h119a c19e8,0,2ffc,1067,386a,2764 l62e9,15c6b c1\
+1e,487,1b6,943,1b6,e22 c0,2068,-1a45,3aae,-3aae,3aae c-53a,0,-a4c,-af,-f1f,-\
+1f7 z M38d4e,30133 c-1946,3f09,-4b08,719d,-8983,8bf8 lc102,37e8 l-377f,-c3e0\
+ z", Tool.selectAllInit));
 
 // db3 styled icon (cardboard box)
 // https://www.flaticon.com/free-icon/package_7625482?term=time+product&page=2&position=30&origin=search&related_id=7625482
@@ -4081,6 +4092,8 @@ DefaultUI.createTile = function () {
     var name;
     if (typeof val == "number" && typeof Block.NAME[val] == "string")
       name = Block.NAME[id = val];
+    else if (Tool.get("" + val))
+      return Tool.get("" + val);
     else if (typeof (id = Block.ID["" + val]) == "number")
       name = Block.NAME[id];
     if (typeof name == "string")
@@ -4090,9 +4103,6 @@ DefaultUI.createTile = function () {
         0, Color.default(name));
     if (val instanceof Tool)
       return val;
-    for (var i = Tool.list.length; i-- > 0;)
-      if (Tool.list[i].name === "" + val)
-        return Tool.list[i];
     return null;
   };
 }();
@@ -5308,7 +5318,7 @@ DefaultUI.over = over = function (e) {
  * possible optimizations, a system of global and local (single use)
  * settings to provide interface with multiple rendering methods */
 function Renderer() {
-  throw new Error("Unimplemented");;
+  throw new Error("Unimplemented");
   this.logíc = false;
 }
 Renderer.queue = function () {
@@ -5661,7 +5671,6 @@ Block.Box2d.visualize = function (path, x, y, green) {
   //}catch(e){console.error(e && e.message || e);}
 };
 
-var test_val;// test_evil = "ship = Ship.fromObject({});render();", ;
 init = function () {
   for (var i = ship.blocks.length, clean = []; i-- > 0;)
     ship.blocks[i].internalName !== "__unknown__" &&
@@ -5669,7 +5678,38 @@ init = function () {
   ship.blocks = clean;
   rend_collisions = true;
   ship.setSelected([]);
+  (DefaultUI.blockBars[0] || []).push(DefaultUI.createTile("SelectAll"),
+    Tool.get("Expand"));
   console.log("set up collision testing(editor)=" + ship.blocks[0].internalName);
   imgColor.onload && rend_checkColors();
+  imgBackg.src = "" + imgBackg.getAttribute("data-src");
   check_contentScript();
 };
+
+//- script for turning Tool icon source to SVG image -//
+//-var tool = Tool.list[5];
+//-var decoded = tool.icon.split(" ").map(function (e) {
+//-  if (e[0] === "z" || e[0] === "Z")
+//-    return e[0];
+//-  return e[0] + e.slice(1).split(",").map(function (e) {
+//-    return e[0] === "-" ?
+//-      +("0x0" + e.slice(1)) / -1024 :
+//-      +("0x0" + e) / 1024;
+//-  });
+//-}).join(" ");
+//-'data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/sv\
+//-g" xmlns:xlink="http://www.w3.org/1999/xlink" width="256" height="256" viewB\
+//-ox="0,0,256,256"><desc>D1R DBV + MSSSS editor\'s ' + tool.name + ' tool icon\
+//-</desc><g data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill-rule="no\
+//-nzero" fill="%35555" stroke="none" stroke-width="1" stroke-linecap="butt" st\
+//-roke-linejoin="miter" stroke-miterlimit="10" stroke-dasharray="" stroke-dash\
+//-offset="0" style="mix-blend-mode: normal"><path d="' + decoded + '"/></g></s\
+//-vg>';
+
+//- new js feature !Limited availability!
+//-try {
+//-  throw "is this an Error?";
+//-} catch (err) {
+//-  console.error(err);
+//-  Error.isError(err); // false
+//-}

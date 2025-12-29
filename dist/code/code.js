@@ -2,7 +2,7 @@
 /// <reference path="./defs.d.ts" />
 "use strict";
 /** @readonly */
-var version_code_js = "v.0.2.27";
+var version_code_js = "v.0.2.29";
 /** 3h_  @TODO check @see {Ship.VERSION} */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
@@ -133,197 +133,8 @@ Data.groups = [
   ",128,0,0,0,0]", "[[3],128,0,0,0,0]", "[[28],0,29,0,[27],0,18,0,[26]," +
   "96,164,96,2,1]"
 ];
-// script used for generating missing ms1 blocks data
-// if (typeof doc == "undefined")
-//   var doc = document;
-// var obj = {}, temp1 = temp1 || [], def = [
-//   {name: "ControlBlock", id: 1 + 1280, bitmap: 1071}, {name: "Gyro1", 
-//   // Camera and Beacon textures are swapped this will fix itself once
-//   // textures are updated in editor.js, fixed in texture_overlay_preview.png
-//   id: 9 + 1280, bitmap: 1072}, {name: "Camera", id: 20 + 1280,
-//   bitmap: 1073}, {name: "Beacon", id: 114 + 1280, bitmap: 1074}, {name: "FuelTank0", 
-//   id: 2 + 1280, bitmap: 1079}, {name: "FuelTank1", id: 42 + 1280, bitmap: [1098, 1,
-//   2]}, {name: "FuelTank2", id: 12 + 1280, bitmap: [1080, 2, 2]}, {name: "FuelTank4", 
-//   id: 146 + 1280, bitmap: [1082, 3, 3]}, {name: "FuelTank3", id: 147 + 1280,
-//   bitmap: [1085, 4, 4]}, {name: "DeutTank0", id: 148 + 1280, bitmap: 1806},
-//   {name: "DeutTank1", id: 149 + 1280, bitmap: [1796, 1, 2]}, {name: "DeutTank2", 
-//   id: 150 + 1280, bitmap: [1791, 2, 2]}, {name: "DeutTank4", id: 151 + 1280,
-//   bitmap: [1109, 3, 3]}, {name: "DeutTank3", id: 152 + 1280, bitmap: [1121, 4, 4]},
-//   {name: "ExotTank0", id: 153 + 1280, bitmap: 1134}, {name: "ExotTank1", id: 154 + 1280,
-//   bitmap: [1099, 1, 2]}, {name: "ExotTank2", id: 155 + 1280, bitmap: [1116, 2, 2]},
-//   {name: "ExotTank4", id: 156 + 1280, bitmap: [514, 3, 3]}, {name: "ExotTank3", 
-//   id: 157 + 1280, bitmap: [514, 4, 4]}, {name: "GlowTank0", id: 158 + 1280,
-//   bitmap: 1511}, {name: "GlowTank2", id: 159 + 1280, bitmap: [1521, 2, 2]},
-//   {name: "GlowTank4", id: 160 + 1280, bitmap: [1494, 3, 3]}, {name: "Battery0", 
-//   id: 16 + 1280, bitmap: 1209}, {name: "Battery1", id: 22 + 1280, bitmap: [1200, 2,
-//   1]}, {name: "Battery2", id: 17 + 1280, bitmap: [1182, 2, 2]}, {name: "Battery4", 
-//   id: 161 + 1280, bitmap: [1217, 3, 3]}, {name: "Battery3", id: 162 + 1280,
-//   bitmap: [1211, 4, 4]}, {name: "Pipe", id: 163 + 1280, bitmap: 1075},
-//   {name: "Engine_Fuel1", id: 3 + 1280, bitmap: 1171}, {name: "Engine_Fuel2", id: 7 + 1280,
-//   bitmap: 1158}, {name: "Engine_Fuel4", id: 178 + 1280, bitmap: [1143, 2, 2]},
-//   {name: "Engine_Fuel3", id: 24 + 1280, bitmap: [1161, 1, 2]}, {name: "Engine_Hybrid1", 
-//   id: 8 + 1280, bitmap: 1366}, {name: "Engine_Exot1", id: 179 + 1280, bitmap: [514,
-//   1, 2]}, {name: "Engine_Power1", id: 4 + 1280, bitmap: 1159}, {name: "Engine_Power2", 
-//   id: 6 + 1280, bitmap: 1160}, {name: "Engine_Power3", id: 5 + 1280, bitmap: 1157},
-//   {name: "Engine_Power4", id: 25 + 1280, bitmap: [1136, 1, 3]}, {name: "Engine_Big1", 
-//   id: 180 + 1280, bitmap: [1137, 2, 5]}, {name: "Engine_Big2", id: 181 + 1280,
-//   bitmap: [1179, 3, 4]}, {name: "Engine_Big3", id: 182 + 1280, bitmap: [1305, 4, 5]},
-//   {name: "Engine_Solid1", id: 61 + 1280, bitmap: [1287, 1, 2]}, {name: "Reactor0", 
-//   id: 15 + 1280, bitmap: 1172, editor: "SolarPanel"}, {name: "SolarPanel1", 
-//   id: 210 + 1280, bitmap: [1162, 2, 1], editor: "SolarPanelMed"},
-//   {name: "SolarPanel2", id: 211 + 1280, bitmap: [1166, 4, 1],
-//   editor: "SolarPanelBig"}, {name: "Reactor1", id: 11 + 1280, bitmap: 1384},
-//   {name: "Reactor2", id: 212 + 1280, bitmap: [1488, 2, 1]}, {name: "Reactor3", id: 14 + 1280,
-//   bitmap: [1357, 2, 1]}, {name: "Reactor4", id: 23 + 1280, bitmap: [1288, 2, 2]},
-//   {name: "Reactor5", id: 21 + 1280, bitmap: [514, 3, 3]}, {name: "Reactor8", id: 213 + 1280,
-//   bitmap: [1354, 3, 4]}, {name: "Reactor6", id: 214 + 1280, bitmap: [1175, 4, 4]},
-//   {name: "Reactor7", id: 215 + 1280, bitmap: [1309, 5, 5]}, {name: "Armor_Basic", 
-//   id: 13 + 1280, bitmap: 1274}, {name: "Armor_BasicBig", id: 242 + 1280,
-//   bitmap: [1290, 2, 2]}, {name: "Armor_Laser1", id: 26 + 1280, bitmap: 1210},
-//   {name: "Armor_LaserWedge0", id: 243 + 1280, bitmap: 1215}, {name: "Armor_LaserWedge1", 
-//   id: 244 + 1280, bitmap: [1224, 1, 2]}, {name: "Armor_LaserWedge2", id: 245 + 1280,
-//   bitmap: [1216, 1, 3]}, {name: "Armor_LaserWedge3", id: 246 + 1280, bitmap: [1243,
-//   1, 4]}, {name: "Armor_LaserWedge4", id: 247 + 1280, bitmap: [1242, 1, 5]},
-//   {name: "Armor_Heavy", id: 27 + 1280, bitmap: 1279}, {name: "Armor_HeavyWedge0", 
-//   id: 248 + 1280, bitmap: 1280}, {name: "Armor_HeavyWedge1", id: 249 + 1280,
-//   bitmap: [1273, 1, 2]}, {name: "Armor_HeavyWedge2", id: 250 + 1280, bitmap: [1246,
-//   1, 3]}, {name: "Armor_HeavyWedge3", id: 251 + 1280, bitmap: [1244, 1, 4]},
-//   {name: "Armor_HeavyWedge4", id: 252 + 1280, bitmap: [1245, 1, 5]}, {name: "Armor_Laser2", 
-//   id: 28 + 1280, bitmap: 1275}, {name: "Armor_Laser2Wedge0", id: 253 + 1280,
-//   bitmap: 1265}, {name: "Armor_Laser2Wedge1", id: 254 + 1280, bitmap: [1247, 1, 2]},
-//   {name: "Armor_Laser2Wedge2", id: 255 + 1280, bitmap: [1248, 1, 3]},
-//   {name: "Armor_Laser2Wedge3", id: 256 + 1280, bitmap: [1249, 1, 4]},
-//   {name: "Armor_Laser2Wedge4", id: 257 + 1280, bitmap: [1250, 1, 5]}, {name: "Armor_Regen", 
-//   id: 29 + 1280, bitmap: 1385}, {name: "Shield1", id: 31 + 1280, bitmap: 1304},
-//   {name: "Shield2", id: 258 + 1280, bitmap: 1295}, {name: "Shield3", id: 259 + 1280,
-//   bitmap: [1283, 3, 3]}, {name: "Weapon_bomb1", id: 19 + 1280, bitmap: 1394},
-//   {name: "Weapon_bomb2", id: 37 + 1280, bitmap: 1135}, {name: "Weapon_Laser1", id: 35 + 1280,
-//   bitmap: 1367}, {name: "Weapon_Laser2", id: 56 + 1280, bitmap: [1359, 1, 2]},
-//   {name: "Weapon_Laser3", id: 60 + 1280, bitmap: [1360, 1, 2]}, {name: "Weapon_Machinegun1", 
-//   id: 55 + 1280, bitmap: 1375}, {name: "Weapon_Machinegun2", id: 274 + 1280,
-//   bitmap: [1361, 1, 2]}, {name: "Weapon_Cannon1", id: 275 + 1280, bitmap: [1362, 1,
-//   3]}, {name: "Weapon_Cannon2", id: 276 + 1280, bitmap: [1377, 2, 6]},
-//   {name: "Weapon_PlasmaCannon1", id: 277 + 1280, bitmap: [1393, 1, 2]},
-//   {name: "Weapon_PlasmaCannon2", id: 278 + 1280, bitmap: [1379, 1, 4]},
-//   {name: "Weapon_NeutCannon1", id: 279 + 1280, bitmap: [1415, 1, 4]}, {name: "Weapon_DMG1", 
-//   id: 58 + 1280, bitmap: 1376}, {name: "Weapon_Rocket1", id: 64 + 1280,
-//   bitmap: [1469, 1, 3]}, {name: "Weapon_Rocket2", id: 280 + 1280, bitmap: [1431, 2,
-//   7]}, {name: "Weapon_Railgun1", id: 281 + 1280, bitmap: [1448, 1, 7]},
-//   {name: "Utility_Decoupler", id: 34 + 1280, bitmap: 1403}, {name: "Utility_Hinge", 
-//   id: 306 + 1280, bitmap: 1479}, {name: "Utility_Piston", id: 307 + 1280,
-//   bitmap: [1447, 1, 2]}, {name: "Utility_Rotor", id: 308 + 1280, bitmap: 1480},
-//   {name: "Utility_Pump", id: 309 + 1280, bitmap: 1532}, {name: "Utility_SolidPump", 
-//   id: 310 + 1280, bitmap: 1533}, {name: "Utility_VOID", id: 311 + 1280,
-//   bitmap: 1523},
-//   // {name: "Utility_PipeRotor", id:  + 1280}, {name: "Utility_PipePiston", id:  + 1280},
-//   {name: "Utility_Docking1", id: 36 + 1280, bitmap: 1534},
-//   {name: "Utility_Docking2", id: 54 + 1280, bitmap: 1582}, {name: "Utility_GPMP", 
-//   id: 62 + 1280, bitmap: 1451}, {name: "Utility_Decelerator", id: 312 + 1280,
-//   bitmap: 1574}, {name: "Utility_MobileSpawn", id: 313 + 1280, bitmap: 1583},
-//   {name: "Utility_Wheel1", id: 65 + 1280, bitmap: 1460}, {name: "Utility_Wheel2", 
-//   id: 314 + 1280, bitmap: [1461, 2, 2]}, {name: "Drill1", id: 338 + 1280,
-//   bitmap: [1520, 1, 2]}, {name: "Drill2", id: 339 + 1280, bitmap: [1497, 2, 4]},
-//   {name: "Drill3", id: 340 + 1280, bitmap: [1463, 3, 8]}, {name: "Excavator1", 
-//   id: 341 + 1280, bitmap: [1584, 3, 2]}, {name: "Excavator2", id: 342 + 1280,
-//   bitmap: [1732, 6, 4]}, {name: "ExotCollector1", id: 343 + 1280, bitmap: [1539, 5,
-//   5]}, {name: "Cargo0", id: 344 + 1280, bitmap: 1573}, {name: "Cargo1", id: 345 + 1280,
-//   bitmap: [1571, 2, 2]}, {name: "Cargo2", id: 346 + 1280, bitmap: [1535, 4, 4]},
-//   {name: "Converter_Electrolyzer1", id: 347 + 1280, bitmap: [1714, 1, 2]},
-//   {name: "Converter_Electrolyzer2", id: 348 + 1280, bitmap: [1712, 2, 4]},
-//   {name: "Converter_Electrolyzer3", id: 349 + 1280, bitmap: [1661, 4, 8]},
-//   {name: "Converter_Deut1", id: 350 + 1280, bitmap: [1696, 1, 2]}, {name: "Converter_Deut2", 
-//   id: 351 + 1280, bitmap: [1710, 2, 4]}, {name: "Converter_Deut3", id: 352 + 1280,
-//   bitmap: [1638, 4, 8]}, {name: "Converter_Exot1", id: 353 + 1280, bitmap: [1411, 2,
-//   4]}, {name: "Converter_Exot2", id: 354 + 1280, bitmap: [1389, 4, 8]},
-//   {name: "Converter_Smelter1", id: 355 + 1280, bitmap: [1587, 2, 2]},
-//   {name: "Converter_Smelter2", id: 356 + 1280, bitmap: [1602, 4, 4]},
-//   {name: "Converter_Smelter3", id: 357 + 1280, bitmap: [1589, 4, 8]},
-//   {name: "Logic_LaserSensor", id: 370 + 1280, bitmap: 1606}, {name: "Logic_VelocitySensor", 
-//   id: 371 + 1280, bitmap: 1615}, {name: "Logic_AngVelocitySensor", id: 372 + 1280,
-//   bitmap: 1624}, {name: "Logic_ResourceSensor", id: 373 + 1280, bitmap: 1633},
-//   {name: "Logic_Button", id: 374 + 1280, bitmap: 1642}, {name: "Logic_Screen", 
-//   id: 375 + 1280, bitmap: 1651}, {name: "Logic_Timer", id: 376 + 1280, bitmap: 1660},
-//   {name: "Logic_Switch", id: 377 + 1280, bitmap: 1669}, {name: "Logic_Randomizer", 
-//   id: 378 + 1280, bitmap: 1678}, {name: "Logic_AndGate", id: 379 + 1280,
-//   bitmap: 1076}, {name: "Logic_OrGate", id: 380 + 1280, bitmap: 1077},
-//   {name: "Logic_XorGate", id: 381 + 1280, bitmap: 1078}, {name: "Decorative_Nose0", 
-//   id: 43 + 1280, bitmap: 1803}, {name: "Decorative_Nose1", id: 46 + 1280,
-//   bitmap: [1807, 2, 1]}, {name: "Decorative_Nose2", id: 45 + 1280, bitmap: [1748, 2,
-//   2]}, {name: "Decorative_BackgroundBlock1", id: 402 + 1280, bitmap: 1687},
-//   {name: "Decorative_Block1", id: 49 + 1280, bitmap: 1804}, {name: "Decorative_Block2", 
-//   id: 50 + 1280, bitmap: [1771, 1, 2]}, {name: "Decorative_Wedge0", id: 44 + 1280,
-//   bitmap: 1802}, {name: "Decorative_Wedge3", id: 403 + 1280, bitmap: 1767},
-//   {name: "Decorative_Wedge1", id: 47 + 1280, bitmap: [1768, 1, 2]},
-//   {name: "Decorative_Wedge2", id: 48 + 1280, bitmap: [1786, 1, 2]},
-//   {name: "Decorative_Wedge4", id: 404 + 1280, bitmap: [1769, 1, 3]},
-//   {name: "Decorative_Wedge7", id: 405 + 1280, bitmap: [1776, 1, 3]},
-//   {name: "Decorative_Wedge5", id: 406 + 1280, bitmap: [1770, 1, 4]},
-//   {name: "Decorative_Wedge8", id: 407 + 1280, bitmap: [1766, 1, 4]},
-//   {name: "Decorative_Wedge6", id: 408 + 1280, bitmap: [1746, 1, 5]},
-//   {name: "Decorative_Wedge9", id: 409 + 1280, bitmap: [1747, 1, 5]},
-//   {name: "Decorative_Antenna0", id: 51 + 1280, bitmap: [1772, 1, 2]},
-//   {name: "Decorative_Antenna1", id: 59 + 1280, bitmap: [1789, 2, 2]},
-//   {name: "ControlBlock_Probe", id: 10 + 1280, bitmap: 1074}
-// ];
-// var types = "cat_control cat_fuelandbatteries cat_engines cat_generators cat\
-// _armor cat_weapons cat_utility cat_resources cat_logic cat_structural cat_ch\
-// eats !cat_decolayer Lcat_decolayer2 !cat_decolayer3 cat_editoronly Xcat_hide\
-// ".split(" "), cut_useless = 0;
-// doc === document ? Acode.upload(1, function (e) {
-//     doc = Document.parseHTMLUnsafe(e);
-//   }) :
-//   temp1 = [].map.call(doc.querySelectorAll("PartConfig"), function (E, i) {
-//     var type = (E.querySelector("EditorType") || {}).textContent;
-//     if (type.slice(0, 13) === "cat_decolayer" && (i < cut_useless || cut_useless === -1))
-//       cut_useless = i;
-//     return {name: (E.querySelector("PartID") || {}).textContent,
-//       id: (E.querySelector("SpriteID") || {}).textContent,
-//       old: (E.querySelector("OldID") || {}).textContent, type: type,
-//       title: (E.querySelector("EditorName") || {}).textContent};
-//   }).sort(function (a, b) {
-//     return types.indexOf(a.type) - types.indexOf(b.type);
-//     // var atmp = +a.old, btmp = +b.old;
-//     // return isNaN(atmp) ?
-//     //   isNaN(btmp) ? 0 : 1:
-//     //   isNaN(btmp) ? -1 : atmp - btmp;
-//   });
-
-// // temp1.sort(function (a, b) {
-// //   return types.indexOf(a.type) - types.indexOf(b.type);
-// // });
-// //.forEach(function (e, i) {
-// //   obj[e.name] = e.name !== (def[0] || {}).name ? def.shift() : {id: 0};
-// // });
-// // temp1.slice(0, 53).forEach(function (e) {
-// //   obj[e.name] = {id: e.old + " + " + (1024 + 256)};
-// // });
-// // console.log(JSON.stringify(obj).replace(/"/g, "").replace(/:|,/g, function (m) {
-// //   return m + " ";
-// // }).replace(/id: *0/g, "id:  + 1280"));
-// var result = [];
-// temp1.forEach(function (e, i) {
-//   if (types.indexOf(e.type) === -1)
-//     return;
-//   var container = {},
-//     obj = container[e.name] = e.name === (def[0] || {}).name ?
-//       def.shift() :
-//       {id: 0, bitmap: ["_FIX_"]};
-//   if (obj.bitmap === -1 && def.indexOf(e.name) > -1)
-//     console.error(e.name, "is at different position");
-//   if (!obj)
-//     obj = container[e.name] = {id: 0};
-//   //obj.title = e.title;
-//   delete obj.name;
-//   result.push(JSON.stringify(container).slice(1, -1));
-// });
-// console.log(result.join(",").replace(/[{,] *"([^"]+)" *: *|,/g, function (m, g1) {
-//   return m === "," ? ", " : m[0] + (m[0] === "," ? " " : "") + g1 + ": ";
-// }).replace(/id: *(\d+)/g, function (m, g1) {
-//   return "id: " + (+g1 < 1280 ? "__NEW__" : +g1 - 1280) + " + 1280";
-// }) + "}");
-/** was used to show ts errors where block IDs weren't assigned (case of new
- * blocks), but still can be tested in browser @TODO remove in v.0.2.28 */
-//var __NEW__ = {valueOf: Math.random};
+// #data.xmltodbve v.0.2.27 was used to show ts errors where block IDs
+// weren't assigned (case of new blocks), but still can be tested in browser
 
 // search / ?([^]{20,74}[,{;]) ?/ replace "  $1\n "
 // search /\["\d+ \d+"\]|"\d+ \d+"/ replace <number with texture index>
@@ -426,8 +237,8 @@ Data.blocks =
   strength: 10, cost: 100, bitmap: 114}, "Distance Sensor": {id: 816,
   weight: 1, strength: 10, cost: 100, bitmap: 115}, "GPS Sensor": {id: 817,
   weight: 1, strength: 10, cost: 100, bitmap: 116}, "Numerical Inverter": {
-  id: 818, weight: .5, strength: 5, cost: 100, bitmap: [117, 1, .5]}, Clamp: {
-  id: 819, weight: .5, strength: 5, cost: 100, bitmap: [118, 1, .5]}, Abs: {
+  id: 818, weight: .5, strength: 5, cost: 100, bitmap: [117, 1, .5]}, Clamp:
+  {id: 819, weight: .5, strength: 5, cost: 100, bitmap: [118, 1, .5]}, Abs: {
   id: 820, weight: .5, strength: 5, cost: 100, bitmap: [119, 1, .5]},
   "Threshold Gate": {id: 821, weight: .5, strength: 5, cost: 100,
   bitmap: [120, 1, .5]}, "Numerical Switchbox": {id: 822, weight: 1,
@@ -1188,7 +999,7 @@ Data.dispose = function () {
       delete Data.blocks[p];
   return "disposed of Data.blocks";
 };
-/** @throws {Error} */
+/** May throw error, use asynchronously! @throws {Error} */
 Data.checkTitles = function () {
   if (!Object.keys(Data.blocks).length)
     throw new Error();
@@ -2654,7 +2465,7 @@ Block.Box2d.generateBuildBox = function () {
         setBuildBox(a[i]);
   /** @type {{[key:string]:typeof defs[number]}} */
   var msDefs = {}, ba = box2dArray([]);
-  /** @param {keyof Block.ID} name 3h_ */
+  /** @param {keyof Block.ID} name */
   function setMsBuildBox(name) {
     /** @type {{-readonly[T in keyof Box2dDefinition]:Box2dDefinition[T]}} */
     var rotations = [ba, ba, ba, ba, ba, ba, ba, ba], j = 8;
@@ -3232,7 +3043,7 @@ __extends(LogicBlock, Block);
  * @typedef {(target:Ship,...args:number[])=>any} EditTargetCommand */
 // A concept for undo redo history implementation
 /** class/namespace tp handle editing history, toJSON method in use
- * @param {((...args:any[])=>any)&{methodName?:string}} command
+ * @param {string} command methodName path
  * @param {string} args stringified Array @param {Edit.Type} type */
 function Edit(command, args, type) {
   /** @type {Edit.Type} commands enum */
@@ -3251,14 +3062,14 @@ function Edit(command, args, type) {
 /** @type {(((ship?:Ship)=>void)&{id?:string}|undefined)[]} */
 Edit.listeners = [];
 /** this property must be set true while executing commands of Edit history,
- * it prevents @see {Edit.capture} from adding duplicate Edits to history */
+ * it prevents @see {Edit.capture} from adding duplicate Edits to history
+ * @deprecated this doesn't work well actaully */
 Edit.settingHistory = false;
 Edit.prototype.toString = function () {
   if (this.args[0] !== "[" || this.args.slice(-1)[0] !== "]")
-    return "\"Error: args is not arguments array (" + this.type + " \
-" + (this.command.methodName || (this + "").slice(0, 32)) + ")\"";
-  var s = Data.getFunctionName(this.command) || "(anonymous)";
-  return "[" + this.type + ",\"" + s + "\"," + this.args + "]";
+    return "\"Error: args is not arguments array (" + this.type + " " +
+      this.command + ")\"";
+  return "[" + this.type + ",\"" + this.command + "\"," + this.args + "]";
 };
 Edit.prototype.toJSON = function () {
   try {
@@ -3267,17 +3078,24 @@ Edit.prototype.toJSON = function () {
     console.error(e);
     args = this.args;
   }
-  return [this.type, Data.getFunctionName(this.command), args];
+  return [this.type, this.command, args];
 };
-// @param {Ship} target @param {number} [copy] ? get clone : pass target
-/** @param {Ship} target and also used to reset setting history */
+/** quicksaving/loading and also used to reset setting history
+ * @overload @param {Ship} target tp be saved
+ * @overload @param {string} target to be loaded from history
+ * @returns {void} @param {Ship|string} target */
 Edit.save = function (target) {
+  if (typeof target == "string") {
+    /** @type {unknown} */
+    var parsed = JSON.parse(target);
+    return Ship.fromObject(parsed || {});
+  }
   var copy = target.getMode().mode === "Save",
     clone = copy ?
       target.getMode().getShip() :
       new Ship("", [], "", [], null, new Ship.Mode("Save", target));
-  if (!copy)
-    Edit.settingHistory = false;
+  //-if (!copy)
+  //-  Edit.settingHistory = false;
   target.selection.length = 0;
   /** @type {Ship|ShipProperties|null} */
   var prop = target.prop, blocks = target.blocks.map(function (e, i) {
@@ -3321,10 +3139,8 @@ Edit.save = function (target) {
   if (copy)
     return clone;
   target.history.push(new Edit(
-    function cloneEditSave() {
-      return Edit.save(clone);
-    },
-    "[]",
+    "Edit.save",
+    JSON.stringify(ship.toJSON()),
     /** @type {Edit.Save} */
     (0)
   ));
@@ -3338,12 +3154,12 @@ Edit.capture = (
    * @param {...any} _inputs @returns {void}
    * @param {EditTargetCommand|Ship} cmdOrThis
    * @param {Ship|EditThisCommand} [targetOrCmd]
-   * @param {...any[]} [_inputs] */
+   * @param {...any[]} [_inputs] @deprecated 3h_ */
   function (cmdOrThis, targetOrCmd, _inputs) {
-    // if properly used Edits won't duplicate after the undo/redoing
-    // operation scope was detected
-    if (Edit.settingHistory)
-      return;
+    //-// if properly used Edits won't duplicate after the undo/redoing
+    //-// operation scope was detected
+    //-if (Edit.settingHistory)
+    //-  return;
     var isThis = cmdOrThis instanceof Ship,
       args = JSON.stringify([].slice.call(arguments, 2)),
       /** @type {Ship} */
@@ -3353,12 +3169,13 @@ Edit.capture = (
       command = typeof cmdOrThis == "function" ?
         cmdOrThis :
         typeof targetOrCmd == "function" ? targetOrCmd : console.error;
-    target.history.push(new Edit(
-      command,
+    var item = new Edit(
+      Data.getFunctionName(command),
       args,
       /** @type {Edit.Target|Edit.This} */
       (+isThis + 1)
-    ));
+    )
+    item.command === "anonymous" ? 0 : target.history.push(item);
     for (var i = 0, l = this.listeners.length; i < l; i++)
       (this.listeners[i] || F)(ship);
   }
@@ -3369,7 +3186,7 @@ Edit.historyAt = function (target, index) {
   if (!(index in edits))
     return console.error("Index: " + index +
       " is out of range for editing history");
-  Edit.settingHistory = true;
+  //-Edit.settingHistory = true; //not yet deleted so I can see the old logic
   if (last.type === 3) {
     last.args = "[" + (index) + "]";
     if (index >= edits.length - 2)
@@ -3378,12 +3195,12 @@ Edit.historyAt = function (target, index) {
     console.info("Executing undo history restart");
   else
     edits.push(last = new Edit(
-      Edit.undo,
+      "Edit.undo",
       "[" + index + "]",
       /** @type {Edit.Undo} */
       (3)
     ));
-  // chech all the relevant references/jumps with Edit.undo-s
+  // check all the relevant references/jumps with Edit.undo-s 3h_
   for (var i = index, n = 0, lmax = 0xffff; i > 0;) {
     if (edits[n = i].type ===
         /** @type {Edit.Undo} */
@@ -3395,15 +3212,24 @@ Edit.historyAt = function (target, index) {
   }
   try {
     for (i = 0; i <= index && lmax-- > 0; i++) {
-      var args = JSON.parse((last = edits[i]).args);
+      /** @type {unknown} */
+      var property = self, args = JSON.parse((last = edits[i]).args);
+      for (var path = last.command.split("."); path.length;)
+        if (property instanceof Object)
+          property = property[path.shift() || ""];
+      if (typeof property != "function") {
+        console.error("edits[" + i + "].command isn't function property");
+        continue;
+      }
+      var command = property;
       if (!(args instanceof Array))
         console.warn("edit.args is not an Array");
       /** @see {Edit.This} */
       if (last.type === 2)
-        last.command.apply(target, args);
+        command.apply(target, args);
       /** @see {Edit.Undo} */
       else if (last.type !== 3)
-        last.command.apply(UDF, [
+        command.apply(UDF, [
           /** @type {any} */
           (target)
         ].concat(args));
@@ -3414,15 +3240,14 @@ Edit.historyAt = function (target, index) {
   } catch (e) {
     console.error("Executing Edit commands failed misserably, " +
       "at index: " + i + " command: " + edits[i], e);
-    // save Ship before completely throwimg an error
+    // save Ship before completely throwing an error
     Edit.save(target);
   }
-  Edit.settingHistory = false;
 };
 /** @param {Ship} target */
 Edit.undo = function (target) {
   var edits = target.history, last = edits[edits.length - 1];
-  var index = last.type === 3 ?
+  var index = last && last.type === 3 ?
     +last.args.slice(1, -1) :
     edits.length - 1;
   Edit.historyAt(target, index - +!!index);
@@ -3430,7 +3255,7 @@ Edit.undo = function (target) {
 /** @param {Ship} target */
 Edit.redo = function (target) {
   var edits = target.history, last = edits[edits.length - 1];
-  var index = last.type === 3 ?
+  var index = last && last.type === 3 ?
     +last.args.slice(1, -1) :
     edits.length - 1;
  Edit.historyAt(target, index + +!!(index < edits.length - 1));
@@ -3442,7 +3267,7 @@ Edit.rotate = (
    * @overload @param {Ship} target rotate using Block.rotate
    * @param {number} rx @param {number} ry @param {number} rz
    * @returns {void} @param {Ship} target @param {number} rx
-   * @param {number} [ny] @param {number} [nz]  */
+   * @param {number} [ny] @param {number} [nz] */
   function (target, rx, ny, nz) {
     if (typeof ny != "number") {
       var ry = 0, rz = 0, applyRotation = function (rot) {
@@ -3450,7 +3275,7 @@ Edit.rotate = (
           /** @type {0|1|2|3} */
           (rot[2] + rx & 3);
       };
-      Edit.capture(Edit.rotate, target, rx);
+      //Edit.capture(Edit.rotate, target, rx);
       rx *= 90;
     } else {
       ry = ny;
@@ -3458,7 +3283,7 @@ Edit.rotate = (
       applyRotation = function (rot) {
         Block.rotate(rot, rx, ry, rz);
       };
-      Edit.capture(Edit.rotate, target, rx, ry, rz);
+      //Edit.capture(Edit.rotate, target, rx, ry, rz);
     }
 
     rx >= 0 && rx < 4 ? rx |= 0 : rx = Math.round(rx / 90) % 4 + 4 & 3;
@@ -3503,7 +3328,7 @@ Edit.move = function (target, x, y, z) {
     pos[1] += y;
     pos[2] += z;
   }
-  Edit.capture(Edit.move, target, x, y, z);
+  //Edit.capture(Edit.move, target, x, y, z);
 };
 /** @param {Ship} target @param {number} color */
 Edit.paint = function (target, color) {
@@ -3515,7 +3340,7 @@ Edit.paint = function (target, color) {
     function (e) {
       e.properties.color = colorName;
     });
-  Edit.capture(Edit.paint, target, color);
+  //Edit.capture(Edit.paint, target, color);
 };
 // taken from: https://stackoverflow.com/a/47593316
 /** @param {number} seed @see {Ship.dateTime} also (todo for discussion) */
@@ -3539,7 +3364,7 @@ Edit.oldUIColor = function (ids, color) {
   var name = Color.NAME[color] || "";
   for (var i = 0, arr = this.blocks; i < ids.length; i++)
     arr[ids[i]].properties.color = name;
-  Edit.capture(this, Edit.oldUIColor, ids, color);
+  //Edit.capture(this, Edit.oldUIColor, ids, color);
 };
 /** @this {Ship} @param {number[]} ids */
 Edit.oldUIMove = function (ids) {
@@ -3549,7 +3374,7 @@ Edit.oldUIMove = function (ids) {
       pos[2] & 1 ? --pos[1] : ++pos[2] :
       pos[2] & 1 ? --pos[2] : ++pos[1];
   }
-  Edit.capture(this, Edit.oldUIMove, ids);
+  //Edit.capture(this, Edit.oldUIMove, ids);
 };
 /** @this {Ship} @param {number[]} ids */
 Edit.oldUIRotate = function (ids) {
@@ -3570,7 +3395,7 @@ Edit.oldUIRotate = function (ids) {
     //@ts-expect-error
     o.rotation[2] = rot + 1 & 3;
   }
-  Edit.capture(this, Edit.oldUIRotate, ids);
+  //Edit.capture(this, Edit.oldUIRotate, ids);
 };
 Data.nameMethods(Edit);
 
@@ -3613,8 +3438,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @readonly @type {43} significantVersion: 43 (integer) */// @ts-ignore
-Ship.VERSION = 43;
+/** @readonly @type {44} significantVersion: 44 (integer) */// @ts-ignore
+Ship.VERSION = 44;
 Ship.propertyNames = new RegExp("^(?:nodeList|nodeConnections|customI" +
   "nputs|gridSize)$");
 Ship.prototype.selectRect = (
@@ -3634,11 +3459,11 @@ Ship.prototype.selectRect = (
       x1 > x0 ? x0 = x1 : x = x1;
       y1 > y0 ? y0 = y1 : y = y1;
       z1 > z0 ? z0 = z1 : z = z1;
-      Edit.capture(this, this.selectRect, x0, y0, z0, x1, y1, z1);
+      //Edit.capture(this, this.selectRect, x0, y0, z0, x1, y1, z1);
     } else {
       for (; i < all.length; i++)
         selected.push(all[i]);
-      Edit.capture(this, this.selectRect);
+      //Edit.capture(this, this.selectRect);
     }
     for (; i < all.length; i++) {
       var pos = all[i].position;
@@ -3650,9 +3475,15 @@ Ship.prototype.selectRect = (
     return selected;
   }
 );
-/** for selectimg all blocks use @see {ship.selectRect}
- * @this {Ship} @param {ShipBlock[]|number[]} selection */
+/** skipping selection parameter selects all blocks
+ * @this {Ship} @param {ShipBlock[]|number[]} [selection] */
 Ship.prototype.setSelected = function (selection) {
+  if (!selection) {
+    selection = this.selection;
+    for (var i = selection.length = ship.blocks.length; i--;)
+      selection[i] = ship.blocks[i];
+    return;
+  }
   var ids = [], selected = this.selection, blocks = this.blocks;
   for (var i = selected.length = selection.length; i-- > 0;) {
     var id = selection[i];
@@ -3660,8 +3491,9 @@ Ship.prototype.setSelected = function (selection) {
       console.error("Selected ShipBlock was not found:" + id);
     selected[i] = blocks[ids[i]];
   }
-  Edit.capture(this, this.setSelected, ids);
+  //Edit.capture(this, this.setSelected, ids);
 };
+/** @deprecated use @see {Ship.prototype.removeBlocks} @this {Ship} */
 Ship.prototype.removeRect = function (x0, y0, z0, x1, y1, z1) {
   var x = x0, y = y0, z = z0, selected = [];
   x1 > x0 ? x0 = x1 : x = x1;
@@ -3679,7 +3511,7 @@ Ship.prototype.removeRect = function (x0, y0, z0, x1, y1, z1) {
   // var deletion = this.selectRect(xl, yt, zr, xr, yb, zf);
   // /** @TODO optimize deleting with custom logics deletion */
   // for (var i = deletion.length; i-- > 0;)
-  Edit.capture(this, this.removeRect, x0, y0, z0, x1, y1, z1);
+  //Edit.capture(this, this.removeRect, x0, y0, z0, x1, y1, z1);
 };
 /** @this {Ship} */
 Ship.prototype.replaceRect = function (x0, y0, z0, x1, y1, z1) {
@@ -3725,7 +3557,7 @@ Ship.prototype.replaceRect = function (x0, y0, z0, x1, y1, z1) {
     for (y = y0; y >= y1; y -= 2)
       for (z = z1; z <= z0; z += 2)
         blocks.push(pushBlock(this));
-  Edit.capture(this, this.replaceRect, x0, y0, z0, x1, y1, z1);
+  //Edit.capture(this, this.replaceRect, x0, y0, z0, x1, y1, z1);
   return blocks;
 };
 Ship.prototype.fillRect = function () {
@@ -3809,7 +3641,7 @@ Ship.prototype.paste = function (x, y, z) {
     } else
       newNode.pairs = -1;
   };
-  Edit.capture(this, this.paste, x, y, z);
+  //Edit.capture(this, this.paste, x, y, z);
 };
 Ship.prototype.mirror = (
   /**
@@ -3831,7 +3663,7 @@ Ship.prototype.mirror = (
       z1 > z0 ? z0 = z1 : z = z1;
     } else
       selected = this.blocks.concat(all = []);
-    Edit.capture(this, this.mirror, x0, y0, z0, x1, y1, z1);
+    //Edit.capture(this, this.mirror, x0, y0, z0, x1, y1, z1);
   }
 );
 Ship.prototype.mirror2d = (
@@ -3890,13 +3722,13 @@ Ship.prototype.mirror2d = (
           pos[2] < lz || pos[2] > hz)
           pushBlock(all[i], pos);
       }
-      Edit.capture(this, this.mirror2d, x0, y0, z0, x1, y1, z1);
+      //Edit.capture(this, this.mirror2d, x0, y0, z0, x1, y1, z1);
     } else {
       for (var i = 0; i < all.length; i++) {
         pos = all[i].position;
         pushBlock(all[i], pos);
       }
-      Edit.capture(this, this.mirror2d);
+      //Edit.capture(this, this.mirror2d);
     }
   }
 );
@@ -3939,7 +3771,7 @@ Ship.prototype.fixPositionAdjustment = function (fixSlab) {
       (rot + 1 & 3) > 1 ? block.position[1] -= 1 : 0;
     }
   }
-  Edit.capture(this, this.fixPositionAdjustment, fixSlab);
+Edit.capture(this, this.fixPositionAdjustment, fixSlab);
 };
 /** allows using position adjustment for certain operations such as,
  * DR base64 keys prototype @param {(ship:Ship)=>void} operation
@@ -3984,7 +3816,7 @@ Ship.prototype.fixVersion_1_3 = function () {
       }
     }
   this.gameVersion = [];
-  Edit.capture(this, this.fixVersion_1_3);
+  //Edit.capture(this, this.fixVersion_1_3);
 };
 /**
  * @param {number} x @param {number} y @param {number} z
@@ -4019,9 +3851,9 @@ Ship.prototype.placeBlock = function placeBlock(x, y, z, refBlock) {
     // block added to ship.blocks is LogicBlock for Logic editing mode
     new LogicBlock(block, -1, logics) :
     block);
-  Edit.capture(this, placeBlock, x, y, z, typeof refBlock == "number" ?
-    refBlock :
-    ref);
+  //Edit.capture(this, placeBlock, x, y, z, typeof refBlock == "number" ?
+  //  refBlock :
+  //  ref);
   return block;
 };
 /** replaces block on given index with last block and cuts off
@@ -4038,7 +3870,46 @@ Ship.prototype.removeBlocks = function removeBlocks(ids) {
     blocks.length--;
   }
   // (v.0.2.1) is JSON.parse(JSON.stringify(ids)) necessary here?
-  Edit.capture(this, removeBlocks, ids);
+  //Edit.capture(this, removeBlocks, ids);
+};
+/** @see {Tool.list} */
+/** 3h_ 
+ * @this {Ship} @param {number} x @param {number} y
+ * @param {number} h @param {number} w
+ * @param {boolean} [loose] true = select any block colliding within area
+ * @param {boolean} [deselect] true = deselect instead of selecting */
+Ship.prototype.selectArea2d = function selectArea2d(x, y, w, h,
+  loose, deselect) {
+  var l = this.blocks.length, index = 0;
+  var x0 = (x - vX) / sc, x1 = x0 + w / sc;
+  var y0 = (y - vY) / sc, y1 = y0 + h / sc;
+  var right = Math.max(x0, x1), left = Math.min(x0, x1);
+  var bottom = Math.max(y0, y1), top = Math.min(y0, y1);
+  if (!loose)
+    for (; l-- > 0;) {
+      var rect = Block.Size.highlightBlock(this.blocks[l]),
+        leftRight = rect.x > left && rect.x + rect.w < right,
+        topBottom = rect.y > top && rect.y + rect.h < bottom;
+      if (leftRight && topBottom) {
+        index = this.selection.indexOf(this.blocks[l]);
+        deselect ?
+          index > -1 && this.selection.splice(index, 1) :
+          index < 0 && this.selection.push(this.blocks[l]);
+      }
+    }
+  else
+    for (; l-- > 0;) {
+      rect = Block.Size.highlightBlock(this.blocks[l]);
+      leftRight = rect.x + rect.w > left && rect.x < right;
+      topBottom = rect.y + rect.h > top && rect.y < bottom;
+      if (leftRight && topBottom) {
+        index = this.selection.indexOf(this.blocks[l]);
+        deselect ?
+          index > -1 && this.selection.splice(index, 1) :
+          index < 0 && this.selection.push(this.blocks[l]);
+      }
+    }
+  //Edit.capture(this, selectArea2d, x, y, w, h, loose, deselect);
 };
 Ship.prototype.toJSON = function () {
   /** @param {ShipProperties["nodeList"]} logics */
@@ -4144,7 +4015,9 @@ Ship.fromObject = function fromObject(object) {
     (props = props || OC()).nodeList = logics;
   // reassamble different from Logic.reassemble
   props = Ship.CustomInput.reassemble(blocks, props);
-  return Edit.save(new Ship(name, ver, time, blocks, props));
+  //return Edit.save(
+  return new Ship(name, ver, time, blocks, props);
+  //);
 };
 /** @readonly @param {Ship} ship */
 Ship.toDBV = function toDBV(ship) {
@@ -4305,7 +4178,7 @@ Ship.fromMSSSS = function (mssss) {
     console.error("Parsing .mssss:", e);
     return;
   }
-  var name = typeof o.Name == "string" ? o.Name : "Modular Spacship",
+  var name = typeof o.Name == "string" ? o.Name : "Modular Spaceship",
     parts = o.Parts instanceof Array ? o.Parts.map(decodePart) : [],
     moreParts = o.UncompressedParts;
   if (moreParts instanceof Array)
@@ -4315,7 +4188,8 @@ Ship.fromMSSSS = function (mssss) {
   var spaceship = new Ship(name, [], Ship.dateTime(), parts);
   spaceship.selectRect();
   Edit.rotate(spaceship, 2);
-  return Edit.save(spaceship);
+  spaceship.setSelected([]);
+  return spaceship;// Edit.save(spaceship);
 };
 /** @readonly @param {Ship} ship @throws {Error} */
 Ship.checkDBV = function (ship) {
@@ -5511,6 +5385,7 @@ B64Key.drawBlock = function (rc, block) {
 if (ship.name === "Pazik_Mk1_Emil_") {
   ship.selectRect();
   Edit.rotate(ship, 2);
+  ship.setSelected([]);
 }
 
 //@ts-expect-error exporting but not exports weird stuff
