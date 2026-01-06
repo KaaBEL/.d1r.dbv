@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.29";
+var version_editor_js = "v.0.2.30";
 /** 3h_ @TODO check @see {Editor} for assignment without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -365,7 +365,6 @@ Editor.addingStyles(
   "#commandsTab input, #commandsTab textarea, #commandsTab select" +
   "{background-color: #000;color: #bbb;border: 1px solid #888;}" +
   "#commandsTab li{display: block;}"
-  //-"main{text-size-adjust: none;-webkit-text-size-adjust: 100%;}"
 );
 
 canvas.addEventListener("contextrestored", Editor.contextrestored);
@@ -442,6 +441,7 @@ AAABBoATIAAAAAnAAA2AAQKAFaAAAZAAAAJwAA4lABtAAZAAAAJwAAJAUAGQAAACcAAAARAAAKDU\
 ALkAEAAADgBABAFU6AFgBABgAAwAkAgDiAAJACZAAATgAAyAsARgAAAECMCo1BIxEAhBAhQAYAYA\
 QAAGCFWBVOg1Oig7gALoAMAMAJsTCcCCcphBAXwAWQAQA4IRawCAkiYWQQhUABUAAQaEQiAwBBoB\
 AoxSIDyABKAAIlTviFogQ=")));
+      Edit.save(ship);
       Editor.backgroundStage = 0;
       break;
     case "17a472d":
@@ -456,6 +456,7 @@ IgRHJvbmVib2kABD9TDSCAv6/65vbGnas+ELMGgvIGgrKuIChrYKhuICjrCoKyBpQ34LgncNaA6g\
 ak9QRBWQPKGnDcFQjauHnfBwJbWzAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMC\
 wxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNl0sIntcImNvbG\
 9yXCI6XCJMaW1lXCJ9Il0=")));
+      Edit.save(ship);
     case "8bb3bad8":
       console.info("Fun mode 7");
       setTimeout(function () {
@@ -527,6 +528,7 @@ sXCJub2RlSW5kZXhcIjpbOSw4XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCI\
 sXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMjZdLFwid2VsZEdyb3VwXCI6MH0" +
         "iXQ==").replace(/ /g, ""))));
         ship.fixPositionAdjustment(!0);
+        Edit.save(ship);
         if (location.href.slice(-3) === "=uh")
           return;
         Math.random() > .5 ?
@@ -570,6 +572,7 @@ anel","p":[2,1],"r":270,"f":false,"s":"White","c":[],"ni":[22],"wg":0},{"n":\
 {"Item1":22,"Item2":4},{"Item1":19,"Item2":4},{"Item1":16,"Item2":2},{"Item1\
 ":14,"Item2":3},{"Item1":8,"Item2":15},{"Item1":7,"Item2":15},{"Item1":6,"It\
 em2":1},{"Item1":5,"Item2":15}],"ci":[],"significantVersion":20}'));
+      Edit.save(ship);
       break;
     case "d4d00d64":
     case "c058adcc":
@@ -1300,7 +1303,7 @@ onFile.temporaray = function (uar) {
 };
 file.input.onchange = onFile;
 
-/** @type {()=>string} */
+/** @TODO clean up these global vars into Command @type {()=>string} */
 var placingBlock = function () {
   return ["Core", "Block", "Wedge", "Small Hydrogen Thruster",
     "Reaction Wheel","Small Hydrogen Tank", "Small Battery"
@@ -1431,24 +1434,26 @@ Command.old_UI = function (x, y) {
     }
   var rand = placingBlock();
   if (rand === "remove") {
-    ship.removeBlocks(found);
+    Edit.applyCommand(ship, ship.removeBlocks, found);
     return render();
   }
   if (blockBind.changingColor)
-    var oldCmd = Edit.oldUIColor.bind(ship, found, Color.ID[rand]);
+    var oldCmd = Edit.Primitive.oldUIColor;
   else if (blockBind.changingPosition)
-    oldCmd = Edit.oldUIMove.bind(ship, found);
+    oldCmd = Edit.Primitive.oldUIMove;
   else
-    oldCmd = Edit.oldUIRotate.bind(ship, found);
+    oldCmd = Edit.Primitive.oldUIRotate;
   // placingBlock function modified blockBind.changingColor at beggining
   if (found.length || blockBind.changingColor) {
-    oldCmd();
+    oldCmd === Edit.Primitive.oldUIColor ?
+      Edit.applyCommand(ship, oldCmd, found, Color.ID[rand]) :
+      Edit.applyCommand(ship, oldCmd, found);
     return render();
   }
   if (rand !== "remove") {
     // #riptesting now I could use some unit test for logic,
     // but... how the hack am I supposed to do that
-    ship.placeBlock(0, x * 2, y * 2, Block.ID[rand]);
+    Edit.place(ship, 0, x * 2, y * 2, Block.ID[rand]);
   }
   render();
 };
@@ -2147,8 +2152,10 @@ Command.push("Import/Export DBV", function (items, collapsed) {
   (elBtn = EL("button")).onclick = function () {
     error.innerText = "";
     try {
+      var history = ship.history;
       ship = Ship.fromObject(JSON.parse(dbv.value));
-      ship.fixVersion_1_3();
+      ship.history = history;
+      Edit.applyCommand(Edit.save(ship), ship.fixVersion_1_3);
       i = Number(((ship.prop || {}).gridSize || {}).gridIndex);
       grid.value = isNaN(i) ? "null" : "" + i;
       render();
@@ -2162,8 +2169,11 @@ Command.push("Import/Export DBV", function (items, collapsed) {
   onFile.temporaray = function (buffer) {
     function checkMSSSS() {
       var temporaray = s && Ship.fromMSSSS(s) || Ship.fromMSSSS(buffer);
-      temporaray ? ship = temporaray : 0;
-      render();
+      if (temporaray) {
+        temporaray.history = ship.history;
+        Edit.save(ship = temporaray);
+        render();
+      }
       return !!temporaray;
     }
     if (buffer[0] !== 123 || buffer[buffer.length - 1] !== 125)
@@ -2210,9 +2220,11 @@ Command.push("Import/Export DBV", function (items, collapsed) {
   (elBtn = EL("button")).onclick = function () {
     error.innerText = "";
     try {
-      var obj = JSON.parse(json.value);
-      ship = Ship.fromObject(obj);
-      !(obj.significantVersion > 15) && ship.fixPositionAdjustment(!0);
+      var obj = JSON.parse(json.value), history = ship.history;
+      (ship = Ship.fromObject(obj)).history = history;
+      Edit.save(ship);
+      if (!(obj.significantVersion > 15))
+        Edit.applyCommand(ship, ship.fixPositionAdjustment, !0);
       i = Number(((ship.prop || {}).gridSize || {}).gridIndex);
       grid.value = isNaN(i) ? "null" : "" + i;
       render();
@@ -2257,16 +2269,18 @@ Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
   items.push(elBtn);
   (elBtn = EL("button")).onclick = function () {
     error.innerText = "";
-    var old = ship, s = inp.value;
+    var old = ship, s = inp.value, history = old.history;
     try {
       if (!/^(:?UGxheWVy)?VmVoaWNsZT/.test(s.slice(0, 18))) {
         var obj = B64Key.decode(B64Key.b64ToU8arr(s));
         //@ts-expect-error
-        ship = Ship.fromObject(obj);
+        (ship = Ship.fromObject(obj)).history = history;
+        Edit.save(ship);
         if (typeof obj != "string")
-          ship.fixPositionAdjustment(!(obj.significantVersion > 15));
+          Edit.applyCommand(ship, ship.fixPositionAdjustment,
+            !(obj.significantVersion > 15));
       } else
-        ship = Ship.fromDBKey(atob(s));
+        (ship = Ship.fromDBKey(atob(s))).history;
       render();
     } catch (err) {
       error.innerText = "" + err;
@@ -2315,8 +2329,9 @@ Command.push("Transform tool", function (items, collapsed) {
   function getSelected(isLocking) {
     if (isLocking || !locked.checked)
       selecting ?
-        ship.selectRect() :
-        ship.selectRect(0, xy[0], xy[1], 0, xy[2], xy[3]);
+        Edit.applyCommand(ship, ship.selectRect) :
+        Edit.applyCommand(ship, ship.selectRect,
+          0, xy[0], xy[1], 0, xy[2], xy[3]);
     return ship;
   }
   /** @type {Ship|null} */
@@ -2380,7 +2395,7 @@ Command.push("Transform tool", function (items, collapsed) {
     var units = +Editor.meterPositions + 1;
     var x = +inpX.value * units || 0, y = +inpY.value * units || 0;
     Edit.move(getSelected(), 0, x, y);
-    Edit.move(getSelectPoints(), 0, x, y);
+    Edit.Primitive.move(getSelectPoints(), 0, x, y);
     updateSelectPoints();
     render();
   };
@@ -2390,7 +2405,7 @@ Command.push("Transform tool", function (items, collapsed) {
     var units = +Editor.meterPositions + 1;
     var rx = +inpX.value * units || +inpY.value * units || 0;
     Edit.rotate(getSelected(), rx);
-    Edit.rotate(getSelectPoints(), rx);
+    Edit.Primitive.rotate(getSelectPoints(), rx);
     updateSelectPoints();
     render();
   };
@@ -2402,8 +2417,9 @@ Command.push("Transform tool", function (items, collapsed) {
   mirror.onclick = function () {
     getSelected();
     selecting ?
-      ship.mirror2d() :
-      ship.mirror2d(0, xy[0], xy[1], 0, xy[2], xy[3]);
+      Edit.applyCommand(ship, ship.mirror2d) :
+      Edit.applyCommand(ship, ship.mirror2d,
+        0, xy[0], xy[1], 0, xy[2], xy[3]);
     render();
   };
   /** COPY SELECTION */
@@ -2438,8 +2454,8 @@ Command.push("Transform tool", function (items, collapsed) {
     if (selecting > 1)
       return;
     //var x = Math.min(x, xy[2]), y = Math.max(, xy[3]);
-    ship.setSelected(copied);
-    ship.paste(0, xy[0] - offset[0], xy[1] - offset[1]);
+    Edit.applyCommand(ship, ship.paste,
+      0, xy[0] - offset[0], xy[1] - offset[1]);
     // also deselect the selection
     selecting = 2;
     selectX0.value = selectY0.value = "";
@@ -2449,7 +2465,9 @@ Command.push("Transform tool", function (items, collapsed) {
   var remove = EL("button"), paint = EL("button"), fill = EL("button");
   remove.appendChild(tN("Remove action"));
   remove.onclick = function () {
-    !selecting && ship.removeRect(0, xy[0], xy[1], 0, xy[2], xy[3]);
+    !selecting && 
+      Edit.applyCommand(ship, ship.removeRect,
+        0, xy[0], xy[1], 0, xy[2], xy[3]);
     render();
   };
   paint.appendChild(tN("Paint action"));
@@ -2461,9 +2479,8 @@ Command.push("Transform tool", function (items, collapsed) {
   fill.onclick = function () {
     if (selecting)
       return;
-    Editor.buildReplace = !0;
-    ship.replaceRect(0, xy[0], xy[1], 0, xy[2], xy[3]);
-    Editor.buildReplace = !1;
+    Edit.applyCommand(ship, ship.replaceRect,
+      0, xy[0], xy[1], 0, xy[2], xy[3]);
     render();
   };
   posUnits.type = "checkbox";
@@ -3535,7 +3552,7 @@ e42,-1e7e c-5b73,5550,-d631,8984,-15d21,8984 c-11abb,0,-1ffee,-e532,-1ffee,-\
 bf45,3e46 c-33b,137,-6bf,1e1,-a6b,1e1 c-fe9,0,-1cd0,-c80,-1cd0,-1bed c0,-214\
 ,3c,-41c,ae,-60f c64,-1b6,2b6f,-d70d,2b9c,-d7c9 c2f1,-c64,e66,-15a2,1c14,-15\
 a2 c78f,0,e71,2d2,1395,771 c6c,61,1e3a,1e85,1e42,1e7e c5b73,-5550,d631,-8984\
-,15d21,-8984 c11abb,0,1ffee,e532,1ffee,1ffee z", function () {
+,15d21,-8984 c11abb,0,1ffee,e532,1ffee,1ffee z", function init() {
   DefaultUI.tilesRotation[2] = DefaultUI.tilesFlippableRotation[2] =
     /** @type {0|1|2|3} */
     (DefaultUI.tilesRotation[2] + 1 & 3);
@@ -3582,7 +3599,7 @@ f v0 c0,12d2,112d,2400,23ff,2400 h13c00 c12d2,0,2400,-112d,2400,-2400 v0 c0,\
 v0 c0,12d2,112d,2400,23ff,2400 h1c400 c12d2,0,2400,-112d,2400,-2400 v0 c0,-1\
 2d2,-112d,-2400,-2400,-2400 z M1fe22,38888 c-12d2,0,-2400,112d,-2400,23ff v0\
  c0,12d2,112d,2400,23ff,2400 h19400 c12d2,0,2400,-112d,2400,-2400 v0 c0,-12d\
-2,-112d,-2400,-2400,-2400 z", function () {
+2,-112d,-2400,-2400,-2400 z", function init() {
   var st = Command.el.style;
   st.display = st.display ? "" : "none";
   if (!st.top)
@@ -3623,7 +3640,8 @@ Tool.list.push(new Tool("Undo", "M3f6f3,19ab0 cc15,c15,c15,1fad,0,2bc2 c-c15\
 ,-a8f,795,-10aa,89f c-6aa,122,-21ce2,5967,-22309,59df c-8af,a8,-1198,-254,-1\
 83c,-8f9 c-6b7,-6b7,-9b3,-fc1,-8f3,-1888 c85,-615,5940,-21dea,599b,-2210e cc\
 3,-6b4,3b8,-d35,8dc,-1259 cc15,-c15,1fad,-c15,2bc2,0 c62,62,733f,733f,733f,7\
-33f c0,0,76,-a5,152,-152 c88c2,-6b53,1cea0,-db12,2f024,5037 z", function () {
+33f c0,0,76,-a5,152,-152 c88c2,-6b53,1cea0,-db12,2f024,5037 z",
+function init() {
   if (ship.getMode().mode !== "Ship")
     return alert("Functions only in Ship editing mode");
   Edit.undo(ship);
@@ -3635,7 +3653,7 @@ Tool.list.push(new Tool("Redo", "Mb37,19889 c12184,-12b4a,26761,-bb8b,2f024,\
 9df c-61a,-109,-bf4,-3e9,-10aa,-89f c-c15,-c15,-c15,-1fad,0,-2bc2 c10d,-10d,\
 307e,-307e,732f,-732f c0,0,-686c,-7ae9,-12d5f,-89d9 c-86f2,-c4d,-ba42,2670,-\
 ba42,2670 c-c15,c15,-1fad,c15,-2bc2,0 c-c15,-c15,-c15,-1fad,0,-2bc2 z",
-function () {
+function init() {
   if (ship.getMode().mode !== "Ship")
     return alert("Functions only in Ship editing mode");
   Edit.redo(ship);
@@ -3760,7 +3778,7 @@ c7,7,1dd5,-1e1c,1e42,-1e7e c523,-49e,c05,-771,1395,-771 cdae,0,1922,93d,1c14\
 8734 c0,3ea,e,7d2,2c,bb6 c86,11ce,1c4,2841,1c4,290a c0,f6c,-ce6,1bed,-1cd0,1\
 bed c-1df,0,-3b4,-2c,-57a,-81 c-624,-125,-3fa5,-d93,-41df,-e1c c-c8e,-303,-1\
 5dd,-e02,-15dd,-1b1c c0,-4b0,-a0,-102a,-a0,-26cc z",
-function () {
+function jnit() {
   DefaultUI.tilesRotation[2] = DefaultUI.tilesFlippableRotation[2] =
     /** @type {0|1|2|3} */
     (DefaultUI.tilesRotation[2] + 3 & 3);
@@ -3795,6 +3813,7 @@ be8b,554f,be8b,be8b z M33a,c1a9 l0,0 c0,-693b,554f,-be8b,be8b,-be8b h3299 l-\
 57,0,-2873,121c,-2873,2873 v6982 c0,1657,121c,2873,2873,2873 h5090 c1657,0,2\
 873,-121c,2873,-2873 c0,-1657,-121c,-2873,-2873,-2873 h-282b z", F,
 function exec(x, y) {
+  /** @TODO in version 0.2.31 fir for using press(x, y); */
   Command.old_UI(x, y);
 }, F));
 Tool.list.push(new Tool("Oldschool", "M105e7,3d210 c-3a97,3a97,-9997,3a97,-d\
@@ -3863,8 +3882,9 @@ c,-33d8,73cc,-73cc lbc,-30c6 c0,-212c,1ae4,-3c11,3c11,-3c11 l119a,0 c212c,0,\
     if (Math.abs(area.w) < sc / 4 && Math.abs(area.h) < sc / 4)
       return false;
     // 3h_
-    var w = area.w, h = area.h;
-    ship.selectArea2d(area.x, area.y, w, h, w < 0, h < 0);
+    var w = area.w, x0 = (area.x - vX) / sc, x1 = x0 + w / sc;
+    var h = area.h, y0 = (area.y - vY) / sc, y1 = y0 + h / sc;
+    ship.selectArea2d(x0, y0, x1, y1, w < 0, h < 0);
     selecting = false;
     render();
     return true;
@@ -4191,7 +4211,7 @@ DefaultUI.replacingTile = -1;
 /** obsolete as of right now @deprecated */
 DefaultUI.insertedTile = -1;
 /** used for placing preview, second and following items is for placing
- * block, the first... idk@type {(Block.Size.Highlight|undefined)[]} */
+ * block, the first... idk @type {(Block.Size.Highlight|undefined)[]} */
 DefaultUI.highlights = [];
 /** @param {number|string} type @param {unknown[]} [tiles=[]] */
 DefaultUI.createFolder = function (type, tiles) {
@@ -4596,11 +4616,11 @@ DefaultUI.basePress = function (blockPlacing, canDefault) {
   var placing = blockPlacing || function (x, y, tile) {
     DefaultUI.previewPlacing(x, y, tile, !0);
     var rect = DefaultUI.highlights[1];
-    rect && ship.placeBlock(0, rect.positionX, rect.positionY, tile);
+    rect && Edit.place(ship, 0, rect.positionX, rect.positionY, tile)
     render();
   };
   DefaultUI.canDefaultPress = canDefault !== UDF ? canDefault : false;
-  return function (x, y) {
+  return function basePress(x, y) {
     if (DefaultUI.handleGUIArea(x, y))
       return true;
     else
@@ -4792,7 +4812,7 @@ juhus.set("onclaim", function (x, y, source) {
   if (Tool.subscribedClaim && Tool.subscribedClaim(x, y, source))
     return source.preventClaim();
 });
-juhus.set("onstart", function (x, y, source) {
+juhus.set("onstart", function onstart(x, y, source) {
   var action = source.source;
   if (action.startTarget === Command.head) {
     // v.0.2.14 pixelRatio difference: #cmdswtf does this do
@@ -4802,7 +4822,7 @@ juhus.set("onstart", function (x, y, source) {
   if (Tool.subscribedStart && Tool.subscribedStart(x, y, source))
     return;
 });
-juhus.set("onmove", function (x, y, source) {
+juhus.set("onmove", function onmove(x, y, source) {
   var action = source.source;
   if (action.startTarget === Command.head) {
     var style = Command.el.style, w = innerWidth - 86;
@@ -4819,7 +4839,7 @@ juhus.set("onmove", function (x, y, source) {
   if (Tool.subscribedMove && Tool.subscribedMove(x, y, source))
     return;
 });
-juhus.set("onend", function (x, y, source) {
+juhus.set("onend", function onend(x, y, source) {
   var action = source.source;
   if (action.startTarget !== canvas)
     return;
@@ -5605,14 +5625,11 @@ function expensiveRenderer() {
       ctx.fill();
     }
   }
-  //-3h_ 
   ctx.globalAlpha = .3;
   for (j = 0; j < ship.selection.length; j++) {
     var rect = Block.Size.highlightBlock(ship.selection[j]);
     var x = rect.x * sc + vX, y = rect.y * sc + vY;
     ctx.fillStyle = "#45b3ff";
-      //-/** Editor.selectionBlue */
-      //-("#0920de");
     ctx.fillRect(x, y, rect.w * sc, rect.h * sc);
   }
   ctx.globalAlpha = 1;
@@ -5685,31 +5702,3 @@ init = function () {
   imgBackg.src = "" + imgBackg.getAttribute("data-src");
   check_contentScript();
 };
-
-//- script for turning Tool icon source to SVG image -//
-//-var tool = Tool.list[5];
-//-var decoded = tool.icon.split(" ").map(function (e) {
-//-  if (e[0] === "z" || e[0] === "Z")
-//-    return e[0];
-//-  return e[0] + e.slice(1).split(",").map(function (e) {
-//-    return e[0] === "-" ?
-//-      +("0x0" + e.slice(1)) / -1024 :
-//-      +("0x0" + e) / 1024;
-//-  });
-//-}).join(" ");
-//-'data:image/svg+xml;utf8,<svg version="1.1" xmlns="http://www.w3.org/2000/sv\
-//-g" xmlns:xlink="http://www.w3.org/1999/xlink" width="256" height="256" viewB\
-//-ox="0,0,256,256"><desc>D1R DBV + MSSSS editor\'s ' + tool.name + ' tool icon\
-//-</desc><g data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill-rule="no\
-//-nzero" fill="%35555" stroke="none" stroke-width="1" stroke-linecap="butt" st\
-//-roke-linejoin="miter" stroke-miterlimit="10" stroke-dasharray="" stroke-dash\
-//-offset="0" style="mix-blend-mode: normal"><path d="' + decoded + '"/></g></s\
-//-vg>';
-
-//- new js feature !Limited availability!
-//-try {
-//-  throw "is this an Error?";
-//-} catch (err) {
-//-  console.error(err);
-//-  Error.isError(err); // false
-//-}

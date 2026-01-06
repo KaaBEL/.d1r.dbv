@@ -2,7 +2,7 @@
 /// <reference path="./defs.d.ts" />
 "use strict";
 /** @readonly */
-var version_code_js = "v.0.2.29";
+var version_code_js = "v.0.2.30";
 /** 3h_  @TODO check @see {Ship.VERSION} */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
@@ -961,21 +961,34 @@ Data.generateValues = function (type) {
 /** @param {typeof Edit|typeof Ship} namespace */
 Data.nameMethods = function (namespace) {
   if (namespace === Edit)
-    var name = "Edit.";
+    var names = ["Edit."];
   else if (namespace === Ship)
-    name = "Ship.";
+    names = ["Ship."];
   else
     return;
+  var scopes = [namespace], path = "";
   function setMethodName(proprety) {
+    if (scopes.indexOf(proprety) !== -1)
+      return;
     if (typeof proprety == "function")
-      proprety.methodName = name + p;
+      proprety.methodName = path + p;
+    else if (typeof proprety != "object")
+      return;
+    scopes.push(proprety);
+    names.push(path + p + ".");
   }
-  for (var p in namespace)
-    OP.call(namespace, p) && setMethodName(namespace[p]);
-  name += "prototype.";
-  var prototype = namespace.prototype;
-  for (var p in prototype)
-    OP.call(prototype, p) && setMethodName(prototype[p]);
+  for (var i = 0; i < scopes.length; i++) {
+    var current = scopes[i];
+    path = "" + names.shift();
+    for (var p in current)
+      OP.call(current, p) && setMethodName(current[p]);
+    path += "prototype.";
+    var prototype = "prototype" in current ?
+      current.prototype || null :
+      null;
+    for (var p in prototype)
+      OP.call(prototype, p) && setMethodName(prototype[p]);
+  }
 };
 Data.estimateIdentifier = new RegExp("^[^f]*function\\s+([_$a-zA-Z\\xA0-\
 \\uFFFF][_$a-zA-Z0-9\\xA0-\\uFFFF]*)");
@@ -2079,9 +2092,7 @@ Block.Size.highlightBlock = function (block, index, position) {
  * @param {ShipBlock|null} block @param {number} i @param {number} x
  * @param {number} y @param {number} w @param {number} h
  * @param {XYZPosition} position */
-//-@param {number} xp @param {number} yp
 Block.Size.Highlight = function (block, i, x, y, w, h, position) {
-//-xp, yp) {
   if (!(block instanceof Block))
     block = new Block("__NULL__", [0, 0, 0], [0, !1, 0]);
   this.x = x;
@@ -3041,6 +3052,7 @@ __extends(LogicBlock, Block);
  * @typedef {EditBlockCommand|EditNumberCommand|EditSomeCommand|
  * EditColorCommand} EditThisCommand
  * @typedef {(target:Ship,...args:number[])=>any} EditTargetCommand */
+/** @typedef {((ship?:Ship,cmd?:string)=>void)&{id?:string}} EditListner */
 // A concept for undo redo history implementation
 /** class/namespace tp handle editing history, toJSON method in use
  * @param {string} command methodName path
@@ -3059,12 +3071,8 @@ function Edit(command, args, type) {
 // what about buildReplace options kind !!?
 // > if an Edit command uses settings, it must contain optional
 // parameters for them
-/** @type {(((ship?:Ship)=>void)&{id?:string}|undefined)[]} */
+/** @type {(EditListner|undefined)[]} */
 Edit.listeners = [];
-/** this property must be set true while executing commands of Edit history,
- * it prevents @see {Edit.capture} from adding duplicate Edits to history
- * @deprecated this doesn't work well actaully */
-Edit.settingHistory = false;
 Edit.prototype.toString = function () {
   if (this.args[0] !== "[" || this.args.slice(-1)[0] !== "]")
     return "\"Error: args is not arguments array (" + this.type + " " +
@@ -3081,72 +3089,33 @@ Edit.prototype.toJSON = function () {
   return [this.type, this.command, args];
 };
 /** quicksaving/loading and also used to reset setting history
- * @overload @param {Ship} target tp be saved
+ * @overload @param {Ship} target tp be saved @returns {Ship}
  * @overload @param {string} target to be loaded from history
- * @returns {void} @param {Ship|string} target */
-Edit.save = function (target) {
-  if (typeof target == "string") {
-    /** @type {unknown} */
-    var parsed = JSON.parse(target);
-    return Ship.fromObject(parsed || {});
+ * @returns {void} @param {Ship} target @param {safe} [saved] */
+Edit.save = function (target, saved) {
+  if (target.getMode().mode !== "Ship") {
+    console.error("can't use Edit.save while not in Ship mode");
+    return target;
   }
-  var copy = target.getMode().mode === "Save",
-    clone = copy ?
-      target.getMode().getShip() :
-      new Ship("", [], "", [], null, new Ship.Mode("Save", target));
-  //-if (!copy)
-  //-  Edit.settingHistory = false;
+  if (!saved || typeof saved != "object") {
+    target.history.push(new Edit(
+      "Edit.save",
+      JSON.stringify([target.toJSON()]),
+      /** @type {Edit.Save} */
+      (0)
+    ));
+    return target;
+  }
+  var clone = Ship.fromObject(saved);
   target.selection.length = 0;
-  /** @type {Ship|ShipProperties|null} */
-  var prop = target.prop, blocks = target.blocks.map(function (e, i) {
-    var block = new Block(
-      e.internalName,
-      /** @type {XYZPosition} */
-      (e.position.slice()),
-      /** @type {Rotation} */
-      (e.rotation.slice()),
-      /** @see {BlockProps} */
-      JSON.parse(JSON.stringify(e.properties))
-    );
-    return e instanceof LogicBlock ?
-      new LogicBlock(block, i, target) :
-      block;
-  });
-  clone.name = target.name;
-  clone.gameVersion = JSON.parse(JSON.stringify(target.gameVersion));
-  clone.dateTime = target.dateTime;
-  clone.blocks = blocks;
-  clone.prop = prop && function (logics, inputs) {
-    var result = JSON.parse(JSON.stringify(prop));
-    delete result.nodeList;
-    delete result.customInputs;
-    if (logics instanceof Array)
-      result.nodeList = logics.map(function (e) {
-        if (e) {
-          var node = new Logic(e.type, 0, 0);
-          node.pairs = JSON.parse(JSON.stringify(e.pairs));
-          node.owner = e.owner &&
-            blocks[target.blocks.indexOf(e.owner)] || null;
-          return node;
-        }
-      });
-    if (inputs instanceof Array)
-      result.customInputs = inputs.map(function (e) {
-        return new Ship.CustomInput(e.name, e.type);
-      });
-    return result;
-  }(prop.nodeList, prop.customInputs) || null;
-  if (copy)
-    return clone;
-  target.history.push(new Edit(
-    "Edit.save",
-    JSON.stringify(ship.toJSON()),
-    /** @type {Edit.Save} */
-    (0)
-  ));
+  target.name = clone.name;
+  target.gameVersion = clone.gameVersion;
+  target.dateTime = clone.dateTime;
+  target.blocks = clone.blocks;
+  target.prop = clone.prop;
   return target;
 };
-Edit.capture = (
+Edit.applyCommand = (
   /** Finally reliazed how the overloads work with JSDoc
    * @overload @param {Ship} target @param {EditThisCommand} cmd
    * @param {...any} _inputs @returns {void}
@@ -3154,21 +3123,30 @@ Edit.capture = (
    * @param {...any} _inputs @returns {void}
    * @param {EditTargetCommand|Ship} cmdOrThis
    * @param {Ship|EditThisCommand} [targetOrCmd]
-   * @param {...any[]} [_inputs] @deprecated 3h_ */
+   * @param {...any[]} [_inputs] */
   function (cmdOrThis, targetOrCmd, _inputs) {
-    //-// if properly used Edits won't duplicate after the undo/redoing
-    //-// operation scope was detected
-    //-if (Edit.settingHistory)
-    //-  return;
     var isThis = cmdOrThis instanceof Ship,
       args = JSON.stringify([].slice.call(arguments, 2)),
       /** @type {Ship} */
       target = cmdOrThis instanceof Ship ?
         cmdOrThis :
         targetOrCmd || arguments[1],
+      /** @type {(this:Ship|undefined,...args:any)=>any} *uck this sh**/
       command = typeof cmdOrThis == "function" ?
         cmdOrThis :
         typeof targetOrCmd == "function" ? targetOrCmd : console.error;
+    try {
+      isThis ?
+        command.apply(target, JSON.parse(args)) :
+        command.apply(UDF, (function (arr) {
+          arr.unshift(target);
+          return arr;
+        })(JSON.parse(args)));
+    } catch (err) {
+      console.error("applying command failed, resseting history", err);
+      Edit.redo(target);
+      return;
+    }
     var item = new Edit(
       Data.getFunctionName(command),
       args,
@@ -3176,8 +3154,9 @@ Edit.capture = (
       (+isThis + 1)
     )
     item.command === "anonymous" ? 0 : target.history.push(item);
-    for (var i = 0, l = this.listeners.length; i < l; i++)
-      (this.listeners[i] || F)(ship);
+    if (target === ship)
+      for (var i = 0, l = this.listeners.length; i < l; i++)
+        (this.listeners[i] || F)(ship, item.command);
   }
 );
 /** @param {Ship} target @param {number} index */
@@ -3186,7 +3165,6 @@ Edit.historyAt = function (target, index) {
   if (!(index in edits))
     return console.error("Index: " + index +
       " is out of range for editing history");
-  //-Edit.settingHistory = true; //not yet deleted so I can see the old logic
   if (last.type === 3) {
     last.args = "[" + (index) + "]";
     if (index >= edits.length - 2)
@@ -3260,10 +3238,80 @@ Edit.redo = function (target) {
     edits.length - 1;
  Edit.historyAt(target, index + +!!(index < edits.length - 1));
 };
-Edit.rotate = (
+Edit.rotate =
+  /** @type {Edit.Primitive.rotate} */
+  (function (target, rx, ry, rz) {
+    arguments.length > 2 ?
+      Edit.applyCommand(Edit.Primitive.rotate, target, rx) :
+      Edit.applyCommand(Edit.Primitive.rotate, target, rx, ry, rz);
+  });
+/** @type {Edit.Primitive.move} */
+Edit.move = function (target, x, y, z) {
+  var cmd = Edit.Primitive.move;
+  Edit.applyCommand(cmd, target, x, y, z);
+};
+/** @type {Edit.Primitive.paint} */
+Edit.paint = function (target, color) {
+  var cmd = Edit.Primitive.paint;
+  Edit.applyCommand(cmd, target, color);
+};
+/** @type {Edit.Primitive.oldUIColor} */
+Edit.oldUIColor = function (ids, color) {
+  /** @type {Ship["setSelected"]} */
+  var cmd = Ship.prototype.setSelected;
+  Edit.applyCommand(this, cmd, ids);
+  Edit.applyCommand(Edit.Primitive.paint, this, color);
+};
+/** @type {Edit.Primitive.oldUIMove} */
+Edit.oldUIMove = function (ids) {
+  var cmd = Edit.Primitive.oldUIMove;
+  Edit.applyCommand(this, cmd, ids);
+};
+/** @type {Edit.Primitive.oldUIRotate} */
+Edit.oldUIRotate = function (ids) {
+  var cmd = Edit.Primitive.oldUIRotate;
+  Edit.applyCommand(this, cmd, ids);
+};
+/* @param {Ship} target @param {number} x @param {number} y
+ * @param {number} z @param {ShipBlock} tile */
+/** @type {(target:Ship,x:number,y:number,z:number,tile:ShipBlock)=>void} */
+Edit.place = function (target, x, y, z, tile) {
+  /** @type {Ship["placeBlock"]} */
+  var cmd = Ship.prototype.placeBlock;
+  Edit.applyCommand(target, cmd, x, y, z, tile);
+};
+/** @type {(target:Ship,selection?:number[]|ShipBlock[])=>void} */
+Edit.select = function (target, selection) {
+  /** @type {Ship["setSelected"]} */
+  var cmd = Ship.prototype.setSelected;
+  arguments.length > 1 ?
+    Edit.applyCommand(target, cmd, selection) :
+    Edit.applyCommand(target, cmd);
+};
+// taken from: https://stackoverflow.com/a/47593316
+/** @param {number} seed @see {Ship.dateTime} */
+Edit.randSFC32 = function (seed) {
+  var a = seed, b = seed, c = seed, d = seed;
+  return function() {
+    a |= 0; b |= 0; c |= 0; d |= 0;
+    var t = (a + b | 0) + d | 0;
+    d = d + 1 | 0;
+    a = b ^ b >>> 9;
+    b = c + (c << 3) | 0;
+    c = (c << 21 | c >>> 11);
+    c = c + t | 0;
+    return (t >>> 0) / 4294967296;
+  };
+};
+/** namespace for original Edit methods
+ * @namespace @typedef {never} Edit.Primitive @returns {never} */
+Edit.Primitive = function () {
+  throw new TypeError("Illegal constructor");
+};
+Edit.Primitive.rotate = (
   /** rotates Dr ships as well as db vehicles
    * @overload @param {Ship} target rotate on DBVE Rotation basis
-   * @param {number} rx
+   * @param {number} rx @returns {void}
    * @overload @param {Ship} target rotate using Block.rotate
    * @param {number} rx @param {number} ry @param {number} rz
    * @returns {void} @param {Ship} target @param {number} rx
@@ -3275,7 +3323,6 @@ Edit.rotate = (
           /** @type {0|1|2|3} */
           (rot[2] + rx & 3);
       };
-      //Edit.capture(Edit.rotate, target, rx);
       rx *= 90;
     } else {
       ry = ny;
@@ -3283,7 +3330,6 @@ Edit.rotate = (
       applyRotation = function (rot) {
         Block.rotate(rot, rx, ry, rz);
       };
-      //Edit.capture(Edit.rotate, target, rx, ry, rz);
     }
 
     rx >= 0 && rx < 4 ? rx |= 0 : rx = Math.round(rx / 90) % 4 + 4 & 3;
@@ -3321,17 +3367,16 @@ Edit.rotate = (
 /**
  * @param {Ship} target
  * @param {number} x @param {number} y @param {number} z */
-Edit.move = function (target, x, y, z) {
+Edit.Primitive.move = function (target, x, y, z) {
   for (var aar = target.selection, i = aar.length; i-- > 0;) {
     var pos = aar[i].position;
     pos[0] += x;
     pos[1] += y;
     pos[2] += z;
   }
-  //Edit.capture(Edit.move, target, x, y, z);
 };
 /** @param {Ship} target @param {number} color */
-Edit.paint = function (target, color) {
+Edit.Primitive.paint = function (target, color) {
   var colorName = Color.NAME[color] || null;
   target.selection.forEach(color === -1 ?
     function (e) {
@@ -3340,44 +3385,26 @@ Edit.paint = function (target, color) {
     function (e) {
       e.properties.color = colorName;
     });
-  //Edit.capture(Edit.paint, target, color);
-};
-// taken from: https://stackoverflow.com/a/47593316
-/** @param {number} seed @see {Ship.dateTime} also (todo for discussion) */
-Edit.randSFC32 = function (seed) {
-  var a = seed, b = seed, c = seed, d = seed;
-  return function() {
-    a |= 0; b |= 0; c |= 0; d |= 0;
-    var t = (a + b | 0) + d | 0;
-    d = d + 1 | 0;
-    a = b ^ b >>> 9;
-    b = c + (c << 3) | 0;
-    c = (c << 21 | c >>> 11);
-    c = c + t | 0;
-    return (t >>> 0) / 4294967296;
-  };
 };
 // end of taken
 /** @this {Ship} @param {number[]} ids @param {number} color */
-Edit.oldUIColor = function (ids, color) {
+Edit.Primitive.oldUIColor = function (ids, color) {
   /** @type {keyof Color.ID|""} */
   var name = Color.NAME[color] || "";
   for (var i = 0, arr = this.blocks; i < ids.length; i++)
     arr[ids[i]].properties.color = name;
-  //Edit.capture(this, Edit.oldUIColor, ids, color);
 };
 /** @this {Ship} @param {number[]} ids */
-Edit.oldUIMove = function (ids) {
+Edit.Primitive.oldUIMove = function (ids) {
   for (var i = 0, arr = this.blocks; i < ids.length; i++) {
     var pos = arr[ids[i]].position;
     pos[1] & 1 ?
       pos[2] & 1 ? --pos[1] : ++pos[2] :
       pos[2] & 1 ? --pos[2] : ++pos[1];
   }
-  //Edit.capture(this, Edit.oldUIMove, ids);
 };
 /** @this {Ship} @param {number[]} ids */
-Edit.oldUIRotate = function (ids) {
+Edit.Primitive.oldUIRotate = function (ids) {
   for (var i = 0, arr = this.blocks; i < ids.length; i++) {
     var o = arr[ids[i]], rot = o.rotation[2];
     if ([
@@ -3395,8 +3422,8 @@ Edit.oldUIRotate = function (ids) {
     //@ts-expect-error
     o.rotation[2] = rot + 1 & 3;
   }
-  //Edit.capture(this, Edit.oldUIRotate, ids);
 };
+Edit.haha = Edit;
 Data.nameMethods(Edit);
 
 /**
@@ -3438,8 +3465,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @readonly @type {44} significantVersion: 44 (integer) */// @ts-ignore
-Ship.VERSION = 44;
+/** @readonly @type {45} significantVersion: 45 (integer) */// @ts-ignore
+Ship.VERSION = 45;
 Ship.propertyNames = new RegExp("^(?:nodeList|nodeConnections|customI" +
   "nputs|gridSize)$");
 Ship.prototype.selectRect = (
@@ -3459,11 +3486,9 @@ Ship.prototype.selectRect = (
       x1 > x0 ? x0 = x1 : x = x1;
       y1 > y0 ? y0 = y1 : y = y1;
       z1 > z0 ? z0 = z1 : z = z1;
-      //Edit.capture(this, this.selectRect, x0, y0, z0, x1, y1, z1);
     } else {
       for (; i < all.length; i++)
         selected.push(all[i]);
-      //Edit.capture(this, this.selectRect);
     }
     for (; i < all.length; i++) {
       var pos = all[i].position;
@@ -3478,20 +3503,20 @@ Ship.prototype.selectRect = (
 /** skipping selection parameter selects all blocks
  * @this {Ship} @param {ShipBlock[]|number[]} [selection] */
 Ship.prototype.setSelected = function (selection) {
+  var ship = this;
   if (!selection) {
-    selection = this.selection;
+    selection = ship.selection;
     for (var i = selection.length = ship.blocks.length; i--;)
       selection[i] = ship.blocks[i];
     return;
   }
-  var ids = [], selected = this.selection, blocks = this.blocks;
+  var ids = [], selected = ship.selection, blocks = ship.blocks;
   for (var i = selected.length = selection.length; i-- > 0;) {
     var id = selection[i];
     if ((ids[i] = typeof id == "number" ? id : blocks.indexOf(id)) < 0)
       console.error("Selected ShipBlock was not found:" + id);
     selected[i] = blocks[ids[i]];
   }
-  //Edit.capture(this, this.setSelected, ids);
 };
 /** @deprecated use @see {Ship.prototype.removeBlocks} @this {Ship} */
 Ship.prototype.removeRect = function (x0, y0, z0, x1, y1, z1) {
@@ -3511,7 +3536,6 @@ Ship.prototype.removeRect = function (x0, y0, z0, x1, y1, z1) {
   // var deletion = this.selectRect(xl, yt, zr, xr, yb, zf);
   // /** @TODO optimize deleting with custom logics deletion */
   // for (var i = deletion.length; i-- > 0;)
-  //Edit.capture(this, this.removeRect, x0, y0, z0, x1, y1, z1);
 };
 /** @this {Ship} */
 Ship.prototype.replaceRect = function (x0, y0, z0, x1, y1, z1) {
@@ -3557,7 +3581,6 @@ Ship.prototype.replaceRect = function (x0, y0, z0, x1, y1, z1) {
     for (y = y0; y >= y1; y -= 2)
       for (z = z1; z <= z0; z += 2)
         blocks.push(pushBlock(this));
-  //Edit.capture(this, this.replaceRect, x0, y0, z0, x1, y1, z1);
   return blocks;
 };
 Ship.prototype.fillRect = function () {
@@ -3641,7 +3664,6 @@ Ship.prototype.paste = function (x, y, z) {
     } else
       newNode.pairs = -1;
   };
-  //Edit.capture(this, this.paste, x, y, z);
 };
 Ship.prototype.mirror = (
   /**
@@ -3663,7 +3685,6 @@ Ship.prototype.mirror = (
       z1 > z0 ? z0 = z1 : z = z1;
     } else
       selected = this.blocks.concat(all = []);
-    //Edit.capture(this, this.mirror, x0, y0, z0, x1, y1, z1);
   }
 );
 Ship.prototype.mirror2d = (
@@ -3722,13 +3743,11 @@ Ship.prototype.mirror2d = (
           pos[2] < lz || pos[2] > hz)
           pushBlock(all[i], pos);
       }
-      //Edit.capture(this, this.mirror2d, x0, y0, z0, x1, y1, z1);
     } else {
       for (var i = 0; i < all.length; i++) {
         pos = all[i].position;
         pushBlock(all[i], pos);
       }
-      //Edit.capture(this, this.mirror2d);
     }
   }
 );
@@ -3738,8 +3757,8 @@ Ship.prototype.mirror2d = (
 Ship.prototype.blockAtPonit2d = function (x, y, nonull) {
   if (nonull === UDF)
     nonull = true;
-  for (var bs = ship.blocks, i = bs.length; i-- > 0;) {
-    var block = bs[i];
+  for (var all = this.blocks, i = all.length; i-- > 0;) {
+    var block = all[i];
     if (block.internalName === "__NULL__" && nonull)
       continue;
     var rect = Block.Size.highlightBlock(block, i);
@@ -3754,7 +3773,7 @@ Ship.prototype.blockAtPonit2d = function (x, y, nonull) {
  * https://github.com/KaaBEL/.d1r.dbv/commit/0b8156e155383059cf1aeeb4a997818
 3c92b92f8#diff-fa9a713c17c685348118b8d29bd55f10491e651ccafaf45d1044ed01ffe6e
 80bL1414
- * @this {Ship}
+ * WARNING because of significant version it doesn't autodetect @this {Ship}
  * @param {boolean} [fixSlab] if true it also fixes wrong Slab size */
 Ship.prototype.fixPositionAdjustment = function (fixSlab) {
   var slabsFix = fixSlab ? Block.Size.VALUE[696] : null;
@@ -3771,7 +3790,7 @@ Ship.prototype.fixPositionAdjustment = function (fixSlab) {
       (rot + 1 & 3) > 1 ? block.position[1] -= 1 : 0;
     }
   }
-Edit.capture(this, this.fixPositionAdjustment, fixSlab);
+Edit.applyCommand(this, this.fixPositionAdjustment, fixSlab);
 };
 /** allows using position adjustment for certain operations such as,
  * DR base64 keys prototype @param {(ship:Ship)=>void} operation
@@ -3816,7 +3835,6 @@ Ship.prototype.fixVersion_1_3 = function () {
       }
     }
   this.gameVersion = [];
-  //Edit.capture(this, this.fixVersion_1_3);
 };
 /**
  * @param {number} x @param {number} y @param {number} z
@@ -3851,9 +3869,6 @@ Ship.prototype.placeBlock = function placeBlock(x, y, z, refBlock) {
     // block added to ship.blocks is LogicBlock for Logic editing mode
     new LogicBlock(block, -1, logics) :
     block);
-  //Edit.capture(this, placeBlock, x, y, z, typeof refBlock == "number" ?
-  //  refBlock :
-  //  ref);
   return block;
 };
 /** replaces block on given index with last block and cuts off
@@ -3870,19 +3885,16 @@ Ship.prototype.removeBlocks = function removeBlocks(ids) {
     blocks.length--;
   }
   // (v.0.2.1) is JSON.parse(JSON.stringify(ids)) necessary here?
-  //Edit.capture(this, removeBlocks, ids);
 };
 /** @see {Tool.list} */
 /** 3h_ 
- * @this {Ship} @param {number} x @param {number} y
- * @param {number} h @param {number} w
+ * @this {Ship} @param {number} x0 @param {number} y0
+ * @param {number} x1 @param {number} y1
  * @param {boolean} [loose] true = select any block colliding within area
  * @param {boolean} [deselect] true = deselect instead of selecting */
-Ship.prototype.selectArea2d = function selectArea2d(x, y, w, h,
+Ship.prototype.selectArea2d = function selectArea2d(x0, y0, x1, y1,
   loose, deselect) {
   var l = this.blocks.length, index = 0;
-  var x0 = (x - vX) / sc, x1 = x0 + w / sc;
-  var y0 = (y - vY) / sc, y1 = y0 + h / sc;
   var right = Math.max(x0, x1), left = Math.min(x0, x1);
   var bottom = Math.max(y0, y1), top = Math.min(y0, y1);
   if (!loose)
@@ -3909,7 +3921,6 @@ Ship.prototype.selectArea2d = function selectArea2d(x, y, w, h,
           index < 0 && this.selection.push(this.blocks[l]);
       }
     }
-  //Edit.capture(this, selectArea2d, x, y, w, h, loose, deselect);
 };
 Ship.prototype.toJSON = function () {
   /** @param {ShipProperties["nodeList"]} logics */
@@ -4015,9 +4026,7 @@ Ship.fromObject = function fromObject(object) {
     (props = props || OC()).nodeList = logics;
   // reassamble different from Logic.reassemble
   props = Ship.CustomInput.reassemble(blocks, props);
-  //return Edit.save(
   return new Ship(name, ver, time, blocks, props);
-  //);
 };
 /** @readonly @param {Ship} ship */
 Ship.toDBV = function toDBV(ship) {
@@ -4104,8 +4113,8 @@ Ship.fromDBKey = function (key) {
         }, logics, blocks));
   }
   var obj = {nodeList: logics};
-  return Edit.save(
-    new Ship("[unnamed]", [], Ship.dateTime(1714557750), blocks, obj));
+  return new Ship("[unnamed]", [],
+    Ship.dateTime(1714557750), blocks, obj);
 };
 /** @param {ArrayBuffer|Uint8Array|string} mssss */
 Ship.fromMSSSS = function (mssss) {
@@ -4186,10 +4195,10 @@ Ship.fromMSSSS = function (mssss) {
       return new Block("__unknown__", [0, 0, 0], [0, !1, 0], item);
     }));
   var spaceship = new Ship(name, [], Ship.dateTime(), parts);
-  spaceship.selectRect();
-  Edit.rotate(spaceship, 2);
+  spaceship.setSelected();
+  Edit.Primitive.rotate(spaceship, 2);
   spaceship.setSelected([]);
-  return spaceship;// Edit.save(spaceship);
+  return spaceship;
 };
 /** @readonly @param {Ship} ship @throws {Error} */
 Ship.checkDBV = function (ship) {
@@ -5382,10 +5391,11 @@ B64Key.drawBlock = function (rc, block) {
   }
 }
 
+Edit.save(ship);
 if (ship.name === "Pazik_Mk1_Emil_") {
-  ship.selectRect();
+  Edit.select(ship);
   Edit.rotate(ship, 2);
-  ship.setSelected([]);
+  Edit.select(ship, []);
 }
 
 //@ts-expect-error exporting but not exports weird stuff
