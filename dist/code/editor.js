@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.30";
+var version_editor_js = "v.0.2.31";
 /** 3h_ @TODO check @see {Editor} for assignment without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -105,7 +105,7 @@ Editor.saveSettings = function () {
   arr[1] = n >> 15 & 0xffff;
   arr[1] += Editor.backgroundImage << 15 & 1 << 15;
   arr[2] = Editor.backgroundImage >> 1 & 31;
-  arr[2] += +Editor.fullscreenInitialized << 5
+  arr[2] += +Editor.fullscreenInitialized << 5;
   arr[2] += +Editor.fullscreenDisabled << 6;
   arr[2] += Editor.backgroundStage << 7;
   arr[2] += +Editor.meterPositions << 12;
@@ -366,6 +366,9 @@ Editor.addingStyles(
   "{background-color: #000;color: #bbb;border: 1px solid #888;}" +
   "#commandsTab li{display: block;}"
 );
+// found at: https://www.impressivewebs.com/ie10-css-hacks/#comment-27814
+if ("documentMode" in document && document.documentMode === 10)
+  Editor.addingStyles("/*styles for IE 10*/\nhtml,body{height:100%;}");
 
 canvas.addEventListener("contextrestored", Editor.contextrestored);
 canvas.addEventListener("contextlost", Editor.contextlost);
@@ -527,7 +530,7 @@ dLFwid2VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiV2hpdGVcIixcImNvbnRyb2xcIjpbNDUwMF0\
 sXCJub2RlSW5kZXhcIjpbOSw4XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCI\
 sXCJjb250cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMjZdLFwid2VsZEdyb3VwXCI6MH0" +
         "iXQ==").replace(/ /g, ""))));
-        ship.fixPositionAdjustment(!0);
+        Edit.applyCommand(ship, ship.fixPositionAdjustment, !0);
         Edit.save(ship);
         if (location.href.slice(-3) === "=uh")
           return;
@@ -2141,7 +2144,11 @@ Command.push("Import/Export DBV", function (items, collapsed) {
     error.innerText = "";
     try {
       dbv.id = "saveFile";
-      dbv.value = JSON.stringify(Ship.toDBV(Ship.checkDBV(ship)));
+      var exported = Ship.toDBV(ship);
+      if (exported.ls < 1)
+        exported.ls = 1;
+      dbv.value = JSON.stringify(exported);
+      Ship.checkDBV(ship);
     } catch (err) {
       error.innerText = "" + err;
       console.error(err);
@@ -2215,7 +2222,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
       console.warn(error.innerText += "\nConverting Ship that isn't " +
         "Ship.Mode \"Ship\"!");
   };
-  elBtn.appendChild(tN("Export"));
+  elBtn.appendChild(tN("Export .JSON"));
   items.push(elBtn);
   (elBtn = EL("button")).onclick = function () {
     error.innerText = "";
@@ -2233,13 +2240,39 @@ Command.push("Import/Export DBV", function (items, collapsed) {
       console.error(err);
     }
   };
+  items.push(elBtn);
   elBtn.appendChild(tN("Import"));
-  download.appendChild(tN("Download but only .JSON"));
+  (elBtn = EL("button")).onclick = function () {
+    error.innerText = "";
+    try {
+      json.value = Ship.toMSSSS(ship);
+      var i = json.value.length, u8arr = new Uint8Array(i);
+      for (; i-- > 0;)
+        u8arr[i] = json.value.charCodeAt(i) ^ 19;
+      download.href = URL.createObjectURL(
+        new Blob([u8arr], {type: "application/octet-stream"})
+      );
+      download.download = ship.name + ".mssss";
+    } catch (err) {
+      error.innerText = "" + err;
+      console.error(err);
+    }
+    if (ship.getMode().mode !== "Ship")
+      console.warn(error.innerText += "\nConverting Ship that isn't " +
+        "Ship.Mode \"Ship\"!");
+  };
+  elBtn.appendChild(tN("Export .MSSSS"))
+  download.appendChild(tN("Download .JSON or .MSSSS"));
   download.href = "javascript:void(0)";
   div.appendChild(download);
   div.style.textAlign = "center";
   items.push(elBtn, div);
-}, "Export and Import are functions using displayed vehicle as target.\nExpo\
+}, "IMPORTANT: Since using explits in-game is bannable! DBVE was keeping use\
+rs safe by not allowing invalid vehicles, however the unfinished safeguard f\
+eature just disallowed exporting completely. As a replacement the vehicles a\
+required to be saved as Small grid instead of minimally Medium from exportin\
+g. The red error message shows that the vehicle would not export previously.\
+\n\nExport and Import are functions using displayed vehicle as target.\nExpo\
 rting creates JSON key of ship and puts it in text input, the key doesn't in\
 clude nonexistent or blocks unavailable in game.\nImporting displays vehicle\
  of JSON key from text input.\nUpload from file/files button is used to load\
@@ -2298,8 +2331,9 @@ xt input named base64 key. Export/Import is related to displayed ship: Expor\
 ing puts base64 key of displayed ship into input, Import uses base64 key fro\
 m input to replace displayed ship with one from key. It can also store unimp\
 lemented blocks like TNT, station blocks and more. Be aware that the key lim\
-its vehicle in and will refuse to compress too big vehicle. There are also b\
-ugs since I wasn't going down the rabbit hole of debugging every last one.");
+its vehicle in size and will refuse to compress too big vehicle. There are a\
+lso bugs since I wasn't going down the rabbit hole of debugging every last o\
+ne, not mentioning it's so outdated a complete rewrite is required.");
 
 Command.push("Transform tool", function (items, collapsed) {
   var selectX0 = EL("input"), selectY0 = EL("input");

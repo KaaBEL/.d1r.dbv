@@ -2,7 +2,7 @@
 /// <reference path="./defs.d.ts" />
 "use strict";
 /** @readonly */
-var version_code_js = "v.0.2.30";
+var version_code_js = "v.0.2.31";
 /** 3h_  @TODO check @see {Ship.VERSION} */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
@@ -1265,7 +1265,6 @@ Logic.execPushToToggle =
   });
 Logic.execPushToToggle.toggled = false;
 
-/** @TODO later improve logic comments briefness+clarity (in progress) */
 /** Older instances of Logics comments/documenting for comparsion:
  * v.0.1.20.3 @see https://github.com/KaaBEL/.d1r.dbv/blob/1ed349b2230ddd8f3b64a6cd082d10fe7eeaeedc/assets/code.js
  * v.0.1.22 @see https://github.com/KaaBEL/.d1r.dbv/blob/1392589299b68fb61c1a87bc7e4616f6d20af75d/assets/code.js */
@@ -1365,7 +1364,7 @@ Logic.VALUE = Object.freeze(Logic.generateLogic(
 // Logic(property).fromObject at the same time... BRUH
 // (v.0.1.42) IDEA for logics system to just use references to block
 // and optionally specify nth node, each block then must know its index
-/** @TODO Logics rework update ^ */
+/** @TO_DO Logics rework update ^ */
 /** addDefault but for Logic - if property contains nodeIndex data it
  * will use them to reassemble these connections, to reassamble them
  * properly Logic.reassemble must be used on completed blocks, otherwise
@@ -2897,7 +2896,7 @@ Block.Box2d.collide = function (forShape, within, inside, inverted) {
         // second pntB under first pntA means that current line segment
         // makes a entering (left) boundary, otherwise its end boundary
         var n = pntA.y < pntB.y ? 1 : -1;
-        /** @TODO ABANDONED UNFINISHED finish fixing at */
+        /** @TO_DO ABANDONED UNFINISHED finish fixing at */
         x < point.x ? before += n : x > point.x ? after += n : at += n;
         // x < point.x ? before += n : after += n;
         // How to use test_debugbox2collisions:
@@ -3062,10 +3061,11 @@ function Edit(command, args, type) {
   this.type = type;
   this.command = command;
   this.args = args;
-  /** if not 0, it holds temporary reference to @see {Edit.Undo} */
+  /** if not 0, it holds temporary reference to:
+   * @see {Edit.Undo} or closest quicksave of ship to start from */
   // when Edit.historyAt crawls edits list for progression path
   // it assigns a 0 or reference to what was skipped by undone
-  this.temp = 0;
+  this.next = 0;
   Object.seal(this);
 }
 // what about buildReplace options kind !!?
@@ -3143,6 +3143,8 @@ Edit.applyCommand = (
           return arr;
         })(JSON.parse(args)));
     } catch (err) {
+      if (/Range ?Error:/i.test("" + err))
+        debugger;
       console.error("applying command failed, resseting history", err);
       Edit.redo(target);
       return;
@@ -3181,10 +3183,16 @@ Edit.historyAt = function (target, index) {
   // check all the relevant references/jumps with Edit.undo-s 3h_
   for (var i = index, n = 0, lmax = 0xffff; i > 0;) {
     if (edits[n = i].type ===
+        /** @type {Edit.Save} */
+        (0)) {
+          edits[0].next = n;
+          break;
+        }
+    if (edits[n = i].type ===
         /** @type {Edit.Undo} */
         (3) ?
-          edits[i = +edits[i].args.slice(1, -1)].temp = n :
-          edits[--i].temp = 0) {
+          edits[i = +edits[i].args.slice(1, -1)].next = n :
+          edits[--i].next = 0) {
       i < n ? i : console.error("Edit.Undo refers forward");
     }
   }
@@ -3211,9 +3219,9 @@ Edit.historyAt = function (target, index) {
           /** @type {any} */
           (target)
         ].concat(args));
-      if (last.temp > i)
+      if (last.next > i)
         // this was an interesting to find what bug it is bug v.0.2.4
-        i = last.temp - 1;
+        i = last.next - 1;
     }
   } catch (e) {
     console.error("Executing Edit commands failed misserably, " +
@@ -3433,7 +3441,8 @@ Data.nameMethods(Edit);
  * BlockSelection is even EditSelection now and is not used at all */
 /**
  * @typedef {{nodeList:(Logic|undefined)[],nodeConnections:number[][],
- * customInputs:Ship.CustomInput[],gridSize:Ship.Grid}} KnownShipProperties
+ * customInputs:Ship.CustomInput[],launchpadSize:number,gridSize:
+ *   Ship.Grid}} KnownShipProperties
  * @typedef {{[key:string]:unknown}&{[K in keyof KnownShipProperties]?:
  *   KnownShipProperties[K]}} ShipProperties
  * @see {Logic} @see {Ship.CustomInput}
@@ -3465,8 +3474,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @readonly @type {45} significantVersion: 45 (integer) */// @ts-ignore
-Ship.VERSION = 45;
+/** @readonly @type {46} significantVersion: 46 (integer) */// @ts-ignore
+Ship.VERSION = 46;
 Ship.propertyNames = new RegExp("^(?:nodeList|nodeConnections|customI" +
   "nputs|gridSize)$");
 Ship.prototype.selectRect = (
@@ -3534,7 +3543,7 @@ Ship.prototype.removeRect = function (x0, y0, z0, x1, y1, z1) {
     all.length--;
   }
   // var deletion = this.selectRect(xl, yt, zr, xr, yb, zf);
-  // /** @TODO optimize deleting with custom logics deletion */
+  // /** @TO_DO optimize deleting with custom logics deletion */
   // for (var i = deletion.length; i-- > 0;)
 };
 /** @this {Ship} */
@@ -3557,7 +3566,7 @@ Ship.prototype.replaceRect = function (x0, y0, z0, x1, y1, z1) {
     var pos = one.position, properties = one.properties;
     return ship.blocks[ship.blocks.length] = new Block(
       name,
-      // TODO: fill could defaultly adjust blocks to fit full grid
+      // TO_DO: fill could defaultly adjust blocks to fit full grid
       [x + (pos[0] & 0), y + (pos[1] & 0), z + (pos[2] & 0)],
       /** @type {Rotation} */
       (one.rotation.concat([])),
@@ -3575,7 +3584,7 @@ Ship.prototype.replaceRect = function (x0, y0, z0, x1, y1, z1) {
   }
   ship.removeRect(x1 = x, y1 = y, z1 = z, x0, y0, z0);
   /** axis += 2 spacing is used temporarily
-   * @TODO make block collisions blocks are being placed
+   * @TO_DO make block collisions blocks are being placed
    * maybe some kind of table for axis x, y, z, block index */
   for (x = x1; x <= x0; x += 2)
     for (y = y0; y >= y1; y -= 2)
@@ -3790,7 +3799,6 @@ Ship.prototype.fixPositionAdjustment = function (fixSlab) {
       (rot + 1 & 3) > 1 ? block.position[1] -= 1 : 0;
     }
   }
-Edit.applyCommand(this, this.fixPositionAdjustment, fixSlab);
 };
 /** allows using position adjustment for certain operations such as,
  * DR base64 keys prototype @param {(ship:Ship)=>void} operation
@@ -3964,7 +3972,7 @@ Ship.prototype.toJSON = function () {
     } (this.prop),
     history: this.history
   };
-}
+};
 // (v.0.2.8) major refactor after limiting use of type any
 /** @readonly @param {safe} object @see {Block.arrayFromObjects} */
 Ship.fromObject = function fromObject(object) {
@@ -4078,7 +4086,8 @@ Ship.toDBV = function toDBV(ship) {
     n: ship.name,
     gv: ship.gameVersion.join("."),
     dt: ship.dateTime,
-    ls: shipProp.launchpadSize || 0,
+    ls: shipProp.gridSize && shipProp.gridSize.dbvIndex ||
+      shipProp.launchpadSize || 0,
     b: blocks,
     nc: connections || shipProp.nodeConnections,
     ci: custominps || [],
@@ -4115,6 +4124,31 @@ Ship.fromDBKey = function (key) {
   var obj = {nodeList: logics};
   return new Ship("[unnamed]", [],
     Ship.dateTime(1714557750), blocks, obj);
+};
+/** @param {Ship} ship @returns {string} */
+Ship.toMSSSS = function (ship) {
+  var selection = ship.selection;
+  ship.selection = ship.blocks.slice();
+  Edit.Primitive.rotate(ship, 2);
+  var mssss = {
+    Name: ship.name,
+    Parts: ship.blocks.map(function (block) {
+      var prop = block.properties, name = block.internalName;
+      return (name === "__unknown__" &&
+        "invalidName" in prop ? prop.invalidName : name) + "|" +
+        block.position[1] + "," + block.position[2] + "|" +
+        (block.rotation[2] * 90) + "," + (block.rotation[1] ? -1 : 1) +
+        ",1|c1;"
+    }),
+    UncompressedParts: [],
+    BuildCost: [],
+    FuelCost: [],
+    SizeX: 0,
+    SizeY: 0
+  };
+  Edit.Primitive.rotate(ship, 2);
+  ship.selection = selection;
+  return JSON.stringify(mssss);
 };
 /** @param {ArrayBuffer|Uint8Array|string} mssss */
 Ship.fromMSSSS = function (mssss) {
@@ -4246,14 +4280,14 @@ Ship.checkDBV = function (ship) {
           item.max + " are allowed at index: " + (n - 1) +
           " of \"c\" property"));
     }
-    "@TODO ABANDONED UNFINISHED";
+    "@TO_DO ABANDONED UNFINISHED";
   }
   console.info("A" + "BAN" + "DONE" + atob("RCBVTkZJTklTSEVE"));
   rend_collisions = true;
   var classes = Block.Properties.Items, shipProp = ship.prop || {};
   for (var b = ship.blocks, i = b.length, msg = ""; i-- > 0;) {
     var id = Block.ID[b[i].internalName], pos = b[i].position;
-    if (id < 690 && id > 959)
+    if (id < 690 || id > 959)
       console.warn("Non Droneboi: Conquest block " + b[i].internalName);
     // if (pos[1] % 1 || pos[2] % 1 || isNaN(pos[1] % 1 + pos[2] % 1))
     //   throw at(new Error("Fractial position: " + pos));
@@ -4286,7 +4320,7 @@ Ship.checkDBV = function (ship) {
     }))) {
       throw at(new Error("The \"ni\" property can be (int) number[]"));
     }
-    /** @TODO investigate bottom lines parallel collisions */
+    /** @TO_DO investigate bottom lines parallel collisions */
     var colliding = Block.Box2d.collide(b[i], b);
     if (colliding.length)
       throw at(new Error("There is some overlapping with \"" +
@@ -4294,13 +4328,13 @@ Ship.checkDBV = function (ship) {
           return e.internalName;
         }) + "\""));
   }
-  var grid = shipProp.gridSize && shipProp.gridSize.box2d || null;
-  if (!grid)
-    throw new Error("Can do only .DBV grids for now :(");
+  var grid = shipProp.gridSize || null;
+  grid = grid instanceof Ship.Grid ? grid : null;
+  if (!grid || Ship.Grid.VALUE.indexOf(grid) === -1 || !grid.box2d)
+    throw new Error("box2d shipGrid is required for safe export");
   if (typeof ship.name != "string")
     throw new Error("ship.name must be of type string.");
-  colliding = Block.Box2d.collide(Block.Box2d.GRID.Small,
-    ship.blocks, true);
+  colliding = Block.Box2d.collide(grid.box2d, ship.blocks, true);
   if (colliding && colliding.length)
     throw new Error("Detected block(s) reaching outside small grid: " +
       colliding.map(function (e) {

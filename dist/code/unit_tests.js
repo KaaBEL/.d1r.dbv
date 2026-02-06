@@ -2,11 +2,11 @@
 /// <reference path="./editor.js" />
 "use strict";
 /** global version of project when last changes were done */
-var version_unit_tests_js = "0.2.27";
+var version_unit_tests_js = "0.2.31";
 /** @TODO rename this file to bug_tests.js */
 var utst_ = true;
 function BError (message) {
-  console.error(this.message = message);
+  (utst_consoleError || console.error)(this.message = message);
   debugger;
 };
 console.log("DevTools bug tests v." + version_unit_tests_js + " start:");
@@ -16,7 +16,7 @@ console.time("Succesful kinda tests, took");
 press = F;
 try {
   console.log(Data.dispose());
-  ship = Ship.fromObject({});
+  ship = Edit.save(Ship.fromObject({}));
   enableLogicEditing();
   if (ship.getMode().mode !== "Logic")
     throw new BError("ship.prop not in correct mode");
@@ -77,7 +77,8 @@ console.warn = utst_consoleWarn;
 var utst_i = 0, utst_errorCatcher = function () {
     var str = [].map.call(arguments, String).join("");
     if (!utst_arr2.length || !utst_arr2.pop().test(str))
-      utst_ = new BError("Unexpected error(s)!? : " + str);
+      utst_ = new BError("Unexpected error(s)!? : " + "itemsInit<\""
+        + Command.list[utst_i].name + "\">:" +  str);
     else
       console.debug("Expected error: " + str);
   };
@@ -97,26 +98,26 @@ function utst_testCommands() {
   }
 }
 var utst_consoleError = console.error, utst_arr2 = [
-  /Error: The array "c" property is required for "wedge" block\./,
-  /SyntaxError: (Unexpected end of JSON input|Syntaktick. chyba)/,
+  // v.0.2.31 fot unknown reason err is gone after changes in Ship.checkDBE
+  //Error: The array "c" property is required for "wedge" block\./
+  /Error: box2d shipGrid is required for safe export/,
   /SyntaxError: (Unexpected end of JSON input|Syntaktick. chyba)/,
   /Error: unexpected end of data/,
-  /Error: Can do only \.DBV grids for now :\(/,
-  /SyntaxError: (Unexpected end of JSON input|Syntaktick. chyba)/,
+  /Error: box2d shipGrid is required for safe export/,
   /SyntaxError: (Unexpected end of JSON input|Syntaktick. chyba)/,
   /Error: unexpected end of data/
 ];
 try {
   console.error = utst_errorCatcher;
   utst_testCommands();
-  ship = Ship.fromObject(B64Key.decode(
+  ship = Edit.save(Ship.fromObject(B64Key.decode(
     B64Key.b64ToU8arr("gAALU3RhcnRlclNoaXCAAQBnyR+wATjRE/MIg+/jGIhC4AC4AAgsI\
 pEBBBAEDoFSLDKADKAEIFCSGTKAEQAAABClwmuwSAQAIUQIkAEAGAEAACghWoXSoJToICaAFiADA\
 HBCYCgRSlIIIQC0ABkAgBMCWIQEEZlkABkAAAAnAAAAEQAACi9AC5ABAAAA4AQAQBVKgBYAQAYAA\
 MAJAIA4VBApQAqQAQA4AQAgKwDIAACcAAAARAAAABBoATIAAAAAnAAA2AAQKAFaAAAZAAAAJwAA4\
 lABtAAZAAAAJwAAJAUAGQAAACcAAAARAAAKDUALkAEAAADgBABAFU6AFgBABgAAwAkAgDiAAJACZ\
 AAATgAAyAsARgAAAECMCo1BIxEAhBAhQAYAYAQAAGCFWBVOg1Oig7gALoAMAMAJsTCcCCcphBAXw\
-AWQAQA4IRawCAkiYWQQhUABUAAQaEQiAwBBoBAoxSIDyABKAAIlTviFogQ=")));
+AWQAQA4IRawCAkiYWQQhUABUAAQaEQiAwBBoBAoxSIDyABKAAIlTviFogQ="))));
   utst_testCommands();
   Logic.rend = !1;
   if (utst_arr2.length)
@@ -130,17 +131,17 @@ console.error = utst_consoleError;
 /** @TODO the test for ^ */
 // TEST: Edit.historyAt //
 try {
-  ship = Ship.fromObject({n: "UndoRedoTest", "ls": 0});
+  ship = Edit.save(Ship.fromObject({n: "UndoRedoTest", "ls": 0}));
   ship.history = [
-    new Edit(Ship.prototype.placeBlock, "[0,0,4,853]", 2),
-    new Edit(Edit.undo, "[0]", 3),
-    new Edit(Ship.prototype.removeBlocks, "[[3]]", 2),
-    new Edit(Ship.prototype.removeBlocks, "[[4]]", 2),
-    new Edit(Ship.prototype.removeBlocks, "[[5]]", 2),
-    new Edit(Edit.undo, "[0]", 3),
-    new Edit(Ship.prototype.removeBlocks,"[[8]]", 2),
-    new Edit(Edit.oldUIColor,"[[9],13]", 2),
-    new Edit(Edit.oldUIColor,"[[8],13]", 2)
+    new Edit("Ship.prototype.placeBlock", "[0,0,4,853]", 2),
+    new Edit("Edit.undo", "[0]", 3),
+    new Edit("Ship.prototype.removeBlocks", "[[3]]", 2),
+    new Edit("Ship.prototype.removeBlocks", "[[4]]", 2),
+    new Edit("Ship.prototype.removeBlocks", "[[5]]", 2),
+    new Edit("Edit.undo", "[0]", 3),
+    new Edit("Ship.prototype.removeBlocks", "[[8]]", 2),
+    new Edit("Edit.oldUIColor", "[[9],13]", 2),
+    new Edit("Edit.oldUIColor", "[[8],13]", 2)
   ];
   Edit.historyAt(ship, 8);
 } catch (e) {utst_ =
@@ -207,7 +208,7 @@ VsZEdyb3VwXCI6MH17XCJjb2xvclwiOlwiV2hpdGVcIixcImNvbnRyb2xcIjpbNDUwMF0sXCJub2\
 RlSW5kZXhcIjpbOSw4XSxcIndlbGRHcm91cFwiOjB9e1wiY29sb3JcIjpcIldoaXRlXCIsXCJjb2\
 50cm9sXCI6W10sXCJub2RlSW5kZXhcIjpbMjZdLFwid2VsZEdyb3VwXCI6MH0iXQ==".replace(
   / /g, ""))));
-  ship.fixPositionAdjustment(!0);
+  Edit.applyCommand(Edit.save(ship), ship.fixPositionAdjustment, !0);
   enableLogicEditing();
   enableShipEditing();
   if (

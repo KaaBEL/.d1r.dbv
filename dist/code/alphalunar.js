@@ -1,7 +1,7 @@
 /// <reference path="editor.js"/>
 "use strict";
 /** @readonly *///@ts-expect-error
-var version_alphalunar_js = "v.0.2.28";
+var version_alphalunar_js = "v.0.2.31";
 var test_ship = {"name":"Starter Droneboi","gameVersion":[],"dateTime":"05.05.2024 21:12:18","blocks":[{"internalName":"__placeholder856__","position":[0,-9,-52],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-50],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-48],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
 {"internalName":"__placeholder856__","position":[0,-9,-46],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-44],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-42],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-40],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
 {"internalName":"__placeholder856__","position":[0,-9,-38],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-52],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-50],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-48],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-46],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-44],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
@@ -194,7 +194,8 @@ backgHangarInit.ready++ && (function () {
   ship = oship;
   rend_background = function () {
     backgSecondary();
-    ctx.drawImage(hangarBackground, sc * -33 + vX, sc * -58 + vY, sc * hgw / 8, sc * hgh / 8);
+    ctx.drawImage(hangarBackground, sc * -33 + vX, sc * -58 + vY,
+      sc * hgw / 8, sc * hgh / 8);
   };
 });
 Command.push("Evil Addon", function (items, collapsed) {
@@ -203,7 +204,7 @@ Command.push("Evil Addon", function (items, collapsed) {
   if (/content/.test(location.protocol))
     return void items.push(tN("Eval addon is disabled for content://"));
   var input = document.createElement("textarea"), exec = EL("button");
-  var result = EL("div"), value, breakAll = EL("input");
+  var result = EL("div"), value, breakAll = EL("input"), examp = EL("button");
   input.id = "evil_input";
   typeof test_evil == "string" && (input.value = test_evil);
   exec.id = "evil_exec";
@@ -238,7 +239,11 @@ Command.push("Evil Addon", function (items, collapsed) {
     result.style.wordBreak = breakAll.checked ? "break-all" : "";
   };
   breakAll.id = "evil_breakAll";
-  items.push(input, exec, {name: "break-all", inp: breakAll}, result);
+  examp.appendChild(tN("document.body.style.textSizeAdjust = '100%';"));
+  examp.onclick = function () {
+    input.value = "document.body.style.textSizeAdjust = '100%';";
+  };
+  items.push(input, exec, examp, {name: "break-all", inp: breakAll}, result);
   var lastTexted = +Date(), tO = 0;
   function evilPrint() {
     if (!(window.test_log instanceof Array))
