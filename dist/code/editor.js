@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.31";
+var version_editor_js = "v.0.2.32";
 /** 3h_ @TODO check @see {Editor} for assignment without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -38,7 +38,7 @@ else if (/https?/.test(location.protocol) && navigator.serviceWorker)
           ).concat("sw_change"));
         };
       }).catch(function (reason) {
-        console.log(reason, "sw_js")
+        console.log(reason, "sw_js");
       });
   } catch (e) {
     console.log(e, "sw_js");
@@ -3235,7 +3235,7 @@ function Tool(name, icon, init, exec, destroy) {
 /** tool.reset @param {number} x @param {number} y */
 Tool.prototype.destroy = function (x, y) {
   this.stop(x, y);
-  Tool.subscribedStart = Tool.subscribedEnd =
+  Tool.subscribedStart = Tool.subscribedMove =
     Tool.subscribedEnd = Tool.subscribedClaim = Tool.unsubscribed;
   Tool.rend = F;
 };
@@ -3667,7 +3667,7 @@ Tool.list.push(new Tool("Clone", "M2ba5a,2bab5 vda5e c0,33ca,-29fc,5dc6,-5dc\
 83,-1f5a7 c6,-de2,-7ef,-19b0,-16a8,-19a9 z M394a4,4b8f l-1fa26,-1ac c-e4d,70\
 ,-169d,c12,-16a6,1820 l-a3,d63a ld185,67 c3c14,9,66ad,2841,6729,5855 l-33,de\
 f3 ld5ec,1a6 cba6,-76,175b,-a4c,17d6,-1935 l-61,-1f52a c-5,-f8c,-a81,-17f3,-\
-146b,-17a5 z"));
+146b,-17a5 z", Tool.cloneInit, function exec() {}, function destroy() {}));
 Tool.list.push(new Tool("Undo", "M3f6f3,19ab0 cc15,c15,c15,1fad,0,2bc2 c-c15\
 ,c15,-1fad,c15,-2bc2,0 c0,0,-334f,-32bd,-ba42,-2670 c-c4f3,ef0,-12d5f,89d9,-\
 12d5f,89d9 c42b1,42b1,7222,7222,732f,732f cc15,c15,c15,1fad,0,2bc2 c-4b5,4b5\
@@ -3812,7 +3812,7 @@ c7,7,1dd5,-1e1c,1e42,-1e7e c523,-49e,c05,-771,1395,-771 cdae,0,1922,93d,1c14\
 8734 c0,3ea,e,7d2,2c,bb6 c86,11ce,1c4,2841,1c4,290a c0,f6c,-ce6,1bed,-1cd0,1\
 bed c-1df,0,-3b4,-2c,-57a,-81 c-624,-125,-3fa5,-d93,-41df,-e1c c-c8e,-303,-1\
 5dd,-e02,-15dd,-1b1c c0,-4b0,-a0,-102a,-a0,-26cc z",
-function jnit() {
+function init() {
   DefaultUI.tilesRotation[2] = DefaultUI.tilesFlippableRotation[2] =
     /** @type {0|1|2|3} */
     (DefaultUI.tilesRotation[2] + 3 & 3);
@@ -3918,7 +3918,9 @@ c,-33d8,73cc,-73cc lbc,-30c6 c0,-212c,1ae4,-3c11,3c11,-3c11 l119a,0 c212c,0,\
     // 3h_
     var w = area.w, x0 = (area.x - vX) / sc, x1 = x0 + w / sc;
     var h = area.h, y0 = (area.y - vY) / sc, y1 = y0 + h / sc;
-    ship.selectArea2d(x0, y0, x1, y1, w < 0, h < 0);
+    /** @type {Ship["selectArea2d"]} */
+    var cmd = Ship.prototype.selectArea2d;
+    Edit.applyCommand(ship, cmd, x0, y0, x1, y1, w < 0, h < 0);
     selecting = false;
     render();
     return true;
@@ -3946,9 +3948,7 @@ c,-33d8,73cc,-73cc lbc,-30c6 c0,-212c,1ae4,-3c11,3c11,-3c11 l119a,0 c212c,0,\
   if (!found)
     return;
   var index = ship.selection.indexOf(found.block);
-  index > -1 ?
-    ship.selection.splice(index, 1) :
-    ship.selection.push(found.block);
+  Edit.changeSelection(ship, found.block, index > -1);
   render();
 }, function destroy() {}));
 Tool.list.push(new Tool("Move", "M25a0c,1a6e9 v-b7a4 c30fe,0,57ba,0,57ba,0 c\
@@ -3964,32 +3964,50 @@ Tool.list.push(new Tool("Move", "M25a0c,1a6e9 v-b7a4 c30fe,0,57ba,0,57ba,0 c\
 9c,-1e66,-1e66,-1e66 c0,0,-2f8d,0,-5325,0 l-31,-b755 hb7a4 c0,30fe,0,57ba,0,\
 57ba c0,10c9,d9c,1e66,1e66,1e66 c86c,0,100b,-36d,158d,-8f5 lb13e,-b0c3 c5d2,\
 -589,973,-d5c,973,-1607 c0,-897,-390,-105a,-94c,-15e1 l-b1a9,-ad58 c-57b,-56\
-1,-cff,-8b2,-1549,-8b2 c-10c9,0,-1e66,d9c,-1e66,1e66 c0,0,0,2f8d,0,5325 z"));
-Tool.list.push(new Tool("SelectAll",  "M3ff8e,f246 l105,535f c0,1bfc,-16c9,3\
-2ad,-32e5,32ad c-1c1c,0,-32e5,-16b0,-32e5,-32ad l-f6,-4b72 c0,-5158,-46b7,-9\
-34a,-9df4,-934a l-3fef,-1d c-1bfc,0,-32ad,-16c9,-32ad,-32e5 c0,-1c1c,16b0,-3\
-2e5,32ad,-32e5 h3958 c9398,0,10b3e,6f92,10b3e,f933 Mf1e4,205 l535f,-105 c1bf\
-c,0,32ad,16c9,32ad,32e5 c0,1c1c,-16b0,32e5,-32ad,32e5 l-4b72,f6 c-5158,0,-93\
-4a,46b7,-934a,9df4 l-1d,3fef c0,1bfc,-16c9,32ad,-32e5,32ad c-1c1c,0,-32e5,-1\
-6b0,-32e5,-32ad v-3958 c0,-9398,6f92,-10b3e,f933,-10b3e M1a3,30faf l-105,-53\
-5f c0,-1bfc,16c9,-32ad,32e5,-32ad c1c1c,0,32e5,16b0,32e5,32ad lf6,4b72 c0,51\
-58,46b7,934a,9df4,934a l3fef,1d c1bfc,0,32ad,16c9,32ad,32e5 c0,1c1c,-16b0,32\
-e5,-32ad,32e5 l-3958,0 c-9398,0,-10b3e,-6f92,-10b3e,-f933 M30f4c,3fff0 l-535\
-f,105 c-1bfc,0,-32ad,-16c9,-32ad,-32e5 c0,-1c1c,16b0,-32e5,32ad,-32e5 l4b72,\
--f6 c5158,0,934a,-46b7,934a,-9df4 l1d,-3fef c0,-1bfc,16c9,-32ad,32e5,-32ad c\
-1c1c,0,32e5,16b0,32e5,32ad l0,3958 c0,9398,-6f92,10b3e,-f933,10b3e"+ " M1b4c\
-f,28d3d c-1d4d,1a38,-43e3,29e5,-714a,29e5 c-6a3c,0,-bb46,-55d6,-bb46,-bfb8 c\
-0,-69e2,5109,-bfb8,bb46,-bfb8 c41d5,0,7bf2,20f6,9e9f,533c l1f37,2fec c0,0,2a\
-9f,-3f0a,4a7a,-5942 c1e5c,-18fc,43e3,-29e5,714a,-29e5 c6a3c,0,ba12,55d6,ba12\
-,bfb8 c0,69e2,-4fd6,bfb8,-ba12,bfb8 c-41d5,0,-7bf2,-20f6,-9e9f,-533c l-1f37,\
--2fec c0,0,-2d2d,3f0a,-4a7a,5942 z M177fc,1a018 c-dc6,-7c2,-1da6,-ca3,-2f79,\
--ca3 c-3865,0,-5e74,2d91,-5e74,65c7 c0,3836,260e,65c7,5e74,65c7 ce3c,0,1b91,\
--373,2819,-825 c34b9,-13c0,54f8,-5ca9,54f8,-5ca9 c0,0,-258f,-438d,-4d98,-5a1\
-c z M2899d,25261 cdc6,7c2,1da6,ca3,2f79,ca3 c3865,0,5f6d,-2d91,5f6d,-65c7 c0\
-,-3836,-2707,-65c7,-5f6d,-65c7 c-e3c,0,-1b91,373,-2819,825 c-34b9,13c0,-54f8\
-,5ca9,-54f8,5ca9 c0,0,258f,438d,4d98,5a1c z",
-Tool.selectAllInit = (function init() {
-  ship.selection.length ? ship.setSelected([]) : ship.setSelected();
+1,-cff,-8b2,-1549,-8b2 c-10c9,0,-1e66,d9c,-1e66,1e66 c0,0,0,2f8d,0,5325 z",
+/** @TODO finish Move Tool and FIX missing history for Flips and Rotates */
+(Tool.cloneInit = function init (_x, _y) {
+  Tool.subscribedStart = Tool.subscribedClaim = function (x, y, _a) {
+    var found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
+    if (found) {
+      DefaultUI.Drag.dragged.tile =
+        Block.arrayFromObjects(found.block)[0];
+      juhus.set("claim", "movetile");
+    }
+    return !!found;
+  };
+  // Tool.subscribedMove = function (x, y, _actions) {
+  //   return true;
+  // };
+  // Tool.subscribedEnd = function (x, y, _actions) {
+  //   return true;
+  // };
+}), function exec() {}, function destroy() {}));
+Tool.list.push(new Tool("SelectAll", "M3ff8e,f246 l105,535f c0,1bfc,-16c9,32\
+ad,-32e5,32ad c-1c1c,0,-32e5,-16b0,-32e5,-32ad l-f6,-4b72 c0,-5158,-46b7,-93\
+4a,-9df4,-934a l-3fef,-1d c-1bfc,0,-32ad,-16c9,-32ad,-32e5 c0,-1c1c,16b0,-32\
+e5,32ad,-32e5 h3958 c9398,0,10b3e,6f92,10b3e,f933 Mf1e4,205 l535f,-105 c1bfc\
+,0,32ad,16c9,32ad,32e5 c0,1c1c,-16b0,32e5,-32ad,32e5 l-4b72,f6 c-5158,0,-934\
+a,46b7,-934a,9df4 l-1d,3fef c0,1bfc,-16c9,32ad,-32e5,32ad c-1c1c,0,-32e5,-16\
+b0,-32e5,-32ad v-3958 c0,-9398,6f92,-10b3e,f933,-10b3e M1a3,30faf l-105,-535\
+f c0,-1bfc,16c9,-32ad,32e5,-32ad c1c1c,0,32e5,16b0,32e5,32ad lf6,4b72 c0,515\
+8,46b7,934a,9df4,934a l3fef,1d c1bfc,0,32ad,16c9,32ad,32e5 c0,1c1c,-16b0,32e\
+5,-32ad,32e5 l-3958,0 c-9398,0,-10b3e,-6f92,-10b3e,-f933 M30f4c,3fff0 l-535f\
+,105 c-1bfc,0,-32ad,-16c9,-32ad,-32e5 c0,-1c1c,16b0,-32e5,32ad,-32e5 l4b72,-\
+f6 c5158,0,934a,-46b7,934a,-9df4 l1d,-3fef c0,-1bfc,16c9,-32ad,32e5,-32ad c1\
+c1c,0,32e5,16b0,32e5,32ad l0,3958 c0,9398,-6f92,10b3e,-f933,10b3e"+ " M1b4cf\
+,28d3d c-1d4d,1a38,-43e3,29e5,-714a,29e5 c-6a3c,0,-bb46,-55d6,-bb46,-bfb8 c0\
+,-69e2,5109,-bfb8,bb46,-bfb8 c41d5,0,7bf2,20f6,9e9f,533c l1f37,2fec c0,0,2a9\
+f,-3f0a,4a7a,-5942 c1e5c,-18fc,43e3,-29e5,714a,-29e5 c6a3c,0,ba12,55d6,ba12,\
+bfb8 c0,69e2,-4fd6,bfb8,-ba12,bfb8 c-41d5,0,-7bf2,-20f6,-9e9f,-533c l-1f37,-\
+2fec c0,0,-2d2d,3f0a,-4a7a,5942 z M177fc,1a018 c-dc6,-7c2,-1da6,-ca3,-2f79,-\
+ca3 c-3865,0,-5e74,2d91,-5e74,65c7 c0,3836,260e,65c7,5e74,65c7 ce3c,0,1b91,-\
+373,2819,-825 c34b9,-13c0,54f8,-5ca9,54f8,-5ca9 c0,0,-258f,-438d,-4d98,-5a1c\
+ z M2899d,25261 cdc6,7c2,1da6,ca3,2f79,ca3 c3865,0,5f6d,-2d91,5f6d,-65c7 c0,\
+-3836,-2707,-65c7,-5f6d,-65c7 c-e3c,0,-1b91,373,-2819,825 c-34b9,13c0,-54f8,\
+5ca9,-54f8,5ca9 c0,0,258f,438d,4d98,5a1c z", Tool.selectAllInit =
+(function init() {
+  ship.selection.length ? Edit.select(ship, []) : Edit.select(ship);
   render();
 })));
 Tool.list.push(new Tool("Expand", "M668c,26001 c7d2,-1815,1e73,-297e,3924,-2\
@@ -4107,7 +4125,7 @@ function devt_bug_testing() {
 var devt_debugger = false;
 
 /** @typedef {Block|LogicBlock|Tool|null} TileType (tile variable name) */
-/** @namespace @typedef {never} @returns {never} */
+/** @see {initDefaultUI} @namespace @typedef {never} @returns {never} */
 function DefaultUI() {
   throw new TypeError("Illegal constructor");
 }
@@ -4121,6 +4139,9 @@ DefaultUI.tilesFlippableRotation =
 DefaultUI.rend = F;
 /** (v.0.2.8) renamed to opened to allow keeping selectedTile */
 DefaultUI.openedFolder = 0;
+// (v.0.2.32) it might be possible to turn tile indexing madness into
+// its own class, although it isn't madness to me, there's worse...
+// But if its methods are good enough it might save quite few lines of code
 /**
  * use @see {DefaultUI.setSelectedTile} to select selectable tile
  * The position (item variable name) of selected tile consists of:
@@ -4165,14 +4186,13 @@ DefaultUI.toolBar = [
   DefaultUI.createTile("Rotate90"),
   DefaultUI.createTile("Redo"),
   DefaultUI.createTile("Undo"),
-  DefaultUI.createTile("Flip180"),
+  DefaultUI.createTile("Move"),
   DefaultUI.createTile("Flip"),
   DefaultUI.createTile("Rotate"),
   DefaultUI.createTile("Select"),
   DefaultUI.createTile("Classic"),
   DefaultUI.createTile("Erase"),
-  DefaultUI.createTile("Node"),
-  DefaultUI.createTile("Move")
+  DefaultUI.createTile("Node")
 ];
 /**
  * @see {DefaultUI.getDefaultFolders}
@@ -4247,6 +4267,7 @@ DefaultUI.insertedTile = -1;
 /** used for placing preview, second and following items is for placing
  * block, the first... idk @type {(Block.Size.Highlight|undefined)[]} */
 DefaultUI.highlights = [];
+DefaultUI.hotbarScrollSide = 0;
 /** @param {number|string} type @param {unknown[]} [tiles=[]] */
 DefaultUI.createFolder = function (type, tiles) {
   var folder =
@@ -4278,14 +4299,14 @@ DefaultUI.setSelectedTile = function (item, x, y) {
   }
 };
 /** handles interactions with DefaultUI hotbars and inventory
- * @param {number} x @param {number} y
- * @param {{item:number,folder:number,fraction:number}} [reference]
+ * @param {number} x @param {number} y @param {DefaultUI.Drag} [reference]
  * @returns {boolean} over GUI area */
 DefaultUI.handleGUIArea = function (x, y, reference) {
-  // NOTE will probably require option for getactionArea
+  // NOTE may require other getactionArea option instead of reference
   /** number position of tile @see {DefaultUI.selectedTile} */
-  var item = reference ? reference.item = reference.folder = -1 : -1;
-  var fraction = 0.5;
+  var item = -1, fraction = 0.5;
+  if (reference)
+    reference.item = reference.folder = reference.arrows = -1;
   // v.0.2.10 237 = interactable witdh/height for toolBar
   if (x < 237) {
     // toolBar area of canvas: static tile slots
@@ -4325,9 +4346,10 @@ DefaultUI.handleGUIArea = function (x, y, reference) {
     var folder = (x - 237 + DefaultUI.offsetsFolders) / 57 | 0;
     if (reference) {
       reference.folder = folder;
+      // v.0.2.21 293 = end of first tile selection for moving to previous
+      reference.arrows = +(x < 294) + 2 * +(x > canvas.width - 61);
       return true;
     }
-    // v.0.2.21 293 = end of first tile selection for moving to previous
     if (DefaultUI.previousFolders && x < 294)
       DefaultUI.offsetsFolders -= 57;
     else if (DefaultUI.nextFolders && x > canvas.width - 61)
@@ -4347,6 +4369,27 @@ DefaultUI.handleGUIArea = function (x, y, reference) {
   DefaultUI.setSelectedTile(item);
   render();
   return true;
+};
+/** extends handleGUIArea by utilising its getactionArea for long Actions
+ * @param {number} x @param {number} y @param {Actions} actions */
+DefaultUI.handleHotbar = function (x, y, actions) {
+  if (!/long(move)?$/.test(actions.state))
+    return console.debug(actions.state);
+  if (juhus.get("claim") !== "scrollhotbar") {
+    var over = new DefaultUI.Drag(), time = actions.startTimeStamp;
+    DefaultUI.handleGUIArea(x, y, over);
+    if (over.arrows < 1)
+      return;
+    DefaultUI.hotbarScrollSide =
+      (over.arrows === 1 ? -1 : over.arrows === 2 ? 1 : 0);
+    juhus.set("claim", "scrollhotbar");
+  } else
+    time = actions.oldTimeStamp;
+  console.debug(time);
+  /** @TODO FIX probably in renderHotbars folders jumping with slow scroll */
+  DefaultUI.offsetsFolders += (actions.timeStamp - time) / 5 *
+    DefaultUI.hotbarScrollSide;
+  render();
 };
 /** @param {TileType|undefined} tile */
 DefaultUI.getCode = function tileCode(tile) {
@@ -4700,6 +4743,7 @@ DefaultUI.Drag = function () {
   this.item = -1;
   this.fraction = .5;
   this.folder = -1;
+  this.arrows = -1;
   /** @type {TileType|null} */
   this.tile = null;
   Object.seal(this);
@@ -4718,6 +4762,8 @@ DefaultUI.Drag.pointed = new DefaultUI.Drag();
 /** @see {DefaultUI.selectedTile} original item placement */
 DefaultUI.Drag.original = -1;
 DefaultUI.Drag.isPreview = false;
+// v.0.2.32 this is utility for shifting tiles in horbar, as for rest of Drag
+// static methods, I have very littlie idea what's going on, it's fragile
 /** @param {number} from @param {number} to @param {TileType[]} hotbar */
 DefaultUI.Drag.shiftDragged = function (from, to, hotbar) {
   var dragged = DefaultUI.Drag.dragged;
@@ -4759,11 +4805,13 @@ DefaultUI.Drag.finish = function (action) {
   var replacing = DefaultUI.replacingTile,
     dragged = DefaultUI.Drag.dragged;
   if (replacing === -1 || action.type === "mouseleave") {
-    var rect = DefaultUI.highlights[1] || action;
-    if (dragged.tile instanceof Block && "block" in rect)
+    // v0.2.32 what's the deal with rect? Using it for exec v0.2.25 must've
+    // been mistake, it worked thought (until I discovered its bug)
+    var rect = DefaultUI.highlights[1];
+    if (dragged.tile instanceof Block && rect && "block" in rect)
       ship.placeBlock(0, rect.positionX, rect.positionY, dragged.tile);
     else if (dragged.tile instanceof Tool)
-      dragged.tile.exec(rect.x, rect.y);
+      dragged.tile.exec(action.x, action.y);
     return DefaultUI.Drag.reset();
   }
   // placing inventory tile over toolBar area
@@ -4872,6 +4920,7 @@ juhus.set("onmove", function onmove(x, y, source) {
     return;
   if (Tool.subscribedMove && Tool.subscribedMove(x, y, source))
     return;
+  DefaultUI.handleHotbar(x, y, action);
 });
 juhus.set("onend", function onend(x, y, source) {
   var action = source.source;
@@ -4888,9 +4937,11 @@ juhus.set("onend", function onend(x, y, source) {
     return;
   if (action.state.slice(-5) === "short") {
     action.event.cancelable && action.event.preventDefault();
-    // runs same as: DefaultUI.basePress(UDF)(x, y);
+    /** runs same as: DefaultUI.basePress(UDF)(x, y);
+     * @see {DefaultUI.handleGUIArea} used in basePress */
     DefaultUI.shipPress(x, y);
-  }
+  } else
+    DefaultUI.handleHotbar(x, y, action);
 });
 
 function enableShipEditing() {
@@ -5072,6 +5123,7 @@ var edit_logicmove = function (x, y, e) {
   return e.type === "mousedown" ? DefaultUI.handleGUIArea(x, y) : false;
 };
 
+/** @typedef {function} initDefaultUI */
 (function initDefaultUI() {
   Command.goHome();
   if (ship.name === "Pazik_Mk1_Emil_") {
@@ -5081,7 +5133,7 @@ var edit_logicmove = function (x, y, e) {
   if (init_funMode !== F)
     return init_funMode();
   enableShipEditing();
-  var i = 0, classic = DefaultUI.createTile("Classic");
+  var i = 0, classic = DefaultUI.createTile("Move");
   i = DefaultUI.blockBars[DefaultUI.openedFolder].indexOf(classic);
   if (i !== -1)
     DefaultUI.setSelectedTile(i << 2 | 1);
@@ -5379,19 +5431,19 @@ Renderer.queue = function () {
   var rq = -1;
   return function requestRendering() {
     cancelAnimationFrame(rq);
-    try {
-      throw new Error();
-    } catch (e) {
-      if (e instanceof Object && "stack" in e)
-        rend_request = "" + e.stack;
-    }
+    // try {
+    //   throw new Error();
+    // } catch (e) {
+    //   if (e instanceof Object && "stack" in e)
+    //     rend_request = "" + e.stack;
+    // }
     rq = requestAnimationFrame(function () {
       rq = -1;
       expensiveRenderer();
     });
   };
 }();
-/** $param {number} x $param {number} y @param {ShipBlock} block */
+/** @deprecated $param {number} x $param {number}y @param {ShipBlock} block */
 Renderer.drawBlock = function (block) {
   var AT = "Renderer.drawBlock.";
   var id = 0, mult = sc / 16, pos = block.position;
@@ -5518,10 +5570,12 @@ function expensiveRenderer() {
     var w = ow + (ow & 16), h = oh + (oh & 16);
     // position to draw block in canvas
     var dx = -pos[1] * sc + vX, dy = pos[2] * sc + vY;
+    /** other places where block rect is calculated
+     * @see {Block.Size.highlightBlock} */
     // apply rotation to destination rectangle
     if (id > 1279) {
       // position correction for ms blocks
-      rot & 1 ? dx -= size.t * sc / 2 : dx -= size.l * sc / 2;
+      rot & 1 ? dy -= size.l * sc / 2 : dy -= size.t * sc / 2;
       dw = (rot & 1 ? h : w) / 2;
       dh = (rot & 1 ? w : h) / 2;
       w = w * size.res >>> 5;
@@ -5731,6 +5785,7 @@ init = function () {
   ship.setSelected([]);
   (DefaultUI.blockBars[0] || []).push(DefaultUI.createTile("SelectAll"),
     Tool.get("Expand"));
+  (DefaultUI.blockBars[0] || [])[5] = DefaultUI.createTile("Flip180");
   console.log("set up collision testing(editor)=" + ship.blocks[0].internalName);
   imgColor.onload && rend_checkColors();
   imgBackg.src = "" + imgBackg.getAttribute("data-src");

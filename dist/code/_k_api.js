@@ -2,7 +2,7 @@
 /// <reference path="./editor.html.ts" />
 "use strict";
 /** @readonly */
-var version__k_api_js = "v.0.2.28";
+var version__k_api_js = "v.0.2.32";
 /** 3h_ @TODO check @see {Actions.API_VERSION} */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -174,11 +174,11 @@ function Actions(event, index, state, previous, touch) {
   this.shiftKey = event.shiftKey;
   /** may provide gesture alternatives to mouse buttons and wheel */
   this.buttons = source instanceof Touch ? 0 : source.buttons;
-  /** @type {number} */
+  /** @type {DOMHighResTimeStamp} */
   this.oldTimeStamp = previous ? previous.timeStamp : event.timeStamp;
-  /** @type {number} */
+  /** @type {DOMHighResTimeStamp} */
   this.timeStamp = state.endTimeStamps[index] = event.timeStamp;
-  /** @type {number} */
+  /** @type {DOMHighResTimeStamp} */
   this.startTimeStamp = previous ? previous.startTimeStamp : this.timeStamp;
   /** @type {EventTarget|null} @see {Event.target} */
   this.target = event.target;
@@ -209,12 +209,14 @@ function Actions(event, index, state, previous, touch) {
   this.moveY = previous ? this.y - previous.y : 0;
   /** short double for example, check naming in scratch projects */
   this.state = Actions.updateState(this, event, state, previous);
-  /** @TODO it is possible for extra touches to exist due to missing touchend event */
+  /** @TODO (v.0.2.32 check the meaning of this:) it is possible for extra
+   * touches to exist due to missing touchend event */
   // this.expires = -1;
   Object.seal(this);
+  // It may be possible that my seals/freezes madness might not be performant
 }
 /** @readonly *///@ts-expect-error
-Actions.API_VERSION = "0.3.8";
+Actions.API_VERSION = "0.3.9";
 Actions.default = Object.freeze(
   /** @type {{[K in ActionsDefault]:(MouseEvent|ScrollWheel|PointerEvent)[K]}} */
   ({
@@ -467,7 +469,7 @@ Actions.init = function (root, options) {
       target["on" + type] = handler;
     return handler;
   }
-  addEvent("touchstart", function (ev) {
+  addEvent("touchstart", function touchstart(ev) {
     if (!(ev instanceof TouchEvent))
       throw new TypeError("not TouchEvent for touchstart handler");
     var action = temp[-9];
@@ -519,7 +521,7 @@ Actions.init = function (root, options) {
     for (j = temp.length = all.length; j-- > 0;)
       temp[j] = null;
   });
-  addEvent("touchmove", function (ev) {
+  addEvent("touchmove", function touchmove(ev) {
     if (!(ev instanceof TouchEvent))
       throw new TypeError("not TouchEvent for touchmove handler");
     var action = temp[-9];
@@ -564,11 +566,11 @@ Actions.init = function (root, options) {
     for (j = temp.length = all.length; j-- > 0;)
       temp[j] = null;
   });
-  addEvent("touchend", addEvent("touchcancel", function (ev) {
+  addEvent("touchend", addEvent("touchcancel", function touchendc(ev) {
     if (!(ev instanceof TouchEvent))
       throw new TypeError("not TouchEvent for touchend handler");
-    var action = temp[-9];
-    for (var i = 0, changed = ev.changedTouches; i < changed.length; i++) {
+    var action = temp[-9], i = 0, changed = ev.changedTouches;
+    for (; i < changed.length; i++) {
       var touch = changed[i], j = identifiers.indexOf(touch.identifier);
       if (j < 0) {
         if (!(errorHandlers[2] && errorHandlers[2](ev, i, all, -1)))
@@ -606,7 +608,7 @@ Actions.init = function (root, options) {
     if ((state.grabCount = temp.length = all.length) === 0)
       state.claim = "unclaimed";
   }));
-  addEvent("mousedown", addEvent("mouseenter", function (ev) {
+  addEvent("mousedown", addEvent("mouseenter", function mousedowne(ev) {
     var action = all[-1] = source.source = immutable ?
       Object.freeze(new Actions(ev, -1, state, null)) :
       mutable[-1] ?
@@ -623,7 +625,7 @@ Actions.init = function (root, options) {
     state.endButtons = action.buttons;
     Actions.log(temp, ev, "dwn", state, source);
   }));
-  addEvent("mousemove", function (ev) {
+  addEvent("mousemove", function mousemove(ev) {
     var action = all[-1] = source.source = immutable ?
       Object.freeze(new Actions(ev, -1, state, all[-1])) :
       mutable[-1] ?
@@ -650,7 +652,7 @@ Actions.init = function (root, options) {
     state.endButtons = action.buttons;
     Actions.log(temp, ev, "hvr", state, source);
   });
-  addEvent("mouseup", addEvent("mouseleave", function (ev) {
+  addEvent("mouseup", addEvent("mouseleave", function mouseupl(ev) {
     var action = all[-1] = source.source = immutable ?
       Object.freeze(new Actions(ev, -1, state, all[-1])) :
       mutable[-1] ?
@@ -669,7 +671,8 @@ Actions.init = function (root, options) {
       if (action.type !== "mouseleave" || state.claim !== "move")
         state.claim = "unclaimed";
   }));
-  addEvent("onwheel" in root ? "wheel" : "mousewheel", function (ev) {
+  addEvent("onwheel" in root ? "wheel" : "mousewheel", 
+    function wheel(ev) {
     if (!(ev instanceof WheelEvent) && !(ev instanceof MouseWheelEvent))
       throw new TypeError("not WheelEvent for wheel handler");
     if (ev.target !== state.target && state.target)
@@ -715,7 +718,7 @@ Actions.init = function (root, options) {
     vY = (vY - h) * sc / lastSc + h;
     render();
   });
-  addEvent("contextmenu", function (e) {
+  addEvent("contextmenu", function contmenu(e) {
     for (var el = e.target; el instanceof Node;)
       if (!(el = el.parentNode))
         return;

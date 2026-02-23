@@ -2,7 +2,7 @@
 /// <reference path="./defs.d.ts" />
 "use strict";
 /** @readonly */
-var version_code_js = "v.0.2.31";
+var version_code_js = "v.0.2.32";
 /** 3h_  @TODO check @see {Ship.VERSION} */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
@@ -1622,7 +1622,9 @@ Object.freeze(Object.freeze(Physics).Ship);
  * Block name definitions require strict letter cases here */
 /**
  * @typedef {[x:number,y:number,z:number]} XYZPosition
+ * DBV to DR: [-: 0, x: p[0] * 2, y: p[1] * 2]
  * @typedef {[axis:0|1|2,sign:boolean,rot:0|1|2|3]} Rotation
+ * DBV to DR: [-: 0, f: f, r: Math.floor(r / 90)]
  * @typedef {keyof typeof Color.ID|""|null} Colors
  * @typedef {{customParameter?:(number|string|[number,number,number,
  * number])[],nodeIndex?:number[],weldGroup?:number}} BlockProps
@@ -1648,7 +1650,7 @@ function Block(name, pos, rot, prop, color) {
   Object.seal(this);
 }
 // NOTE that blocks definitions will be version dependant over time
-// (allows cross version editing) there is just no need to implement it yet
+// as of v.0.2.32 ^ ...I don't think it has any acceptable implementation
 /** object is frozen @readonly *///@ts-expect-error
 Block.NAME = Object.freeze(Data.generateNames("blocks"));
 /** object is frozen @readonly *///@ts-expect-error
@@ -2073,7 +2075,7 @@ Block.Size.highlightBlock = function (block, index, position) {
   var x = -pos[1], y = pos[2], rot = 10 - block.rotation[2] & 3;
   var w = rot & 1 ? oh : ow, h = rot & 1 ? ow : oh;
   if (id > 1279) {
-    rot & 1 ? x -= size.t / 2 : x -= size.l / 2;
+    rot & 1 ? y -= size.l / 2 : y -= size.t / 2;
     w /= 2;
     h /= 2;
   } else {
@@ -3048,12 +3050,14 @@ __extends(LogicBlock, Block);
  * @typedef {(x:number,y:number,z:number,block:any)=>any} EditBlockCommand
  * @typedef {(...args:number[])=>any} EditNumberCommand
  * @typedef {(ids:number[],color:number)=>any} EditColorCommand
+ * @typedef {(block:number)=>any} EditSelectCommand
  * @typedef {EditBlockCommand|EditNumberCommand|EditSomeCommand|
- * EditColorCommand} EditThisCommand
+ * EditColorCommand|EditSelectCommand} EditThisCommand
  * @typedef {(target:Ship,...args:number[])=>any} EditTargetCommand */
 /** @typedef {((ship?:Ship,cmd?:string)=>void)&{id?:string}} EditListner */
 // A concept for undo redo history implementation
-/** class/namespace tp handle editing history, toJSON method in use
+/** class/namespace tp handle editing history, toJSON method in use,
+ * static methods are for selection based editing!
  * @param {string} command methodName path
  * @param {string} args stringified Array @param {Edit.Type} type */
 function Edit(command, args, type) {
@@ -3288,13 +3292,35 @@ Edit.place = function (target, x, y, z, tile) {
   var cmd = Ship.prototype.placeBlock;
   Edit.applyCommand(target, cmd, x, y, z, tile);
 };
-/** @type {(target:Ship,selection?:number[]|ShipBlock[])=>void} */
+/** @type {(target:Ship,selection?:(number|ShipBlock)[])=>void} */
 Edit.select = function (target, selection) {
+  /** @param {(number|ShipBlock)[]} raw  */
+  function compress(raw) {
+    for (var i = raw.length, compressed = []; i-- > 0;) {
+      var item = raw[i], index = typeof item == "number" ?
+        item :
+        target.blocks.indexOf(item);
+      index < 0 ?
+        console.error("Selected ShipBlock was not found:", item) :
+        compressed.push(index);
+    }
+    return compressed;
+  }
   /** @type {Ship["setSelected"]} */
   var cmd = Ship.prototype.setSelected;
-  arguments.length > 1 ?
-    Edit.applyCommand(target, cmd, selection) :
+  arguments.length > 1 && selection ?
+    Edit.applyCommand(target, cmd, compress(selection)) :
     Edit.applyCommand(target, cmd);
+};
+/** @type {(target:Ship,block:number|ShipBlock,subtract?:boolean)=>void} */
+Edit.changeSelection = function (target, block, subtract) {
+  var cmd = Edit.Primitive.changeSelection;
+  var index = typeof block == "number" ?
+    block :
+    target.blocks.indexOf(block);
+  if (index < 0)
+    return console.error("Selected ShipBlock was not found:", block);
+  Edit.applyCommand(cmd, target, subtract ? -1 - index : index);
 };
 // taken from: https://stackoverflow.com/a/47593316
 /** @param {number} seed @see {Ship.dateTime} */
@@ -3343,7 +3369,8 @@ Edit.Primitive.rotate = (
     rx >= 0 && rx < 4 ? rx |= 0 : rx = Math.round(rx / 90) % 4 + 4 & 3;
     ry >= 0 && ry < 4 ? ry |= 0 : ry = Math.round(ry / 90) % 4 + 4 & 3;
     rz >= 0 && rz < 4 ? rz |= 0 : rz = Math.round(rz / 90) % 4 + 4 & 3;
-    var i = 0, edtA = [0, 1, 2, 0, 0, 0];
+    /** @type {XYZPosition} */
+    var temp = [0, 0, 0], i = 0, rot = 0, edtA = [0, 1, 2, 0, 0, 0];
     var selection = target.selection;
     /** @param {number} ax ; */
     function prcsAxis(ax) {
@@ -3361,14 +3388,29 @@ Edit.Primitive.rotate = (
     prcsAxis(rx);
     prcsAxis(ry);
     prcsAxis(rz);
-    for (i = 0; i < selection.length;) {
-      /** @type {XYZPosition} */
-      var newA = [0, 0, 0];
-      for (var n = 3, pos = selection[i].position; n-- > 0;) {
-        newA[n] = edtA[n] & 4 ? -pos[edtA[n] & 3] : pos[edtA[n] & 3];
+    for (i = 0; i < selection.length; i++) {
+      /** @type {Block.Size|undefined} */
+      var size, pos = selection[i].position;
+      var id = Block.ID[selection[i].internalName];
+      temp[0] = pos[0];
+      temp[1] = pos[1];
+      temp[2] = pos[2];
+      if (id > 1279 && (size = Block.Size.VALUE[id])) {
+        rot = selection[i].rotation[2];
+        var top = size.t / 2, left = size.l / 2;
+        rot === 1 ? temp[1] -= top : rot === 2 ? temp[1] -= left : 0;
+        rot === 2 ? temp[2] -= top : rot === 3 ? temp[2] -= left : 0;
+        pos[1] = edtA[1] & 4 ? -temp[edtA[1] & 3] : temp[edtA[1] & 3];
+        pos[2] = edtA[2] & 4 ? -temp[edtA[2] & 3] : temp[edtA[2] & 3];
+        rot = rot + rx & 3;
+        rot === 1 ? pos[1] += top : rot === 2 ? pos[1] += left : 0;
+        rot === 2 ? pos[2] += top : rot === 3 ? pos[2] += left : 0;
+        applyRotation(selection[i].rotation);
+        continue;
       }
+      for (var n = 3; n-- > 0;)
+        pos[n] = edtA[n] & 4 ? -temp[edtA[n] & 3] : temp[edtA[n] & 3];
       applyRotation(selection[i].rotation);
-      selection[i++].position = newA;
     }
   }
 );
@@ -3431,6 +3473,14 @@ Edit.Primitive.oldUIRotate = function (ids) {
     o.rotation[2] = rot + 1 & 3;
   }
 };
+/** @param {Ship} target @param {number} index */
+Edit.Primitive.changeSelection = function (target, index) {
+  var block = target.blocks[index < 0 ? -1 - index : index];
+  var selected = target.selection.indexOf(block);
+  index < 0 === selected > -1 ? index < 0 ?
+    ship.selection.splice(selected, 1) :
+    ship.selection.push(block) : 0;
+};
 Edit.haha = Edit;
 Data.nameMethods(Edit);
 
@@ -3474,8 +3524,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @readonly @type {46} significantVersion: 46 (integer) */// @ts-ignore
-Ship.VERSION = 46;
+/** @readonly @type {47} significantVersion: 47 (integer) */// @ts-ignore
+Ship.VERSION = 47;
 Ship.propertyNames = new RegExp("^(?:nodeList|nodeConnections|customI" +
   "nputs|gridSize)$");
 Ship.prototype.selectRect = (
@@ -3510,22 +3560,15 @@ Ship.prototype.selectRect = (
   }
 );
 /** skipping selection parameter selects all blocks
- * @this {Ship} @param {ShipBlock[]|number[]} [selection] */
+ * @this {Ship} @param {number[]} [selection] */
 Ship.prototype.setSelected = function (selection) {
-  var ship = this;
-  if (!selection) {
-    selection = ship.selection;
-    for (var i = selection.length = ship.blocks.length; i--;)
-      selection[i] = ship.blocks[i];
-    return;
-  }
-  var ids = [], selected = ship.selection, blocks = ship.blocks;
-  for (var i = selected.length = selection.length; i-- > 0;) {
-    var id = selection[i];
-    if ((ids[i] = typeof id == "number" ? id : blocks.indexOf(id)) < 0)
-      console.error("Selected ShipBlock was not found:" + id);
-    selected[i] = blocks[ids[i]];
-  }
+  var ship = this, selected = ship.selection;
+  if (selection)
+    for (var i = selected.length = selection.length; i-- > 0;)
+      selected[i] = ship.blocks[selection[i]];
+  else
+    for (var i = selected.length = ship.blocks.length; i-- > 0;)
+      selected[i] = ship.blocks[i];
 };
 /** @deprecated use @see {Ship.prototype.removeBlocks} @this {Ship} */
 Ship.prototype.removeRect = function (x0, y0, z0, x1, y1, z1) {
@@ -4508,7 +4551,7 @@ Ship.Mode.useParser = function (mode, globalShip, parse) {
   return new Ship.Mode(mode, function () {
     if (isParsed)
       return globalShip;
-    globalShip = parse(globalShip)
+    globalShip = parse(globalShip);
     isParsed = !0;
     return globalShip;
   });

@@ -1,4 +1,9 @@
-// v.0.2.12
+// v.0.2.32
+window.onerror = function (m, s, l, c, e) {
+  alert(m + " " + s + ":" + (l || "") + ":" + (c || "") + " " +
+    (e && typeof e == "object" && e.stack || e));
+};
+
 (function (h) {
   h || typeof document.querySelector == "function" &&
     (h = document.querySelector("head") || EL("head"));
@@ -10,8 +15,8 @@
     parentNode instanceof Object && "className" in parentNode)
     parentNode.className = "no-info";
 
-  if (/bot\.html|Google-Inspect/.test(navigator.userAgent))
-    document.title = "D1R DBV Editor";
+  if (!/bot\.html|Google-Inspect|bingbot/.test(navigator.userAgent))
+    document.title = "D1R DBV +MSSSS Editor";
 
   h && h.appendChild(document.createComment(navigator.userAgent +
     JSON.stringify(navigator["userAgent" + "Data"] || {})));
