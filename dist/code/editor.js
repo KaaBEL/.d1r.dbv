@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.32";
+var version_editor_js = "v.0.2.33";
 /** 3h_ @TODO check @see {Editor} for assignment without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -580,12 +580,7 @@ em2":1},{"Item1":5,"Item2":15}],"ci":[],"significantVersion":20}'));
     case "d4d00d64":
     case "c058adcc":
       console.info("Fun mode 11");
-      for (var p in Editor)
-        if (OP.call(Editor, p) && typeof Editor[p] != "function")
-          delete Editor[p];
-      Editor.loadSettings();
       Editor.renderSharp = true;
-      Editor.saveSettings();
       (GE("style") || EL()).appendChild(tN("#commandsTab,#info,#commandsTab \
 *,#info *{border-radius: 0;filter: contrast(7) brightness(0.7);font-weight: \
 bolder;}#commandsTab button:hover,#commandsTab button:focus{font-weight: nor\
@@ -3106,11 +3101,13 @@ ded at bottom.\n\nFINISHED READING\nNow so you are familiar with the basics,\
 g, as for example https://kaabel.github.io/.d1r.dbv/editor.html?funmode&no=i\
 nfo to skip it.\n");
 // DBVE contributors:
-// Thanks to Beau for Deltarealm and Droneboi: Conquest that DBVE is made
+// Thanks to Beau for Deltarealm and Droneboi: Conquest (and prior releases)
+// and Thanks to EnganK for Modular Spaceships that DBVE is made
 // for.
 // Thanks to contributors:
 //   KKJKJH for blocks texture sources
 //   Brothernova for being the alpha tester
+//   EnganK and Thawzin for consulting UI
 // Also thank to cacat9999 for sharing block capacity/use stats from source
 // code in Discord, you all for using DBVE, your feedback, and db
 // suggestions to take inspiration from.
@@ -3230,6 +3227,9 @@ function Tool(name, icon, init, exec, destroy) {
    * (false) the tile is enabled until deselected (selected in
    * DefaultUI.selectedTile property) */
   this.clickType = destroy === UDF;
+  /** keeping proper stroke/fill color for Tool is in
+   * hands of code for creation/control of tools */
+  this.color = "#5577aa";
   Object.seal(this);
 }
 /** tool.reset @param {number} x @param {number} y */
@@ -3239,8 +3239,30 @@ Tool.prototype.destroy = function (x, y) {
     Tool.subscribedEnd = Tool.subscribedClaim = Tool.unsubscribed;
   Tool.rend = F;
 };
-/** @type {Tool[]} */
+/** Has its own implementaion of push method @type {Tool[]} */
 Tool.list = [];
+// failed attempt for typscripting custom Tool.list.push in v.0.2.33
+//-Tool.list = (function () {
+//-  /** all items must be instance of Tool @param {...Tool} tools */
+//-  function listPush() {
+//-    for (var i = 0; i < arguments.length; i++) {
+//-      var arg = arguments[i];
+//-      if (!(arg instanceof Tool))
+//-        throw new TypeError("argument " + i + " is not instanceof Tool");
+//-      if (arg.name in Tool.ids)
+//-        throw new Error("can not push tool with existing name");
+//-      Tool.ids[arg.name] = Tool.list.length;
+//-      Array.prototype.push.call(Tool.list, arg);
+//-    }
+//-    return Tool.list.length;
+//-  };
+//-  var list =
+//-    /** @type {Tool[]&{push:typeof listPush}} */
+//-    ([new Tool("", "")]);
+//-  list.length = 0;
+//-  list.push = listPush;
+//-  return list;
+//-})();
 /** @type {{[name:string]:number}} */
 Tool.ids = {};
 /** @param {...Tool} tools */
@@ -3275,6 +3297,7 @@ Tool.subscribedEnd = Tool.unsubscribed;
 /** @type {typeof F} */
 Tool.selectAllInit = F;
 Tool.rend = F;
+(Tool.replacing = new Tool("Rplc", "z", F, F, F)).color = "#ff5533";
 /** @param {Tool} tool @param {number} [size] */
 Tool.drawPathRc = function (tool, size) {
   /** @param {string} s */
@@ -3967,7 +3990,9 @@ Tool.list.push(new Tool("Move", "M25a0c,1a6e9 v-b7a4 c30fe,0,57ba,0,57ba,0 c\
 1,-cff,-8b2,-1549,-8b2 c-10c9,0,-1e66,d9c,-1e66,1e66 c0,0,0,2f8d,0,5325 z",
 /** @TODO finish Move Tool and FIX missing history for Flips and Rotates */
 (Tool.cloneInit = function init (_x, _y) {
-  Tool.subscribedStart = Tool.subscribedClaim = function (x, y, _a) {
+  Tool.subscribedStart = function (x, y, _a) {
+    if (DefaultUI.handleGUIArea(x, y, new DefaultUI.Drag()))
+      return false;
     var found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
     if (found) {
       DefaultUI.Drag.dragged.tile =
@@ -4262,12 +4287,12 @@ DefaultUI.found = null;
 /** used to visualise where DefaultUI.Drag.dragged will be placed, is
  * like @see {DefaultUI.clickedTile} @see {DefaultUI.selectedTile} */
 DefaultUI.replacingTile = -1;
-/** obsolete as of right now @deprecated */
-DefaultUI.insertedTile = -1;
 /** used for placing preview, second and following items is for placing
  * block, the first... idk @type {(Block.Size.Highlight|undefined)[]} */
 DefaultUI.highlights = [];
 DefaultUI.hotbarScrollSide = 0;
+/** mode for selection based tools, are displayed yellow highlighed */
+DefaultUI.selectionBased = false;
 /** @param {number|string} type @param {unknown[]} [tiles=[]] */
 DefaultUI.createFolder = function (type, tiles) {
   var folder =
@@ -4386,9 +4411,10 @@ DefaultUI.handleHotbar = function (x, y, actions) {
   } else
     time = actions.oldTimeStamp;
   console.debug(time);
-  /** @TODO FIX probably in renderHotbars folders jumping with slow scroll */
-  DefaultUI.offsetsFolders += (actions.timeStamp - time) / 5 *
-    DefaultUI.hotbarScrollSide;
+  /** @TODO FIX probably in renderHotbars folders jumping with slow scroll
+   * and going pass the boundaries */
+  DefaultUI.offsetsFolders = Math.max(0, DefaultUI.offsetsFolders +
+    (actions.timeStamp - time) * DefaultUI.hotbarScrollSide);
   render();
 };
 /** @param {TileType|undefined} tile */
@@ -4553,6 +4579,7 @@ DefaultUI.renderHotBars = function (w, h) {
     var tRight = isToolBar ? tx + 64 : tx + 78,
       tTop = isToolBar ? ty - 64 : ty - 78,
       size = isToolBar ? 46 : 60;
+    ctx.strokeStyle = tile instanceof Tool ? tile.color : "#5577aa";
     ctx.beginPath();
     // 16 = greater than radius, lower then side - 2 * radius
     ctx.moveTo(tx, ty - 16);
@@ -4609,12 +4636,11 @@ DefaultUI.renderHotBars = function (w, h) {
   ctx.fillStyle = "#0c243c";
   ctx.fill();
   /** @type {(TileType[]&{type:TileType})[]} */
-  var bars = DefaultUI.blockBars;
+  var bars = DefaultUI.blockBars, i = DefaultUI.openedFolder;
   ctx.globalAlpha = 1;
   ctx.lineWidth = 2;
-  ctx.strokeStyle = "#5577aa";
-  // boolean: b contains fix for reselected item after reflow
-  var i = DefaultUI.openedFolder, b = i !== -1 && i < bars.length;
+  /** contains fix for reselected item after reflow, later reused! */
+  var b = i !== -1 && i < bars.length;
   for (var j = 0, tx = 247, ty = h - 15; b && j < bars[i].length; j++) {
     drawTileCtx(bars[i][j], DefaultUI.selectedTile === (j << 2) + 1 &&
       DefaultUI.selectedFolder === DefaultUI.openedFolder ||
@@ -4677,13 +4703,12 @@ DefaultUI.renderHotBars = function (w, h) {
   drawTileCtx(dragged.tile, false);
   if ((i = DefaultUI.replacingTile) !== -1) {
     console.assert(!DefaultUI.Drag.isPreview, "lineWidth = 0");
-    ctx.strokeStyle = "#ff5533";
     b = (i & 3) === 0;
     // v.0.2.16 constants same as ones for calculating
     // tile coordinates for: (b ? toolBar : blockBar)
     tx = b ? 163 - (i >> 2) % 3 * 74 : 247 + (i >> 2) * 87;
     ty = b ? h - 15 - ((i >> 2) / 3 | 0) * 74 : h - 15;
-    drawTileCtx(new Block("__NULL__", [0, 0, 0], [0, !1, 0]), false, b);
+    drawTileCtx(Tool.replacing, false, b);
   }
 };
 /** generator for press action bind handling
@@ -4716,11 +4741,11 @@ DefaultUI.basePress = function (blockPlacing, canDefault) {
 DefaultUI.previewPlacing = function (x, y, block, offset) {
   var size = Block.Size.VALUE[Block.ID[block.internalName]],
     rot = 10 - block.rotation[2] & 3,
-    xFix = size ? size.w / size.res : 2,
-    yFix = size ? -size.h / size.res : 0,
-    hx = Math.round(offset ? (vX - x) / sc - xFix / 2.5 + 1:
+    xFix = size ? size.w / size.res / 3 : 2,
+    yFix = size ? -size.h / size.res / 3 : 0,
+    hx = Math.round(offset ? (vX - x) / sc - xFix / 2.5 + 1 :
       (vX - x) / sc + xFix),
-    hy = Math.round(offset ? (y - vY) / sc + yFix / 2.5 - .5:
+    hy = Math.round(offset ? (y - vY) / sc + yFix / 2.5 - .5 :
       (y - vY) / sc + yFix),
     rect = Block.Size.highlightBlock(block, -1, [
       0,
@@ -4737,6 +4762,9 @@ DefaultUI.previewPlacing = function (x, y, block, offset) {
   //   rect
   // );
 };
+/** @TODO the tile reordering is broken and flickering, will need to be 
+ * upgraded at least with the #inventory update, requires mode to disable at
+ * least replacing tiles while inventory is closed */
 DefaultUI.Drag = function () {
   this.x = 0;
   this.y = 0;
@@ -4831,7 +4859,8 @@ DefaultUI.Drag.finish = function (action) {
   for (hotbar[i--] = dragged.tile; i-- > 0; hotbar[i] = null)
     if (hotbar[i])
       break;
-  DefaultUI.replacingTile = -1;
+  // v.0.2.33 more reset because of move tile tool bug
+  DefaultUI.replacingTile = dragged.item = -1;
   dragged.tile = null;
   render();
   return true;
@@ -4923,6 +4952,10 @@ juhus.set("onmove", function onmove(x, y, source) {
   DefaultUI.handleHotbar(x, y, action);
 });
 juhus.set("onend", function onend(x, y, source) {
+  //-console.warn("temporary test timeout:", setTimeout(function () {
+  //-  if (DefaultUI.Drag.dragged.tile)
+  //-    console.error("Drag Tile is still scaring kids in their ms dreams.");
+  //-}));
   var action = source.source;
   if (action.startTarget !== canvas)
     return;

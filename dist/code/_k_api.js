@@ -2,7 +2,7 @@
 /// <reference path="./editor.html.ts" />
 "use strict";
 /** @readonly */
-var version__k_api_js = "v.0.2.32";
+var version__k_api_js = "v.0.2.33";
 /** 3h_ @TODO check @see {Actions.API_VERSION} */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -707,12 +707,10 @@ Actions.init = function (root, options) {
       state.target :
       {width: window.innerWidth, height: window.innerHeight};
     var lastSc = sc, w = canvas.width / 2, h = canvas.height / 2;
-    var delay = Date.now() - state.wheelTime;
-    if (delay < 32) {
-      sc -= sc * (delta && (delta > 0 ? 1 : -1)) / state.wheelDelta *
-        delay / 32;
-    } else
-      sc -= sc * (delta && (delta > 0 ? 1 : -1)) / state.wheelDelta;
+    var delay = Date.now() - state.wheelTime,
+      ratio = 1 + state.wheelDelta * (delay < 32 ? delay / 32 : 1) / 48;
+    if (delta)
+      sc *= delta > 0 ? 1 / ratio : ratio;
     state.wheelTime = Date.now();
     vX = (vX - w) * sc / lastSc + w;
     vY = (vY - h) * sc / lastSc + h;
