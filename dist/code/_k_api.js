@@ -2,7 +2,7 @@
 /// <reference path="./editor.html.ts" />
 "use strict";
 /** @readonly */
-var version__k_api_js = "v.0.2.33";
+var version__k_api_js = "v.0.2.34";
 /** 3h_ @TODO check @see {Actions.API_VERSION} */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -115,7 +115,7 @@ var WheelSroll = typeof WheelEvent == "undefined" ? Object : WheelEvent;
 if (window.MouseWheelEvent === UDF)
   /** @type {MouseWheelConstructor} *///@ts-expect-error
   var MouseWheelEvent = Object;
-/** @TODO what the going on in here? */
+/** @TO_DO what the going on in here? */
 if (typeof EventTarget != "function")
   //@ts-expect-error IE11 compatibility
   var EventTarget = Node;
@@ -141,11 +141,22 @@ var test_debug = false;
  * true,preventClaim:(custom?:string)=>void})=>void} ActionsClaim
  */
 /**
- * @typedef {{immutable?:boolean,listeners?:AddEventListenerOptions,
- * start?:ActionsExec,move?:ActionsExec,end?:ActionsExec,claim?:ActionsClaim,
- * filterClaimed?:boolean,touchIndex0:boolean,target?:EventTarget|null,
- * wheelException?:boolean,mouseButton?:boolean,
- * preventTarget?:EventTarget|null}} ActionsOptions
+ * @typedef ActionsOptions
+ * @property {boolean} [immutable] Actions instances are unique and frozen
+ * @property {AddEventListenerOptions} [listeners] listeners used if present
+ * @property {ActionsExec} [start]
+ * @property {ActionsExec} [move]
+ * @property {ActionsExec} [end]
+ * @property {ActionsClaim} [claim]
+ * @property {boolean} [filterClaimed] fires events only for gestures not
+ * claimed by the API `get("claim").length === 4`
+ * @property {boolean} [touchIndex0] fires events only for first finger
+ * gestures, respectively mousebutton for MouseEvent
+ * @property {EventTarget|null} [target] TODO descriptions
+ * @property {boolean} [wheelException] also todo description
+ * @property {boolean} [mouseButton] fires events only for left clicks,
+ * respectively touchIndex0 for TouchEvent
+ * @property {EventTarget|null} [preventTarget] also todo description
  */
 /** @callback ActionsHandler @param {ActionsEvent} ev @this {HTMLElement} */
 /** UI API class/namespace, support either use of mouse or touches
@@ -207,16 +218,17 @@ function Actions(event, index, state, previous, touch) {
   this.startY = previous ? previous.startY : this.y;
   this.moveX = previous ? this.x - previous.x : 0;
   this.moveY = previous ? this.y - previous.y : 0;
-  /** short double for example, check naming in scratch projects */
+  /** **state is essential** gesture property, backbone of K API.
+   * options should be "<single|double> <short|long|move|longmove>" */
   this.state = Actions.updateState(this, event, state, previous);
-  /** @TODO (v.0.2.32 check the meaning of this:) it is possible for extra
-   * touches to exist due to missing touchend event */
-  // this.expires = -1;
+  /** @TODO it is possible for extra touches to exist due to missing touchend
+   * event (v.0.2.33 or rather agents aren't always firing touch-cancels/ends
+   * properly which is meant to be handled by K API) // this.expires = -1; */
   Object.seal(this);
   // It may be possible that my seals/freezes madness might not be performant
 }
 /** @readonly *///@ts-expect-error
-Actions.API_VERSION = "0.3.9";
+Actions.API_VERSION = "0.3.10";
 Actions.default = Object.freeze(
   /** @type {{[K in ActionsDefault]:(MouseEvent|ScrollWheel|PointerEvent)[K]}} */
   ({
@@ -264,7 +276,8 @@ Actions.default = Object.freeze(
   }));
 /** shortens the code amount burder per precossing state.state string
  * @param {Actions} action @param {ActionsEvent} event
- * @param {Actions.State} state @param {Actions|null} previous */
+ * @param {Actions.State} state @param {Actions|null} previous
+ * @returns {string} */
 Actions.updateState = function (action, event, state, previous) {
   var allowed = event.type.slice(0, 5) === "touch" ?
     state.touch :
@@ -286,7 +299,7 @@ Actions.updateState = function (action, event, state, previous) {
   var move = hold.slice(-4) === "move",
     longer = hold.slice(0, 4) === "long" || !move &&
       event.timeStamp > action.startTimeStamp + allowed.shortTime;
-  // TODO: use of state.pixelRatio sounds like it could improve experience
+  // TO_DO: use of state.pixelRatio sounds like it could improve experience
   move = move || Math.sqrt(x * x + y * y) > allowed.shortMove;
   return click + " " +
     ((longer ? "long" : "") + (move ? "move" : "") || "short");
@@ -377,7 +390,7 @@ Actions.touchGrab = function (state, all, ev) {
         sc / (474 << +(state.grabAction === "moveorzoom"));
     vX = (vX - w) * sc / prev + w;
     vY = (vY - h) * sc / prev + h;
-    // TODO: starting with "moveorzoom" is supposed to detect either
+    // TO_DO: starting with "moveorzoom" is supposed to detect either
     // zooming in/out or movement, It did it very stubbornly though
     if (state.grabAction === "moveorzoom")
       ++state.grabCount > 4 ?
@@ -450,6 +463,15 @@ Actions.init = function (root, options) {
     state.claim === initial ? state.claim = claim : 0;
     return state.claim === claim;
   }
+  /** @param {Actions} action; */
+  function cancelTouchDueToGrab(action) {
+    if (!state.filterClaimed || state.claim.slice(0, 5) !== "claim")
+      return;
+    if (!all[0])
+      return console.error("why is there no touch index 0?");
+    source.source = all[0];
+    state.onend(action.x, action.y, source);
+  }
   /**
    * @param {keyof HTMLElementEventMap|"mousewheel"} type
    * @param {ActionsHandler} handler @param {EventTarget} [target] */
@@ -495,21 +517,26 @@ Actions.init = function (root, options) {
         all.count += +!!all[j++];
     }
     // #tstart beggining of created touches handling
-    if (state.grabCount === 0)
-      state.grabTime = Date.now();
-    if (state.claim === "move" || state.claim === "unclaimed")
-      if (
+    function canMovezoom() {
+      //- because of DefaultUI moving inventory tiles claim can prevent
+      //- grab from starting, now it needs to be allowed through claimable
+      //- names set from outside the API and ending existing event
+      return /^move$|^unclaimed$|^claim/.test(state.claim) &&
         all.length > 1 && all[0] && all[1] &&
         Date.now() < state.grabTime + state.touch.shortTime &&
         all[0].startTarget === state.target &&
         all[1].target === state.target
-      ) {
-        // ev.cancelable && ev.preventDefault();
-        state.claim = "grab";
-        state.grabAction = "movezoom";
-        state.grabCount = 0;
-        Actions.touchGrab(state, all, ev);
-      }
+    }
+    if (state.grabCount === 0)
+      state.grabTime = Date.now();
+    if (canMovezoom()) {
+      // ev.cancelable && ev.preventDefault();
+      action && cancelTouchDueToGrab(action);
+      state.claim = "grab";
+      state.grabAction = "movezoom";
+      state.grabCount = 0;
+      Actions.touchGrab(state, all, ev);
+    }
     action ?
       !(state.filterClaimed && state.claim.length === 4) &&
         !(state.touchIndex0 && action.index !== 0) &&
@@ -547,15 +574,15 @@ Actions.init = function (root, options) {
         all.count += +!!all[j++];
     }
     // #tmove beggining of updated touches handling
-    if (state.claim === "grab")
+    function canMovezoom() {
+      return state.claim === "unclaimed" &&
+        source.source.state === "single move";
+    }
+    if (state.claim === "grab") {
       (all[0] || all[1]) && Actions.touchGrab(state, all, ev);
-    else if (
-      source.source.state === "single move" &&
-      state.claim === "unclaimed"
-    ) {
+    } else if (canMovezoom())
       if (dispatchClaim(ev, "grab"))
         state.grabAction = "movezoom";
-    }
     action ?
       !(state.filterClaimed && state.claim.length === 4) &&
         !(state.touchIndex0 && action.index !== 0) &&
@@ -737,8 +764,7 @@ Actions.init = function (root, options) {
       passive: false
     }));
   state.resize = function resizeWindow() {
-    // TODO: change debug to log someday
-    // or just add console.debug to alphalunar.js and remove the TODO?
+    // used to spot unintended executions of resize
     console.debug("%cresizing", "color:#58f");
     var w = window.innerWidth * pR,
       h = window.innerHeight * pR;
@@ -791,18 +817,18 @@ Actions.State = function (options) {
   this.onstart = options.start || F;
   this.onmove = options.move || F;
   this.onend = options.end || F;
+  /** @deprecated not used yet, and probably never will be */
   this.oncancel = options.end || F;
   this.onclaim = options.claim || F;
+  /** changing size of canvas is performance hungry operation */
   this.resize = function () {
     /** @type {(this:GlobalEventHandlers,ev:any)=>void} */
     (window.onresize).call(window,{});
   };
   /** @type {EventTarget} the element that gets events assigned */
   this.root = EL("unknown");
-  /** @deprecated gesture "<single|double> <short|long|move|longmove>" */
-  this.state = " ";
   /** so far only for one/two finger moving around "move"/"grab",
-   * "custom" means the actons are in use outside API, "unclaimed"
+   * "custom" means the actions are in use outside API, "unclaimed"
    * !as an experiment string length 4 means it's claimed by API! */
   this.claim = "unclaimed";
   /** the top canvas element used for display of the editor,
@@ -847,18 +873,19 @@ Actions.State = function (options) {
 };
 /** @this {Actions.State} @param {typeof F} destroy */
 Actions.State.prototype.generateAccessors = function (destroy) {
-  /**
-   * @type {{get:<K extends keyof Actions.State>(key:K)=>Actions.State[K],
-   * set:<K extends keyof Actions.State>(key:K,value:Actions.State[K])=>void,
-   * keys:()=>(keyof Actions.State)[],destroy:typeof F}}
-   */
   var accessors = {
+    /** used to tickle API settings @see {Actions.State} for info on keys
+     * @type {<K extends keyof Actions.State>(key:K)=>Actions.State[K]} */
     get: function (key) {
       return self[key];
     },
+    /** used to tickle API settings @see {Actions.State} for info on keys
+     * @template {keyof Actions.State} K @param {K} key
+     * @param {Actions.State[K]} value @returns {void} */
     set: function (key, value) {
       self[key] = value;
     },
+    /** @type {()=>(keyof Actions.State)[]} */
     keys: function () {
       /** @type {(keyof Actions.State)[]} */
       var keys = [], p = keys[0];
@@ -867,6 +894,7 @@ Actions.State.prototype.generateAccessors = function (destroy) {
           keys.push(p);
       return keys;
     },
+    /** @type {typeof F} */
     destroy: destroy
   }, self = this;
     return Object.freeze(accessors);

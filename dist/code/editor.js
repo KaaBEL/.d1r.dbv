@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.33";
+var version_editor_js = "v.0.2.34";
 /** 3h_ @TODO check @see {Editor} for assignment without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -83,8 +83,8 @@ Editor.buildReplace = !1;
 Editor.backgroundStage = 0;
 /** (default) false: PC, true: touchscreen device detected */
 Editor.fullscreenInitialized = false;
-/** (default) false: enabled, true: disabled */
-Editor.fullscreenDisabled = false;
+/** (default) true: disabled, false: enabled */
+Editor.fullscreenDisabled = true;
 // not saved ** (default) false */
 Editor.renderSharp = false;
 /** (default) true: position inputs use dbc units */
@@ -2057,7 +2057,7 @@ Command.push("Display Logic", function (items, collapsed) {
     toggle.indeterminate = isInit && e.type === -1;
     toggle.oninput = function () {
       custom.name = name.value = (custom.type = +toggle.checked) ?
-        /** @TODO unique names 'switching' */
+        /** @TO_DO unique names 'switching' */
         "Switch" :
         "Button";
       toggle.indeterminate = !1;
@@ -2836,11 +2836,13 @@ Command.push("Editing Mode", function (items) {
     }
     items.push(EL("br"), EL("br"), div);
   }
-}, "Editing modes is the newest feature that is Work In Progress. Be aware t\
-hat non of the older commands were designed to be compatible with other mode\
-s in there. \nYou can use inventoryTile to enable inventory icon item. By en\
-abling disabled fullscreen you will have browser experience of when it wasn'\
-t implemented. \nFor proper display of UI and mobile experience there is aut\
+}, "Editing modes are used for different editing ways like logic editing, bu\
+t this Command is rather used to give access to special settings. Be aware t\
+hat none of the older commands were designed to be compatible with other mod\
+es in there.\nYou can use inventoryTile to enable inventory icon item. Due t\
+o weird fullscreen behaviors in browsers I put no fullscreen as default, unc\
+heck the \"Disable fullscreen\" setting to see if it works usefully enough i\
+n your browser.\nFor proper display of UI and mobile experience there is aut\
 omatic detection of touchscreen, this feature changes resolution and turns o\
 n fullscreen whenever the browser allows it, if it was somehow incorrectly d\
 etected you can use designated button to reset it. In case it still keeps de\
@@ -3241,28 +3243,6 @@ Tool.prototype.destroy = function (x, y) {
 };
 /** Has its own implementaion of push method @type {Tool[]} */
 Tool.list = [];
-// failed attempt for typscripting custom Tool.list.push in v.0.2.33
-//-Tool.list = (function () {
-//-  /** all items must be instance of Tool @param {...Tool} tools */
-//-  function listPush() {
-//-    for (var i = 0; i < arguments.length; i++) {
-//-      var arg = arguments[i];
-//-      if (!(arg instanceof Tool))
-//-        throw new TypeError("argument " + i + " is not instanceof Tool");
-//-      if (arg.name in Tool.ids)
-//-        throw new Error("can not push tool with existing name");
-//-      Tool.ids[arg.name] = Tool.list.length;
-//-      Array.prototype.push.call(Tool.list, arg);
-//-    }
-//-    return Tool.list.length;
-//-  };
-//-  var list =
-//-    /** @type {Tool[]&{push:typeof listPush}} */
-//-    ([new Tool("", "")]);
-//-  list.length = 0;
-//-  list.push = listPush;
-//-  return list;
-//-})();
 /** @type {{[name:string]:number}} */
 Tool.ids = {};
 /** @param {...Tool} tools */
@@ -3286,11 +3266,14 @@ Tool.get = function (name) {
 Tool.unsubscribed = function () {
   return false;
 };
-/** @type {(x:number,y:number,actions:AllActions)=>boolean} */
+/**
+ * @type {(x:number,y:number,claims:AllActions&{claim:string;cancelable:
+ * true;preventClaim:(custom?:string)=>void;})=>boolean}
+ */
 Tool.subscribedClaim = Tool.unsubscribed;
-/** @type {typeof Tool.subscribedClaim} ?what to name this type? */
+/** @type {(x:number,y:number,actions:AllActions)=>boolean} */
 Tool.subscribedStart = Tool.unsubscribed;
-/** @type {typeof Tool.subscribedStart} */
+/** @type {typeof Tool.subscribedStart} ?what to name this type?  */
 Tool.subscribedMove = Tool.unsubscribed;
 /** @type {typeof Tool.subscribedStart} */
 Tool.subscribedEnd = Tool.unsubscribed;
@@ -3690,7 +3673,20 @@ Tool.list.push(new Tool("Clone", "M2ba5a,2bab5 vda5e c0,33ca,-29fc,5dc6,-5dc\
 83,-1f5a7 c6,-de2,-7ef,-19b0,-16a8,-19a9 z M394a4,4b8f l-1fa26,-1ac c-e4d,70\
 ,-169d,c12,-16a6,1820 l-a3,d63a ld185,67 c3c14,9,66ad,2841,6729,5855 l-33,de\
 f3 ld5ec,1a6 cba6,-76,175b,-a4c,17d6,-1935 l-61,-1f52a c-5,-f8c,-a81,-17f3,-\
-146b,-17a5 z", Tool.cloneInit, function exec() {}, function destroy() {}));
+146b,-17a5 z", function init (_x, _y) {
+  Tool.subscribedStart = function (x, y, actions) {
+    if (DefaultUI.handleGUIArea(x, y, new DefaultUI.Drag()))
+      return false;
+    var found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
+    if (found) {
+      actions.source.event && actions.source.event.preventDefault();
+      DefaultUI.Drag.dragged.tile =
+        Block.arrayFromObjects(found.block)[0];
+      juhus.set("claim", "claimmovetile");
+    }
+    return !!found;
+  }
+}, function exec() {}, function destroy() {}));
 Tool.list.push(new Tool("Undo", "M3f6f3,19ab0 cc15,c15,c15,1fad,0,2bc2 c-c15\
 ,c15,-1fad,c15,-2bc2,0 c0,0,-334f,-32bd,-ba42,-2670 c-c4f3,ef0,-12d5f,89d9,-\
 12d5f,89d9 c42b1,42b1,7222,7222,732f,732f cc15,c15,c15,1fad,0,2bc2 c-4b5,4b5\
@@ -3868,11 +3864,63 @@ be8b,554f,be8b,be8b z M33a,c1a9 l0,0 c0,-693b,554f,-be8b,be8b,-be8b h3299 l-\
 2a,-c732 c6c57,0,c42a,592e,c42a,c732 c0,6e03,-57d3,c732,-c42a,c732 c-6c57,0,\
 -c42a,-592e,-c42a,-c732 z M3061d,29da1 c0,-1657,-121c,-2873,-2873,-2873 c-16\
 57,0,-2873,121c,-2873,2873 v6982 c0,1657,121c,2873,2873,2873 h5090 c1657,0,2\
-873,-121c,2873,-2873 c0,-1657,-121c,-2873,-2873,-2873 h-282b z", F,
-function exec(x, y) {
-  /** @TODO in version 0.2.31 fir for using press(x, y); */
-  Command.old_UI(x, y);
-}, F));
+873,-121c,2873,-2873 c0,-1657,-121c,-2873,-2873,-2873 h-282b z",
+function init(x, y) {
+  //-Tool.subscribedStart = function (x, y, actions) {
+  //-  if (DefaultUI.handleGUIArea(x, y, new DefaultUI.Drag()))
+  //-    return false;
+  //-  var event = actions.source.event, isClaiming = move(x, y, event);
+  //-  if (isClaiming) {
+  //-    event.cancelable && event.preventDefault();
+  //-    juhus.set("claim", "claimoldmove");
+  //-  }
+  //-  return isClaiming;
+  //-};
+  //-Tool.subscribedClaim = function (_x, _y, actions) {
+  //-  if (juhus.get("claim").slice(-7) !== "oldmove")
+  //-    return false;
+  //-  actions.preventClaim("oldmove");
+  //-  return true;
+  //-};
+  //-Tool.subscribedMove = function (x, y, actions) {
+  //-  if (juhus.get("claim").slice(-7) !== "oldmove")
+  //-    return false;
+  //-  var event = actions.source.event;
+  //-  event.cancelable && event.preventDefault();
+  //-  return move(x, y, event);
+  var used = false;
+  press = Command.old_UI;
+  Tool.subscribedStart = function startClassic(x, y, actions) {
+    used = !DefaultUI.handleGUIArea(x, y, new DefaultUI.Drag());
+    var event = actions.source.event;
+    if (used = used && move(x, y, event))
+      event.cancelable && console.log("JUUS!" + event.preventDefault());
+    return used;
+  };
+  Tool.subscribedClaim = function claimClassic() {
+    return used;
+  };
+  Tool.subscribedMove = function moveClassic(x, y, actions) {
+    if (!used)
+      return false;
+    var event = actions.source.event;
+    event.cancelable && event.preventDefault();
+    return move(x, y, event);
+  };
+  Tool.subscribedEnd = function endClassic(x, y, actions) {
+    if (DefaultUI.handleGUIArea(x, y, new DefaultUI.Drag()))
+      return false;
+    var event = actions.source.event;
+    if (actions.source.state === "single short") {
+      event.cancelable && event.preventDefault();
+      press(x, y);
+      return true;
+    }
+    if (used)
+      return move(x, y, event);
+    return used = false;
+  };
+}, F, F));
 Tool.list.push(new Tool("Oldschool", "M105e7,3d210 c-3a97,3a97,-9997,3a97,-d\
 42f,0 c-3a97,-3a97,-3a97,-9997,0,-d42f l1b0b,-1b0b ld429,d429 z M803a,2adde \
 l7e92,-7e92 ld429,d429 l-7e8b,7e96 z M22c1b,101fd l8428,-8428 ld429,d429 l-8\
@@ -3906,9 +3954,13 @@ c,-33d8,73cc,-73cc lbc,-30c6 c0,-212c,1ae4,-3c11,3c11,-3c11 l119a,0 c212c,0,\
 3c11,1ae4,3c11,3c11 l4b,30c6 c0,8c98,-71f9,fe92,-fe92,fe92 l-311d,b c-212c,0\
 ,-3c11,-1ae4,-3c11,-3c11 z", function init(_x, _y) {
   var selecting = false, t = Date.now(), area = {x: 0, y: 0, w: 0, h: 0};
-  Tool.subscribedStart = Tool.subscribedClaim = function (x, y, _a) {
-    area.x = x;
-    area.y = y;
+  /**
+   * @param {AllActions|AllActions&{claim:string,cancelable:
+   * true,preventClaim:(custom?:string)=>void}} actions
+   * */
+  Tool.subscribedClaim = Tool.subscribedStart = function (x, y, actions) {
+    area.x = actions.source.startX;
+    area.y = actions.source.startY;
     area.w = 0;
     area.h = 0;
     return true;
@@ -3988,26 +4040,27 @@ Tool.list.push(new Tool("Move", "M25a0c,1a6e9 v-b7a4 c30fe,0,57ba,0,57ba,0 c\
 57ba c0,10c9,d9c,1e66,1e66,1e66 c86c,0,100b,-36d,158d,-8f5 lb13e,-b0c3 c5d2,\
 -589,973,-d5c,973,-1607 c0,-897,-390,-105a,-94c,-15e1 l-b1a9,-ad58 c-57b,-56\
 1,-cff,-8b2,-1549,-8b2 c-10c9,0,-1e66,d9c,-1e66,1e66 c0,0,0,2f8d,0,5325 z",
-/** @TODO finish Move Tool and FIX missing history for Flips and Rotates */
-(Tool.cloneInit = function init (_x, _y) {
-  Tool.subscribedStart = function (x, y, _a) {
+/** @TODO FIX missing history for Flips and Rotates, aaaand Erase too! */
+// TODO: figure out some way to combine this with Clone - left attemps: 2
+function init (_x, _y) {
+  Tool.subscribedStart = function (x, y, actions) {
     if (DefaultUI.handleGUIArea(x, y, new DefaultUI.Drag()))
       return false;
     var found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
     if (found) {
-      DefaultUI.Drag.dragged.tile =
-        Block.arrayFromObjects(found.block)[0];
-      juhus.set("claim", "movetile");
+      actions.source.event && actions.source.event.preventDefault();
+      ship.removeBlocks([found.index]);
+      DefaultUI.previewPlacing(x, y, DefaultUI.Drag.dragged.tile =
+        Block.arrayFromObjects(found.block)[0]);
+      DefaultUI.Drag.dragged.update(x, y);
+      juhus.set("claim", "claimmovetile");
+      render();
     }
     return !!found;
-  };
-  // Tool.subscribedMove = function (x, y, _actions) {
-  //   return true;
-  // };
-  // Tool.subscribedEnd = function (x, y, _actions) {
-  //   return true;
-  // };
-}), function exec() {}, function destroy() {}));
+  };// 3h_
+  /** @TODO FIX breaking when canceled by grab */
+  Tool.subscribedEnd;
+}, function exec() {}, function destroy() {}));
 Tool.list.push(new Tool("SelectAll", "M3ff8e,f246 l105,535f c0,1bfc,-16c9,32\
 ad,-32e5,32ad c-1c1c,0,-32e5,-16b0,-32e5,-32ad l-f6,-4b72 c0,-5158,-46b7,-93\
 4a,-9df4,-934a l-3fef,-1d c-1bfc,0,-32ad,-16c9,-32ad,-32e5 c0,-1c1c,16b0,-32\
@@ -4293,6 +4346,7 @@ DefaultUI.highlights = [];
 DefaultUI.hotbarScrollSide = 0;
 /** mode for selection based tools, are displayed yellow highlighed */
 DefaultUI.selectionBased = false;
+/** for last property @see {DefaultUI.shipPress} */
 /** @param {number|string} type @param {unknown[]} [tiles=[]] */
 DefaultUI.createFolder = function (type, tiles) {
   var folder =
@@ -4327,7 +4381,6 @@ DefaultUI.setSelectedTile = function (item, x, y) {
  * @param {number} x @param {number} y @param {DefaultUI.Drag} [reference]
  * @returns {boolean} over GUI area */
 DefaultUI.handleGUIArea = function (x, y, reference) {
-  // NOTE may require other getactionArea option instead of reference
   /** number position of tile @see {DefaultUI.selectedTile} */
   var item = -1, fraction = 0.5;
   if (reference)
@@ -4398,8 +4451,7 @@ DefaultUI.handleGUIArea = function (x, y, reference) {
 /** extends handleGUIArea by utilising its getactionArea for long Actions
  * @param {number} x @param {number} y @param {Actions} actions */
 DefaultUI.handleHotbar = function (x, y, actions) {
-  if (!/long(move)?$/.test(actions.state))
-    return console.debug(actions.state);
+  //-v.0.2.34 removed requirement for move/longmove seems fine
   if (juhus.get("claim") !== "scrollhotbar") {
     var over = new DefaultUI.Drag(), time = actions.startTimeStamp;
     DefaultUI.handleGUIArea(x, y, over);
@@ -4412,7 +4464,7 @@ DefaultUI.handleHotbar = function (x, y, actions) {
     time = actions.oldTimeStamp;
   console.debug(time);
   /** @TODO FIX probably in renderHotbars folders jumping with slow scroll
-   * and going pass the boundaries */
+   * and going pass the boundaries, and this sh*t DOESN'T WORK ON MOBILE! */
   DefaultUI.offsetsFolders = Math.max(0, DefaultUI.offsetsFolders +
     (actions.timeStamp - time) * DefaultUI.hotbarScrollSide);
   render();
@@ -4713,7 +4765,7 @@ DefaultUI.renderHotBars = function (w, h) {
 };
 /** generator for press action bind handling
  * @param {(x:number,y:number,tile:ShipBlock)=>void} [blockPlacing]
- * @param {boolean} [canDefault=true] @returns {typeof press} */
+ * @param {boolean} [canDefault=true] */
 DefaultUI.basePress = function (blockPlacing, canDefault) {
   var placing = blockPlacing || function (x, y, tile) {
     DefaultUI.previewPlacing(x, y, tile, !0);
@@ -4722,17 +4774,16 @@ DefaultUI.basePress = function (blockPlacing, canDefault) {
     render();
   };
   DefaultUI.canDefaultPress = canDefault !== UDF ? canDefault : false;
+  /** @param {number} x @param {number} y @returns {boolean} */
   return function basePress(x, y) {
-    if (DefaultUI.handleGUIArea(x, y))
-      return true;
-    else
-      var tile = DefaultUI.getSelectedTile();
+    var tile = DefaultUI.getSelectedTile();
     if (tile instanceof Block)
       placing(x, y, tile);
     else if (tile instanceof Tool)
       tile.exec(x, y);
     else
       DefaultUI.canDefaultPress && DefaultUI.defaultPress(x, y);
+    return false;
   };
 };
 /**
@@ -4827,7 +4878,7 @@ DefaultUI.Drag.reset = function (notTile) {
 };
 /** movetile claim end handler @param {Actions} action */
 DefaultUI.Drag.finish = function (action) {
-  if (juhus.get("claim") !== "movetile")
+  if (juhus.get("claim").slice(-8) !== "movetile")
     return false;
   // placing inventory tile over building area
   var replacing = DefaultUI.replacingTile,
@@ -4871,7 +4922,7 @@ DefaultUI.Drag.finish = function (action) {
  * @param {number} x @param {number} y @param {Actions} action */
 DefaultUI.Drag.detect = function (x, y, action) {
   var claim = juhus.get("claim"), dragged = DefaultUI.Drag.dragged;
-  if (claim === "movetile") {
+  if (claim.slice(-8) === "movetile") {
     action.event.cancelable && action.event.preventDefault();
     dragged.update(x, y);
     var pointed = DefaultUI.Drag.pointed;
@@ -4952,10 +5003,6 @@ juhus.set("onmove", function onmove(x, y, source) {
   DefaultUI.handleHotbar(x, y, action);
 });
 juhus.set("onend", function onend(x, y, source) {
-  //-console.warn("temporary test timeout:", setTimeout(function () {
-  //-  if (DefaultUI.Drag.dragged.tile)
-  //-    console.error("Drag Tile is still scaring kids in their ms dreams.");
-  //-}));
   var action = source.source;
   if (action.startTarget !== canvas)
     return;
@@ -4966,12 +5013,13 @@ juhus.set("onend", function onend(x, y, source) {
   }
   if (DefaultUI.Drag.finish(action))
     return;
+  if (DefaultUI.handleGUIArea(x, y))
+    return action.event.cancelable && action.event.preventDefault();
   if (Tool.subscribedEnd && Tool.subscribedEnd(x, y, source))
     return;
   if (action.state.slice(-5) === "short") {
     action.event.cancelable && action.event.preventDefault();
-    /** runs same as: DefaultUI.basePress(UDF)(x, y);
-     * @see {DefaultUI.handleGUIArea} used in basePress */
+    /** runs same as: DefaultUI.basePress(UDF)(x, y); 3h_ */
     DefaultUI.shipPress(x, y);
   } else
     DefaultUI.handleHotbar(x, y, action);
@@ -5015,6 +5063,9 @@ function enableShipEditing() {
     DefaultUI.reflowBlockBars(canvas.width);
     DefaultUI.renderHotBars(canvas.width, canvas.height);
   };
+  var tile = DefaultUI.getSelectedTile();
+  if (tile instanceof Tool)
+    tile.destroy(NaN, NaN);
   DefaultUI.blockBars = DefaultUI.getDefaultFolders(false);
   render();
 };
@@ -5146,6 +5197,7 @@ function enableLogicEditing() {
     DefaultUI.reflowBlockBars(canvas.width);
     DefaultUI.renderHotBars(canvas.width, canvas.height);
   };
+  // v.0.2.34 did fix what was fixed in enableShipEditing for fun
   DefaultUI.blockBars = DefaultUI.getDefaultFolders(true);
   render();
 };
@@ -5291,7 +5343,7 @@ var rend_background = Editor.background ?
   rend_backgPattern :
   rend_backgColor;
 /** make interface for it if there will already be some uses for it
- * @TODO update this with Render class overhaul */
+ * @TODO update this with #Renderer class overhaul */
 var rend_initialized = [F], rend_180 = !1;
 rend_initialized.push(function () {
   backgHangarInit.ready++ && backgHangarInit();
@@ -5310,7 +5362,7 @@ function rend_initColors() {
   return patterns;
 }
 function rend_checkColors() {
-  /** @TODO fix all of loading spaghetti together with Renderer somehow */
+  /** @TODO fix all of loading spaghetti together with #Renderer somehow */
   imgColor.onload = null;
   rc.fillStyle = rend_colors[0];
   rc.fillRect(0, 0, 32, 32);
@@ -5455,7 +5507,9 @@ DefaultUI.over = over = function (e) {
 /** should serve its purpouse by providing up to date rendering function
  * however to meet requirements of many various uses, and be aware of
  * possible optimizations, a system of global and local (single use)
- * settings to provide interface with multiple rendering methods */
+ * settings to provide interface with multiple rendering methods
+ * @TODO #Renderer update won't improve also resizing performance,
+ * but afterwards check @see {Actions.State.onresize} usage */
 function Renderer() {
   throw new Error("Unimplemented");
   this.logíc = false;
@@ -5809,7 +5863,17 @@ Block.Box2d.visualize = function (path, x, y, green) {
   //}catch(e){console.error(e && e.message || e);}
 };
 
-init = function () {
+/** for DefaultUI init and enableShipEditing @see {initDefaultUI} */
+init = function loadedEditorInit() {
+  //-ship = Ship.fromObject({});
+  //-Edit.save(ship);
+  //-enableLogicEditing();
+  //-var i = 0, classic = DefaultUI.createTile("Classic");
+  //-i = DefaultUI.blockBars[DefaultUI.openedFolder].indexOf(classic);
+  //-if (i !== -1)
+  //-  DefaultUI.setSelectedTile(i << 2 | 1);
+  //-else if ((i = DefaultUI.toolBar.indexOf(classic)) !== 1)
+  //-  DefaultUI.setSelectedTile(i << 2 | 0);
   for (var i = ship.blocks.length, clean = []; i-- > 0;)
     ship.blocks[i].internalName !== "__unknown__" &&
       clean.push(ship.blocks[i]);
