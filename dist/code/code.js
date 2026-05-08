@@ -2,7 +2,7 @@
 /// <reference path="./defs.d.ts" />
 "use strict";
 /** @readonly */
-var version_code_js = "v.0.2.32";
+var version_code_js = "v.0.2.35";
 /** 3h_  @TODO check @see {Ship.VERSION} */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
@@ -944,7 +944,7 @@ Data.generateIDs = function (src) {
 Data.generateValues = function (type) {
   /** @type {{[key:string]:BlockData[T]|undefined}} Values by Name */
   var values = {},
-    data = Data.blocks,
+    data = type === "now" ? Data.colors : Data.blocks,
     /** @type {BlockDataSimple[keyof BlockData]} */
     val;
   for (var p in data)
@@ -1551,7 +1551,7 @@ Color.db1ToDb3 = Object.freeze({
   13: "Wine", 14: "Wood", 15: "White Hazard Stripes", 16: "Purple",
   17: "Pink", 18: "Festive Green", 19: "Festive Duck"
 });
-/** @param {string} name @return {Colors} */
+/** @param {string} name @returns {Colors} */
 Color.default = function getColor(name) {
   if (/Hydrogen Thruster/.test(name))
     return "Yellow";
@@ -1618,6 +1618,489 @@ Physics.Ship.INIT = (function initShipPhysics() {
 });
 Object.freeze(Object.freeze(Physics).Ship);
 
+/** @typedef {{buffer:Uint8Array,i:number,j:number}} Binary */
+/** @typedef {typeof Bin.huffmanType} HuffmanTree dynamic concept */
+/** @typedef {HuffmanTree|Error} HuffmanResult */
+/**
+ * @typedef {Uint8Array|Uint16Array|Uint32Array|Int8Array|Int16Array|
+ * Int32Array|Float32Array|Float64Array|Uint8ClampedArray} BufferArrays
+ */
+// Bin experiments with encoding codebase, now allowing for binary data
+// encoding operatinos on any amount of Uint8Array instances simultaneously.
+// For file formats and larger en/decoding units there's development
+// of concept for warnings+errors handling without throwing exceptions
+/** Binary operarions for byte[] @param {ArrayBuffer} [buffer] _3h */
+function Bin(buffer) {
+  this.buffer = buffer instanceof ArrayBuffer ?
+    new Uint8Array(buffer)
+    : new Uint8Array(0);
+  this.i = this.j = 0;
+  /** @type {Array|BufferArrays|string} */
+  this.output = [];
+  var self = this;
+  this.push = function () {
+    var args = [].slice.call(arguments);
+    return Array.prototype.push.apply(self.output, args);
+  };
+  Object.seal(buffer);
+}
+/** @param {number} length size of new ArrayBuffer */
+Bin.prototype.resize = function (length) {
+  var resized = new Uint8Array(length);
+  resized.set(this.buffer.slice(0, length));
+  return resized;
+};
+Bin.huffmanConstructor = Uint16Array;
+Bin.huffmanType = new Bin.huffmanConstructor(0);
+/** @type {HuffmanResult} */
+Bin.huffmanLitLen = new Error("Uninitialised");
+/** @type {HuffmanResult} */
+Bin.huffmanDist = new Error("Uninitialised");
+/** read next bit MSB-first @param {Binary} bin */
+Bin.rBit = function gBit(bin) {
+  var b_int = (bin.buffer[bin.i] & 1 << bin.j) >> bin.j;
+  if (++bin.j > 7) {
+    bin.j = 0;
+    bin.i++;
+  }
+  return b_int;
+};
+/** read max 24 next l bits @param {Binary} bin @param {number} [l=2] */
+Bin.rMsbfBitsOld = function gBitsMSBfFast(bin, l) {
+  var mj = bin.j, b_int = 0, buffer = bin.buffer;
+  l || (l = 2);
+  if (l + bin.j > 8) {
+    b_int = buffer[bin.i++] & 255 << bin.j;
+    l -= 8 - bin.j;
+    bin.j = 8;
+    while (l > 8) {
+      b_int += (buffer[bin.i++] << bin.j);
+      l -= 8;
+      bin.j += 8;
+    }
+    b_int += (buffer[bin.i] & 255 >>> (8 - l)) << bin.j;
+  } else
+    b_int += buffer[bin.i] & 255 >>> (8 - l) << bin.j;
+  b_int >>>= mj;
+  if ((bin.j = (bin.j & 7) + l) > 7) {
+    bin.i++;
+    bin.j = 0;
+  }
+  return b_int;
+};
+/** read max 32 next [`length`=2] bits
+ * @param {Binary} bin @param {number} [length=2] */
+Bin.rMsbfBits = function (bin, length) {
+  //-if (bin.i === 76 && bin.j === 6)
+  //-  debugger;
+  var offset = bin.j, b_int = 0, buffer = bin.buffer;
+  length || (length = 2);
+  b_int = buffer[bin.i] >>> offset & 0xffffffff >>> 32 - length;
+  length -= (offset = 8 - bin.j);
+  while (length > 0) {
+    b_int |= (buffer[++bin.i] & 0xffffffff >>> 32 - length) << offset;
+    length -= 8;
+    offset += 8;
+  }
+  if (!length)
+    bin.i++;
+  bin.j = (length > 0 ? offset : 8) + length & 7;
+  return b_int >>> 0;
+};
+/** read next `length` bytes @param {Binary} bin @param {number} length */
+Bin.rMsbf = function gMSBfirst(bin, length) {
+  var n = 0, buffer = bin.buffer;
+  while (length-- > 0)
+    n = n * 256 + (buffer[bin.i++] & 255);
+  return n;
+};
+/** read next `length` bytes @param {Binary} bin @param {number} length */
+Bin.rLsbf = function (bin, length) {
+  var n = bin.buffer[bin.i++], m = 1;
+  while (--length > 0)
+    n = n + (bin.buffer[bin.i++] & 255) * (m = m * 256);
+  return n;
+}
+/** write `n` into max 32 next `length` bits
+ * @param {Binary} bin @param {number} length @param {number} n */
+Bin.wMsbfBits = function wBitsMSBfFast(bin, length, n) {
+  var buffer = bin.buffer;
+  buffer[bin.i] |= n << bin.j;
+  n >>>= 8 - bin.j;
+  if (length + bin.j > 8) {
+    length -= 8 - bin.j;
+    bin.j = 0;
+    bin.i++;
+    while (length > 7) {
+      buffer[bin.i++] |= n;
+      n >>>= 8;
+      length -= 8;
+    }
+    buffer[bin.i] |= n;
+    n >>>= length;
+  }
+  bin.j += length;
+  buffer[bin.i] &= 255 >>> 8 - bin.j;
+  if (bin.j > 7) {
+    bin.i++;
+    bin.j = 0;
+  }
+  // value of spare bits
+  return n;
+};
+/** [set to `n` and] get 1 byte at `index`
+ * @type {{(bin:Binary,index:number):number
+ * <T extends any>(bin:Binary,index:number,n:T):T}}
+ */
+Bin.sgByte = function (bin, index) {
+  if (!(index in bin.buffer))
+    return arguments[2];
+  if (arguments.length > 2) {
+    bin.buffer[index] = arguments[2] & 255;
+    return arguments[2];
+  }
+  return bin.buffer[index] & 255;
+};
+/** create Huffman codes tree
+ * @param {number[]} arr generator input @returns {HuffmanResult} */
+Bin.createHuffman = function (arr) {
+  var bitLengths = [], i = 1, n = 0, p = 0, rNextBitCodes;
+  //+calculation of summed resultibg tree and bitLenghts length
+  if (arr[0]) { // n = nodes, p = position in arr
+    for (; i < arr.length; i++)
+      aCodesLength(arr[i + 1]);
+    rNextBitCodes = f1;
+  } else {
+    while (i < arr.length)
+      aCodesLength(1);
+    rNextBitCodes = f0;
+  }
+  bitLengths[0] = 0;
+  //+calculating sum of nodes, max 8192
+  for (i = bitLengths.length; i > 0;)
+    //+if (bitLengths[--i] === UDF)
+    if (typeof bitLengths[--i] === "undefined")
+      n += p = (p + 1 >> 1) + (bitLengths[i] = 0);
+    else
+      n += p = (p + 1 >> 1) + bitLengths[i];
+  // number_of_nodes check
+  if (n > 0x2000)
+    return new Error("tripped over number_of_nodes check");
+  var tree = new Bin.huffmanConstructor(n),
+    path = new Bin.huffmanConstructor(bitLengths.length),
+    v, // v = value for path ends
+    d = 0, // d = depth in path, n = values of code length in row
+    l, // l = actual last node, 
+    pos = 0; // pos = current position in tree
+  bitLengths.push(0);
+  var aCodesToTree = function () { // add codes to tree
+    while (pos < i)
+      path[++d] = pos++;
+    tree[pos - 1] |= 32768; // reference to next
+    tree[pos] = v++;
+    l = pos + 1;
+    n--;
+    aCodesToTree = function () {
+      while (n-- > 0) {
+        while (path[d] & 32768) // go back while needed
+          d--;
+        if (d === 0)
+          return !1;
+        tree[path[d]] |= l;
+        path[d] |= 32768; // set to 1
+        while (d < i) // forward while needed
+          path[++d] = l++; // (adds 0s to tree)
+        if ((pos = path[d]) & 32768) // if set to 1
+          tree[pos & 16383] |= 16384 | l;
+        else
+          tree[pos & 16383] = 32768;
+        tree[l++] = v++;
+      }
+      n = 0;
+    };
+    aCodesToTree();
+  }
+  for (i = 1; i < bitLengths.length; i++)
+    if (bitLengths[i] > 0) {
+      for (v = -1, p = 0, n = 0; ++p <= arr.length;)
+        rNextBitCodes();
+    }
+  function f0() { // for arr [0, 1, 3, 3, 2] just bit depths
+    v++;
+    if (arr[p] === i)
+      rNextBitCodes = function f0ToTree() {
+        n++;
+        if (arr[p] !== i) {
+          aCodesToTree();
+          rNextBitCodes = f0;
+        }
+      };
+  }               // bit depths with number of them
+  function f1() { // for arr [1, 1, 1, 3, 2, 2, 1]
+    v += arr[p - 1];
+    if (arr[p++] === i)
+      rNextBitCodes = function f1ToTree() {
+        n += arr[p - 1];
+        if (arr[p++] !== i) {
+          aCodesToTree();
+          rNextBitCodes = f1;
+        }
+      };
+  }
+  function aCodesLength(a) {
+    var b = bitLengths[arr[i]];
+    bitLengths[arr[i++]] = b ? b + a : a;
+  }
+  return tree;
+};
+/** read Huffman code @param {Binary} bin @param {HuffmanTree} tree */
+Bin.readHuffman = function (bin, tree) {
+  var n = 0, p = 0;
+  while (bin.i < bin.buffer.length)
+    if (Bin.rBit(bin)) {
+      n = (p = tree[n]) & 0x3fff;
+      if (p & 0x4000)
+        return tree[n];
+    } else if (tree[n++] & 0x8000)
+      return tree[n];
+  throw new Error("Huffman code path did not end properly.");
+};
+/** @param {Bin} bin */
+Bin.readUncompressed = function (bin) {
+  if (bin.j > 0) {
+    bin.i++;
+    bin.j = 0;
+  }
+  var LEN = Bin.rLsbf(bin, 2);
+  if ((~LEN & 65535) !== Bin.rLsbf(bin, 2))
+    return new Error("LEN isn't matching with NLEN");
+  while (LEN-- > 0)
+    bin.push(bin.buffer[bin.i++]);
+};
+/** @param {Bin} bin @param {HuffmanTree} LitLen @param {HuffmanTree} Dist */
+Bin.readInflated = function (bin, LitLen, Dist) {
+  var n = 0, l, d;
+  for (var v = 0; ++v < 0xffffff;) {
+    n = Bin.readHuffman(bin, LitLen);
+    if (n < 256)
+      bin.push(n);
+    else if (n > 256) {
+      if (n < 265)
+        l = n - 254;
+      else if (n < 285) {
+        var n0 = n - 261 >> 2; if (n0 > 13) console.log(n0);
+        l = 4 + (255 >> 6 - n0) + (1 << n0) * (n - 1 & 3);
+        l += Bin.rMsbfBits(bin, n0);
+      } else if (n === 285)
+        l = 258;
+      else
+        throw new Error("without error message");
+      //?test→ for (var n = 286; --n > 256;) {if (n < 265) console.log
+      //?(n - 254); else if (n < 285) {var n0 = n - 261 >> 2; l = 4 + 
+      //?(255 >> 6 - n0) + (1 << n0) * (n - 1 & 3); console.log(l, n0);
+      //?} else console.log(l = 258);}
+      d = Bin.readHuffman(bin, Dist);
+      if (d < 4)
+        d++;
+      else {
+        var n1 = d - 2 >> 1;
+        d = 2 + (65535 >> 15 - n1) + (1 << n1) * (d & 1);
+        d += Bin.rMsbfBits(bin, n1);
+      }
+      if ((n = bin.output.length - d) < 0)
+        console.error("negRef:", n = 0);
+      while (l-- > 0)
+        bin.push(bin.output[n++]);
+    } else if (n === 256)
+      break;
+    else
+      throw new Error("without error message");
+  }
+};
+/** @param {Bin} bin */
+Bin.readDynamicHuffmanCodes = function (bin) {
+  var n = 0, bitLen = 0, _bl = 0, repeat = 0, _r = 1,
+    HLIT = Bin.rMsbfBits(bin, 5) + 257,
+    HDIST = Bin.rMsbfBits(bin, 5) + 1,
+    HCLEN = Bin.rMsbfBits(bin, 4) + 4,
+    //+codeLengths = [17, 18, 19, 1...
+    arr = new Array(21);
+  arr[0] = 0;
+  while (n < HCLEN)
+    arr[[17, 18, 19, 1, 9, 8, 10, 7, 11, 6, 12, 5, 13, 4, 14, 3,
+      15, 2, 16][n++]] = Bin.rMsbfBits(bin, 3);
+  var result = Bin.createHuffman(arr);
+  if (result instanceof Error)
+    return result;
+  var dynHfmnCLen = result;
+  /** @param {number} H */
+  function gHuffmanDef(H) {
+    arr = [1];
+    while (H > 0) {
+      if ((n = Bin.readHuffman(bin, dynHfmnCLen)) > 15) {
+        if (n > 16)
+          _bl = 0;
+        _r = (n > 17 ? 11 : 3) + Bin.rMsbfBits(bin, [2, 3, 7][n - 16]);
+      } else
+        _bl = n;
+      if (_bl !== bitLen || _r >= H) {
+        arr.push(bitLen, repeat);
+        if (_r >= H) {
+          arr.push(_bl, H);
+          repeat = _r - H;
+          return arr;
+        }
+        repeat = 0;
+      }
+      bitLen = _bl;
+      repeat += _r;
+      H -= _r;
+      _r = 1;
+    }
+    return arr;
+  }
+  var LitLen = Bin.createHuffman(gHuffmanDef(HLIT)),
+    Dist = Bin.createHuffman(gHuffmanDef(HDIST));
+  if (repeat)
+    console.warn("bit lengths don't end with HDIST end");
+  if (LitLen instanceof Error)
+    return LitLen;
+  if (Dist instanceof Error)
+    return Dist;
+  return {LitLen: LitLen, Dist: Dist};
+};
+/** @param {Bin} bin */
+Bin.readDEFLATECompression = function (bin) {
+  var notBFINAL = !0, BTYPE = {
+    0: Bin.readUncompressed,
+    /** @param {Bin} bin */
+    1: function (bin) {
+      if (!(Bin.huffmanLitLen instanceof Bin.huffmanConstructor)) {
+        var tree = Bin.createHuffman([1, 8, 144, 9, 112, 7, 24, 8, 8]);
+        if ((Bin.huffmanLitLen = tree) instanceof Error)
+          return tree;
+      }
+      if (!(Bin.huffmanDist instanceof Bin.huffmanConstructor)) {
+        tree = Bin.createHuffman([1, 5, 32]);
+        if ((Bin.huffmanDist = tree) instanceof Error)
+          return tree;
+      }
+      return Bin.readInflated(bin, Bin.huffmanLitLen, Bin.huffmanDist);
+    },
+    /** @param {Bin} bin */
+    2: function (bin) {
+      var trees = Bin.readDynamicHuffmanCodes(bin);
+      if (trees instanceof Error)
+        return trees;
+      return Bin.readInflated(bin, trees.LitLen, trees.Dist);
+    },
+    3: function (bin) {
+      return new Error("invalid BTYPE=3 in compressed data");
+    }
+  };
+
+  while (notBFINAL) {
+    notBFINAL = !Bin.rBit(bin);
+    /** @type {unknown} */
+    var result = BTYPE[Bin.rMsbfBits(bin)](bin);
+    if (result instanceof Error)
+      return result;
+  }
+  //+  switch (gBitsMSBF()) {
+  //+    case 0b00:
+  //+      Bin.readUncompressed(bin);
+  //+      break;
+  //+    case 0b01:
+  //+      break;
+  //+    case 0b10:
+  //+      break;
+  //+    case 0b11:
+  //+      break;
+  //+  }
+  //+}
+};
+/** @param {Bin} bin */
+Bin.Gzip = function (bin) {
+  this.data = bin;
+  /** @type {Error|null} */
+  this.error = null;
+  /** @type {Error[]} */
+  this.warnings = [];
+  this.isText = this.hasCrc = this.hasExtra = false;
+  this.hasName = this.hasComment = false;
+  this.modificationTime = 0;
+  this.extraFlags = 0;
+  this.operatingSystem = 255;
+  /** @type {Bin.Gzip.Subfield[]} */
+  this.extraField = [];
+  this.originalName = "";
+  this.comment = "";
+  this.result = bin.output;
+  Object.seal(this);
+};
+/** @param {Bin} bin @param {boolean} [warnings] */
+Bin.Gzip.decode = function (bin, warnings) {
+  /** @param {Error} warn */
+  function warn(warn) {
+    warnings && console.warn(warn);
+    file.warnings.push(warn);
+  }
+  if (bin.j) {
+    bin.i++;
+    bin.j = 0;
+  }
+  var file = new Bin.Gzip(bin), length = bin.buffer.length;
+  if (Bin.rMsbf(bin, 1) !== 31 || Bin.rMsbf(bin, 1) !== 139)
+    warn(new Error("Initial sequence (ID1, ID2) must be 0x1f 0x8b"));
+  if (Bin.rMsbf(bin, 1) !== 8)
+    warn(new Error("Can decode only Compression Method CM = 8"));
+  var FTEXT = Bin.rBit(bin),
+    FHCRC = Bin.rBit(bin),
+    FEXTRA = Bin.rBit(bin),
+    FNAME = Bin.rBit(bin),
+    FCOMMENT = Bin.rBit(bin);
+  if (Bin.rMsbfBits(bin, 3) !== 8)
+    warn(new Error("Reserved FLaGs (FLG) bits must be zero"));
+  file.modificationTime = Bin.rMsbf(bin, 4);
+  file.extraFlags = Bin.rMsbf(bin, 1);
+  file.operatingSystem = Bin.rMsbf(bin, 1);
+  file.isText = !!FTEXT;
+  if (file.hasExtra = !!FEXTRA) {
+    for (var i = bin.i, XLEN = Bin.rMsbf(bin, 2); (bin.i - i) < XLEN;) {
+      var SI1 = Bin.rMsbf(bin, 1),
+        SI2 = Bin.rMsbf(bin, 1),
+        LEN = Bin.rMsbf(bin, 2),
+        data = bin.buffer.slice(bin.i, Math.min(bin.i + LEN, i + XLEN));
+      if (i + LEN < XLEN)
+      file.extraField.push(new Bin.Gzip.Subfield(SI1, SI2, data));
+    }
+    bin.i = i + XLEN;
+  }
+  if (file.hasName = !!FNAME)
+    for (var byte = 0; (byte = Bin.rMsbf(bin, 1)) && bin.i < length;)
+      file.originalName += String.fromCharCode(byte);
+  if (file.hasComment = !!FCOMMENT)
+    for (; (byte = Bin.rMsbf(bin, 1)) && bin.i < length;)
+      file.comment += String.fromCharCode(byte);
+  if (file.hasCrc = !!FHCRC)
+    Bin.rMsbf(bin, 2);
+  try {
+    Bin.readDEFLATECompression(bin);
+    file.result = bin.output;
+  } catch (err) {
+    file.error = err instanceof Error ? err : new Error("" + err);
+  }
+  return file;
+};
+/** @param {number} SI1 @param {number} SI2 @param {Uint8Array} data */
+Bin.Gzip.Subfield = function (SI1, SI2, data) {
+  this.SI1 = SI1 & 255;
+  this.SI2 = SI2 & 255;
+  this.subfieldId = String.fromCharCode(this.SI1, this.SI2);
+  this.data = data;
+  Object.seal(this);
+};
+
 /** letter case of block names doesn't matter when loaded by game,
  * Block name definitions require strict letter cases here */
 /**
@@ -1657,8 +2140,8 @@ Block.NAME = Object.freeze(Data.generateNames("blocks"));
 Block.ID = Object.freeze(Data.generateIDs("blocks"));
 /** object is frozen @readonly *///@ts-expect-error
 Block.TITLE = Object.freeze(Data.titles);
-/** @readonly @type {{[key:number]:number|undefined}} (Mass) *///@ts-expect-error
-// 799: 1, Inversed Dock?
+/** @readonly @type {{[key:number]:number|undefined}} (Mass) */
+//@ts-expect-error 799: 1, Inversed Dock?
 Block.WEIGHT = Data.generateValues("weight");
 /** @readonly @type {{[key:number]:number|undefined}} (Integrity) */
 //@ts-expect-error
@@ -1680,8 +2163,8 @@ Block.ENERGY_STORE = Data.generateValues("energy_store");
  * @readonly *///@ts-expect-error
 Block.FUEL_USE = Data.generateValues("fuel_use");
 /** number = contained liters
- * @readonly @type {{[key:number]:number|undefined}} (Fuel) *///@ts-expect-error
-// 754: was 20 before fuel buff
+ * @readonly @type {{[key:number]:number|undefined}} (Fuel) */
+//@ts-expect-error 754: was 20 before fuel buff
 // 755: was 100 before fuel buff
 // 375: was 250 before fuel buff
 Block.FUEL_STORE = Data.generateValues("fuel_store");
@@ -1716,6 +2199,8 @@ Block.db1ToDb3 = Object.freeze({
 });
 /** @readonly settings for @see {Block.arrayFromObjects} *///@ts-expect-error
 Block.creator = {warns: 3};
+// #mslogics now MS blocks are second time parsed in Block.arrayFromObjects 
+// if performance will suffer, Block instances can be handled more loosely
 /**
  * @readonly @param {any[]|any} blocks
  * @param {Logic<any>[]&{nc?:any}} [logics] */
@@ -2551,8 +3036,10 @@ Block.Box2d.VALUE = Block.Box2d.generateBuildBox(
   [{x: 0, y: -1}, {x: 0, y: -2}, {x: 2, y: -2}, {x: 2, y: -1}],
   700, "0", "0", "1",
   // def6: 1x.5 wedge "Slab Wedge"
-  /** @TODO update Slab Wedge to its collision from Slab as placeholder */
-  [{x: 0, y: -1}, {x: 0, y: -2}, {x: 2, y: -2}, {x: 2, y: -1}],
+  function () {
+    "v.0.2.34" + console.debug(":F for db community IDC anymore :p");
+    return [{x: 0, y: -1}, {x: 0, y: -2}, {x: 2, y: -2}, {x: 2, y: -1}];
+  }(),
   738,
   // def7: .5x.5 block "LED"
   [{x: 0, y: -1}, {x: 0, y: -2}, {x: 1, y: -2}, {x: 1, y: -1}],
@@ -3481,7 +3968,13 @@ Edit.Primitive.changeSelection = function (target, index) {
     ship.selection.splice(selected, 1) :
     ship.selection.push(block) : 0;
 };
-Edit.haha = Edit;
+/** class for old Deltarealm base64 prototype keys code
+ * @namespace @typedef {never} Edit.Ship @returns {never} */
+Edit.Ship = function EditShip() {
+  throw new TypeError("Illegal constructor");
+};
+Edit.Ship.rotateBlock = function () {};
+Edit.Ship.flipBlock = function () {};
 Data.nameMethods(Edit);
 
 /**
@@ -3524,10 +4017,9 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @readonly @type {47} significantVersion: 47 (integer) */// @ts-ignore
-Ship.VERSION = 47;
-Ship.propertyNames = new RegExp("^(?:nodeList|nodeConnections|customI" +
-  "nputs|gridSize)$");
+/** @readonly @type {48} significantVersion: 48 (integer) */// @ts-ignore
+Ship.VERSION = 48;
+Ship.prototype.edit = Edit.Ship;
 Ship.prototype.selectRect = (
   /**
    * @overload @returns {ShipBlock[]}
@@ -3938,7 +4430,7 @@ Ship.prototype.removeBlocks = function removeBlocks(ids) {
   // (v.0.2.1) is JSON.parse(JSON.stringify(ids)) necessary here?
 };
 /** @see {Tool.list} */
-/** 3h_ 
+/**
  * @this {Ship} @param {number} x0 @param {number} y0
  * @param {number} x1 @param {number} y1
  * @param {boolean} [loose] true = select any block colliding within area
@@ -4019,8 +4511,11 @@ Ship.prototype.toJSON = function () {
 // (v.0.2.8) major refactor after limiting use of type any
 /** @readonly @param {safe} object @see {Block.arrayFromObjects} */
 Ship.fromObject = function fromObject(object) {
+  // #mslogics is it even viable to use dbve temp logics format with MS?
+  var spaceship = "UncompressedParts" in object || "Parts" in object ||
+    "CompressedParts" in object ? Ship.fromMSObject(object) : OC();
   var o = {
-    name: object.name || object.n,
+    name: object.name || object.n || spaceship.name,
     ver: object.gameVersion || object.version || object.gv,
     time: object.dateTime || object.time || object.dt,
     blocks: object.blocks || object.b,
@@ -4031,6 +4526,12 @@ Ship.fromObject = function fromObject(object) {
       inputs: object.ci
     } : null
   };
+  if (spaceship.blocks instanceof Array) {
+    if (o.blocks instanceof Array)
+      for (var i = 0; i < o.blocks.length; i++)
+        spaceship.blocks.push(o.blocks[i]);
+    o.blocks = spaceship.blocks;
+  }
   var name = typeof o.name === "string" ? o.name : "[unnamed]",
     ver = (typeof o.ver === "string" ?
       o.ver.replace(/ ,/g, ".").split(".") :
@@ -4059,13 +4560,20 @@ Ship.fromObject = function fromObject(object) {
       Block.arrayFromObjects(o.blocks, logics) :
       Block.generateArray(("" + o.blocks).toUpperCase() ===
         "PAZIK" ? -7 : -69, logics);
+  // v.0.2.34 copy properties decoded from MS object before logic connections
+  if (spaceship.prop) {
+    props = props || OC();
+    for (var p in spaceship.prop)
+      props[p] = spaceship.prop[p];
+  }
   delete logics.nc;
+  // v.0.2.34 TODO:isn't this duplicate of reassemble from arrayFromObjects?
   Logic.reassemble(blocks, logics);
   if (o.add) {
     // (v.0.1.68.K1) added fallbacks for launchpadSize and customInputs, not
     // nodeConnections since prsed nodeList is used for "ni" in DBV file
     (props = props || OC()).launchpadSize = o.add.size || 0;
-    for (var i = Ship.Grid.VALUE.length; i-- > 56;) {
+    for (i = Ship.Grid.VALUE.length; i-- > 56;) {
       var grid = Ship.Grid.VALUE[i];
       if (grid && grid.dbvIndex === props.launchpadSize)
         props.gridSize = grid;
@@ -4193,11 +4701,11 @@ Ship.toMSSSS = function (ship) {
   ship.selection = selection;
   return JSON.stringify(mssss);
 };
-/** @param {ArrayBuffer|Uint8Array|string} mssss */
-Ship.fromMSSSS = function (mssss) {
+/** @param {safe} o @see {Block.arrayFromObjects} _3h */
+Ship.fromMSObject = function (o) {
   var singleWarn = 1;
   /** @param {unknown} raw */
-  function decodePart(raw) {
+  function decodeRaw(raw) {
     if (typeof raw != "string") {
       singleWarn && singleWarn-- &&
         console.warn("MSSSS ship.Parts[x] isn't string");
@@ -4223,59 +4731,117 @@ Ship.fromMSSSS = function (mssss) {
         /** @type {safe} */
         obj = result instanceof Object ? result : {};
     } catch (e) {
-      console.error("parsing a MSSSS object ship.Parts[x]:" + raw);
+      console.error("parsing a MSSSS object ship.Parts[x]:" + raw, e);
       obj = {};
     }
+    return decodePart(obj);
+  }
+  /** @param {safe} obj @param {boolean} [adjust] 0.11 positions */
+  function decodePart(obj, adjust) {
     var name = typeof obj.ID == "number" ?
         Block.NAME[obj.ID + 1280] :
-        "__unknown__",
-      /** @type {XYZPosition} */
-      position = [0, +(obj.X || 0), +(obj.Y || 0)],
+        ("" + obj.ID) in Block.ID ? "" + obj.ID : "__unknown__",
+      /** @type {XYZPosition} */ 
+      position = [0, +(obj.X || obj.x || 0), +(obj.Y || obj.y ||0)],
       rotMirVert = +(obj.MirVert || 0) < 0,
       rotIndex =
         /** @type {0|1|2|3} */
-        (+(obj.Rotation || 0) / 90 + +rotMirVert * 2 + 4.5 & 3),
-      rotFlip = +(obj.MirHor || 0) < 0 ? !rotMirVert : rotMirVert,
+        (typeof obj.rotation == "number" ?
+          obj.rotation & 3 :
+          +(obj.Rotation || 0) / 90 + +rotMirVert * 2 + 4.5 & 3),
+      rotFlip = typeof obj.flip == "boolean" ?
+        obj.flip :
+        +(obj.MirHor || 0) < 0 ? !rotMirVert : rotMirVert,
       /** @type {Rotation} */
-      rotation = [0, rotFlip, rotIndex];
+      rotation = [0, rotFlip, rotIndex],
+      value = obj.ComponentSettings;
+    if (adjust) {
+      var x = position[1], y = position[2], rot = rotation[2];
+      var size = Block.Size.VALUE[Block.ID[name]];
+      if (size) {
+        rot & 1 ? position[1] += size.t / 2 : position[2] += size.t / 2;
+        rot & 1 ? position[2] += size.l / 2 : position[1] += size.l / 2;
+      }
+    }
+    if ("ComponentSettings" in obj) {
+      /** @type {safe} */
+      var properties = (typeof value == "function" ||
+        typeof value == "object") && value || {},
+        color = obj.color || properties.color;
+      properties.actionGroups = obj.actionGroups;
+      properties.connectionGroup = obj.connectionGroup;
+      properties.defaultEnabled = obj.defaultEnabled;
+      properties.layer = obj.layer;
+      properties.nonInteractable = obj.nonInteractable;
+      properties.color = "" + (color) in Color.ID ?
+        color :
+        Color.NAME[Number(properties.invalidColor = color)] || null;
+      return new Block(name, position, rotation, properties);
+    }
     return new Block(name, position, rotation);
   }
-  if (typeof mssss != "string") {
-    mssss instanceof Uint8Array ? 0 : mssss = new Uint8Array(mssss);
-    for (var i = mssss.byteLength; i-- > 0;)
-      mssss[i] ^= 19;
-    mssss = Ship.utf8ToString(mssss);
-  }
-  var string = mssss.trim();
-  if (string[0] !== "{")
-    return null;
-  if (string.slice(-1)[0] !== "}") {
-    for (i = string.length; i-- > 0;)
-      if (/\w/.test(String.fromCharCode(string[i].charCodeAt(0) ^ 19)))
-        break;
-    if ((string = string.slice(0, i + 1)).slice(-1)[0] !== "}")
-      return null;
-  }
-  try {
-    var result = JSON.parse(string),
-      /** @type {safe} */
-      o = result instanceof Object ? result : {};
-  } catch (e) {
-    console.error("Parsing .mssss:", e);
-    return;
-  }
+  //-v.0.2.35 this code was taken from Ship.fromMSSSS
   var name = typeof o.Name == "string" ? o.Name : "Modular Spaceship",
-    parts = o.Parts instanceof Array ? o.Parts.map(decodePart) : [],
-    moreParts = o.UncompressedParts;
+    parts = o.Parts instanceof Array ? o.Parts.map(decodeRaw) : [],
+    moreParts = o.UncompressedParts,
+    /** @type {{p:XYZPosition,r:Rotation}} */
+    refs = {p: [0, 0, 0], r: [0, !1, 0]};
   if (moreParts instanceof Array)
-    parts = parts.concat(moreParts.map(function (item) {
-      return new Block("__unknown__", [0, 0, 0], [0, !1, 0], item);
-    }));
+    moreParts.forEach(function (item) {
+      parts.push(new Block("__unknown__", refs.p, refs.r, item));
+    });
+  if ("CompressedParts" in o)
+    try {
+      var data = new Bin(B64Key.b64ToU8arr(o.CompressedParts).buffer),
+        gzip = Bin.Gzip.decode(data);
+      if (gzip.error)
+        throw gzip.error;
+      //@ts-expect-error v.0.2.35 gzip.result is enough as ArrayLike
+      // this is still within try catch, better than duplicating big data
+      moreParts = JSON.parse(Ship.utf8ToString(gzip.result))
+      if (moreParts instanceof Array)
+        moreParts.forEach(function (item) {
+          parts.push(decodePart(item, true));
+        });
+    } catch (err) {
+      console.error("Decoding CompressedParts:", err);
+    }
   var spaceship = new Ship(name, [], Ship.dateTime(), parts);
   spaceship.setSelected();
   Edit.Primitive.rotate(spaceship, 2);
   spaceship.setSelected([]);
   return spaceship;
+};
+/** @param {ArrayBuffer|Uint8Array|string|safe} mssss */
+Ship.fromMSSSS = function (mssss) {
+  if (typeof mssss != "string") {
+    if (mssss instanceof ArrayBuffer)
+      mssss = new Uint8Array(mssss);
+    else if (!(mssss instanceof Uint8Array))
+      return Ship.fromMSObject(mssss);
+    for (var i = mssss.byteLength; i-- > 0;)
+      mssss[i] ^= 19;
+    mssss = "" + Ship.utf8ToString(mssss);
+  }
+  var string = mssss.trim();
+  if (string[0] !== "{")
+    return null;
+  if (string.slice(-1)[0] !== "}") {
+    // when original XOR masked file contains whitespace at end
+    for (i = string.length; i-- > 0;)
+      if (/\w/.test(String.fromCharCode(string.charCodeAt(i) ^ 19)))
+        break;
+    if ((string = string.slice(0, i + 1)).slice(-1)[0] !== "}")
+      return null;
+  }
+  try {
+    /** @type {unknown} */
+    var result = JSON.parse(string)
+    return Ship.fromMSObject(result || {});
+  } catch (e) {
+    console.error("Parsing .mssss:", e);
+    return null;
+  }
 };
 /** @readonly @param {Ship} ship @throws {Error} */
 Ship.checkDBV = function (ship) {
@@ -4411,7 +4977,9 @@ Ship.dateTime = function (t, f) {
   t += 1 + +(n % 1461 === 789);
   return (t > 9 ? "" : "0") + t + s;
 };
-/** @param {Uint8Array|ArrayBuffer} buffer @param {number} [i=0] */
+/** May throw an error!
+ * @param {Uint8Array|ArrayBuffer} buffer @param {number} [i=0]
+ * @throws {Error} */
 Ship.utf8ToString = function (buffer, i) {
   var bytes = buffer instanceof Uint8Array ?
     buffer :
@@ -4526,7 +5094,7 @@ Ship.CustomInput.reassemble = function (blocks, prop) {
     (prop || (prop = {})).customInputs = inputs.slice(j);
   return prop;
 };
-/** instance is frozen, (experimental class is frozen)
+/** instance is frozen
  * (keeping reference to mode object also keeps its old ship object)
  * @typedef Ship.Mode @property {EditMode} mode @property {()=>Ship} getShip
  * @param {EditMode} mode @param {Ship|(()=>Ship)} ship */
@@ -4595,7 +5163,7 @@ Ship.Grid.VALUE = Ship.Grid.generateGrids({
   54: ["Droneboi", "Sandbox", 2]
 });
 Data.nameMethods(Ship);
-Object.freeze(Object.freeze(Ship).Mode);
+Object.freeze(Ship.Mode);
 Object.freeze(Ship.Grid);
 
 // generating Eagle's Pazik (Modular Spaceships Space Ship)
@@ -4612,7 +5180,7 @@ function B64Key() {
 B64Key.i = 0;
 B64Key.j = 0;
 B64Key.buffer = new Uint8Array(0);
-/** @function base64ToUint8array */
+/** May throw error! @function base64ToUint8array @throws {Error} */
 B64Key.b64ToU8arr = function base64ToUint8array(base64) {
   var uint8array = [], buffer = 0, i = 0, p = 0, c;
   for (; i < base64.length; i++) {
@@ -4776,32 +5344,7 @@ B64Key.wBit = function (b) {
     B64Key.j = 0;
   }
 };
-/** Concluded to be safe to include max 24 bits */
-B64Key.wBitsMSBfFast = function (l, n) {
-  var buffer = B64Key.buffer;
-  buffer[B64Key.i] |= n << B64Key.j;
-  n >>= 8 - B64Key.j;
-  if (l + B64Key.j > 8) {
-    l -= 8 - B64Key.j;
-    B64Key.j = 0;
-    B64Key.i++;
-    while (l > 7) {
-      buffer[B64Key.i++] |= n;
-      n >>= 8;
-      l -= 8;
-    }
-    buffer[B64Key.i] |= n;
-    n >>= l;
-  }
-  B64Key.j += l;
-  buffer[B64Key.i] &= 255 >> 8 - B64Key.j;
-  if (B64Key.j > 7) {
-    B64Key.i++;
-    B64Key.j = 0;
-  }
-  // value of spare bits
-  return n;
-};
+/** v.0.2.35+ binaray write functions were moved to @see {Bin.wMsbfBits} */
 B64Key.wMSBfirst = function (l, n) {
   for (var i1 = B64Key.i += l, buffer = B64Key.buffer; l-- > 0; n >>= 8)
     buffer[--i1] = n & 255;
@@ -4869,7 +5412,7 @@ B64Key.encode = function encodeCmprsShip(ship) {
     dbvVehicle = isDBVehicle ? Ship.toDBV(ship) : {b: [], nc: []};
   // blocks length
   B64Key.wBit(n = (l = b.length) > 8191);
-  B64Key.wBitsMSBfFast(n ? 21 : 13, l);
+  Bin.wMsbfBits(B64Key, n ? 21 : 13, l);
   if (!l) {
     console.log("empty ship (no blocks)");
     if (B64Key.j)
@@ -4880,7 +5423,7 @@ B64Key.encode = function encodeCmprsShip(ship) {
     return arr;
   }
   // ID bit length (3 bits) + 4 (IDLEN)
-  B64Key.wBitsMSBfFast(3, IDLEN - 4);
+  Bin.wMsbfBits(B64Key, 3, IDLEN - 4);
   arr = b[--l].position;
   min = [arr[0], arr[1], arr[2]];
   max = [arr[0], arr[1], arr[2]];
@@ -4894,22 +5437,22 @@ B64Key.encode = function encodeCmprsShip(ship) {
   }
   // pairs min and max blocks positions in each axis - xyz
   for (n = 0, l = 6; n < 3; ++n > 1 ? l = 8 : 0) {
-    if (B64Key.wBitsMSBfFast(l, min[n] + (1 << l - 1) - 1))
+    if (Bin.wMsbfBits(B64Key, l, min[n] + (1 << l - 1) - 1))
       return er("ship too far in axis: " + "xyz"[n]);
-    if (B64Key.wBitsMSBfFast(l, max[n] + (1 << l - 1) - 1))
+    if (Bin.wMsbfBits(B64Key, l, max[n] + (1 << l - 1) - 1))
       return er("ship too far in axis: " + "xyz"[n]);
   }
   /** @param {Block} block */
   function fixedBlock(block) {
     // ID
-    B64Key.wBitsMSBfFast(IDLEN, id = Block.ID[block.internalName]);
+    Bin.wMsbfBits(B64Key, IDLEN, id = Block.ID[block.internalName]);
     // position
-    B64Key.wBitsMSBfFast(8, block.position[2] + 127);
-    B64Key.wBitsMSBfFast(6, block.position[1] + 31);
-    B64Key.wBitsMSBfFast(6, block.position[0] + 31);
+    Bin.wMsbfBits(B64Key, 8, block.position[2] + 127);
+    Bin.wMsbfBits(B64Key, 6, block.position[1] + 31);
+    Bin.wMsbfBits(B64Key, 6, block.position[0] + 31);
     /** rotation @type {number|Rotation} */
     var r = block.rotation;
-    B64Key.wBitsMSBfFast(5, r = r[2] | +r[1] << 2 | r[0] << 3);
+    Bin.wMsbfBits(B64Key, 5, r = r[2] | +r[1] << 2 | r[0] << 3);
     // are properties?
     checkProperties(block.properties, block);
     rotations[id] = r;
@@ -4925,7 +5468,7 @@ B64Key.encode = function encodeCmprsShip(ship) {
       n = B64Key.i = chunkEnd + 8;
       B64Key.j = 0;
       // six bits after chunkending
-      B64Key.wBitsMSBfFast(6, (chunkEnd << 3) + 7 - p_i);
+      Bin.wMsbfBits(B64Key, 6, (chunkEnd << 3) + 7 - p_i);
       fixedBlock(b[l]);
       n = B64Key.i - n;
       B64Key.i = chunkEnd + 1;
@@ -4991,7 +5534,7 @@ B64Key.encode = function encodeCmprsShip(ship) {
   for (l = 1, arr = b[0].position; l < b.length; l++) {
     p_i = (B64Key.i << 3) + B64Key.j;
     // ID
-    B64Key.wBitsMSBfFast(IDLEN, id = Block.ID[b[l].internalName]);
+    Bin.wMsbfBits(B64Key, IDLEN, id = Block.ID[b[l].internalName]);
     // relative position
     prev = [arr[0], arr[1], arr[2]];
     arr = b[l].position;
@@ -5003,7 +5546,7 @@ B64Key.encode = function encodeCmprsShip(ship) {
     }
     B64Key.wBit(s);
     if (s)
-      B64Key.wBitsMSBfFast(sizeB[n], s - 1);
+      Bin.wMsbfBits(B64Key, sizeB[n], s - 1);
     while (n-- > 0) {
       // relative y and x position
       if (arr[n] < prev[n]) {
@@ -5016,14 +5559,14 @@ B64Key.encode = function encodeCmprsShip(ship) {
         s = arr[n] - prev[n];
       B64Key.wBit(s);
       if (s)
-        B64Key.wBitsMSBfFast(sizeB[n], s - 1);
+        Bin.wMsbfBits(B64Key, sizeB[n], s - 1);
     }
     // optionaly relative rotation
     var rot = b[l].rotation;
     n = rot[2] | +rot[1] << 2 | rot[0] << 3;
     B64Key.wBit(s = rotations[id] !== n);
     if (s)
-      B64Key.wBitsMSBfFast(5, n);
+      Bin.wMsbfBits(B64Key, 5, n);
     rotations[id] = n;
     checkProperties(b[l].properties, b[l]);
     endings();
@@ -5062,41 +5605,7 @@ B64Key.encode = function encodeCmprsShip(ship) {
   }
   return buffer;
 };
-B64Key.gBit = function gBit() {
-  var b_int = (B64Key.buffer[B64Key.i] & 1 << B64Key.j) >> B64Key.j;
-  if (++B64Key.j > 7) {
-    B64Key.j = 0;
-    B64Key.i++;
-  }
-  return b_int;
-};
-B64Key.gMSBfirst = function (l) {
-  var n = 0, buffer = B64Key.buffer;
-  while (l-- > 0)
-    n = n * 256 + buffer[B64Key.i++];
-  return n;
-};
-B64Key.gBitsMSBfFast = function (l) {
-  var mj = B64Key.j, b_int = 0, buffer = B64Key.buffer;
-  if (l + B64Key.j > 8) {
-    b_int = buffer[B64Key.i++] & 255 << B64Key.j;
-    l -= 8 - B64Key.j;
-    B64Key.j = 8;
-    while (l > 8) {
-      b_int += (buffer[B64Key.i++] << B64Key.j);
-      l -= 8;
-      B64Key.j += 8;
-    }
-    b_int += (buffer[B64Key.i] & 255 >> (8 - l)) << B64Key.j;
-  } else
-    b_int += buffer[B64Key.i] & 255 >> (8 - l) << B64Key.j;
-  b_int >>= mj;
-  if ((B64Key.j = (B64Key.j & 7) + l) > 7) {
-    B64Key.i++;
-    B64Key.j = 0;
-  }
-  return b_int;
-};
+/** v.0.2.35+ binaray get (read) functions were moved to @see {Bin.rBit} */
 B64Key.gVersion = function gVersion() {
   var version = [], n = 0, buffer = B64Key.buffer;
   B64Key.i--;
@@ -5129,44 +5638,44 @@ B64Key.decode = function decodeCmprsShip(cmprsShip) {
   var n = 0, l, pl, chunkEnd, id, IDLEN, BLEN, s = "", arr = [];
   var prev = [], b = [], min = [],  max = [], size = [], sizeB = [];
   var rot = [], properties = [], obj, ship = {}, p_i, num = 0;
-  B64Key.i = B64Key.j = 0;
-  var buffer = B64Key.buffer;
+  var bin = B64Key, buffer = bin.buffer;
+  bin.i = bin.j = 0;
   if (cmprsShip !== UDF)
-    B64Key.buffer = buffer = cmprsShip;
+    bin.buffer = buffer = cmprsShip;
   // data block: compression version (and check)
-  arr = B64Key.gVersion();
+  arr = bin.gVersion();
   while (n < 2)
     if (arr[n++] > 0)
       return er("unknown file vesrion");
   if (arr.length > 2 && arr[2] > 15)
     ship.significantVersion = arr[2];
   // data block: name
-  l = buffer[B64Key.i++];
+  l = buffer[bin.i++];
   while (l-- > 0)
-    s += String.fromCharCode(buffer[B64Key.i++]);
+    s += String.fromCharCode(buffer[bin.i++]);
   ship.name = s;
   // data block: game version
-  ship.gameVersion = B64Key.gVersion().join(".");
+  ship.gameVersion = bin.gVersion().join(".");
   // data block: date and time
   // ...of compression as I don't have date and time parse
-  s = Ship.dateTime(B64Key.gMSBfirst(4) + 1643215695);
+  s = Ship.dateTime(Bin.rMsbf(bin, 4) + 1643215695);
   ship.dateTime = "compressed: " + s + " UTC";
   // data block: blocks
   // blocks length
-  BLEN = B64Key.gBitsMSBfFast(B64Key.gBit() ? 21 : 13);
+  BLEN = Bin.rMsbfBits(bin, Bin.rBit(bin) ? 21 : 13);
   ship.blocks = b;
   if (!BLEN) {
-    if (B64Key.i > buffer.length)
+    if (bin.i > buffer.length)
       return er("unexpected end of data");
     console.log("read empty ship (no blocks)");
     return ship;
   }
   // ID bit length
-  IDLEN = B64Key.gBitsMSBfFast(3) + 4;
+  IDLEN = Bin.rMsbfBits(bin, 3) + 4;
   // min max positions
   for (n = 0, l = 6; n < 3; ++n > 1 ? l = 8 : 0) {
-    min[n] = B64Key.gBitsMSBfFast(l);
-    max[n] = B64Key.gBitsMSBfFast(l);
+    min[n] = Bin.rMsbfBits(bin, l);
+    max[n] = Bin.rMsbfBits(bin, l);
     min[n] -= (1 << l - 1) - 1;
     max[n] -= (1 << l - 1) - 1;
   }
@@ -5176,47 +5685,47 @@ B64Key.decode = function decodeCmprsShip(cmprsShip) {
       b = !0;
     var obj = {}, num = 0;
     // ID
-    obj.internalName = Block.NAME[id = B64Key.gBitsMSBfFast(IDLEN)];
+    obj.internalName = Block.NAME[id = Bin.rMsbfBits(bin, IDLEN)];
     // position
     obj.position = arr = [];
-    arr[2] = B64Key.gBitsMSBfFast(8) - 127;
-    arr[1] = B64Key.gBitsMSBfFast(6) - 31;
-    arr[0] = B64Key.gBitsMSBfFast(6) - 31;
+    arr[2] = Bin.rMsbfBits(bin, 8) - 127;
+    arr[1] = Bin.rMsbfBits(bin, 6) - 31;
+    arr[0] = Bin.rMsbfBits(bin, 6) - 31;
     // rotation
-    num = B64Key.gBitsMSBfFast(5);
+    num = Bin.rMsbfBits(bin, 5);
     // !!!not tested rotation index to Rotation type
     obj.rotation = [num >> 3, (num & 4) > 0, num & 3];
     obj.properties = {};
     // has properties
-    if (B64Key.gBit() && b)
+    if (Bin.rBit(bin) && b)
       properties.push(0);
     if (b) {
       prev = arr;
       rot[id] = num;
     }
-    if (B64Key.j) {
-      B64Key.i++;
-      B64Key.j = 0;
+    if (bin.j) {
+      bin.i++;
+      bin.j = 0;
     }
     return obj;
   }
   function relativeBlock() {
-    p_i = (B64Key.i << 3) + B64Key.j;
+    p_i = (bin.i << 3) + bin.j;
     var obj = {}, num = 0;
     // ID
-    obj.internalName = Block.NAME[id = B64Key.gBitsMSBfFast(IDLEN)];
+    obj.internalName = Block.NAME[id = Bin.rMsbfBits(bin, IDLEN)];
     // relative x position
     obj.position = arr = [prev[0], prev[1], prev[2]];
     if (isDBVehicle)
       obj.position = [prev[1], prev[2]];
-    arr[2] += B64Key.gBit() ? B64Key.gBitsMSBfFast(sizeB[2]) + 2 : 1;
+    arr[2] += Bin.rBit(bin) ? Bin.rMsbfBits(bin, sizeB[2]) + 2 : 1;
     if (arr[n = 2] > max[2]) {
       arr[2] -= size[2];
       arr[1]++;
     }
     while (n-- > 0) {
       // relative y and z positions
-      arr[n] += B64Key.gBit() ? B64Key.gBitsMSBfFast(sizeB[n]) + 1 : 0;
+      arr[n] += Bin.rBit(bin) ? Bin.rMsbfBits(bin, sizeB[n]) + 1 : 0;
       if (arr[n] > max[n]) {
         if (n < 1)
           return er("blocks doesn't fit in box");
@@ -5225,14 +5734,14 @@ B64Key.decode = function decodeCmprsShip(cmprsShip) {
       }
     }
     // optionaly relative rotation
-    num = B64Key.gBit() ? B64Key.gBitsMSBfFast(5) : rot[id];
+    num = Bin.rBit(bin) ? Bin.rMsbfBits(bin, 5) : rot[id];
     // !!!not tested rotation index to Rotation type
     obj.rotation = [num >> 3, (num & 4) > 0, num & 3];
     obj.properties = {};
     // has properties
-    if (B64Key.gBit() && B64Key.i < chunkEnd)
+    if (Bin.rBit(bin) && bin.i < chunkEnd)
       properties.push(l);
-    if (B64Key.i + +!!B64Key.j > chunkEnd)
+    if (bin.i + +!!bin.j > chunkEnd)
       return "";
     prev = arr;
     rot[id] = num;
@@ -5246,7 +5755,7 @@ B64Key.decode = function decodeCmprsShip(cmprsShip) {
       B64Key.i = chunkEnd;
       B64Key.j = 0;
     }
-    if ((--chunkEnd << 3) + 7 - p_i !== B64Key.gBitsMSBfFast(6)) {
+    if ((--chunkEnd << 3) + 7 - p_i !== Bin.rMsbfBits(B64Key, 6)) {
       b[l = b.length = ++pl] = obj = fixedBlock();
       console.warn("corrupted chunk: " + (p_i >> 13));
     } else
@@ -5357,21 +5866,24 @@ e, ?isMSBF=false :displays data in bits(for viewing data)";
       slice[0] = a[1].shift();
     slice.push(a[1][0]);
   }
+  if (typeof ArrayBuffer != UDF + "" && a[0] instanceof ArrayBuffer)
+    a[0] = new Uint8Array(a[0]);
   if (typeof a[0].BYTES_PER_ELEMENT === "number")
-    bs = a[0].BYTES_PER_ELEMENT << 3;
+    bs = a[0].BYTES_PER_ELEMENT * 8 >>> 0;
   else if (!(a[0] instanceof Array) || typeof a[i] !== "number")
     throw new TypeError("requires ArrayBuffer or Array and bytesize");
-  if (slice.length < 2)
-    slice.push(a[0].length);
+  slice.push(a[0].length);
+  if (1 / slice[1] < 0)
+    slice[1] += a[0].length;
   if (typeof a[i] === "number")
-    bs = a[i++] << 3;
+    bs = a[i++] * 8 >>> 0;
   if (typeof a[i] === "boolean" && a[i])
     for (i = slice[0], l = slice[1], s = "BigEndian " + i + ":"; 1;) {
       for (j = 0; j < bs; s += j & 7 ? "" : " ")
         s += a[0][i] & 1 << bs - ++j ? "1" : "0";
       if (++i >= l)
         return s;
-      s += i + ":";
+      s = s.replace(/ ?$/, " ") + i + ":";
     }
   // bits are ordered as they are read be decoding
   for (i = slice[0], l = slice[1], s = "LSbitF+LE! " + i + ":"; 1;) {
@@ -5379,7 +5891,7 @@ e, ?isMSBF=false :displays data in bits(for viewing data)";
       s += (a[0][i] & bit ? "1" : "0") + (j & 7 ? "" : " ");
     if (++i >= l)
       return s;
-    s += i + ":";
+    s = s.replace(/ ?$/, " ") + i + ":";
   }
 };
 /** function for manual use to check rotations or/and rotation index

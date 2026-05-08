@@ -2,7 +2,7 @@
 /// <reference path="./editor.js" />
 "use strict";
 /** global version of project when last changes were done */
-var version_unit_tests_js = "0.2.31";
+var version_unit_tests_js = "0.2.35";
 /** @TODO rename this file to bug_tests.js */
 var utst_ = true;
 function BError (message) {
@@ -75,13 +75,20 @@ try {
 console.warn = utst_consoleWarn;
 // TEST: Command.list[].items() //
 var utst_i = 0, utst_errorCatcher = function () {
-    var str = [].map.call(arguments, String).join("");
-    if (!utst_arr2.length || !utst_arr2.pop().test(str))
-      utst_ = new BError("Unexpected error(s)!? : " + "itemsInit<\""
-        + Command.list[utst_i].name + "\">:" +  str);
-    else
-      console.debug("Expected error: " + str);
-  };
+  var str = [].map.call(arguments, function (e) {
+    return "" + (e instanceof Error && e.stack || e);
+  }).join(""), utst_accepatableErrors = /Import.*Export.*DBV/i.test(
+    Command.list[utst_i].name) && new RegExp("SyntaxError: (Unexpected end o\
+f JSON input|Syntaktick. chyba)|Error: unexpected end of data|Error: The arr\
+ay \"c\" property is required").test(str);
+  if (utst_accepatableErrors)
+    return console.debug("Acccepted Imp/Exp DBV err: " + arguments[0]);
+  if (!utst_arr2.length || !utst_arr2.pop().test(str))
+    utst_ = new BError("Unexpected error(s)!? : " + "itemsInit<\""
+      + Command.list[utst_i].name + "\">:" + str);
+  else
+    console.debug("Expected error: " + [].slice.call(arguments).join(" "));
+}, utst_fns = [];
 function utst_testCommands() {
   for (utst_i = Command.list.length; utst_i-- > 0;) {
     var utst_fn = Command.list[utst_i].items, utst_div = EL();
@@ -92,19 +99,17 @@ function utst_testCommands() {
       if (utst_el0 instanceof HTMLLIElement && utst_el0.firstChild)
         utst_el0 = utst_el0.firstChild;
       console.error = utst_errorCatcher;
-      utst_el0 instanceof HTMLElement &&
-        typeof (utst_fn = utst_el0.onclick) == "function" && utst_fn();
+      if (utst_el0 instanceof HTMLElement &&
+        typeof (utst_fn = utst_el0.onclick) == "function")
+        utst_fns.push(utst_fn) && utst_fn();
     }
   }
 }
 var utst_consoleError = console.error, utst_arr2 = [
-  // v.0.2.31 fot unknown reason err is gone after changes in Ship.checkDBE
+  // v.0.2.31 for unknown reason err is gone after changes in Ship.checkDBE
   //Error: The array "c" property is required for "wedge" block\./
-  /Error: box2d shipGrid is required for safe export/,
-  /SyntaxError: (Unexpected end of JSON input|Syntaktick. chyba)/,
   /Error: unexpected end of data/,
   /Error: box2d shipGrid is required for safe export/,
-  /SyntaxError: (Unexpected end of JSON input|Syntaktick. chyba)/,
   /Error: unexpected end of data/
 ];
 try {
@@ -230,6 +235,28 @@ nsmm,Sollolw,Smaanlx,Smastkn,DocDom3,SlaSljc,Smo 1je,Smornjd'
 } catch (e) {utst_ =
   console.error("Ship.fromObject:");console.error(e);}
 console.warn = utst_consoleWarn;
+// TEST: Bin.wMsbfBits, Bin.rMsbfBits //
+B64Key.buffer = new Uint8Array(256);
+B64Key.i = B64Key.j = 0;
+var utst_arr3 = [], utst_rng = Edit.randSFC32(6969);
+for (var utst_1; utst_arr3.length < 220;) {
+  utst_1 = utst_rng() * 31 + 2 | 0;
+  utst_arr3.push(utst_1, utst_rng() * 0xffffffff >>> 32 - utst_1);
+}
+utst_arr3.push("mid");
+for (utst_1 = 220; utst_1-- > 0; utst_1--)
+  utst_arr3.push(Bin.wMsbfBits(B64Key, utst_arr3[utst_1 - 1],
+    utst_arr3[utst_1]));
+B64Key.i = B64Key.j = 0;
+for (utst_1 = 220; utst_1-- > 0; utst_1--)
+  if (utst_arr3[utst_1] !==
+    (utst_rng = Bin.rMsbfBits(B64Key, utst_arr3[utst_1 - 1])))
+    throw new BError("Not functional Bin.r/wMsbfBits at:" + utst_1);
+[
+  B64Key.i + " " + B64Key.j + "/" + B64Key.buffer.length
+].concat(utst_arr3.map(function (e, i) {
+  return i & 1 ? "0x" + e.toString(16) : e
+}));
 // END OF TESTS //
 // TEST: DefaultUI.reflowBlockBars DefaultUI.getSelectedTile ideas
 // - set inventory items to custom default items

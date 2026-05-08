@@ -1,8 +1,10 @@
 //@ts-check
 /// <reference path="./code.js" />
+/** @TODO finish updating favicons with realfavicongenerator.net */
+/** @TODO check how to fix wrong commit messages w comment on GitHub */
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.34";
+var version_editor_js = "v.0.2.35";
 /** 3h_ @TODO check @see {Editor} for assignment without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -75,9 +77,12 @@ Editor.backgroundImage = 0;
 //** mumst be in #xxxxxx hex color format */
 Editor.highlightRed = "#dd3333";
 Editor.highlightGreen = "#33bb33";
+Editor.highlightBlue = "#45b3ff";
 Editor.highlightYellow = "#db9725";
 Editor.highlightWidth = 2;
 Editor.logicPreviewAlpha = .5;
+Editor.outlineBlue = "#5577aa";
+Editor.outlineYellow = "#c08c2b";
 Editor.buildReplace = !1;
 /** (default) 0: Lunar, 0: none, ... 31: unassigned */
 Editor.backgroundStage = 0;
@@ -174,7 +179,7 @@ Editor.addingStyles = function (css) {
 };
 /** DBV, DB and MS textures MS paint simple to source v3
  * @param {IMGElement[]} images @param {MSPaintTextureGenOptions} opt
- * @return {void} @see {Editor.loadTextures} */
+ * @returns {void} @see {Editor.loadTextures} */
 Editor.d1rTexturesToSource = function (images, opt) {
   /** @param {DataView<ArrayBuffer>} view */
   function checkImgMask(view) {
@@ -476,6 +481,12 @@ wxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNl0sIntcImNvbG\
     case "ae3c8f3b":
       init_funMode = function () {
         enableLogicEditing();
+        var i = 0, classic = DefaultUI.createTile("Classic");
+        i = DefaultUI.blockBars[DefaultUI.openedFolder].indexOf(classic);
+        if (i !== -1)
+          DefaultUI.setSelectedTile(i << 2 | 1);
+        else if ((i = DefaultUI.toolBar.indexOf(classic)) !== 1)
+          DefaultUI.setSelectedTile(i << 2 | 0);
         //@ts-expect-error
         ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr(("gIAEDEFOT05\
 fU2h1dHRsZQAEXVy0aoC/TzvnFnWt0z4R4pYUZx2CorwBRXLToKjrQJPehCK9CdKboLhB4MUPQVw\
@@ -2169,23 +2180,30 @@ Command.push("Import/Export DBV", function (items, collapsed) {
   elBtn.appendChild(tN("Import"));
   error.style.color = "red";
   onFile.temporaray = function (buffer) {
+    var history = ship.history;
     function checkMSSSS() {
       var temporaray = s && Ship.fromMSSSS(s) || Ship.fromMSSSS(buffer);
       if (temporaray) {
-        temporaray.history = ship.history;
+        temporaray.history = history;
         Edit.save(ship = temporaray);
         render();
       }
       return !!temporaray;
     }
-    if (buffer[0] !== 123 || buffer[buffer.length - 1] !== 125)
-      return checkMSSSS();
     var s = "";
     try {
-      s = Ship.utf8ToString(buffer);
-      var obj = JSON.parse(s);
-      Ship.fromObject(obj);
-      !(obj.significantVersion > 15) && ship.fixPositionAdjustment(!0);
+      s = Ship.utf8ToString(buffer).trim();
+      if (s.slice(0, 2) !== "{\"" || s.slice(-1) !== "}")
+        return checkMSSSS();
+      /** @type {safe} */
+      var obj = JSON.parse(s) || OC(), version = obj.significantVersion;
+      console.debug(s);
+      ship = Ship.fromObject(obj);
+      // v.0.2.35 do not 
+      (Number(version) <= 15) && ship.fixPositionAdjustment(!0);
+      ship.history = history;
+      Edit.save(ship);
+      render();
     } catch (err) {
       if (checkMSSSS())
         return !0;
@@ -2222,24 +2240,6 @@ Command.push("Import/Export DBV", function (items, collapsed) {
   (elBtn = EL("button")).onclick = function () {
     error.innerText = "";
     try {
-      var obj = JSON.parse(json.value), history = ship.history;
-      (ship = Ship.fromObject(obj)).history = history;
-      Edit.save(ship);
-      if (!(obj.significantVersion > 15))
-        Edit.applyCommand(ship, ship.fixPositionAdjustment, !0);
-      i = Number(((ship.prop || {}).gridSize || {}).gridIndex);
-      grid.value = isNaN(i) ? "null" : "" + i;
-      render();
-    } catch (err) {
-      error.innerText = "" + err;
-      console.error(err);
-    }
-  };
-  items.push(elBtn);
-  elBtn.appendChild(tN("Import"));
-  (elBtn = EL("button")).onclick = function () {
-    error.innerText = "";
-    try {
       json.value = Ship.toMSSSS(ship);
       var i = json.value.length, u8arr = new Uint8Array(i);
       for (; i-- > 0;)
@@ -2256,7 +2256,25 @@ Command.push("Import/Export DBV", function (items, collapsed) {
       console.warn(error.innerText += "\nConverting Ship that isn't " +
         "Ship.Mode \"Ship\"!");
   };
-  elBtn.appendChild(tN("Export .MSSSS"))
+  elBtn.appendChild(tN("Export .MSSSS"));
+  (elBtn = EL("button")).onclick = function () {
+    error.innerText = "";
+    try {
+      var obj = JSON.parse(json.value), history = ship.history;
+      (ship = Ship.fromObject(obj)).history = history;
+      Edit.save(ship);
+      if (!(obj.significantVersion > 15))
+        Edit.applyCommand(ship, ship.fixPositionAdjustment, !0);
+      i = Number(((ship.prop || {}).gridSize || {}).gridIndex);
+      grid.value = isNaN(i) ? "null" : "" + i;
+      render();
+    } catch (err) {
+      error.innerText = "" + err;
+      console.error(err);
+    }
+  };
+  elBtn.appendChild(tN("Import"));//MAJOR FORmATTING FIX
+  items.push(elBtn);
   download.appendChild(tN("Download .JSON or .MSSSS"));
   download.href = "javascript:void(0)";
   div.appendChild(download);
@@ -2269,12 +2287,14 @@ required to be saved as Small grid instead of minimally Medium from exportin\
 g. The red error message shows that the vehicle would not export previously.\
 \n\nExport and Import are functions using displayed vehicle as target.\nExpo\
 rting creates JSON key of ship and puts it in text input, the key doesn't in\
-clude nonexistent or blocks unavailable in game.\nImporting displays vehicle\
- of JSON key from text input.\nUpload from file/files button is used to load\
- file content into text input.\nNotice that there is nothing mentioned about\
- JSON save file input, it's mostly meant for stations.\nJSON key is the cont\
-ent of .dbv savefile. It contains textual data and can be opened using text \
-editor.");
+clude nonexistent or blocks unavailable in game.\nJSON key is the cont\ent o\
+f .dbv savefile. It contains textual data and can be opened using text \edit\
+or.\nImporting displays vehicle of JSON key from text input.\n\nUpload from \
+file/files button and the rest below is used for operations with other fomat\
+s, the input doesn't always show full vehicle, as the JSON formats used in i\
+t are filling the element up too much. Vehicles spaceships and drones are sh\
+own upon loading correct file, otherise this part is highly undocumented and\
+ keeps changing currently.");
 Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
   var inp = EL("input"), elBtn = EL("button"), error = EL();
   items.push({name: "Base64 key", inp: inp});
@@ -2307,8 +2327,10 @@ Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
         if (typeof obj != "string")
           Edit.applyCommand(ship, ship.fixPositionAdjustment,
             !(obj.significantVersion > 15));
-      } else
-        (ship = Ship.fromDBKey(atob(s))).history;
+      } else {
+        (ship = Ship.fromDBKey(atob(s))).history = history;
+        Edit.save(ship);
+      }
       render();
     } catch (err) {
       error.innerText = "" + err;
@@ -2595,6 +2617,7 @@ Command.push("Vehicle stats", function (items, collapsed) {
       tmpSums[stack[i - 1]] += parse ? parse(value) : value :
       tmpSkip[stack[i - 1]]++;
   }
+  // for future me, this is very shitty approach in terms of maintanance?
   for (var j = 0, texts = [], l = 14; j < l;)
     items.push(texts[j++] = tN(""), EL("br"));
   var riftLY = items[items.length - l * 2 + 19] = EL("input"),
@@ -3231,7 +3254,7 @@ function Tool(name, icon, init, exec, destroy) {
   this.clickType = destroy === UDF;
   /** keeping proper stroke/fill color for Tool is in
    * hands of code for creation/control of tools */
-  this.color = "#5577aa";
+  this.color = Editor.outlineBlue;
   Object.seal(this);
 }
 /** tool.reset @param {number} x @param {number} y */
@@ -3866,28 +3889,6 @@ be8b,554f,be8b,be8b z M33a,c1a9 l0,0 c0,-693b,554f,-be8b,be8b,-be8b h3299 l-\
 57,0,-2873,121c,-2873,2873 v6982 c0,1657,121c,2873,2873,2873 h5090 c1657,0,2\
 873,-121c,2873,-2873 c0,-1657,-121c,-2873,-2873,-2873 h-282b z",
 function init(x, y) {
-  //-Tool.subscribedStart = function (x, y, actions) {
-  //-  if (DefaultUI.handleGUIArea(x, y, new DefaultUI.Drag()))
-  //-    return false;
-  //-  var event = actions.source.event, isClaiming = move(x, y, event);
-  //-  if (isClaiming) {
-  //-    event.cancelable && event.preventDefault();
-  //-    juhus.set("claim", "claimoldmove");
-  //-  }
-  //-  return isClaiming;
-  //-};
-  //-Tool.subscribedClaim = function (_x, _y, actions) {
-  //-  if (juhus.get("claim").slice(-7) !== "oldmove")
-  //-    return false;
-  //-  actions.preventClaim("oldmove");
-  //-  return true;
-  //-};
-  //-Tool.subscribedMove = function (x, y, actions) {
-  //-  if (juhus.get("claim").slice(-7) !== "oldmove")
-  //-    return false;
-  //-  var event = actions.source.event;
-  //-  event.cancelable && event.preventDefault();
-  //-  return move(x, y, event);
   var used = false;
   press = Command.old_UI;
   Tool.subscribedStart = function startClassic(x, y, actions) {
@@ -3920,7 +3921,9 @@ function init(x, y) {
       return move(x, y, event);
     return used = false;
   };
-}, F, F));
+}, function exec(x, y) {
+  press(x, y);
+}, function destroy() {}));
 Tool.list.push(new Tool("Oldschool", "M105e7,3d210 c-3a97,3a97,-9997,3a97,-d\
 42f,0 c-3a97,-3a97,-3a97,-9997,0,-d42f l1b0b,-1b0b ld429,d429 z M803a,2adde \
 l7e92,-7e92 ld429,d429 l-7e8b,7e96 z M22c1b,101fd l8428,-8428 ld429,d429 l-8\
@@ -4334,6 +4337,7 @@ DefaultUI.defaultFoldersData = [
 ];
 /** @type {ToolExec} */
 DefaultUI.defaultPress = function (_x, _y) {};
+/** probably due to logics editing mode not allowing defaultPress */
 DefaultUI.canDefaultPress = true;
 /** @type {Block.Size.Highlight|null} temporary visualising */
 DefaultUI.found = null;
@@ -4344,8 +4348,13 @@ DefaultUI.replacingTile = -1;
  * block, the first... idk @type {(Block.Size.Highlight|undefined)[]} */
 DefaultUI.highlights = [];
 DefaultUI.hotbarScrollSide = 0;
-/** mode for selection based tools, are displayed yellow highlighed */
+/** mode for selection based tools, are displayed yellow highlighed
+ * ?end is handle by Tool.prototype.destroy with hardcoded list? */
 DefaultUI.selectionBased = false;
+/** @TODO
+ * event ends in toolbar area cause tile execs or Tools disabling hotbars
+ * (fixes Tool.subscribeEnd being ignored due to handle GUI preceeding) */
+DefaultUI.isEventUsed = false;
 /** for last property @see {DefaultUI.shipPress} */
 /** @param {number|string} type @param {unknown[]} [tiles=[]] */
 DefaultUI.createFolder = function (type, tiles) {
@@ -4389,11 +4398,11 @@ DefaultUI.handleGUIArea = function (x, y, reference) {
   if (x < 237) {
     // toolBar area of canvas: static tile slots
     // v.0.2.10 74 = distance between origins of neighbour toolBar tiles
-    // v.0.2.10 11, 237 = offset distance from canvas edge to icon
+    // v.0.2.35 11, 231 = toolBar right bottom coords where icons start
     var row = (canvas.height - y - 11) / 74 | 0,
-      column = (237 - x) / 74 | 0;
+      column = (231 - x) / 74 | 0;
     // v.0.2.12.K84 uses the same constants as right above
-    fraction = (237 - x) % 74 / 74;
+    fraction = (231 - x) % 74 / 74;
     /** @see {DefaultUI.selectedTile} for tile indexing */
     if (y > canvas.height - 237)
       item = (row > 2 ? 2 : row) * 3 + (column > 2 ? 2 : column) << 2;
@@ -4631,7 +4640,7 @@ DefaultUI.renderHotBars = function (w, h) {
     var tRight = isToolBar ? tx + 64 : tx + 78,
       tTop = isToolBar ? ty - 64 : ty - 78,
       size = isToolBar ? 46 : 60;
-    ctx.strokeStyle = tile instanceof Tool ? tile.color : "#5577aa";
+    ctx.strokeStyle = "color" in tile ? tile.color : Editor.outlineBlue;
     ctx.beginPath();
     // 16 = greater than radius, lower then side - 2 * radius
     ctx.moveTo(tx, ty - 16);
@@ -4884,9 +4893,8 @@ DefaultUI.Drag.finish = function (action) {
   var replacing = DefaultUI.replacingTile,
     dragged = DefaultUI.Drag.dragged;
   if (replacing === -1 || action.type === "mouseleave") {
-    // v0.2.32 what's the deal with rect? Using it for exec v0.2.25 must've
-    // been mistake, it worked thought (until I discovered its bug)
     var rect = DefaultUI.highlights[1];
+    // simple implementaition doesn't care where interaction started
     if (dragged.tile instanceof Block && rect && "block" in rect)
       ship.placeBlock(0, rect.positionX, rect.positionY, dragged.tile);
     else if (dragged.tile instanceof Tool)
@@ -4927,7 +4935,9 @@ DefaultUI.Drag.detect = function (x, y, action) {
     dragged.update(x, y);
     var pointed = DefaultUI.Drag.pointed;
     DefaultUI.handleGUIArea(action.x, action.y, pointed);
-    // #whatsthisfor if (!dragged.tile) return true;
+    // #whatsthisfor = prevents nulls being dragged around
+    if (!dragged.tile)
+      return true;
     DefaultUI.replacingTile = pointed.item;
     var from = dragged.item >> 2, hotbar = (dragged.item & 3) === 1 ?
       DefaultUI.blockBars[DefaultUI.openedFolder] || [] :
@@ -4965,7 +4975,6 @@ DefaultUI.Drag.detect = function (x, y, action) {
 };
 
 DefaultUI.shipPress = DefaultUI.basePress(UDF);
-// #IDK move elsewhere maybe
 juhus.set("onclaim", function (x, y, source) {
   if (source.source.startTarget !== canvas)
     return source.preventClaim();
@@ -5028,7 +5037,7 @@ juhus.set("onend", function onend(x, y, source) {
 function enableShipEditing() {
   var mode = ship.getMode();
   ship = mode.getShip();
-  DefaultUI.press = press = DefaultUI.basePress(UDF);
+  DefaultUI.press = press = Command.old_UI;
   DefaultUI.move = move = function (x, y, e) {
     if (e.type === "mousedown" || e.type === "touchstart" ||
       e.type === "mouseenter") {
@@ -5215,9 +5224,9 @@ var edit_logicmove = function (x, y, e) {
     DefaultUI.tilesRotation[2] = 2;
     DefaultUI.tilesFlippableRotation[2] = 2;
   }
+  enableShipEditing();
   if (init_funMode !== F)
     return init_funMode();
-  enableShipEditing();
   var i = 0, classic = DefaultUI.createTile("Move");
   i = DefaultUI.blockBars[DefaultUI.openedFolder].indexOf(classic);
   if (i !== -1)
@@ -5509,7 +5518,7 @@ DefaultUI.over = over = function (e) {
  * possible optimizations, a system of global and local (single use)
  * settings to provide interface with multiple rendering methods
  * @TODO #Renderer update won't improve also resizing performance,
- * but afterwards check @see {Actions.State.onresize} usage */
+ * but afterwards check @see {Actions.State.onresize} #resizing.debug */
 function Renderer() {
   throw new Error("Unimplemented");
   this.logíc = false;
@@ -5865,15 +5874,6 @@ Block.Box2d.visualize = function (path, x, y, green) {
 
 /** for DefaultUI init and enableShipEditing @see {initDefaultUI} */
 init = function loadedEditorInit() {
-  //-ship = Ship.fromObject({});
-  //-Edit.save(ship);
-  //-enableLogicEditing();
-  //-var i = 0, classic = DefaultUI.createTile("Classic");
-  //-i = DefaultUI.blockBars[DefaultUI.openedFolder].indexOf(classic);
-  //-if (i !== -1)
-  //-  DefaultUI.setSelectedTile(i << 2 | 1);
-  //-else if ((i = DefaultUI.toolBar.indexOf(classic)) !== 1)
-  //-  DefaultUI.setSelectedTile(i << 2 | 0);
   for (var i = ship.blocks.length, clean = []; i-- > 0;)
     ship.blocks[i].internalName !== "__unknown__" &&
       clean.push(ship.blocks[i]);
@@ -5887,4 +5887,167 @@ init = function loadedEditorInit() {
   imgColor.onload && rend_checkColors();
   imgBackg.src = "" + imgBackg.getAttribute("data-src");
   check_contentScript();
+//-  vX = 216.44865568583728; vY=  580.7689743284377 ;sc = 25.840334790736726;
+//-  ship = Ship.fromMSObject({"Name":"uHuJS0_11","sizeX":21,"sizeY":21,"offset\
+//-X":0,"offsetY":0,"CompressedParts":"H4sIAAAAAAAACt1aXU/bMBT9L34OUpwEQrOXrS0D\
+//-JNgQq8TDNFUmNSFqajPXYVSI/z7HSSBuXXhJjJO32Gqac+7Hufc6+f0MzqcgAt/YirL5BVpjdoMX\
+//-CfaAA55A5DtgAyLXAYxyxFNKQOQ54C5LH0B0h7I1dgCh5JxwzFDM0W2GX/cX+A7lGT8hxe4CRJzl\
+//-YndCVw+UYMJ/Yc5TkqxB9PzigJgSguPiAaeM5uLPoQPQ23otMcQ0o0xeZWiDi6sXp4L/PcfZDJFl\
+//-UMIe7cL2ewD7SMKG1lv7BiPxt/NLFN+nBCc5qaIFGiEA/snHCxxHhd3K1fxrRpM0FpsH8MsBBC2w\
+//-3JMSruToNTlCG500oYQzmo0zGi8r90jkfhO52753OGV/c3EnKOyVbBiF4tp/XWw7qtz2xBoe1Yvd\
+//-38QlmSuWUpZywQK4b7vqylwkeCbs2R18fxe+lSJZwj/D6HHTVHff+gzcUnfo9iRe9sp7YMLwpuT9\
+//-hCSC3fxsc8vSBVQKWNcSieWjZ/csX3OBJCiEr9wrZPPwbdkB7b3ODU3IgSnnbqVeyS2wXjE+aKyC\
+//-juPycxursh6F2uaxBG2Fj8aICwgbZdIItVljEegqsKTN1Zjq1t6mQkp1Ssns2PZIenfAGGnFyiL0\
+//-upAKDEA3FVIVv+nlqdocjLQi3FN2ivfCXX6ta5kpfqdy8GyMvdA1NfdCt7XBt+vZdY9RLFKZd3sF\
+//-Fb6NdffkifKiD3Wb3YIK20ZtV8tpNbjaHyz7u5yOsX9Om1PqNYS2R1PllmsaLzGHSgLrj1H75pYp\
+//-zmWW1zF3qCFn5dHaBLHktUyGGtQd1MnimBaJ6ZZdY7EG54ySKHDdNvyg0Bl9Cp1ZyhFJ89VPhtti\
+//-tdOIVrVbfw7Xt9ypT2rq3PE15KzMncotP0TuTxARkGBzfIP6w6a+esdVlS2w3jt146XObj0AXlu8\
+//-Bn7cF+B1EaxCxdPlgZWvO2rgUAV+aD3wSoF06hMOQn0qglcZWq+QQjMYEs0pjikTJB7xfIziZSJu\
+//-Igv53h4qY2O3bE0QgV5PmFwUPp6Pc84FQqU9DtuQhWpbG3QpecSMy28a2psYt6pJKyQMf73imZG2\
+//-AX6+svetYmnQ40GIqKZWeMpXdcOg+bHEGvGqESZ+T5g0jx3VEX1Qb8KUpKonwUExlB70m+LodXtU\
+//-3zW/P/8BKFSOm98tAAA=","BuildCost":{"Fuel":0.0,"Explosive":0.0,"Nuclear":0.0,
+//-"SolidFuel":0.0,"C5":0.0,"Power":0.0,"Exot":2.0,"Deut":0.0,"Glow":0.0,"WarpE\
+//-xplosive":0.0,"ElectrolyzerWater":0.0,"GlowWaterMixture":0.0,"MoltenBrel":0.0
+//-,"Rock":0.0,"Ice":0.0,"ExoticMinerals":0.0,"TitaniumOre":0.0,"Titanium":570.5
+//-,"IronOre":0.0,"Iron":126.0,"TungstenOre":0.0,"Tungsten":33.1,"GoldOre":0.0,
+//-"Gold":23.1,"Silicon":490.5,"Quartz":20.0,"UraniumOre":0.0,"Uranium":0.0,"\
+//-PlatinumOre":0.0,"Platinum":0.0,"Unobtanium":0.0},"StoredResources":{"Fuel":
+//-4112.0,"Explosive":0.0,"Nuclear":0.0,"SolidFuel":0.0,"C5":0.0,"Power":4240.0
+//-,"Exot":175.0,"Deut":507.0,"Glow":0.0,"WarpExplosive":0.0,"ElectrolyzerWater\
+//-":0.0,"GlowWaterMixture":0.0,"MoltenBrel":0.0,"Rock":0.0,"Ice":0.0,"ExoticMi\
+//-nerals":0.0,"TitaniumOre":400.0,"Titanium":0.0,"IronOre":0.0,"Iron":400.0,"T\
+//-ungstenOre":0.0,"Tungsten":0.0,"GoldOre":0.0,"Gold":0.0,"Silicon":0.0,"Quart\
+//-z":0.0,"UraniumOre":0.0,"Uranium":0.0,"PlatinumOre":0.0,"Platinum":0.0,"Unob\
+//-tanium":0.0},"TotalBuildCost":{"Fuel":4112.0,"SolidFuel":0.0,"Power":4240.0,
+//-"Exot":177.0,"Deut":507.0,"Glow":0.0,"ElectrolyzerWater":0.0,"GlowWaterMixtu\
+//-re":0.0,"MoltenBrel":0.0,"Rock":0.0,"Ice":0.0,"ExoticMinerals":0.0,"Titanium\
+//-Ore":400.0,"Titanium":570.5,"IronOre":0.0,"Iron":526.0,"TungstenOre":0.0,"Tu\
+//-ngsten":33.1,"GoldOre":0.0,"Gold":23.1,"Silicon":490.5,"Quartz":20.0,"Uraniu\
+//-mOre":0.0,"Uranium":0.0,"PlatinumOre":0.0,"Platinum":0.0,"Unobtanium":0.0}});
 };
+/** @TODO remove in v.0.2.36 */
+// .d1r.dbv DBVE icon v4
+// var size = 512, maskable = 192;
+// /** @type {HTMLImageElement} */
+// var msBg = window.msBg || EL("img");
+// if (!msBg.src) {
+//   msBg.src = "../../deltarealm/.d1r.dbv/dist/assets/_ms_background.jpg";
+//   msBg.onerror = function () {
+//     msBg.src = "https://kaabel.github.io/.d1r.dbv/assets/_ms_background.png";
+//     msBg.onerror = null;
+//   };
+// }
+// WH(ctx, size, size);
+// ctx.scale(size / 16, size / 16);
+// ctx.imageSmoothingEnabled = false;
+// // WH(ctx, 16, 16);
+// ctx.fillStyle = "#ffffff";
+// ctx.fillRect(0, 0, 16, 16);
+// ctx.fillStyle = "#" + (16737894).toString(16);
+// ctx.fillStyle = "#ff3333";
+// ctx.fillRect(5, 5, 6, 6);
+// // ctx.globalAlpha = 51 / 255;
+// ctx.strokeStyle = "#191919";
+// ctx.strokeStyle = "#cccccc";
+// ctx.strokeRect(.5, .5, 15, 15);
+// ctx.strokeStyle = "#470000";
+// ctx.strokeStyle = "#cc2929";
+// ctx.strokeRect(5.5, 5.5, 5, 5);
+// ctx.globalAlpha = 1;
+// // ctx.drawImage(IMG(0), 0, 0);
+// var rc = sShot.getContext("2d");
+// WH(rc, ctx.canvas);
+// rc.setTransform(ctx.getTransform());
+// rc.lineWidth = 1.3;
+// rc.lineJoin = "round";
+// rc.lineCap = "round";
+// rc.strokeStyle = "#9f9f8f";
+// rc.strokeStyle = "#6E7069";
+// rc.beginPath();
+// rc.moveTo(8, 14);
+// rc.lineTo(8, 15.5 - 7.5 / 3);
+// rc.lineTo(.5, .5 + 7.5 / 2 + 15 / 3);
+// rc.lineTo(.5, 15.5 - 7.5 / 2);
+// rc.lineTo(8, 15.5);
+// rc.lineTo(15.5, 15.5 - 7.5 / 2);
+// rc.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
+// rc.lineTo(8 + 7.5 / 6, 15.5 - 37.5 / 12);
+// rc.moveTo(15.5, .5 + 7.5 / 2 + 15 / 3);
+// rc.lineTo(15.5 - 30 / 19, .5 + 7.5 / 2 + 15 / 3 - 15 / 19);
+// rc.stroke();
+// rc.strokeStyle = "#030e2f";
+// rc.beginPath();
+// rc.moveTo(.5 + 46 / 12, .5 + 52 / 12);
+// // rc.moveTo(.5 + 37.5 / 6, .5 + 37.5 / 12);
+// rc.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
+// rc.lineTo(8, .5);
+// rc.lineTo(.5, .5 + 7.5 / 2);
+// rc.lineTo(.5 + 7.5 / 3, .5 + 15 / 3);
+// rc.lineTo(.5 + 7.5 / 3 + 37.5 * 4 / 24, .5 + 15 / 3 + 31 * 4 / 24);
+// // rc.lineTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
+// rc.moveTo(8 + 7.5 / 3, .5 + 7.5 / 6);
+// rc.lineTo(8 + 7.5 / 3 + 15 * 4 / 29, .5 + 7.5 / 6 + 52.5 * 4 / 29);
+// rc.moveTo(.5, 5.9);
+// rc.lineTo(.5, 7.7);
+// rc.stroke();
+// ctx.globalCompositeOperation = "destination-in";
+// ctx.drawImage(rc.canvas, 0, 0, 16, 16);
+// ctx.globalCompositeOperation = "destination-over";
+// // ctx.globalAlpha = .5;
+// // ctx.fillStyle = "#000000";
+// // ctx.fillRect(5, 5, 6, 6);
+// // ctx.globalAlpha = 51 / 255;
+// // ctx.strokeStyle = "#000000";
+// // ctx.strokeRect(5.5, 5.5, 5, 5);
+// // ctx.globalAlpha = 1;
+// ctx.fillStyle = "#" + (16737894).toString(16);
+// ctx.strokeStyle = "#470000";
+// ctx.strokeRect(5.5, 5.5, 5, 5);
+// ctx.fillRect(5, 5, 6, 6);
+// ctx.fillStyle = ctx.createPattern(msBg, "no-repeat") || "#030e2f";
+// ctx.beginPath();
+// ctx.moveTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
+// ctx.lineTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 3 - 15 / 6);
+// ctx.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
+// ctx.lineTo(8, .5);
+// ctx.lineTo(0, .5 + 7.5 / 2);
+// ctx.lineTo(0, .5 + 7.5 / 2 + 15 / 3);
+// ctx.lineTo(.5 - 7.5 / 3 + 7.5, .5 + 22.5 / 2);
+// // ctx.moveTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
+// // ctx.lineTo(8, 15.5 - 7.5 / 3);
+// // ctx.lineTo(8, 15.5);
+// // ctx.lineTo(8 + 7.5 / 3, 15.5 - 7.5 / 6);
+// // ctx.moveTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 3 - 15 / 6);
+// // ctx.lineTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 2 + 7.5 / 6);
+// // ctx.lineTo(15.5, 15.5 - 7.5 / 2);
+// // ctx.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
+// // ctx.moveTo(.5 + 7.5 / 3, .5 + 15 / 3);
+// // ctx.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
+// // ctx.lineTo(8 + 7.5 / 3 + 15 * 4 / 29, .5 + 7.5 / 6 + 52.5 * 4 / 29);
+// // ctx.lineTo(.5 + 7.5 / 3 + 37.5 * 4 / 24, .5 + 15 / 3 + 31 * 4 / 24);
+// ctx.closePath();
+// // ctx.globalCompositeOperation = "source-over";
+// ctx.setTransform(.8, 0, 0, .81, -259, 27);
+// ctx.fill();
+// // ctx.globalCompositeOperation = "destination-over";
+// ctx.fillStyle = "#707070";
+// ctx.setTransform(rc.getTransform());
+// ctx.beginPath();
+// ctx.moveTo(15.5 - 15 / 4, .5 + 7.5 / 2 + 15 / 3 - 15 / 8);
+// ctx.lineTo(.5, .5 + 7.5 / 2 + 15 / 3);
+// ctx.lineTo(.5, 15.5 - 7.5 / 2);
+// ctx.lineTo(8, 15.5);
+// ctx.lineTo(15.5, 15.5 - 7.5 / 2);
+// ctx.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
+// ctx.closePath();
+// ctx.fill();
+// ctx.lineWidth = 1;
+// ctx.strokeStyle = "#000000";
+// ctx.strokeRect(.5, .5, 15, 15);
+// if (maskable) {
+//   WH(rc, maskable, maskable);
+//   rc.fillStyle = ctx.strokeStyle;
+//   rc.fillRect(0, 0, maskable, maskable);
+//   var padding = (maskable - size) / 2;
+//   rc.drawImage(ctx.canvas, padding, padding);
+// }
