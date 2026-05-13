@@ -4,7 +4,7 @@
 /** @TODO check how to fix wrong commit messages w comment on GitHub */
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.35";
+var version_editor_js = "v.0.2.36";
 /** 3h_ @TODO check @see {Editor} for assignment without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -481,12 +481,7 @@ wxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNl0sIntcImNvbG\
     case "ae3c8f3b":
       init_funMode = function () {
         enableLogicEditing();
-        var i = 0, classic = DefaultUI.createTile("Classic");
-        i = DefaultUI.blockBars[DefaultUI.openedFolder].indexOf(classic);
-        if (i !== -1)
-          DefaultUI.setSelectedTile(i << 2 | 1);
-        else if ((i = DefaultUI.toolBar.indexOf(classic)) !== 1)
-          DefaultUI.setSelectedTile(i << 2 | 0);
+        DefaultUI.selectInHotbars("Classic");
         //@ts-expect-error
         ship = Ship.fromObject(B64Key.decode(B64Key.b64ToU8arr(("gIAEDEFOT05\
 fU2h1dHRsZQAEXVy0aoC/TzvnFnWt0z4R4pYUZx2CorwBRXLToKjrQJPehCK9CdKboLhB4MUPQVw\
@@ -1320,6 +1315,7 @@ var placingBlock = function () {
 };
 /** @param {string} s @param {boolean} b @returns */
 function blockBind(s, b) {
+  "createTile" in DefaultUI && DefaultUI.selectInHotbars("Classic");
   return function () {
     placingBlock = function () {
       blockBind.changingColor = b;
@@ -1630,7 +1626,7 @@ Command.push("Setup Properties", function (items, collapsed) {
     Object.freeze(this);
   }
   function displayProperties() {
-    /** @param {WeldGroups} item */
+    /** @param {Block.Properties.WeldGroups} item */
     function addWeldGroups(item) {
       var b0 = item.default[0] instanceof Array;
       (b0 && weldSelects[0].p == "weldGroup" ? weldSelects = [] : b0) ?
@@ -1655,9 +1651,7 @@ Command.push("Setup Properties", function (items, collapsed) {
       props.appendChild(node);
     }
     /** @type {Block} */
-    var block = ship.blocks[text.data = "" + idx],
-      /** Block.PROP defeinition of type of current processed block */
-      p;
+    var block = ship.blocks[text.data = "" + idx];
     if (!block)
       return render();
     name.value = block.internalName;
@@ -1673,16 +1667,17 @@ Command.push("Setup Properties", function (items, collapsed) {
     }
     for (var itm; props.lastChild;)
       props.removeChild(props.lastChild);
-    var weldSelects = [new Ref(block.properties, "weldGroup")];
-    if (!(p = Block.PROP[Block.ID[block.internalName]])) {
+    /** Block.PROP defeinition of type of current processed block */
+    var p, weldSelects = [new Ref(block.properties, "weldGroup")];
+    if (!(p = Block.Properties.VALUE[Block.ID[block.internalName]])) {
       props.appendChild(tN("Weld group: "));
       initWeldGroup(weldSelects[0]);
       return render();
     }
     var customParam = block.properties.customParameter || [""];
-    for (var i = 0, Items = Block.Properties.Items; i < p.length; i++) {
-      p[i].name && props.appendChild(tN(p[i].name + ": "));
-      switch ((itm = p[i].item) && p[i].type) {
+    for (var i = 0, Items = Block.Properties; i < p.length; i++) {
+      "name" in p[i] && props.appendChild(tN(p[i].name + ": "));
+      switch ((itm = p[i]).type) {
         case "Slider":
           if (!(itm instanceof Items.Slider))
             break;
@@ -1705,7 +1700,7 @@ Command.push("Setup Properties", function (items, collapsed) {
             customParam[sldI] = Number(slider.value) || 0;
           };
         case "Integer Slider":
-          if (!(itm instanceof Items["Integer Slider"]))
+          if (!(itm instanceof Items.IntegerSlider))
             break;
           // !!! only one Item of this property type possible
           var intSlider = props.appendChild(EL("input")),
@@ -1754,12 +1749,12 @@ Command.push("Setup Properties", function (items, collapsed) {
               +dropdown.value;
           };
         case "Number Inputs":
-          if (!(itm instanceof Items["Number Inputs"]))
+          if (!(itm instanceof Items.NumberInputs))
             break;
           itm;
         case "Text Inputs":
           // !!! only one Item of this property type possible
-          if (!(itm instanceof Items["Text Inputs"]))
+          if (!(itm instanceof Items.TextInputs))
             break;
           var txtI = i, txtInput = props.appendChild(EL("input"));
           txtInput.value = "" + customParam[txtI];
@@ -1772,7 +1767,9 @@ Command.push("Setup Properties", function (items, collapsed) {
             i += itm.default.length - 1;
           }
         case "WeldGroups":
-          itm instanceof Items.WeldGroups && addWeldGroups(itm);
+          if (!(itm instanceof Items.WeldGroups))
+            break;
+          addWeldGroups(itm);
           i += itm.default.length - 1;
       }
       p[i].type !== "WeldGroups" && props.appendChild(EL("br"));
@@ -2197,7 +2194,6 @@ Command.push("Import/Export DBV", function (items, collapsed) {
         return checkMSSSS();
       /** @type {safe} */
       var obj = JSON.parse(s) || OC(), version = obj.significantVersion;
-      console.debug(s);
       ship = Ship.fromObject(obj);
       // v.0.2.35 do not 
       (Number(version) <= 15) && ship.fixPositionAdjustment(!0);
@@ -2257,6 +2253,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
         "Ship.Mode \"Ship\"!");
   };
   elBtn.appendChild(tN("Export .MSSSS"));
+  items.push(elBtn);
   (elBtn = EL("button")).onclick = function () {
     error.innerText = "";
     try {
@@ -2273,8 +2270,7 @@ Command.push("Import/Export DBV", function (items, collapsed) {
       console.error(err);
     }
   };
-  elBtn.appendChild(tN("Import"));//MAJOR FORmATTING FIX
-  items.push(elBtn);
+  elBtn.appendChild(tN("Import"));
   download.appendChild(tN("Download .JSON or .MSSSS"));
   download.href = "javascript:void(0)";
   div.appendChild(download);
@@ -2618,7 +2614,7 @@ Command.push("Vehicle stats", function (items, collapsed) {
       tmpSkip[stack[i - 1]]++;
   }
   // for future me, this is very shitty approach in terms of maintanance?
-  for (var j = 0, texts = [], l = 14; j < l;)
+  for (var j = 0, texts = [], l = 15; j < l;)
     items.push(texts[j++] = tN(""), EL("br"));
   var riftLY = items[items.length - l * 2 + 19] = EL("input"),
     /** @type {Text|HTMLSpanElement} */
@@ -2633,19 +2629,19 @@ Command.push("Vehicle stats", function (items, collapsed) {
       return crystals + (crystals > 1 ? " RCs" : " RC") +
         " (reach " + (10000 / sums.weight * crystals) + " LY)";
     }
-    texts[9].data = "Rift drive distance: ";
+    texts[10].data = "Rift drive distance: ";
     var dist = +riftLY.value,
       crystals = Math.ceil(Math.abs(sums.weight * dist / 10000));
-    texts[10].data = "LY ";
-    red.data = texts[11].data = "";
+    texts[11].data = "LY ";
+    red.data = texts[12].data = "";
     dist ?
       crystals > (sums.blocks[796] || 0) * 4 ?
         red.data = " You don't have enough Rift Drives to use " +
           rcAmount() + ", lighter vehicle needs less RCs." :
-        texts[11].data = " requires " + rcAmount() + ", remember to t" +
+        texts[12].data = " requires " + rcAmount() + ", remember to t" +
           "ake more crystals for further travelling and enough for re" +
           "turn." :
-      texts[10].data += riftLY.value ?
+      texts[11].data += riftLY.value ?
         dist === 0 ?
           " doesn't require any Rift Crystals since you don't seem go" +
             "ing anywhere." :
@@ -2656,10 +2652,10 @@ Command.push("Vehicle stats", function (items, collapsed) {
       red.data += " You can't buy more then one Small Rift Drive in C" +
         "onquest! ";
     if (dist < 0)
-      texts[11].data = " Unless you own Time Travel Machine block, y" +
+      texts[12].data = " Unless you own Time Travel Machine block, y" +
         "ou can't regain the Rift Crystals by travelling back. ";
   };
-  texts[12].data = "Rift drive distances within the same star system" +
+  texts[13].data = "Rift drive distances within the same star system" +
     " are measured in Mega Meters (Mm), assume cost for those travel" +
     "s to be always one RC.";
   function updateStats() {
@@ -2674,7 +2670,7 @@ Command.push("Vehicle stats", function (items, collapsed) {
     }
     sums = JSON.parse(stringify);
     skipped = JSON.parse(stringify);
-    texts[13].data = "";
+    texts[14].data = "";
     for (var blocks = ship.blocks, i = blocks.length; i-- > 0;) {
       var block = blocks[i], prop = block.properties || OC();
       var id = Block.ID[block.internalName];
@@ -2719,16 +2715,17 @@ Command.push("Vehicle stats", function (items, collapsed) {
         " (" + (blocks.length - skipped) + "/" + blocks.length + ")" :
         "");
     }
-    amount(0, "Blocks amount", blocks.length, 0);
-    amount(1, "Weight", sums.weight, skipped.weight);
-    amount(2, "Cost", sums.cost, skipped.cost);
-    amount(3, "Fuel capacity", sums.store.fuel, skipped.store.fuel);
-    amount(4, "Fuel use", sums.use.fuel, skipped.use.fuel);
-    amount(5, "Electricity capacity", sums.store.energy,
+    texts[0].data = "Name: " + ship.name;
+    amount(1, "Blocks amount", blocks.length, 0);
+    amount(2, "Weight", sums.weight, skipped.weight);
+    amount(3, "Cost", sums.cost, skipped.cost);
+    amount(4, "Fuel capacity", sums.store.fuel, skipped.store.fuel);
+    amount(5, "Fuel use", sums.use.fuel, skipped.use.fuel);
+    amount(6, "Electricity capacity", sums.store.energy,
       skipped.store.energy);
-    amount(6, "Electricity use", sums.use.energy, skipped.use.energy);
-    amount(7, "Cargo capacity", sums.store.cargo, skipped.store.cargo);
-    amount(8, "Ore mined", -sums.use.cargo, skipped.use.cargo);
+    amount(7, "Electricity use", sums.use.energy, skipped.use.energy);
+    amount(8, "Cargo capacity", sums.store.cargo, skipped.store.cargo);
+    amount(9, "Ore mined", -sums.use.cargo, skipped.use.cargo);
     // [][0] workarounding typescript with any
     riftLY.oninput && riftLY.oninput([][0]);
     // after adding more text lines don't forget changing j < <texts.length>
@@ -2776,7 +2773,6 @@ Command.push("Rift Drive calculator", function (items, collapsed) {
   var riftCrystals = EL("input"), dist = tN("");
   riftCrystals.type = "number";
   riftCrystals.value = "4";
-  //@ts-expect-error
   (riftCrystals.oninput = function () {
     var n = Number(riftCrystals.value) || 0;
     dist.data = "" + (10000 / weight * (n > drives * 4 ?
@@ -3083,7 +3079,7 @@ Command.push("Current version", function(items, collapsed) {
       window.version_alphalunar_js), EL("br"));
   items.push(version_sw);
   var xhr = new XMLHttpRequest();
-  xhr.open("GET", "./service-worker.js");
+  xhr.open("GET", "./service-worker.js", true);
   xhr.onreadystatechange = function () {
     if (xhr.readyState !== 4)
       return;
@@ -3094,6 +3090,7 @@ Command.push("Current version", function(items, collapsed) {
     } catch (e) {
       console.error(xhr.responseText ? e : "xhr empty response");
     }
+    xhr.onreadystatechange = null;
   };
   xhr.send();
 }, "Gives information about versions of loaded source code components. For e\
@@ -3260,6 +3257,7 @@ function Tool(name, icon, init, exec, destroy) {
 /** tool.reset @param {number} x @param {number} y */
 Tool.prototype.destroy = function (x, y) {
   this.stop(x, y);
+  DefaultUI.selectionBased = false;
   Tool.subscribedStart = Tool.subscribedMove =
     Tool.subscribedEnd = Tool.subscribedClaim = Tool.unsubscribed;
   Tool.rend = F;
@@ -3557,6 +3555,8 @@ Tool.Tab.addCss = function (styles, selector) {
     selector) + "{" + styles + "}";
   return cssText;
 };
+Tool.selectionBased = "Move,Rotate,Rotate90,Flip,Flip180,Select,Clone,Paint,\
+Erase,".split(",");
 
 Tool.Tab.addCss("position: absolute;top: 7px;right: " + 7 / pR + "px;width: \
 320px;height: 500px;padding: 7px;border: 2px solid #5577aa;border-radius: 7p\
@@ -3956,7 +3956,10 @@ c l-30c6,-bc c-212c,0,-3c11,-1ae4,-3c11,-3c11 v-119a c0,-212c,1ae4,-3c11,3c1\
 c,-33d8,73cc,-73cc lbc,-30c6 c0,-212c,1ae4,-3c11,3c11,-3c11 l119a,0 c212c,0,\
 3c11,1ae4,3c11,3c11 l4b,30c6 c0,8c98,-71f9,fe92,-fe92,fe92 l-311d,b c-212c,0\
 ,-3c11,-1ae4,-3c11,-3c11 z", function init(_x, _y) {
+  /** @BUG when (leaving)placing block with cursor over folders, the block
+   * stays grabbed until clicking in editor area or somethins... */
   var selecting = false, t = Date.now(), area = {x: 0, y: 0, w: 0, h: 0};
+  DefaultUI.selectionBased = true;
   /**
    * @param {AllActions|AllActions&{claim:string,cancelable:
    * true,preventClaim:(custom?:string)=>void}} actions
@@ -4225,7 +4228,7 @@ DefaultUI.openedFolder = 0;
 // But if its methods are good enough it might save quite few lines of code
 /**
  * use @see {DefaultUI.setSelectedTile} to select selectable tile
- * The position (item variable name) of selected tile consists of:
+ * The position (item variable/property name) of selected tile consists of:
  * enum `value & 3` where 0 = selected in toolBar, 1 = selected in blockBar,
  * 2 = selected inventoryTile, 3 = reserved for selected in inventory,
  * `value >> 2` gives index of selected tile,
@@ -4233,7 +4236,7 @@ DefaultUI.openedFolder = 0;
 DefaultUI.selectedTile = -1;
 /** the folder in where is selectedTile points to currently selected */
 DefaultUI.selectedFolder = 0;
-/** The position (item variable name) of clicked tile consists of:
+/** The position (item variable/property name) of clicked tile consists of:
  * enum `value & 3` where 0 = selected in toolBar, 1 = selected in blockBar,
  * 2 = selected inventoryTile, 3 = reserved for selected in inventory,
  * `value >> 2` gives index of selected tile,
@@ -4386,6 +4389,17 @@ DefaultUI.setSelectedTile = function (item, x, y) {
     tile instanceof Tool && tile.destroy(x, y);
   }
 };
+/** renders if found @type {typeof DefaultUI.createTile} */
+DefaultUI.selectInHotbars = function (type) {
+  var i = 0, UI = DefaultUI, tile = UI.createTile(type);
+  // one line saved thanks to DefaultUI named UI ...UhmGHh,it's a comment now
+  if ((i = UI.blockBars[UI.openedFolder].indexOf(tile)) !== -1)
+    UI.setSelectedTile(i << 2 | 1);
+  else if ((i = UI.toolBar.indexOf(tile)) !== 1)
+    UI.setSelectedTile(i << 2 | 0);
+  i !== -1 && render();
+  return tile;
+};
 /** handles interactions with DefaultUI hotbars and inventory
  * @param {number} x @param {number} y @param {DefaultUI.Drag} [reference]
  * @returns {boolean} over GUI area */
@@ -4460,7 +4474,8 @@ DefaultUI.handleGUIArea = function (x, y, reference) {
 /** extends handleGUIArea by utilising its getactionArea for long Actions
  * @param {number} x @param {number} y @param {Actions} actions */
 DefaultUI.handleHotbar = function (x, y, actions) {
-  //-v.0.2.34 removed requirement for move/longmove seems fine
+  // @TODO now there's also bug where going from arrow position can select block
+  // maybe putting this inside Drag.detect and Drag.finish would simplify it
   if (juhus.get("claim") !== "scrollhotbar") {
     var over = new DefaultUI.Drag(), time = actions.startTimeStamp;
     DefaultUI.handleGUIArea(x, y, over);
@@ -4471,7 +4486,6 @@ DefaultUI.handleHotbar = function (x, y, actions) {
     juhus.set("claim", "scrollhotbar");
   } else
     time = actions.oldTimeStamp;
-  console.debug(time);
   /** @TODO FIX probably in renderHotbars folders jumping with slow scroll
    * and going pass the boundaries, and this sh*t DOESN'T WORK ON MOBILE! */
   DefaultUI.offsetsFolders = Math.max(0, DefaultUI.offsetsFolders +
@@ -5022,7 +5036,7 @@ juhus.set("onend", function onend(x, y, source) {
   }
   if (DefaultUI.Drag.finish(action))
     return;
-  if (DefaultUI.handleGUIArea(x, y))
+  if (!DefaultUI.isEventUsed && DefaultUI.handleGUIArea(x, y))
     return action.event.cancelable && action.event.preventDefault();
   if (Tool.subscribedEnd && Tool.subscribedEnd(x, y, source))
     return;
@@ -5227,12 +5241,7 @@ var edit_logicmove = function (x, y, e) {
   enableShipEditing();
   if (init_funMode !== F)
     return init_funMode();
-  var i = 0, classic = DefaultUI.createTile("Move");
-  i = DefaultUI.blockBars[DefaultUI.openedFolder].indexOf(classic);
-  if (i !== -1)
-    DefaultUI.setSelectedTile(i << 2 | 1);
-  else if ((i = DefaultUI.toolBar.indexOf(classic)) !== 1)
-    DefaultUI.setSelectedTile(i << 2 | 0);
+  DefaultUI.selectInHotbars("Move");
   juhus.get("resize")();
 })();
 
@@ -5270,7 +5279,7 @@ function rend_backgColor() {
   canvas.style.backgroundImage = "";
 }
 // #rendlog
-var rend_backgHangar = F, rend_request = "", init_started = false;
+var rend_backgHangar = F, init_started = false;
 +function () {
   if (0 || /http:..localhost:815[89]/.test(location.href)) {
     var script = EL("script");
@@ -5288,7 +5297,7 @@ var rend_backgHangar = F, rend_request = "", init_started = false;
   }
   var xhr = new XMLHttpRequest();
   xhr.open("GET",
-    "https://kaabel.github.io/.d1r.dbv/assets/AlphaLunar.json");
+    "https://kaabel.github.io/.d1r.dbv/assets/AlphaLunar.json", true);
   xhr.onreadystatechange = function () {
     if (xhr.readyState !== 4)
       return;
@@ -5301,6 +5310,7 @@ var rend_backgHangar = F, rend_request = "", init_started = false;
     } catch (e) {
       console.error(xhr.responseText ? e : "xhr empty response");
     }
+    xhr.onreadystatechange = null;
   };
   xhr.send();
 }();
@@ -5810,10 +5820,10 @@ function expensiveRenderer() {
     }
   }
   ctx.globalAlpha = .3;
+  ctx.fillStyle = Editor.outlineBlue;
   for (j = 0; j < ship.selection.length; j++) {
     var rect = Block.Size.highlightBlock(ship.selection[j]);
     var x = rect.x * sc + vX, y = rect.y * sc + vY;
-    ctx.fillStyle = "#45b3ff";
     ctx.fillRect(x, y, rect.w * sc, rect.h * sc);
   }
   ctx.globalAlpha = 1;
@@ -5887,167 +5897,130 @@ init = function loadedEditorInit() {
   imgColor.onload && rend_checkColors();
   imgBackg.src = "" + imgBackg.getAttribute("data-src");
   check_contentScript();
-//-  vX = 216.44865568583728; vY=  580.7689743284377 ;sc = 25.840334790736726;
-//-  ship = Ship.fromMSObject({"Name":"uHuJS0_11","sizeX":21,"sizeY":21,"offset\
-//-X":0,"offsetY":0,"CompressedParts":"H4sIAAAAAAAACt1aXU/bMBT9L34OUpwEQrOXrS0D\
-//-JNgQq8TDNFUmNSFqajPXYVSI/z7HSSBuXXhJjJO32Gqac+7Hufc6+f0MzqcgAt/YirL5BVpjdoMX\
-//-CfaAA55A5DtgAyLXAYxyxFNKQOQ54C5LH0B0h7I1dgCh5JxwzFDM0W2GX/cX+A7lGT8hxe4CRJzl\
-//-YndCVw+UYMJ/Yc5TkqxB9PzigJgSguPiAaeM5uLPoQPQ23otMcQ0o0xeZWiDi6sXp4L/PcfZDJFl\
-//-UMIe7cL2ewD7SMKG1lv7BiPxt/NLFN+nBCc5qaIFGiEA/snHCxxHhd3K1fxrRpM0FpsH8MsBBC2w\
-//-3JMSruToNTlCG500oYQzmo0zGi8r90jkfhO52753OGV/c3EnKOyVbBiF4tp/XWw7qtz2xBoe1Yvd\
-//-38QlmSuWUpZywQK4b7vqylwkeCbs2R18fxe+lSJZwj/D6HHTVHff+gzcUnfo9iRe9sp7YMLwpuT9\
-//-hCSC3fxsc8vSBVQKWNcSieWjZ/csX3OBJCiEr9wrZPPwbdkB7b3ODU3IgSnnbqVeyS2wXjE+aKyC\
-//-juPycxursh6F2uaxBG2Fj8aICwgbZdIItVljEegqsKTN1Zjq1t6mQkp1Ssns2PZIenfAGGnFyiL0\
-//-upAKDEA3FVIVv+nlqdocjLQi3FN2ivfCXX6ta5kpfqdy8GyMvdA1NfdCt7XBt+vZdY9RLFKZd3sF\
-//-Fb6NdffkifKiD3Wb3YIK20ZtV8tpNbjaHyz7u5yOsX9Om1PqNYS2R1PllmsaLzGHSgLrj1H75pYp\
-//-zmWW1zF3qCFn5dHaBLHktUyGGtQd1MnimBaJ6ZZdY7EG54ySKHDdNvyg0Bl9Cp1ZyhFJ89VPhtti\
-//-tdOIVrVbfw7Xt9ypT2rq3PE15KzMncotP0TuTxARkGBzfIP6w6a+esdVlS2w3jt146XObj0AXlu8\
-//-Bn7cF+B1EaxCxdPlgZWvO2rgUAV+aD3wSoF06hMOQn0qglcZWq+QQjMYEs0pjikTJB7xfIziZSJu\
-//-Igv53h4qY2O3bE0QgV5PmFwUPp6Pc84FQqU9DtuQhWpbG3QpecSMy28a2psYt6pJKyQMf73imZG2\
-//-AX6+svetYmnQ40GIqKZWeMpXdcOg+bHEGvGqESZ+T5g0jx3VEX1Qb8KUpKonwUExlB70m+LodXtU\
-//-3zW/P/8BKFSOm98tAAA=","BuildCost":{"Fuel":0.0,"Explosive":0.0,"Nuclear":0.0,
-//-"SolidFuel":0.0,"C5":0.0,"Power":0.0,"Exot":2.0,"Deut":0.0,"Glow":0.0,"WarpE\
-//-xplosive":0.0,"ElectrolyzerWater":0.0,"GlowWaterMixture":0.0,"MoltenBrel":0.0
-//-,"Rock":0.0,"Ice":0.0,"ExoticMinerals":0.0,"TitaniumOre":0.0,"Titanium":570.5
-//-,"IronOre":0.0,"Iron":126.0,"TungstenOre":0.0,"Tungsten":33.1,"GoldOre":0.0,
-//-"Gold":23.1,"Silicon":490.5,"Quartz":20.0,"UraniumOre":0.0,"Uranium":0.0,"\
-//-PlatinumOre":0.0,"Platinum":0.0,"Unobtanium":0.0},"StoredResources":{"Fuel":
-//-4112.0,"Explosive":0.0,"Nuclear":0.0,"SolidFuel":0.0,"C5":0.0,"Power":4240.0
-//-,"Exot":175.0,"Deut":507.0,"Glow":0.0,"WarpExplosive":0.0,"ElectrolyzerWater\
-//-":0.0,"GlowWaterMixture":0.0,"MoltenBrel":0.0,"Rock":0.0,"Ice":0.0,"ExoticMi\
-//-nerals":0.0,"TitaniumOre":400.0,"Titanium":0.0,"IronOre":0.0,"Iron":400.0,"T\
-//-ungstenOre":0.0,"Tungsten":0.0,"GoldOre":0.0,"Gold":0.0,"Silicon":0.0,"Quart\
-//-z":0.0,"UraniumOre":0.0,"Uranium":0.0,"PlatinumOre":0.0,"Platinum":0.0,"Unob\
-//-tanium":0.0},"TotalBuildCost":{"Fuel":4112.0,"SolidFuel":0.0,"Power":4240.0,
-//-"Exot":177.0,"Deut":507.0,"Glow":0.0,"ElectrolyzerWater":0.0,"GlowWaterMixtu\
-//-re":0.0,"MoltenBrel":0.0,"Rock":0.0,"Ice":0.0,"ExoticMinerals":0.0,"Titanium\
-//-Ore":400.0,"Titanium":570.5,"IronOre":0.0,"Iron":526.0,"TungstenOre":0.0,"Tu\
-//-ngsten":33.1,"GoldOre":0.0,"Gold":23.1,"Silicon":490.5,"Quartz":20.0,"Uraniu\
-//-mOre":0.0,"Uranium":0.0,"PlatinumOre":0.0,"Platinum":0.0,"Unobtanium":0.0}});
 };
-/** @TODO remove in v.0.2.36 */
-// .d1r.dbv DBVE icon v4
-// var size = 512, maskable = 192;
-// /** @type {HTMLImageElement} */
-// var msBg = window.msBg || EL("img");
-// if (!msBg.src) {
-//   msBg.src = "../../deltarealm/.d1r.dbv/dist/assets/_ms_background.jpg";
-//   msBg.onerror = function () {
-//     msBg.src = "https://kaabel.github.io/.d1r.dbv/assets/_ms_background.png";
-//     msBg.onerror = null;
-//   };
-// }
-// WH(ctx, size, size);
-// ctx.scale(size / 16, size / 16);
-// ctx.imageSmoothingEnabled = false;
-// // WH(ctx, 16, 16);
-// ctx.fillStyle = "#ffffff";
-// ctx.fillRect(0, 0, 16, 16);
-// ctx.fillStyle = "#" + (16737894).toString(16);
-// ctx.fillStyle = "#ff3333";
-// ctx.fillRect(5, 5, 6, 6);
-// // ctx.globalAlpha = 51 / 255;
-// ctx.strokeStyle = "#191919";
-// ctx.strokeStyle = "#cccccc";
-// ctx.strokeRect(.5, .5, 15, 15);
-// ctx.strokeStyle = "#470000";
-// ctx.strokeStyle = "#cc2929";
-// ctx.strokeRect(5.5, 5.5, 5, 5);
-// ctx.globalAlpha = 1;
-// // ctx.drawImage(IMG(0), 0, 0);
-// var rc = sShot.getContext("2d");
-// WH(rc, ctx.canvas);
-// rc.setTransform(ctx.getTransform());
-// rc.lineWidth = 1.3;
-// rc.lineJoin = "round";
-// rc.lineCap = "round";
-// rc.strokeStyle = "#9f9f8f";
-// rc.strokeStyle = "#6E7069";
-// rc.beginPath();
-// rc.moveTo(8, 14);
-// rc.lineTo(8, 15.5 - 7.5 / 3);
-// rc.lineTo(.5, .5 + 7.5 / 2 + 15 / 3);
-// rc.lineTo(.5, 15.5 - 7.5 / 2);
-// rc.lineTo(8, 15.5);
-// rc.lineTo(15.5, 15.5 - 7.5 / 2);
-// rc.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
-// rc.lineTo(8 + 7.5 / 6, 15.5 - 37.5 / 12);
-// rc.moveTo(15.5, .5 + 7.5 / 2 + 15 / 3);
-// rc.lineTo(15.5 - 30 / 19, .5 + 7.5 / 2 + 15 / 3 - 15 / 19);
-// rc.stroke();
-// rc.strokeStyle = "#030e2f";
-// rc.beginPath();
-// rc.moveTo(.5 + 46 / 12, .5 + 52 / 12);
-// // rc.moveTo(.5 + 37.5 / 6, .5 + 37.5 / 12);
-// rc.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
-// rc.lineTo(8, .5);
-// rc.lineTo(.5, .5 + 7.5 / 2);
-// rc.lineTo(.5 + 7.5 / 3, .5 + 15 / 3);
-// rc.lineTo(.5 + 7.5 / 3 + 37.5 * 4 / 24, .5 + 15 / 3 + 31 * 4 / 24);
-// // rc.lineTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
-// rc.moveTo(8 + 7.5 / 3, .5 + 7.5 / 6);
-// rc.lineTo(8 + 7.5 / 3 + 15 * 4 / 29, .5 + 7.5 / 6 + 52.5 * 4 / 29);
-// rc.moveTo(.5, 5.9);
-// rc.lineTo(.5, 7.7);
-// rc.stroke();
-// ctx.globalCompositeOperation = "destination-in";
-// ctx.drawImage(rc.canvas, 0, 0, 16, 16);
-// ctx.globalCompositeOperation = "destination-over";
-// // ctx.globalAlpha = .5;
-// // ctx.fillStyle = "#000000";
-// // ctx.fillRect(5, 5, 6, 6);
-// // ctx.globalAlpha = 51 / 255;
-// // ctx.strokeStyle = "#000000";
-// // ctx.strokeRect(5.5, 5.5, 5, 5);
-// // ctx.globalAlpha = 1;
-// ctx.fillStyle = "#" + (16737894).toString(16);
-// ctx.strokeStyle = "#470000";
-// ctx.strokeRect(5.5, 5.5, 5, 5);
-// ctx.fillRect(5, 5, 6, 6);
-// ctx.fillStyle = ctx.createPattern(msBg, "no-repeat") || "#030e2f";
-// ctx.beginPath();
-// ctx.moveTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
-// ctx.lineTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 3 - 15 / 6);
-// ctx.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
-// ctx.lineTo(8, .5);
-// ctx.lineTo(0, .5 + 7.5 / 2);
-// ctx.lineTo(0, .5 + 7.5 / 2 + 15 / 3);
-// ctx.lineTo(.5 - 7.5 / 3 + 7.5, .5 + 22.5 / 2);
-// // ctx.moveTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
-// // ctx.lineTo(8, 15.5 - 7.5 / 3);
-// // ctx.lineTo(8, 15.5);
-// // ctx.lineTo(8 + 7.5 / 3, 15.5 - 7.5 / 6);
-// // ctx.moveTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 3 - 15 / 6);
-// // ctx.lineTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 2 + 7.5 / 6);
-// // ctx.lineTo(15.5, 15.5 - 7.5 / 2);
-// // ctx.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
-// // ctx.moveTo(.5 + 7.5 / 3, .5 + 15 / 3);
-// // ctx.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
-// // ctx.lineTo(8 + 7.5 / 3 + 15 * 4 / 29, .5 + 7.5 / 6 + 52.5 * 4 / 29);
-// // ctx.lineTo(.5 + 7.5 / 3 + 37.5 * 4 / 24, .5 + 15 / 3 + 31 * 4 / 24);
-// ctx.closePath();
-// // ctx.globalCompositeOperation = "source-over";
-// ctx.setTransform(.8, 0, 0, .81, -259, 27);
-// ctx.fill();
-// // ctx.globalCompositeOperation = "destination-over";
-// ctx.fillStyle = "#707070";
-// ctx.setTransform(rc.getTransform());
-// ctx.beginPath();
-// ctx.moveTo(15.5 - 15 / 4, .5 + 7.5 / 2 + 15 / 3 - 15 / 8);
-// ctx.lineTo(.5, .5 + 7.5 / 2 + 15 / 3);
-// ctx.lineTo(.5, 15.5 - 7.5 / 2);
-// ctx.lineTo(8, 15.5);
-// ctx.lineTo(15.5, 15.5 - 7.5 / 2);
-// ctx.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
-// ctx.closePath();
-// ctx.fill();
-// ctx.lineWidth = 1;
-// ctx.strokeStyle = "#000000";
-// ctx.strokeRect(.5, .5, 15, 15);
-// if (maskable) {
-//   WH(rc, maskable, maskable);
-//   rc.fillStyle = ctx.strokeStyle;
-//   rc.fillRect(0, 0, maskable, maskable);
-//   var padding = (maskable - size) / 2;
-//   rc.drawImage(ctx.canvas, padding, padding);
-// }
+/** //- @TODO remove in v.0.2.37 */
+//-.d1r.dbv DBVE icon v4
+//-var size = 512, maskable = 192;
+//-/** @type {HTMLImageElement} */
+//-var msBg = window.msBg || EL("img");
+//-if (!msBg.src) {
+//-  msBg.src = "../../deltarealm/.d1r.dbv/dist/assets/_ms_background.jpg";
+//-  msBg.onerror = function () {
+//-    msBg.src = "https://kaabel.github.io/.d1r.dbv/assets/_ms_background.png";
+//-    msBg.onerror = null;
+//-  };
+//-}
+//-WH(ctx, size, size);
+//-ctx.scale(size / 16, size / 16);
+//-ctx.imageSmoothingEnabled = false;
+//-// WH(ctx, 16, 16);
+//-ctx.fillStyle = "#ffffff";
+//-ctx.fillRect(0, 0, 16, 16);
+//-ctx.fillStyle = "#" + (16737894).toString(16);
+//-ctx.fillStyle = "#ff3333";
+//-ctx.fillRect(5, 5, 6, 6);
+//-// ctx.globalAlpha = 51 / 255;
+//-ctx.strokeStyle = "#191919";
+//-ctx.strokeStyle = "#cccccc";
+//-ctx.strokeRect(.5, .5, 15, 15);
+//-ctx.strokeStyle = "#470000";
+//-ctx.strokeStyle = "#cc2929";
+//-ctx.strokeRect(5.5, 5.5, 5, 5);
+//-ctx.globalAlpha = 1;
+//-// ctx.drawImage(IMG(0), 0, 0);
+//-var rc = sShot.getContext("2d");
+//-WH(rc, ctx.canvas);
+//-rc.setTransform(ctx.getTransform());
+//-rc.lineWidth = 1.3;
+//-rc.lineJoin = "round";
+//-rc.lineCap = "round";
+//-rc.strokeStyle = "#9f9f8f";
+//-rc.strokeStyle = "#6E7069";
+//-rc.beginPath();
+//-rc.moveTo(8, 14);
+//-rc.lineTo(8, 15.5 - 7.5 / 3);
+//-rc.lineTo(.5, .5 + 7.5 / 2 + 15 / 3);
+//-rc.lineTo(.5, 15.5 - 7.5 / 2);
+//-rc.lineTo(8, 15.5);
+//-rc.lineTo(15.5, 15.5 - 7.5 / 2);
+//-rc.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
+//-rc.lineTo(8 + 7.5 / 6, 15.5 - 37.5 / 12);
+//-rc.moveTo(15.5, .5 + 7.5 / 2 + 15 / 3);
+//-rc.lineTo(15.5 - 30 / 19, .5 + 7.5 / 2 + 15 / 3 - 15 / 19);
+//-rc.stroke();
+//-rc.strokeStyle = "#030e2f";
+//-rc.beginPath();
+//-rc.moveTo(.5 + 46 / 12, .5 + 52 / 12);
+//-// rc.moveTo(.5 + 37.5 / 6, .5 + 37.5 / 12);
+//-rc.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
+//-rc.lineTo(8, .5);
+//-rc.lineTo(.5, .5 + 7.5 / 2);
+//-rc.lineTo(.5 + 7.5 / 3, .5 + 15 / 3);
+//-rc.lineTo(.5 + 7.5 / 3 + 37.5 * 4 / 24, .5 + 15 / 3 + 31 * 4 / 24);
+//-// rc.lineTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
+//-rc.moveTo(8 + 7.5 / 3, .5 + 7.5 / 6);
+//-rc.lineTo(8 + 7.5 / 3 + 15 * 4 / 29, .5 + 7.5 / 6 + 52.5 * 4 / 29);
+//-rc.moveTo(.5, 5.9);
+//-rc.lineTo(.5, 7.7);
+//-rc.stroke();
+//-ctx.globalCompositeOperation = "destination-in";
+//-ctx.drawImage(rc.canvas, 0, 0, 16, 16);
+//-ctx.globalCompositeOperation = "destination-over";
+//-// ctx.globalAlpha = .5;
+//-// ctx.fillStyle = "#000000";
+//-// ctx.fillRect(5, 5, 6, 6);
+//-// ctx.globalAlpha = 51 / 255;
+//-// ctx.strokeStyle = "#000000";
+//-// ctx.strokeRect(5.5, 5.5, 5, 5);
+//-// ctx.globalAlpha = 1;
+//-ctx.fillStyle = "#" + (16737894).toString(16);
+//-ctx.strokeStyle = "#470000";
+//-ctx.strokeRect(5.5, 5.5, 5, 5);
+//-ctx.fillRect(5, 5, 6, 6);
+//-ctx.fillStyle = ctx.createPattern(msBg, "no-repeat") || "#030e2f";
+//-ctx.beginPath();
+//-ctx.moveTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
+//-ctx.lineTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 3 - 15 / 6);
+//-ctx.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
+//-ctx.lineTo(8, .5);
+//-ctx.lineTo(0, .5 + 7.5 / 2);
+//-ctx.lineTo(0, .5 + 7.5 / 2 + 15 / 3);
+//-ctx.lineTo(.5 - 7.5 / 3 + 7.5, .5 + 22.5 / 2);
+//-// ctx.moveTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
+//-// ctx.lineTo(8, 15.5 - 7.5 / 3);
+//-// ctx.lineTo(8, 15.5);
+//-// ctx.lineTo(8 + 7.5 / 3, 15.5 - 7.5 / 6);
+//-// ctx.moveTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 3 - 15 / 6);
+//-// ctx.lineTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 2 + 7.5 / 6);
+//-// ctx.lineTo(15.5, 15.5 - 7.5 / 2);
+//-// ctx.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
+//-// ctx.moveTo(.5 + 7.5 / 3, .5 + 15 / 3);
+//-// ctx.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
+//-// ctx.lineTo(8 + 7.5 / 3 + 15 * 4 / 29, .5 + 7.5 / 6 + 52.5 * 4 / 29);
+//-// ctx.lineTo(.5 + 7.5 / 3 + 37.5 * 4 / 24, .5 + 15 / 3 + 31 * 4 / 24);
+//-ctx.closePath();
+//-// ctx.globalCompositeOperation = "source-over";
+//-ctx.setTransform(.8, 0, 0, .81, -259, 27);
+//-ctx.fill();
+//-// ctx.globalCompositeOperation = "destination-over";
+//-ctx.fillStyle = "#707070";
+//-ctx.setTransform(rc.getTransform());
+//-ctx.beginPath();
+//-ctx.moveTo(15.5 - 15 / 4, .5 + 7.5 / 2 + 15 / 3 - 15 / 8);
+//-ctx.lineTo(.5, .5 + 7.5 / 2 + 15 / 3);
+//-ctx.lineTo(.5, 15.5 - 7.5 / 2);
+//-ctx.lineTo(8, 15.5);
+//-ctx.lineTo(15.5, 15.5 - 7.5 / 2);
+//-ctx.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
+//-ctx.closePath();
+//-ctx.fill();
+//-ctx.lineWidth = 1;
+//-ctx.strokeStyle = "#000000";
+//-ctx.strokeRect(.5, .5, 15, 15);
+//-if (maskable) {
+//-  WH(rc, maskable, maskable);
+//-  rc.fillStyle = ctx.strokeStyle;
+//-  rc.fillRect(0, 0, maskable, maskable);
+//-  var padding = (maskable - size) / 2;
+//-  rc.drawImage(ctx.canvas, padding, padding);
+//-}

@@ -2,7 +2,7 @@
 /// <reference path="./defs.d.ts" />
 "use strict";
 /** @readonly */
-var version_code_js = "v.0.2.35";
+var version_code_js = "v.0.2.36";
 /** 3h_  @TODO check @see {Ship.VERSION} */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
@@ -1691,8 +1691,6 @@ Bin.rMsbfBitsOld = function gBitsMSBfFast(bin, l) {
 /** read max 32 next [`length`=2] bits
  * @param {Binary} bin @param {number} [length=2] */
 Bin.rMsbfBits = function (bin, length) {
-  //-if (bin.i === 76 && bin.j === 6)
-  //-  debugger;
   var offset = bin.j, b_int = 0, buffer = bin.buffer;
   length || (length = 2);
   b_int = buffer[bin.i] >>> offset & 0xffffffff >>> 32 - length;
@@ -1819,7 +1817,7 @@ Bin.createHuffman = function (arr) {
       n = 0;
     };
     aCodesToTree();
-  }
+  };
   for (i = 1; i < bitLengths.length; i++)
     if (bitLengths[i] > 0) {
       for (v = -1, p = 0, n = 0; ++p <= arr.length;)
@@ -2109,8 +2107,10 @@ Bin.Gzip.Subfield = function (SI1, SI2, data) {
  * @typedef {[axis:0|1|2,sign:boolean,rot:0|1|2|3]} Rotation
  * DBV to DR: [-: 0, f: f, r: Math.floor(r / 90)]
  * @typedef {keyof typeof Color.ID|""|null} Colors
- * @typedef {{customParameter?:(number|string|[number,number,number,
- * number])[],nodeIndex?:number[],weldGroup?:number}} BlockProps
+ * @typedef {{connectionGroup?:number,actionGroups?:number,layer?:number,
+ * defaultEnabled?:boolean,nonInteractable?:boolean}} MsBlockProps
+ * @typedef {{customParameter?:(number|string|[number,number,number,number]
+ * )[],nodeIndex?:number[],weldGroup?:number}&MsBlockProps} BlockProps
  * @param {string} name
  * @param {XYZPosition} pos DBV to DR: [-: 0, x: p[0] * 2, y: p[1] * 2]
  * @param {Rotation} rot DBV to DR: [-: 0, f: f, r: Math.floor(r / 90)]
@@ -2243,7 +2243,7 @@ Block.arrayFromObjects = function (blocks, logics) {
     for (var i = props.length; i-- > 0; j += p instanceof Array ?
         p.length :
         1)
-      var p = props[i].item.default;
+      var p = props[i].default;
     return customParameter instanceof Array && customParameter.slice(j);
   }
   /** @param {number[]} indexes */
@@ -2645,218 +2645,285 @@ Block.Mirror.VALUE = {
   11: new Block.Mirror("WEDGE"),
 };
 
-/** JSDoc syntax for interfaces */
-/** @typedef {{min:number;max:number;default:number[];}} Slider */
-/** @typedef {{min:number;max:number;default:number[];}} IntegerSlider */
-/** @typedef {{options:string[];default:number[];}} Dropdown */
-/** @typedef {{default:number[];}} NumberInputs */
-/** @typedef {{default:string[];}} TextInputs */
-/** @typedef {{idx:number;default:number[] | number[][];}} WeldGroups */
-/**
- * @typedef {{"Slider":Slider;"Integer Slider":IntegerSlider;
- * "Dropdown":Dropdown;"Number Inputs":NumberInputs;"Text Inputs":TextInputs;
- * "WeldGroups":WeldGroups;}} ItemTs
+/** JSDoc syntax for ts Conditional Type
+ * @template {readonly any[]|any[]} A @typedef {{[K in keyof A as
+ * K extends keyof any[] ?never : K]:A[K]}} ArrayElements
  */
-// TODO: To be considered for resystemizing
-/** blocks can have any combination of Block.Properies (dropdown, input(s))
- * @readonly
- * @template {keyof ItemTs} T @param {T} type @param {string} name */
-Block.Properties = function (type, name) {
-  /** type defines the kind of item, item is one of few classes */
-  this.type = type;
-  /** text displayed above the setting like Tourque, Thrust, Function */
-  this.name = name;
-  /** @type {ItemTs[T]} defines the data structure *///@ts-expect-error
-  this.item = new Block.Properties.Items[type]();
+/** 
+ * @typedef {BlockPropertiesConstructor[K] extends
+ * abstract new(args:infer P)=>any?P:never} PorpParameter
+ * @template {keyof BlockPropertiesConstructor} K */
+/** Arguments typedefs for Properties Items generator
+ * @typedef {PorpParameter<"Slider">|PorpParameter<"Dropdown">|PorpParameter<
+ * "IntegerSlider">|PorpParameter<"NumberInputs">|PorpParameter<"TextInputs">
+ * |PorpParameter<"WeldGroups">|PorpParameter<"CheckBox">|
+ * PorpParameter<"MsInput">} PropsArg
+//-typedef {BlockPropertiesConstructor["itemKeys"]} itemKeys
+//-typedef {ArrayElements<itemKeys>} PropertiesNames
+//-typedef {{[K in keyof PropertiesNames as
+//-Exclude<PropertiesNames[K],undefined>]:K}} PropertiesIds
+ * @typedef {typeof Block.Properties} BlockPropertiesConstructor
+ * @typedef {BlockPropertiesConstructor["instances"]} BlockProperties
+ * @typedef {BlockProperties[keyof BlockProperties]} Prop */
+/** @namespace @typedef {never} Block.Properties @returns {never} */
+Block.Properties = function () {
+  throw new TypeError("Illegal constructor");
+};
+// the temporary success of this madness was themed with Kim Wilde-Cambodia
+/** @param {[0,string,number,number,number]} args */
+Block.Properties.Slider = function Slider(args) {
+  this.name = args[1];
+  this.min = args[2];
+  this.max = args[3];
+  /** @type {[number]} */
+  this.default = [args[4]];
   Object.seal(this);
 };
-Block.Properties.Items = {
-  // changed the integer slider from not having enterable input
-  // to allow only for integer number unlike slider's multiplies of 0.1
-  /** @type {new()=>Slider} */
-  "Slider": function Slider() {
-    this.min = 0;
-    this.max = 0;
-    /** @type {[number]} */
-    this.default = [0];
-  },
-  /** @type {new()=>IntegerSlider} */
-  "Integer Slider": function IntegerSlider() {
-    this.min = 0;
-    this.max = 0;
-    /** @type {[number]} integer! */
-    this.default = [0];
-  },
-  /** @type {new()=>Dropdown} */
-  "Dropdown": function Dropdown() {
-    this.options = [""];
-    /** @type {[number]} integer */
-    this.default = [0];
-  },
-  /** @type {new()=>NumberInputs} */
-  "Number Inputs": function NumberInputs() {
-    /** @type {number[]} */
-    this.default = [0];
-  },
-  /** @type {new()=>TextInputs} */
-  "Text Inputs": function TextInputs() {
-    /** @type {string[]} */
-    this.default = [""];
-  },
-  /** @type {new()=>WeldGroups} hidden property */
-  "WeldGroups": function WeldGroups() {
-    /** not exactly sure what's this for */
-    this.idx = 0;
-    /** Hinge/Piston use additnional digit
-     * @type {[number]|number[][]} Separator must have array of four >:o */
-    this.default = [0];
-  }
+/** @type {"Slider"} */
+Block.Properties.Slider.prototype.type = "Slider";
+Block.Properties.Slider.prototype.id = 0;
+/**
+ * @param {[1,string,number,number,number]|
+ * [1,string,number,number,number,string]} args
+ */
+Block.Properties.IntegerSlider = function IntegerSlider(args) {
+  this.name = args[1];
+  this.min = args[2];
+  this.max = args[3];
+  /** @type {[number]} integer! */
+  this.default = [args[4]];
+  this.key = args[5] || "";
+  Object.seal(this);
 };
-/**
- * @typedef {["Slider", "Integer Slider", "Dropdown", "Number Inputs",
- * "Text Inputs", "WeldGroups"]} itemTypes
- */
-/** @type {itemTypes} */
-Block.Properties.itemTypes = ["Slider", "Integer Slider", "Dropdown",
-  "Number Inputs", "Text Inputs", "WeldGroups"];
-/** Arguments typedefs for Properties Items generator
- * @typedef {[0,string,number,number,number]|
- * [1,string,number,number,number]|[2,string,string[],number]|
- * [3,string,number[]]|[4,string,string[]]|[5,number|number[]]} PropsArg
- */
-/** @typedef {Block.Properties<keyof ItemTs>} Prop properties definitions */
-/**
- * @type {<T extends PropsArg[]>(argArr: T)=>Prop[]} */
-Block.Properties.justOne = function (argArr) {
-  for (var j = 0, r = []; j < argArr.length; j++) {
-    var p, v = argArr[j];
-    switch (v[0]) {
-      case 0:
-        p = r[j] = new Block.Properties("Slider", v[1]);
-        p.item.min = v[2];
-        p.item.max = v[3];
-        p.item.default = [v[4]];
-        break;
-      case 1:
-        p = r[j] = new Block.Properties("Integer Slider", v[1]);
-        p.item.min = v[2];
-        p.item.max = v[3];
-        p.item.default = [v[4]];
-        break;
-      case 2:
-        p = r[j] = new Block.Properties("Dropdown", v[1]);
-        p.item.options = v[2];
-        p.item.default = [v[3]];
-        break;
-      case 3:
-        p = r[j] = new Block.Properties("Number Inputs", v[1]);
-        p.item.default = v[2];
-        break;
-      case 4:
-        p = r[j] = new Block.Properties("Text Inputs", v[1]);
-        p.item.default = v[2];
-        break;
-      case 5:
-        p = new Block.Properties("WeldGroups", "");
-        p.item.idx = 0;
-        r.forEach(function (e) {
-          p.item.idx += e.item.default.length;
-        });
-        (r[j] = p).item.default =
-          /** @type {number[]|number[][]} */
-          ([v[1]]);
+/** @type {"Integer Slider"} */
+Block.Properties.IntegerSlider.prototype.type = "Integer Slider";
+Block.Properties.IntegerSlider.prototype.id = 1;
+/** @param {[2,string,string[],number]} args */
+Block.Properties.Dropdown = function Dropdown(args) {
+  this.name = args[1];
+  this.options = args[2];
+  /** @type {[number]} integer */
+  this.default = [0];
+  Object.seal(this);
+};
+/** @type {"Dropdown"} */
+Block.Properties.Dropdown.prototype.type = "Dropdown";
+Block.Properties.Dropdown.prototype.id = 2;
+/** @param {[3,string,number[]]} args */
+Block.Properties.NumberInputs = function NumberInputs(args) {
+  this.name = args[1];
+  /** @type {number[]} */
+  this.default = args[2];
+  Object.seal(this);
+};
+/** @type {"Number Inputs"} */
+Block.Properties.NumberInputs.prototype.type = "Number Inputs";
+Block.Properties.NumberInputs.prototype.id = 3;
+/** @param {[4,string,string[]]} args */
+Block.Properties.TextInputs = function TextInputs(args) {
+  this.name = args[1];
+  /** @type {string[]} */
+  this.default = args[2];
+  Object.seal(this);
+};
+/** @type {"Text Inputs"} */
+Block.Properties.TextInputs.prototype.type = "Text Inputs";
+Block.Properties.TextInputs.prototype.id = 4;
+/** @param {[5,number|[number,number,number,number]]} args */
+Block.Properties.WeldGroups = function WeldGroups(args) {
+  /** not exactly sure what's this for */
+  this.idx = 0;
+  /** @deprecated - unused, but kept for convenience */
+  this.name = "";
+  /** Hinge/Piston use additnional digit
+   * Separator must have array of four >:o */
+  this.default = [args[1]];
+  Object.seal(this);
+};
+/** @type {"WeldGroups"} */
+Block.Properties.WeldGroups.prototype.type = "WeldGroups";
+Block.Properties.WeldGroups.prototype.id = 5;
+/** @param {[7,string,boolean]} args */
+Block.Properties.CheckBox = function CheckBox(args) {
+  this.name = args[1];
+  this.default = args[2];
+  Object.seal(this);
+};
+/** @type {"Check Box"} */
+Block.Properties.CheckBox.prototype.type = "Check Box";
+Block.Properties.CheckBox.prototype.id = 7;
+/** @param {[8,string,number,string]} args */
+Block.Properties.MsInput = function MsInput(args) {
+  this.name = args[1];
+  this.default = args[2];
+  this.key = args[3];
+  Object.seal(this);
+};
+/** @type {"MS Input"} */
+Block.Properties.MsInput.prototype.type = "MS Input";
+Block.Properties.MsInput.prototype.id = 8;
+
+Block.Properties.itemKeys =
+  /** @type {const} */
+  (["Slider", "IntegerSlider", "Dropdown", "NumberInputs", "TextInputs",
+    "WeldGroups", UDF, "CheckBox", "MsInput"]);
+Block.Properties.instances = {
+  0: new Block.Properties.Slider([0, "", 0, 0, 0]),
+  1: new Block.Properties.IntegerSlider([1, "", 0, 0, 0]),
+  2: new Block.Properties.Dropdown([2, "", [""], 0]),
+  3: new Block.Properties.NumberInputs([3, "", [0]]),
+  4: new Block.Properties.TextInputs([4, "", [""]]),
+  5: new Block.Properties.WeldGroups([5, [0, 0, 0, 0]]),
+  7: new Block.Properties.CheckBox([7, "", !1]),
+  8: new Block.Properties.MsInput([8, "", 0, ""])
+};
+Block.Properties.items = (function () {
+  var source = Block.Properties.instances, items =
+    /** @type {{[K in keyof BlockProperties]:new(args:PropsArg)=>BlockProperties[K]}} */
+    ({});
+  for (var p in source)
+    items[p] = Object.getPrototypeOf(source[p]).constructor;
+  return items;
+})();
+
+/** @template {{[key:number]:[PropsArg]|PropsArg[]}} T @param {T} argArr */
+Block.Properties.generate = function (argArr) {
+  var result =
+    /**
+     * @type {{[key:number]:Prop[]|undefined}&{[E in keyof T]:
+     * {[P in keyof T[E]as P extends keyof any[]?never:P]:BlockProperties[
+     * T[E][P] extends{0:keyof BlockProperties}?T[E][P][0]:never]}}}
+     * @TODO create example of building the type gradually for education */
+    ({});
+  /** @template {keyof T} E id */
+  for (var p in argArr) {
+    /** @type {(PropsArg|Prop)[]} the same as @see {args} */
+    var entry = result["" + p] = argArr[p];
+    for (var i = 0, args = argArr[p]; i < entry.length; i++) {
+      entry[i] = new Block.Properties.items[argArr[p][i][0]](args[i]);
     }
   }
-  return r;
+  return result;
 };
-/**
- * @type {{[key:number]:Prop[]|undefined,
- * 803:[Block.Properties<"Dropdown">]}}
- * @see {Ship.CustomInput} @see {ShipProperties} */
-Block.Properties.VALUE = Block.PROP = {
-  738: Block.Properties.justOne([[1, "Force", 375, 1125, 1125]]),
-  // 738: + old logical input node
-  739: Block.Properties.justOne([[1, "Force", 1500, 4500, 4500]]),
-  // 739: + old logical input node
-  740: Block.Properties.justOne([[1, "Force", 6000, 18000, 18000]]),
-  // 740: + old logical input node
-  741: Block.Properties.justOne([[1, "Force", 1800, 54000, 54000]]),
-  // 741: + old logical input node
-  742: Block.Properties.justOne([[1, "Force", 375, 1125, 1125]]),
-  // 742: + old logical input node
-  743: Block.Properties.justOne([[1, "Force", 1500, 4500, 4500]]),
-  // 743: + old logical input node
-  744: Block.Properties.justOne([[1, "Force", 3000, 9000, 9000]]),
-  // 744: + old logical input node
-  745: Block.Properties.justOne([[1, "Force", 9000, 27000, 27000]]),
-  // 745: + old logical input node
-  746: Block.Properties.justOne([[1, "Torque", 2500, 7500, 7500]]),
+Block.Properties.VALUE = Block.Properties.generate({
+  // + old logical input node (dbve doesn't internally use this aspect)
+  738: [[1, "Force", 375, 1125, 1125]],
+  // + old logical input node
+  739: [[1, "Force", 1500, 4500, 4500]],
+  // + old logical input node
+  740: [[1, "Force", 6000, 18000, 18000]],
+  // + old logical input node
+  741: [[1, "Force", 18000, 54000, 54000]],
+  // + old logical input node
+  742: [[1, "Force", 375, 1125, 1125]],
+  // + old logical input node
+  743: [[1, "Force", 1500, 4500, 4500]],
+  // + old logical input node
+  744: [[1, "Force", 3000, 9000, 9000]],
+  // + old logical input node
+  745: [[1, "Force", 9000, 27000, 27000]],
+  746: [[1, "Torque", 2500, 7500, 7500]],
   // 770, 771, 772, 773, 774, 775: old logical input node
-  790: Block.Properties.justOne([
-    [1, "Gear Ratio", 0.2, 3, 1],
-    [2, "Spawn Rotation", ["Left", "Middle", "Right"], 1],
-    [5, 0]
-  ]),
-  791: Block.Properties.justOne([[5, [0, 0, 0, 0]]]),
-  792: Block.Properties.justOne([[0, "Gear Ratio", 0.2, 3, 1], [5, 0]]),
-  803:
-    // custom parameter (DBV block's "c") property contains option string
-    // instead of number reference to option index (DBVE has that shit too)
-    // (which's in Block.Properties<"Dropdown"> item.default[0])
-    /** @type {[Block.Properties<"Dropdown">]} */
-    (Block.Properties.justOne([[2, "Controls", [
-      "Up",
-      "Down",
-      "Left",
-      "Right",
-      "Turn Left",
-      "Turn Right",
-      "Action 1",
-      "Action 2"
-    ], 0]])),
-  // 803: + old logical output node
-  // 804, 805, 806, 807, 808, 809, 810: old logical output node and input nodes
-  812: Block.Properties.justOne([[0, "Duraion in seconds", 0.1, 5, 1]]),
-  813: Block.Properties.justOne([[3, "Number", [0]]]),
-  814: Block.Properties.justOne([[2, "Mode", [
-    "Absolute",
-    "Directional",
-    "Angular",
-    "G-force"
-  ], 0]]),
-  819: Block.Properties.justOne([[3, "Range", [0, 1]]]),
-  821: Block.Properties.justOne([[3, "Range", [0, 1]]]),
-  823: Block.Properties.justOne([[4, "Function", [""]]]),
-  825: Block.Properties.justOne([[3, "Range", [-1, 1]]]),
-  826: Block.Properties.justOne([[3, "Range", [-1, 1]]]),
-  827: Block.Properties.justOne([[1, "Decimals amount", 1, 4, 2]])
-};
-// /** @type {{[key:number]:number|undefined}} */
-// Block.Properties.WELDGROUPS = {790: 2, 791: 4, 792: 2};
+  790: [[1, "Gear Ratio", 0.2, 3, 1], [2, "Spawn Rotation",
+    ["Left", "Middle", "Right"], 1], [5, 0]],
+  791: [[5, [0, 0, 0, 0]]],
+  792: [[0, "Gear Ratio", 0.2, 3, 1], [5, 0]],
+  // custom parameter (DBV block's "c") property contains option string
+  // instead of number reference to option index (DBVE has that shit too)
+  // (which's in Block.Properties<"Dropdown"> item.default[0])
+  // + old logical output node
+  803: [[2, "Controls", ["Up", "Down", "Left", "Right", "Turn Left",
+    "Turn Right", "Action 1", "Action 2"], 0]],
+  // 804, 805, 806, 807, 808, 809, 810: old logical output and input node(s)
+  812: [[0, "Duraion in seconds", 0.1, 5, 1]],
+  813: [[3, "Number", [0]]],
+  814: [[2, "Mode", ["Absolute", "Directional", "Angular", "G-force"],
+    0]],
+  819: [[3, "Range", [0, 1]]],
+  821: [[3, "Range", [0, 1]]],
+  823: [[4, "Function", [""]]],
+  825: [[3, "Range", [-1, 1]]],
+  826: [[3, "Range", [-1, 1]]],
+  827: [[1, "Decimals amount", 1, 4, 2]],
+  1281: [[7, "Disable interaction", !1], [1, "Gyroscope Torque",
+    0, 4, 4, "torque"], [8, "Rotate 1", 32, "gyro1"],
+    [8, "Rotate 2", 16, "gyro2"], [1, "Priority", -100000, 100000, 1],
+    [8, "Set as controlled", 0, "control"]],
+  1282: [[7, "Disable interaction", !1]],
+  // first fuel engine (mk1)
+  1283: [[7, "Default enabled", !0], [7, "Disable interaction", !1],
+    [1, "Thrust", 0, 64, 64], [8, "Control 1", 256, "engine"]],
+  // not visible in min form (first photon engine bald grey)
+  1284: [[7, "Default enabled", !0], [7, "Disable interaction", !1],
+    [1, "Thrust", 0, 2, 2], [8, "Control 1", 256, "engine"]],
+  // Neutron engine
+  1285: [[7, "Default enabled", !0], [7, "Disable interaction", !1],
+    [1, "Thrust", 0, 9, 9], [8, "Control 1", 256, "engine"]],
+  // Ion engine
+  1286: [[7, "Default enabled", !0], [7, "Disable interaction", !1],
+    [1, "Thrust", 0, 6, 6], [8, "Control 1", 256, "engine"]],
+  // Chemical fuel engine MK2
+  1287: [[7, "Default enabled", !0], [7, "Disable interaction", !1],
+    [1, "Thrust", 50, 116, 116], [8, "Control 1", 256, "engine"]],
+  // Plasma engine
+  1288: [[7, "Default enabled", !0], [7, "Disable interaction", !1],
+    [1, "Thrust", 0, 80, 80], [8, "Control 1", 256, "engine"]],
+  1289: [[1, "Gyroscope Torque", 0, 20, 20, "torque"],
+    [8, "Rotate 1", 32, "gyro1"], [8, "Rotate 2", 16, "gyro2"]],
+  // Probe core
+  1290: [[1, "Rotation Torque", 0, 2, 2, "torque"]],// 3h_
+  // Photon reactor 1291:none
+  // Medium hydrogen tank
+  1292: [],
+  // Titanium armor
+  1293: [],
+  // Exotic matter reactor
+  1294: [],
+  // Small solar panel
+  1295: [],
+  // Tiny battery
+  1296: [],
+  // Medium battery
+  1297: [],
+  // Bomb
+  1299: [],
+  // Camera
+  1300: [],
+  // Isotope-Z reactor
+  1301: [],
+  // Small battery 1302:none
+});
+/** @deprecated obsolete since BlockProperties VALUE definition is shorter */
+Block.PROP = Block.Properties.VALUE;
+//-/** @template T @param {T} propsDef @returns {T extends Prop?T:Prop|null} */
+//-Block.Properties.isBlockPorperties = function (propsDef) {
+//-  var result = null, source = Block.Properties.instances;
+//-  for (var p in source)
+//-    if (propsDef instanceof Object.getPrototypeOf(source[p]).constructor)
+//-      (result = propsDef);
+//-  //@ts-expect-error
+//-  return result;
+//-};
 /** @param {string|number} name @param {safe} property */
 Block.Properties.addProperty = function (name, property) {
-  var propsDef = Block.Properties.VALUE[typeof name == "number" ?
-    name :
-    Block.ID[name]
-  ];
-  /** @type {any[]} works in Block.ts as well */
-  var custom = property.customParameter = [];
-  if (!(propsDef instanceof Array))
-    return property;
-  for (var i = 0, n = 0, p; i < propsDef.length;)
-    if ((p = propsDef[i++]) instanceof Block.Properties)
-      for (var j = 0, l = p.item.default.length; j < l;)
+  var propsDef = Block.Properties.VALUE[
+      typeof name == "number" ? name : Block.ID[name]] || [],
+    /** @type {any[]} works in Block.ts as well */
+    custom = property.customParameter = [];
+  for (var i = 0, l = propsDef.length, n = 0, p; i < l;)
+    if (p = propsDef[i++])
+      for (var j = 0, l = p.default["length"] || 0; j < l;)
         custom[n++] = p.name === "Controls" &&
-          p.item instanceof Block.Properties.Items.Dropdown ?
-            p.item.options[p.item.default[j++]] :
-            p.item.default[j++];
+          p instanceof Block.Properties.Dropdown ?
+            p.options[p.default[j++]] :
+            p.default[j++];
   return property;
 };
 /** returns <default input optoins>.concat([custom input options])
  * @param {ShipProperties|null} prop */
 Block.Properties.getInputOptions = function (prop) {
   var arrMaybe = (prop || {}).customInputs;
-  return Block.Properties.VALUE[803][0].item.options.concat(
+  return Block.Properties.VALUE[803][0].options.concat(
     (arrMaybe instanceof Array ?
       arrMaybe :
       []).map(String)
@@ -3671,7 +3738,7 @@ Edit.historyAt = function (target, index) {
       /** @type {Edit.Undo} */
       (3)
     ));
-  // check all the relevant references/jumps with Edit.undo-s 3h_
+  // check all the relevant references/jumps with Edit.undo-s
   for (var i = index, n = 0, lmax = 0xffff; i > 0;) {
     if (edits[n = i].type ===
         /** @type {Edit.Save} */
@@ -4017,8 +4084,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @readonly @type {48} significantVersion: 48 (integer) */// @ts-ignore
-Ship.VERSION = 48;
+/** @readonly @type {49} significantVersion: 49 (integer) */// @ts-ignore
+Ship.VERSION = 49;
 Ship.prototype.edit = Edit.Ship;
 Ship.prototype.selectRect = (
   /**
@@ -4301,11 +4368,11 @@ Ship.prototype.mirror2d = (
 Ship.prototype.blockAtPonit2d = function (x, y, nonull) {
   if (nonull === UDF)
     nonull = true;
+  var regExp = /^__(NULL|unknown)__$/;
   for (var all = this.blocks, i = all.length; i-- > 0;) {
-    var block = all[i];
-    if (block.internalName === "__NULL__" && nonull)
+    if (nonull && regExp.test(all[i].internalName))
       continue;
-    var rect = Block.Size.highlightBlock(block, i);
+    var rect = Block.Size.highlightBlock(all[i], i);
     var rx = rect.x, ry = rect.y;
     if (-x < rx || y < ry || -x > rx + rect.w || y > ry + rect.h)
       continue;
@@ -4685,11 +4752,17 @@ Ship.toMSSSS = function (ship) {
     Name: ship.name,
     Parts: ship.blocks.map(function (block) {
       var prop = block.properties, name = block.internalName;
+      var id = Block.ID[name], s = "";
+      if (id > 1280 && id < 2048) {
+        var group = prop.connectionGroup, weld = prop.weldGroup;
+        s += group !== UDF ? group : weld !== UDF ? 1 << weld : 1;
+      } else if (prop.color)
+        s += Color.ID[prop.color];
       return (name === "__unknown__" &&
         "invalidName" in prop ? prop.invalidName : name) + "|" +
         block.position[1] + "," + block.position[2] + "|" +
         (block.rotation[2] * 90) + "," + (block.rotation[1] ? -1 : 1) +
-        ",1|c1;"
+        ",1|" + s + ";";
     }),
     UncompressedParts: [],
     BuildCost: [],
@@ -4704,6 +4777,15 @@ Ship.toMSSSS = function (ship) {
 /** @param {safe} o @see {Block.arrayFromObjects} _3h */
 Ship.fromMSObject = function (o) {
   var singleWarn = 1;
+  /** @param {unknown} color @param {safe} properties */
+  function handleColor(color, properties) {
+    properties.color = "" + (color) in Color.ID ?
+      color :
+      Color.NAME[Number(properties.invalidColor = color)] || null;
+  }
+  //-/** @param {unknown} part @param {safe} prop */
+  //-function handleSettings(part, prop) {    
+  //-}
   /** @param {unknown} raw */
   function decodeRaw(raw) {
     if (typeof raw != "string") {
@@ -4712,10 +4794,14 @@ Ship.fromMSObject = function (o) {
       return new Block("__unknown__", [0, 0, 0], [0, !1, 0]);
     }
     if (raw[0] !== "{" || raw.slice(-1)[0] !== "}") {
-      var part = raw.split("|"), rot = part[2].split(","), prop = {};
-      if (/Deco[Ll]ayer\d?_/.test(raw)) {
+      var prop = OC(), part = raw.split("|"), rot = part[2].split(",");
+      part[part.length - 1] = part[part.length - 1].split(";")[0];
+      /** @type {number|undefined} */
+      var id = Block.ID[part[0]];
+      if (typeof id != "number") {
+        id = part[0] in Block.NAME ? +part[0] : Block.ID["__unknown__"];
         prop.invalidName = part[0];
-        part[0] = "__unknown__";
+        part[0] = Block.NAME[id];
       }
       /** @type {Rotation} */
       var r = [0, +rot[1] < 0, 0], pos = part[1].split(",");
@@ -4724,7 +4810,25 @@ Ship.fromMSObject = function (o) {
       r[2] =
         /** @type {0|1|2|3} */
         (+rot[0] / 90 + +(+rot[2] < 0) * 2 + 4.5 & 3);
-      return new Block(part[0], [0, +pos[0], +pos[1]], r);
+      part.length > 3 ?
+        prop.connectionGroup = +part[3] :
+        handleColor(part[3], prop);
+      //-if (part.length > 5)
+      //-  handleSettings(part, prop);
+      var propsDef = Block.Properties.VALUE[id] || [], isDefaultE = 0;
+      for (var i = propsDef.length; i-- > 0;) {
+        var item = propsDef[i];
+        isDefaultE |= +(item instanceof Block.Properties.CheckBox &&
+          item.name === "Default enabled");
+      }
+      // part[4].split(",");
+      // part[5];
+      // part[6];
+      // part[7];
+      // defaultEnabled turned on few other blocks without such setting
+      if (id > 1280 && id < 2048)
+        prop.defaultEnabled = isDefaultE ? !!part[8] : true;
+      return new Block(part[0], [0, +pos[0], +pos[1]], r, prop);
     }
     try {
       var result = JSON.parse(raw),
@@ -4754,7 +4858,7 @@ Ship.fromMSObject = function (o) {
         +(obj.MirHor || 0) < 0 ? !rotMirVert : rotMirVert,
       /** @type {Rotation} */
       rotation = [0, rotFlip, rotIndex],
-      value = obj.ComponentSettings;
+      settings = obj.ComponentSettings;
     if (adjust) {
       var x = position[1], y = position[2], rot = rotation[2];
       var size = Block.Size.VALUE[Block.ID[name]];
@@ -4765,30 +4869,26 @@ Ship.fromMSObject = function (o) {
     }
     if ("ComponentSettings" in obj) {
       /** @type {safe} */
-      var properties = (typeof value == "function" ||
-        typeof value == "object") && value || {},
-        color = obj.color || properties.color;
+      var properties = (typeof settings == "function" ||
+        typeof settings == "object") && settings || {};
       properties.actionGroups = obj.actionGroups;
       properties.connectionGroup = obj.connectionGroup;
       properties.defaultEnabled = obj.defaultEnabled;
       properties.layer = obj.layer;
       properties.nonInteractable = obj.nonInteractable;
-      properties.color = "" + (color) in Color.ID ?
-        color :
-        Color.NAME[Number(properties.invalidColor = color)] || null;
+      handleColor(obj.color || properties.color, properties);
       return new Block(name, position, rotation, properties);
     }
     return new Block(name, position, rotation);
   }
-  //-v.0.2.35 this code was taken from Ship.fromMSSSS
   var name = typeof o.Name == "string" ? o.Name : "Modular Spaceship",
-    parts = o.Parts instanceof Array ? o.Parts.map(decodeRaw) : [],
+    allParts = o.Parts instanceof Array ? o.Parts.map(decodeRaw) : [],
     moreParts = o.UncompressedParts,
     /** @type {{p:XYZPosition,r:Rotation}} */
     refs = {p: [0, 0, 0], r: [0, !1, 0]};
   if (moreParts instanceof Array)
     moreParts.forEach(function (item) {
-      parts.push(new Block("__unknown__", refs.p, refs.r, item));
+      allParts.push(new Block("__unknown__", refs.p, refs.r, item));
     });
   if ("CompressedParts" in o)
     try {
@@ -4801,12 +4901,12 @@ Ship.fromMSObject = function (o) {
       moreParts = JSON.parse(Ship.utf8ToString(gzip.result))
       if (moreParts instanceof Array)
         moreParts.forEach(function (item) {
-          parts.push(decodePart(item, true));
+          allParts.push(decodePart(item, true));
         });
     } catch (err) {
       console.error("Decoding CompressedParts:", err);
     }
-  var spaceship = new Ship(name, [], Ship.dateTime(), parts);
+  var spaceship = new Ship(name, [], Ship.dateTime(), allParts);
   spaceship.setSelected();
   Edit.Primitive.rotate(spaceship, 2);
   spaceship.setSelected([]);
@@ -4855,7 +4955,7 @@ Ship.checkDBV = function (ship) {
   function notPositiveInteger(n) {
     return (n % 1 !== 0) || isNaN(n % 1) || n < 0;
   }
-  /** @param {Prop["item"]} item @param {unknown[]} arr @param {number} id */
+  /** @param {Prop} item @param {unknown[]} arr @param {number} id */
   function checkProperty(item, arr, id) {
     if (id === 803) {
       if (typeof arr[0] != "string")
@@ -4864,7 +4964,8 @@ Ship.checkDBV = function (ship) {
       n = 1;
       return;
     }
-    for (var j = 0, def = item.default; j < def.length; j++)
+    var def = item.default instanceof Array ? item.default : [];
+    for (var j = 0; j < def.length; j++)
       if (typeof arr[n++] != typeof def[j])
         throw at(new Error("The \"c\" property requires type: " +
           typeof def[j] + " at index: " + (n - 1)));
@@ -4875,8 +4976,7 @@ Ship.checkDBV = function (ship) {
         })) {
         throw at(new Error("Incorrect welgroups array"));
       }
-    } else if (item instanceof classes["Integer Slider"] ||
-      item instanceof classes["Dropdown"]) {
+    } else if (item instanceof props[1] || item instanceof props[2]) {
       if (notPositiveInteger(arr[n - 1])) {
         throw at(new Error("The \"c\" property requires positive" +
           " integer value at index: " + (n - 1)));
@@ -4893,7 +4993,7 @@ Ship.checkDBV = function (ship) {
   }
   console.info("A" + "BAN" + "DONE" + atob("RCBVTkZJTklTSEVE"));
   rend_collisions = true;
-  var classes = Block.Properties.Items, shipProp = ship.prop || {};
+  var props = Block.Properties.items, shipProp = ship.prop || {};
   for (var b = ship.blocks, i = b.length, msg = ""; i-- > 0;) {
     var id = Block.ID[b[i].internalName], pos = b[i].position;
     if (id < 690 || id > 959)
@@ -4918,7 +5018,7 @@ Ship.checkDBV = function (ship) {
       throw at(new Error("The array \"c\" property is required"));
     if (propsDef) {
       for (var j = 0, n = 0; j < propsDef.length; j++)
-        checkProperty(propsDef[j].item, arr, id);
+        checkProperty(propsDef[j], arr, id);
       if (arr.length !== n && !Logic.VALUE[id] && arr.length !== n + 1)
         throw at(new Error("The \"c\" property requires " + n +
           " items long array"));
@@ -6001,6 +6101,7 @@ api.Data = Data;
 api.Logic = Logic;
 api.Color = Color;
 api.Physics = Physics;
+api.Bin = Bin;
 api.test_collbxs = test_collbxs;
 api.test_debugbox2collisions = test_debugbox2collisions;
 api.Block = Block;

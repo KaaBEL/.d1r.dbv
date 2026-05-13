@@ -2,7 +2,7 @@
 /// <reference path="./editor.html.ts" />
 "use strict";
 /** @readonly */
-var version__k_api_js = "v.0.2.34";
+var version__k_api_js = "v.0.2.36";
 /** 3h_ @TODO check @see {Actions.API_VERSION} */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -24,6 +24,8 @@ var canvas = function (canvas) {
 var test_log = [];
 if (/http:..localhost:815[89]/.test(location.href))
   (function test_alphalunar() {
+    if (/http:..localhost:5500/.test(location.href))
+      return console.debug("%ckeeping PC console logs", "color:#58f");
     /** @typedef {()=>void} F */
     /** @type {Console&{oldLog?:F,oldWarn?:F,oldError?:F}} */
     var NS = console;
@@ -228,7 +230,7 @@ function Actions(event, index, state, previous, touch) {
   // It may be possible that my seals/freezes madness might not be performant
 }
 /** @readonly *///@ts-expect-error
-Actions.API_VERSION = "0.3.10";
+Actions.API_VERSION = "0.3.11";
 Actions.default = Object.freeze(
   /** @type {{[K in ActionsDefault]:(MouseEvent|ScrollWheel|PointerEvent)[K]}} */
   ({
@@ -408,7 +410,7 @@ Actions.init = function (root, options) {
   if (!(root instanceof EventTarget))
     throw new TypeError("root is not instanceof EventTarget");
   var immutable = "immutable" in options && options.immutable,
-    listeners = "listeners" in options ? options.listeners : null;
+    listeners = "listeners" in options ? options.listeners : UDF;
   /** @type {number[]} */
   var identifiers = [];
   /** @type {(Actions|null)[]} */
@@ -444,7 +446,7 @@ Actions.init = function (root, options) {
    * @param {ActionsEvent} ev @param {string} claim @returns claimed */
   function dispatchClaim(ev, claim) {
     claim.length !== 4 &&
-      console.warn("internal claims must have name lenght of 4!");
+      console.warn("internal claims must have name length of 4!");
     /** alternative to this was constructing Actions.State with
      * this.grabAction = "movezoom" */
     var initial = state.claim;
@@ -479,8 +481,10 @@ Actions.init = function (root, options) {
     /** @type {EventListener} *///@ts-expect-error
     var eventHandler = handler;
     if (state.wheelException && type === "wheel" && state.target) {
-      (listeners || (listeners = {})).passive = false;
-      state.target.addEventListener("wheel", eventHandler, listeners);
+      var options = listeners || {}, passive = options.passive;
+      options.passive = false;
+      state.target.addEventListener("wheel", eventHandler, options);
+      options.passive = passive;
       return handler;
     }
     if (type.slice(0, 5) === "touch" && state.preventTarget)
@@ -760,12 +764,12 @@ Actions.init = function (root, options) {
   }, window);
 
   state.preventTarget && !(listeners && listeners.passive === false) &&
-    console.log("jiuhus" + root.addEventListener("touchstart", F, {
+    console.log("fixd touches", root.addEventListener("touchstart", F, {
       passive: false
     }));
   state.resize = function resizeWindow() {
-    // used to spot unintended executions of resize
-    console.debug("%cresizing", "color:#58f");
+    // TODO:reanable after #Renderer. Used to spot unintended executions.
+    // #resizing.debug console.debug("%cresizing", "color:#58f");
     var w = window.innerWidth * pR,
       h = window.innerHeight * pR;
     if (w > 4096 || h > 4096)
@@ -782,9 +786,10 @@ Actions.init = function (root, options) {
     canvas.height = h;
     render();
   }
-  "onresize" in window && !window.onresize ?
+  "onresize" in window && !window.onresize && !listeners ?
     window.onresize = state.resize :
-    window.addEventListener("resize", state.resize);
+    console.warn(listeners, "added onresize as listener (" +
+      window.addEventListener("resize", state.resize, listeners));
 
   return state.generateAccessors(function () {
     throw new Error("Unimplemented");
