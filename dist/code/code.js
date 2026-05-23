@@ -2,12 +2,14 @@
 /// <reference path="./defs.d.ts" />
 "use strict";
 /** @readonly */
-var version_code_js = "v.0.2.36";
-/** 3h_  @TODO check @see {Ship.VERSION} */
+var version_code_js = "v.0.2.37";
+/** 3h_  @TODO check @see {Ship.VERSION}  Read FUN FACTS below: */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
 // B) create chrome extensions with custom modifications for live page
 // C) pull requests contribuition to main repo on github
+// NOTE: You can also use this regExp /\n( *//|[\s/*]*\*| *@see)[^\n]+/g
+//   for finding deleting almost all comments and ts from sourcecode
 var OP = Object.prototype.hasOwnProperty,
   /** @typedef {{[K in string|number|symbol]?:unknown}} safe */
   /** @type {()=>safe} should be safe with safe type */
@@ -51,7 +53,8 @@ if (typeof Initial != "function")
  * @typedef {{id:number,weight?:number,strength?:number,cost?:number,
  * energy_use?:UseData,energy_store?:number,fuel_use?:UseData,
  * fuel_store?:number,cargo_use?:UseData,cargo_store?:number,
- * draw?:number[],now?:number,bitmap:ShortDef|SizeDef}} BlockData
+ * draw?:number[],now?:number,bitmap?:ShortDef|SizeDef,editor?:
+ * string,old?:string,new?:string}} BlockData
  * @typedef {{id:number,weight?:number,strength?:number,cost?:number,
  * energy_use?:number|number[],energy_store?:number,
  * fuel_use?:number|number[],fuel_store?:number,cargo_use?:number|number[],
@@ -139,7 +142,7 @@ Data.groups = [
 // search / ?([^]{20,74}[,{;]) ?/ replace "  $1\n "
 // search /\["\d+ \d+"\]|"\d+ \d+"/ replace <number with texture index>
 Data.blocks =
-  /** @type {const} */
+  /** @type {const} @satisfies {{[key:string]:BlockData}} */
   ({block: {id: 0, draw: [14, 14, 14, 14, 14, 14]},
   wedge: {id: 1, draw: [15, 14, 14, 15, 14, 14]},
   wedge_1x2: {id: 2, draw: [20, 24, 5, 20, 24, 5]},
@@ -152,7 +155,7 @@ Data.blocks =
   rocket_thruster_small: {id: 9, draw: [8, 8, 5, 8, 8, 6]},
   cockpit_fighter: {id: 10, draw: [9, 10, 11, 9, 12, 13]},
   cockpit_cruiser: {id: 11, draw: [26, 27, 28, 26, 29, 30]},
-  __unknown__: {id: 511},
+  __unknown__: {id: 511, bitmap: ["111,2905"]},
   Core: {id: 690, weight: 2, strength: 10, cost: -1, cargo_store: 5,
   bitmap: 128}, Block: {id: 691, weight: 1, strength: 10, cost: 100,
   bitmap: 52}, Wedge: {id: 692, weight: 0.5, strength: 5, cost: 100,
@@ -397,11 +400,11 @@ Data.blocks =
   Decorative_Block1: {id: 49 + 1280, bitmap: 1804}, Decorative_Block2: {
   id: 50 + 1280, bitmap: [1771, 1, 2]}, Decorative_Wedge0: {id: 44 + 1280,
   bitmap: 1802}, Decorative_Wedge3: {id: 403 + 1280, bitmap: 1767},
-  Decorative_Wedge1: {id: 47 + 1280, bitmap: [1768, 1, 2]},
-  Decorative_Wedge2: {id: 48 + 1280, bitmap: [1786, 1, 2]},
-  Decorative_Wedge4: {id: 404 + 1280, bitmap: [1769, 1, 3]},
-  Decorative_Wedge7: {id: 405 + 1280, bitmap: [1776, 1, 3]},
-  Decorative_Wedge5: {id: 406 + 1280, bitmap: [1770, 1, 4]},
+  Decorative_Wedge1: {id: 47 + 1280, bitmap: [1768, 1, 2], old:
+  "Decorative_Slope1"}, Decorative_Wedge2: {id: 48 + 1280, bitmap: [1786, 1,
+  2], old: "Decorative_Slope2"}, Decorative_Wedge4: {id: 404 + 1280,
+  bitmap: [1769, 1, 3]},  Decorative_Wedge7: {id: 405 + 1280, bitmap: [1776,
+  1, 3]}, Decorative_Wedge5: {id: 406 + 1280, bitmap: [1770, 1, 4]},
   Decorative_Wedge8: {id: 407 + 1280, bitmap: [1766, 1, 4]},
   Decorative_Wedge6: {id: 408 + 1280, bitmap: [1746, 1, 5]},
   Decorative_Wedge9: {id: 409 + 1280, bitmap: [1747, 1, 5]},
@@ -482,12 +485,13 @@ Data.blocks =
   id: 486 + 1280, bitmap: [1982, 1, 2]}, Armor_CheatWedge2: {id: 487 + 1280,
   bitmap: [1983, 1, 3]}, Armor_CheatWedge3: {id: 488 + 1280, bitmap: [1975,
   1, 4]}, Armor_CheatWedge4: {id: 489 + 1280, bitmap: [1967, 1, 5]},
-  ControlBlock_Probe: {id: 10 + 1280, bitmap: 1074}
+  ControlBlock_Probe: {id: 10 + 1280, bitmap: 1074}, RCS: {id: 1298,
+  bitmap: ["120 1969"]}, Decorative_Slope1: {id: 1327, new: "Decorative_Wedg\
+e1"}, Decorative_Slope2: {id: 1328, new: "Decorative_Wedge2"}
 });
 Data.titles =
   /** @type {const} */
   ({
-  
   0: "block",
   1: "wedge",
   2: "wedge_1x2",
@@ -660,6 +664,7 @@ Data.titles =
   1295: "Small solar panel",
   1296: "Tiny battery",
   1297: "Medium battery",
+  1298: "RCS",
   1299: "Bomb",
   1300: "Camera",
   1301: "Isotope-Z reactor",
@@ -907,18 +912,18 @@ Data.generateNames = function (src) {
   var names =
     /** Names by ID
      * @type {{length:number}&{[K in keyof typeof Data[T]as(typeof Data[T][
-     * K] extends number?typeof Data[T][K]:typeof Data[T][K]["id"])]:K}&
-     * {[K in number as Exclude<K,keyof typeof Data[T]>]:
-     * keyof typeof Data[T]|undefined}}
+     * K]extends{id:number}?typeof Data[T][K]["id"]:typeof Data[T][K]extends
+     * number?typeof Data[T][K]:0)]:K}&{[K in number as Exclude<K,
+     * keyof typeof Data[T]>]:keyof typeof Data[T]|undefined}}
      */
     ({length: 0}),
     data = Data[src];
   for (var p in data) {
     /** one data item: color id, block data */
     var item = data[p];
-    var id = typeof item == "object" && item ? item.id : item;
-    if (id in names)
-      throw new Error("Duplicit name at id: " + id);
+    var id = typeof item == "object" && item ? item["id"] : item;
+    if (id in names && !OP.call(item, "old") && !OP.call(item, "new"))
+      throw new Error("Duplicit id: " + id + " for: " + names[id]);
     names[id] = p;
     if (id >= names.length)
       names.length = id + 1;
@@ -930,13 +935,12 @@ Data.generateIDs = function (src) {
   var data = Data[src], ids =
     /** IDs by Name is missing the undefined case, isn't 100% type safe
      * @type {{[K in keyof typeof Data[T]]:typeof Data[T][
-     * K] extends number?typeof Data[T][K]:typeof Data[T][K]["id"]}}
+     * K] extends {id:number}?typeof Data[T][K]["id"]:typeof Data[T][K]}}
      */
     ({});
   for (var p in data) {
-    /** @type {BlockDataSimple|number} */
     var item = data[p];
-    ids[p] = typeof item == "object" ? item.id : item;
+    ids[p] = typeof item == "object" && item ? item["id"] : item;
   }
   return ids;
 };
@@ -945,7 +949,7 @@ Data.generateValues = function (type) {
   /** @type {{[key:string]:BlockData[T]|undefined}} Values by Name */
   var values = {},
     data = type === "now" ? Data.colors : Data.blocks,
-    /** @type {BlockDataSimple[keyof BlockData]} */
+    /** @type {BlockDataSimple[keyof BlockData&"bitmap"]} */
     val;
   for (var p in data)
     if ((val = data[p][type]) !== UDF) {
@@ -1265,9 +1269,11 @@ Logic.execPushToToggle =
   });
 Logic.execPushToToggle.toggled = false;
 
-/** Older instances of Logics comments/documenting for comparsion:
- * v.0.1.20.3 @see https://github.com/KaaBEL/.d1r.dbv/blob/1ed349b2230ddd8f3b64a6cd082d10fe7eeaeedc/assets/code.js
- * v.0.1.22 @see https://github.com/KaaBEL/.d1r.dbv/blob/1392589299b68fb61c1a87bc7e4616f6d20af75d/assets/code.js */
+/** Older instances of Logics comments/documenting for comparsion
+ * v.0.1.20.3: blob/1ed349b2230ddd8f3b64a6cd082d10fe7eeaeedc/assets/code.js
+@see https://github.com/KaaBEL/.d1r.dbv/blob/1ed349b2230ddd8f3/assets/code.js
+ * v.0.1.22: blob/1392589299b68fb61c1a87bc7e4616f6d20af75d/assets/code.js
+@see https://github.com/KaaBEL/.d1r.dbv/blob/1392589299b68f/assets/code.js */
 /** entire oject is frozen */
 Logic.VALUE = Object.freeze(Logic.generateLogic(
   Logic.execThruster,
@@ -2108,7 +2114,8 @@ Bin.Gzip.Subfield = function (SI1, SI2, data) {
  * DBV to DR: [-: 0, f: f, r: Math.floor(r / 90)]
  * @typedef {keyof typeof Color.ID|""|null} Colors
  * @typedef {{connectionGroup?:number,actionGroups?:number,layer?:number,
- * defaultEnabled?:boolean,nonInteractable?:boolean}} MsBlockProps
+ * defaultEnabled?:boolean,nonInteractable?:boolean,controls?:number[],
+ * settings?:[unknown,number,number,string]}} MsBlockProps
  * @typedef {{customParameter?:(number|string|[number,number,number,number]
  * )[],nodeIndex?:number[],weldGroup?:number}&MsBlockProps} BlockProps
  * @param {string} name
@@ -2174,12 +2181,14 @@ Block.FUEL_STORE = Data.generateValues("fuel_store");
 //@ts-expect-error
 Block.CARGO_USE = Data.generateValues("cargo_use");
 /** number = items capacity
- * @readonly @type {{[key:number]:number|undefined}} (Cargo) *///@ts-expect-error
+ * @readonly @type {{[key:number]:number|undefined}} (Cargo) */
+//@ts-expect-error
 Block.CARGO_STORE = Data.generateValues("cargo_store");
 /** positive = buy price of block, -1 = block isn't purchasable
- * @readonly @type {{[key:number]:number|undefined}} (MarketValue) */
-//@ts-expect-error
+ * @readonly (MarketValue) *///@ts-expect-error
 Block.COST = Data.generateValues("cost");
+/** @TODO remove the readonlys, they haven't added any kind of value */
+Block.OLD = Data.generateValues("old");
 /** @readonly *///@ts-expect-error
 Block.db1ToDb3 = Object.freeze({
   "T1 Block": "Block", "T1 Wedge": "Wedge", "T2 Wedge": "Wedge",
@@ -2198,7 +2207,7 @@ Block.db1ToDb3 = Object.freeze({
   "Station Block": "__placeholder846__"
 });
 /** @readonly settings for @see {Block.arrayFromObjects} *///@ts-expect-error
-Block.creator = {warns: 3};
+Block.creator = {warns: 3, msWarns: 3};
 // #mslogics now MS blocks are second time parsed in Block.arrayFromObjects 
 // if performance will suffer, Block instances can be handled more loosely
 /**
@@ -2215,7 +2224,7 @@ Block.arrayFromObjects = function (blocks, logics) {
    *   different for each block type,
    *   all are defined in @see {Logic.VALUE}
 @see https://github.com/KaaBEL/.d1r.dbv/blob/1392589299b6/assets/code.js#L112
-   * 1392589299b68fb61c1a87bc7e4616f6d20af75d */
+   * blob/1392589299b68fb61c1a87bc7e4616f6d20af75d/assets/code.js#L112 */
   /** in DBV format inputs and output indexes reference indexes of
    * connections (new DBV "nc") property */
   var rawLogics = logics || [],
@@ -2506,39 +2515,42 @@ Block.Size.prototype.toString = function () {
  * @typedef {{[key:number]:SizeDef|ShortDef|undefined}} SizesArg
  * @type {(arg:SizesArg)=>{[key:number]:Block.Size|undefined}} */
 Block.Size.generate = function (arg) {
-  var r = {690: new this(0, 0, 2, 2, 32, 0, 0)}, a = arg;
-  // by replacing nw = a with nw = {} it will log sizes and do 'reflow'
-  for (var l = 690, nw = a; l < Block.NAME.length; l++)
-    if (Block.NAME[l]) {
-      var v = arg[l], res = l > 1279 ? 13 : 32;
-      var rowSize = (this.width * 32) / res | 0;
-      if (!v && v !== 0)
-        continue;
-      if (v === -1)
-        throw new Error("Uninitialised bitmap.");
-      if (typeof v == "number")
-        v = [v];
-      if (typeof v[0] == "number")
-        var x = v[0] % rowSize * res,
-          y = (v[0] / rowSize | 0) * res;
-      else {
-        x = (+(v[0] + " ").split(" ")[0] / res | 0) * res;
-        y = (+(v[0] + " ").split(" ")[1] / res | 0) * res;
-        v[0] = (x / res | 0) + (y / res | 0) * rowSize;
-      }
-      if (((v[1] || 1) < 0 || (v[2] || 1) < 0) && v[0] !== -1)
-        throw new Error("Neither width nor height can be negative.");
-      var w = (v[1] || 1), h = (v[2] || 1);
-      r[l] = l > 1279 ?
-        new this(x, y, w * res, h * res, res, w * 2 - 2, h * 2 - 2) :
-        new this(x, y, w * res, h * res, res, 0, 0);
-      if (nw !== arg) {
-        var offsetY = v[0] / rowSize << 0;
-        console.log(v[0] % rowSize, offsetY, Block.NAME[l], v, r[l]);
-        //Data.blocks[Block.NAME[l]].bitmap = v;
-        nw instanceof Array && nw.push(v);
-      }
+  /** @param {SizesArg[number]} v @param {number} res */
+  function parseArg(v, res) {
+    var rowSize = (Size.width * 32) / res | 0;
+    if (!v && v !== 0)
+      return;
+    if (v === -1)
+      throw new Error("Uninitialised bitmap.");
+    if (typeof v == "number")
+      v = [v];
+    if (typeof v[0] == "number")
+      var x = v[0] % rowSize * res,
+        y = (v[0] / rowSize | 0) * res;
+    else {
+      x = (+(v[0] + " ").split(/[^\d.\-Ee]+/g)[0] / res | 0) * res;
+      y = (+(v[0] + " ").split(/[^\d.\-Ee]+/g)[1] / res | 0) * res;
+      v[0] = (x / res | 0) + (y / res | 0) * rowSize;
     }
+    if (((v[1] || 1) < 0 || (v[2] || 1) < 0) && v[0] !== -1)
+      throw new Error("Neither width nor height can be negative.");
+    var w = (v[1] || 1), h = (v[2] || 1);
+    r[l] = l > 1279 ?
+      new Size(x, y, w * res, h * res, res, w * 2 - 2, h * 2 - 2) :
+      new Size(x, y, w * res, h * res, res, 0, 0);
+    if (nw !== arg) {
+      var offsetY = v[0] / rowSize << 0;
+      console.log(v[0] % rowSize, offsetY, Block.NAME[l], v, r[l]);
+      //Data.blocks[Block.NAME[l]].bitmap = v;
+      nw instanceof Array && nw.push(v);
+    }
+  }
+  var Size = Block.Size, r = {690: new Size(0, 0, 2, 2, 32, 0, 0)};
+  // by replacing nw = arg with nw = {} it will log sizes and do 'reflow'
+  var l = 0, nw = arg;
+  arg[l = 511] && (arg[511] = void parseArg(arg[511], 13));
+  for (var p in arg)
+    Block.NAME[l = +p] && parseArg(arg[l], l > 1279 ? 13 : 32);
   nw instanceof Array &&
     console.log(JSON.stringify(nw).replace(/,/g, ", "));
   return r;
@@ -2559,7 +2571,7 @@ Block.Size.highlightBlock = function (block, index, position) {
   var pos = position || block.position;
   var x = -pos[1], y = pos[2], rot = 10 - block.rotation[2] & 3;
   var w = rot & 1 ? oh : ow, h = rot & 1 ? ow : oh;
-  if (id > 1279) {
+  if (size.res === 13) {
     rot & 1 ? y -= size.l / 2 : y -= size.t / 2;
     w /= 2;
     h /= 2;
@@ -2658,10 +2670,6 @@ Block.Mirror.VALUE = {
  * "IntegerSlider">|PorpParameter<"NumberInputs">|PorpParameter<"TextInputs">
  * |PorpParameter<"WeldGroups">|PorpParameter<"CheckBox">|
  * PorpParameter<"MsInput">} PropsArg
-//-typedef {BlockPropertiesConstructor["itemKeys"]} itemKeys
-//-typedef {ArrayElements<itemKeys>} PropertiesNames
-//-typedef {{[K in keyof PropertiesNames as
-//-Exclude<PropertiesNames[K],undefined>]:K}} PropertiesIds
  * @typedef {typeof Block.Properties} BlockPropertiesConstructor
  * @typedef {BlockPropertiesConstructor["instances"]} BlockProperties
  * @typedef {BlockProperties[keyof BlockProperties]} Prop */
@@ -2779,7 +2787,10 @@ Block.Properties.instances = {
 };
 Block.Properties.items = (function () {
   var source = Block.Properties.instances, items =
-    /** @type {{[K in keyof BlockProperties]:new(args:PropsArg)=>BlockProperties[K]}} */
+    /**
+     * @type {{[K in keyof BlockProperties]:
+     * new(args:PropsArg)=>BlockProperties[K]}}
+     */
     ({});
   for (var p in source)
     items[p] = Object.getPrototypeOf(source[p]).constructor;
@@ -2795,7 +2806,6 @@ Block.Properties.generate = function (argArr) {
      * T[E][P] extends{0:keyof BlockProperties}?T[E][P][0]:never]}}}
      * @TODO create example of building the type gradually for education */
     ({});
-  /** @template {keyof T} E id */
   for (var p in argArr) {
     /** @type {(PropsArg|Prop)[]} the same as @see {args} */
     var entry = result["" + p] = argArr[p];
@@ -2849,6 +2859,7 @@ Block.Properties.VALUE = Block.Properties.generate({
     0, 4, 4, "torque"], [8, "Rotate 1", 32, "gyro1"],
     [8, "Rotate 2", 16, "gyro2"], [1, "Priority", -100000, 100000, 1],
     [8, "Set as controlled", 0, "control"]],
+  //    2 FuelTank0 	"Tiny hydrogen tank"
   1282: [[7, "Disable interaction", !1]],
   // first fuel engine (mk1)
   1283: [[7, "Default enabled", !0], [7, "Disable interaction", !1],
@@ -2871,7 +2882,8 @@ Block.Properties.VALUE = Block.Properties.generate({
   1289: [[1, "Gyroscope Torque", 0, 20, 20, "torque"],
     [8, "Rotate 1", 32, "gyro1"], [8, "Rotate 2", 16, "gyro2"]],
   // Probe core
-  1290: [[1, "Rotation Torque", 0, 2, 2, "torque"]],// 3h_
+  1290: [[7, "Disable interaction", !1],
+    [1, "Rotation Torque", 0, 2, 2, "torque"]],
   // Photon reactor 1291:none
   // Medium hydrogen tank
   1292: [],
@@ -2892,6 +2904,236 @@ Block.Properties.VALUE = Block.Properties.generate({
   // Isotope-Z reactor
   1301: [],
   // Small battery 1302:none
+  //   24 Engine_Fuel3 	"Nuclear engine"
+  1304: [[7, "Default enabled", !0], [7, "Disable interaction", !1]
+//...
+    ],
+  //   25 Engine_Power4 	"Deuterium engine"
+  1305: [[7, "Default enabled", !0], [7, "Disable interaction", !1]
+//...
+    ],
+  //   31 Shield1 	"Basic force shield"
+  1311: [[7, "Default enabled", !0], [7, "Disable interaction", !1]
+//...
+    ],
+  //   34 Utility_Decoupler 	"Decoupler"
+  1314: [[7, "Default enabled", !0], [7, "Disable interaction", !1]
+//...
+    ],
+  //   35 Weapon_Laser1 	"Basic laser"
+  1315: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //   36 Utility_Docking1 	"Docking unit"
+  1316: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //   37 Weapon_bomb2 	"Deuterium bomb"
+  1317: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //   42 FuelTank1 	"Small hydrogen tank"
+  1322: [[7, "Disable interaction", !1]],
+  //   54 Utility_Docking2 	"Fuel docking unit"
+  1334: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //   55 Weapon_Machinegun1 	"Machinegun"
+  1335: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //   56 Weapon_Laser2 	"Heavy laser"
+  1336: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //   58 Weapon_DMG1 	"Repulsion cannon"
+  1338: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //   60 Weapon_Laser3 	"Heavy laser"
+  1340: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //   61 Engine_Solid1 	"Solid fuel booster"
+  1341: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //   62 Utility_GPMP 	"Gravity generator"
+  1342: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //   64 Weapon_Rocket1 	"Missile launcher"
+  1344: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //   65 Utility_Wheel1 	"Small wheel"
+  1345: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  114 Beacon 	"Beacon"
+  1394: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  115 Scope 	"Scope"
+  1395: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  146 FuelTank4 	"Large hydrogen tank"
+  1426: [[7, "Disable interaction", !1]],
+  //  147 FuelTank3 	"Huge hydrogen tank"
+  1427: [[7, "Disable interaction", !1]],
+  //  148 DeutTank0 	"Tiny deuterium tank"
+  1428: [[7, "Disable interaction", !1]],
+  //  149 DeutTank1 	"Small deuterium tank"
+  1429: [[7, "Disable interaction", !1]],
+  //  150 DeutTank2 	"Medium deuterium tank"
+  1430: [[7, "Disable interaction", !1]],
+  //  151 DeutTank4 	"Large deuterium tank"
+  1431: [[7, "Disable interaction", !1]],
+  //  152 DeutTank3 	"Huge deuterium tank"
+  1432: [[7, "Disable interaction", !1]],
+  //  153 ExotTank0 	"Tiny exotic matter tank"
+  1433: [[7, "Disable interaction", !1]],
+  //  154 ExotTank1 	"Small exotic matter tank"
+  1434: [[7, "Disable interaction", !1]],
+  //  155 ExotTank2 	"Medium exotic matter tank"
+  1435: [[7, "Disable interaction", !1]],
+  //  156 ExotTank4 	"Large exotic matter tank"
+  1436: [[7, "Disable interaction", !1]],
+  //  157 ExotTank3 	"Huge exotic matter tank"
+  1437: [[7, "Disable interaction", !1]],
+  //  158 GlowTank0 	"Small GLOW tank"
+  1438: [[7, "Disable interaction", !1]],
+  //  159 GlowTank2 	"Medium GLOW tank"
+  1439: [[7, "Disable interaction", !1]],
+  //  160 GlowTank4 	"Large GLOW tank"
+  1440: [[7, "Disable interaction", !1]],
+  //  178 Engine_Fuel4 	"Chemical fuel engine MK3"
+  1458: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  179 Engine_Exot1 	"Exotic matter engine"
+  1459: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  180 Engine_Big1 	"Deuterium engine MK2"
+  1460: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  181 Engine_Big2 	"Fusion engine"
+  1461: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  182 Engine_Big3 	"Unstable matter engine"
+  1462: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  210 SolarPanel1 	"Medium solar panel"
+  1490: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  211 SolarPanel2 	"Large solar panel"
+  1491: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  212 Reactor2 	"Hydrogen generator"
+  1492: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  213 Reactor8 	"Deuterium reactor"
+  1493: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  214 Reactor6 	"Fusion reactor"
+  1494: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  215 Reactor7 	"Unstable matter reactor"
+  1495: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  258 Shield2 	"Strong force shield"
+  1538: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  259 Shield3 	"Large force shield"
+  1539: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  274 Weapon_Machinegun2 	"Autocannon"
+  1554: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  275 Weapon_Cannon1 	"Cannon"
+  1555: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  276 Weapon_Cannon2 	"Heavy cannon"
+  1556: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  277 Weapon_PlasmaCannon1 	"Plasma gun"
+  1557: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  278 Weapon_PlasmaCannon2 	"Heavy plasma gun"
+  1558: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  279 Weapon_NeutCannon1 	"Neutron blaster"
+  1559: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  280 Weapon_Rocket2 	"Nuclear missile launcher"
+  1560: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  281 Weapon_Railgun1 	"Railgun"
+  1561: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  307 Utility_Piston 	"Piston"
+  1587: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  308 Utility_Rotor 	"Rotor"
+  1588: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  309 Utility_Pump 	"Resource pump"
+  1589: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  310 Utility_SolidPump 	"Solid resource transporter"
+  1590: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  311 Utility_VOID 	"Resource vacuum"
+  1591: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  312 Utility_Decelerator 	"Decelerator"
+  1592: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  313 Utility_MobileSpawn 	"Mobile spawnpoint"
+  1593: [[7, "Disable interaction", !1]],
+  //  314 Utility_Wheel2 	"Big wheel"
+  1594: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  315 Utility_PipeDecoupler 	"Pipe decoupler"
+  1595: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  316 Utility_PipePiston 	"Pipe piston"
+  1596: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  317 Utility_PipeRotor 	"Pipe rotor"
+  1597: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  318 Utility_DirectionalDecelerator 	"Directional decelerator"
+  1598: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  319 Utility_Sign 	"Sign"
+  1599: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  320 Utility_TogglableCollider 	"Togglable collider"
+  1600: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  321 Drill0 	"Anchor"
+  1601: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  338 Drill1 	"Small drill"
+  1618: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  339 Drill2 	"Medium drill"
+  1619: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  340 Drill3 	"Large drill"
+  1620: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  341 Excavator1 	"Small excavator"
+  1621: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  342 Excavator2 	"Medium excavator"
+  1622: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  343 ExotCollector1 	"Exotic matter collector"
+  1623: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  344 Cargo0 	"Small container"
+  1624: [[7, "Disable interaction", !1]],
+  //  345 Cargo1 	"Medium container"
+  1625: [[7, "Disable interaction", !1]],
+  //  346 Cargo2 	"Large container"
+  1626: [[7, "Disable interaction", !1]],
+  //  347 Converter_Electrolyzer1 	"Small electrolyzer"
+  1627: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  348 Converter_Electrolyzer2 	"Medium electrolyzer"
+  1628: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  349 Converter_Electrolyzer3 	"Large electrolyzer"
+  1629: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  350 Converter_Deut1 	"Small deuterium mixer"
+  1630: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  351 Converter_Deut2 	"Medium deuterium mixer"
+  1631: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  352 Converter_Deut3 	"Large deuterium mixer"
+  1632: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  353 Converter_Exot1 	"Small exotic matter smelter"
+  1633: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  354 Converter_Exot2 	"Large exotic matter smelter"
+  1634: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  355 Converter_Smelter1 	"Small smelter"
+  1635: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  356 Converter_Smelter2 	"Medium smelter"
+  1636: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  357 Converter_Smelter3 	"Large smelter"
+  1637: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  358 Grinder 	"Grinder"
+  1638: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  375 Logic_Screen 	"Screen"
+  1655: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  376 Logic_Timer 	"Timer"
+  1656: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  377 Logic_Switch 	"Switch"
+  1657: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  378 Logic_Randomizer 	"Randomizer"
+  1658: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  382 Logic_LaserEmitter 	"Beam emitter"
+  1662: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  472 Cheat_Source 	"Resource source"
+  1752: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  473 Cheat_Laser 	"Cheat laser"
+  1753: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  474 Cheat_Engine 	"Cheat engine"
+  1754: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  476 Cheat_GPMP 	"Cheat gravity generator"
+  1756: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  477 Cheat_Decelerator 	"Cheat decelerator"
+  1757: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  478 Cheat_ImmobilityBlock 	"Cheat immobility block"
+  1758: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  479 Cheat_IndestructibilityBlock 	"Cheat indestructibility block"
+  1759: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  481 Cheat_Shield 	"Cheat force shield"
+  1761: [[7, "Default enabled", !0], [7, "Disable interaction", !1]],
+  //  483 Cheat_Structure 	"Cheat structure"
+  1763: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  484 Armor_Cheat1 	"Indestructible armor"
+  1764: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  485 Armor_CheatWedge0 	"1*1 Indestructible wedge"
+  1765: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  486 Armor_CheatWedge1 	"1*2 Indestructible wedge"
+  1766: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  487 Armor_CheatWedge2 	"1*3 Indestructible wedge"
+  1767: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  488 Armor_CheatWedge3 	"1*4 Indestructible wedge"
+  1768: [[7, "Default enabled", !1], [7, "Disable interaction", !1]],
+  //  489 Armor_CheatWedge4 	"1*5 Indestructible wedge"
+  1769: [[7, "Default enabled", !1], [7, "Disable interaction", !1]]
 });
 /** @deprecated obsolete since BlockProperties VALUE definition is shorter */
 Block.PROP = Block.Properties.VALUE;
@@ -4052,9 +4294,9 @@ Data.nameMethods(Edit);
 /**
  * @typedef {{nodeList:(Logic|undefined)[],nodeConnections:number[][],
  * customInputs:Ship.CustomInput[],launchpadSize:number,gridSize:
- *   Ship.Grid}} KnownShipProperties
+ * Ship.Grid,fileName:string}} KnownShipProperties
  * @typedef {{[key:string]:unknown}&{[K in keyof KnownShipProperties]?:
- *   KnownShipProperties[K]}} ShipProperties
+ * KnownShipProperties[K]}} ShipProperties
  * @see {Logic} @see {Ship.CustomInput}
  * @typedef {"Ship"|"Logic"|"Save"} EditMode */
 /** class is frozen, toJSON methods in use
@@ -4084,8 +4326,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @readonly @type {49} significantVersion: 49 (integer) */// @ts-ignore
-Ship.VERSION = 49;
+/** @readonly @type {50} significantVersion: 50 (integer) */// @ts-ignore
+Ship.VERSION = 50;
 Ship.prototype.edit = Edit.Ship;
 Ship.prototype.selectRect = (
   /**
@@ -4381,9 +4623,8 @@ Ship.prototype.blockAtPonit2d = function (x, y, nonull) {
   return null;
 };
 /** used to revert position adjustment from vehicles 'infected' by it:
- * https://github.com/KaaBEL/.d1r.dbv/commit/0b8156e155383059cf1aeeb4a997818
-3c92b92f8#diff-fa9a713c17c685348118b8d29bd55f10491e651ccafaf45d1044ed01ffe6e
-80bL1414
+@see https://github.com/KaaBEL/.d1r.dbv/commit/0b8156e1553#diff-fa9a713c17c6853
+ * commit/0b8156e155383059cf1aeeb4a9978183c92b92f8#diff-fa9a713c17c685348118b8d29bd55f10491e651ccafaf45d1044ed01ffe6e80bL1414
  * WARNING because of significant version it doesn't autodetect @this {Ship}
  * @param {boolean} [fixSlab] if true it also fixes wrong Slab size */
 Ship.prototype.fixPositionAdjustment = function (fixSlab) {
@@ -4743,49 +4984,153 @@ Ship.fromDBKey = function (key) {
   return new Ship("[unnamed]", [],
     Ship.dateTime(1714557750), blocks, obj);
 };
-/** @param {Ship} ship @returns {string} */
+//-function devToolInterval() {
+//-  test_log.savefile && (console.debug(
+//-    test_log.savefile,
+//-    // "\n\n",   JSON.stringify(Ship.toMSSSS(ship, ship.name = devToolInterval.Name)
+//-  ), test_log.savefile = "");
+//-  return (function (e) {
+//-    if (!e ||e.download === devToolInterval.Name + ".mssss")return;
+//-    e.download = devToolInterval.Name + ".mssss";
+//-    e.lastChild instanceof Text && e.childNodes.length > 1 ?
+//-      e.lastChild.data = 1 + +e.lastChild.data :
+//-      e.appendChild(tN("0"));
+//-  })(document.querySelector("a[download]"));
+//-}
+//-devToolInterval.Name = "Parts2Tes_DBVE";
+/** @param {Ship} ship */
 Ship.toMSSSS = function (ship) {
-  var selection = ship.selection;
+  /** @param {(number[]|undefined)[]} inputs  */
+  function buildInputs(inputs) {
+    for (var i = inputs.length, li = "", inp; i-- > 0; li = "," + li)
+      if ((inp = inputs[i]) && +inp[0] !== -1 && +inp[1] !== -1)
+        li = +inp[0] + "~" + +inp[1] + li;
+    return li === ",,,," ? "" : li.slice(1);
+  }
+  var selection = ship.selection, warn = Block.creator.msWarns;
   ship.selection = ship.blocks.slice();
   Edit.Primitive.rotate(ship, 2);
-  var mssss = {
+  var arrNum = [0, 0, 0, 0], arrSp = [0, 0, 0, ""], mssss = {
     Name: ship.name,
+    // New versions of MS0.11 and later disallow loadoing clipped ships
     Parts: ship.blocks.map(function (block) {
       var prop = block.properties, name = block.internalName;
-      var id = Block.ID[name], s = "";
-      if (id > 1280 && id < 2048) {
-        var group = prop.connectionGroup, weld = prop.weldGroup;
+      var id = Block.ID[name], s = "", ag = "";
+      /** @TODO certainly do: */
+      // if (id in Block.OLD && id > 1279 && id < 2048)
+      //   return "{\"ID\":" + (id - 1280) + ",\"X\":" +
+      //     block.position[1] + ",\"Y\":" + block.position[2] +
+      //     ",\"Rotation\":" + (block.rotation[2] * 90) +
+      //     ",\"MirHor\":" + (block.rotation[1] ? -1 : 1) +
+      //     ",\"MirVert\":1}";
+      // DBVE ID range for MS blocks, (MS part OldIDs are shifted by +1280)
+      if (id > 1279 && id < 2048) {
+        var l = 0, group = prop.connectionGroup, weld = prop.weldGroup;
         s += group !== UDF ? group : weld !== UDF ? 1 << weld : 1;
-      } else if (prop.color)
-        s += Color.ID[prop.color];
-      return (name === "__unknown__" &&
-        "invalidName" in prop ? prop.invalidName : name) + "|" +
+        if (prop.controls && (prop.controls[0] || prop.controls[1] ||
+            prop.controls[2] || prop.controls[3]))
+          s += "|" + arrNum.map(function (e, i) {
+            return prop.controls && prop.controls[i] || e;
+          }).join(",");
+        if (prop.defaultEnabled || prop.nonInteractable ||
+            prop.settings &&
+            (prop.settings[1] || prop.settings[2] || prop.settings[3]))
+          s += "|" + arrSp.map(function (e, i) {
+            return i ? prop.settings && prop.settings[i] || e : 
+              // WARNING: properties.settings[0] is ignored
+              (+!!prop.defaultEnabled | +!!prop.nonInteractable << 2) ||
+                2;
+          }).join("|");
+        if (prop.actionGroups)
+          for (var n = prop.actionGroups, i = -1; ++i < 10; n >>= 2)
+            n & 3 ? ag = (ag && ag + ",") + i + "-" + (n & 3) : 0;
+        s += (ag && "|" + ag);
+        // TODO: somehow extract logic nodes from Ship instead of this:
+        if (prop.logicInputs instanceof Array)
+          s += "|" + buildInputs(prop.logicInputs);
+        if (prop.color || "invalidColor" in prop && prop.layer !== 0)
+          warn && warn-- &&
+            console.warn("For MS1, only Decolayers can have color");
+      } else if (prop.color) {
+        var colorId = Color.NOW[prop.color] || Color.ID[prop.color];
+        s += "c" + (colorId === UDF ? -1 : colorId - 128);
+      } else
+        s += "invalidColor" in prop ? "c" + prop.invalidColor : "c-1";
+      return (name === "__unknown__" && "invalidName" in prop ?
+        prop.invalidName : name) + "|" +
         block.position[1] + "," + block.position[2] + "|" +
         (block.rotation[2] * 90) + "," + (block.rotation[1] ? -1 : 1) +
         ",1|" + s + ";";
-    }),
+    }).concat([
+      "DecoLayer3_Half1|999,999|" +
+      version_code_js.replace(/^v[^\d]*(\d+(?:\.\d+)+).*$/, function (m, g1) {
+        return (g1 + ".0.0").split(".").slice(0, 3).join(",");
+      }) + "|c" + Ship.VERSION +
+      "|\"significantVersion\":" + Ship.VERSION + ";"
+    ]),
     UncompressedParts: [],
     BuildCost: [],
     FuelCost: [],
     SizeX: 0,
-    SizeY: 0
+    SizeY: 0,
   };
   Edit.Primitive.rotate(ship, 2);
   ship.selection = selection;
-  return JSON.stringify(mssss);
+  return mssss;
 };
 /** @param {safe} o @see {Block.arrayFromObjects} _3h */
 Ship.fromMSObject = function (o) {
-  var singleWarn = 1;
-  /** @param {unknown} color @param {safe} properties */
-  function handleColor(color, properties) {
-    properties.color = "" + (color) in Color.ID ?
+  //- MS1: ID|xx,yy|r,h,v|c; (min)
+  //- MS2: ID|xxyyOg; (min)
+  //- MS1: ID|xxx,yyy|r,h,v|ggg|c1c1,c2c2,c3c3,c4c4|e|sp2|sp3|sp4|
+  //       a-g,a-g...|lx~ly,lx~ly...; (not min)
+  //- MS2: ID|xxyyOgss|c1:c1,c2:c2,c3:c3,c4:c4,s2:s2s,s3:s3s,s4:s4s,g1:g,
+  //       g2:g; (not min)
+  //- MS2: ID|xxyyOgss|c:c1c2c3c4,s2:s2s,s3:s4s,a:agag; (not min)
+  //- MS2: ID|xxyyOgssagag|c1c2c3c4s2ss3ss4s; (not min)
+
+  //- x, y - position
+  //- r - rotation
+  //- h, v - flip (horizontal, vertical)
+  //- c - color (for deco)
+  //- O - orientation (rotation and flip stored in a single character)
+  //- ss - size x, size y (for resizable parts)
+  //- g - connection group/groups
+  //- c1, ..., c4 - input config
+  //- e - (sp1) e!==0 ? def enabled & 1 : no interaction & 4
+  //- sp2, sp3, sp4 - part config (just number/string)
+  //- a-g - AGs
+  //- lx~ly - logic input connections
+  //- s2s, s3s, ... - part config (in the format "[id]:[value]")
+  var singleWarn = 1, inputNames = {gyro1: 0, gyro2: 1, generator: 0,
+    control: 2, scope1: 0, scope2: 1, scope3: 2, beacon: 0, engine: 0,
+    solarPanel: 0, shield: 0, activate: 0, weapon: 0, piston1: 0,
+    piston2: 1, rotor1: 0, rotor2: 1, transfer: 0, void: 0, display: 0,
+    magnet: 0, dockport: 1, source: 0, msp: 0, converter: 0};
+  var properties = OC(), configNames = {torque: 1, controlPriority: 2,
+    scopeSpeed: 1, scopeRange: 2, engineThrust: 1, targetRes: 3,
+    containerRes: 3, flip: 1, selectedShip: 3, magnetForce: 1,
+    magnetRadius: 2, rotorSpeed: 1, maxAngle1: 2, maxAngle2: 3,
+    convMode: 1};
+  /** @param {unknown} color @param {number} [n] */
+  function handleColor(color, n) {
+    properties.color = ("" + color) in Color.ID ?
       color :
-      Color.NAME[Number(properties.invalidColor = color)] || null;
+      !isNaN(n = Number(color) + 128) && Color.NAME[n] || function (x) {
+          return null;
+        }(properties.invalidColor = color);
   }
-  //-/** @param {unknown} part @param {safe} prop */
-  //-function handleSettings(part, prop) {    
-  //-}
+  /** @param {number} id */
+  function handleDefaultUnset(id) {
+    var propsDef = Block.Properties.VALUE[id] || [];
+    for (var i = propsDef.length; i-- > 0;) {
+      var item = propsDef[i];
+      if (item instanceof Block.Properties.CheckBox)
+        if (item.name === "Default enabled")
+          return item.default;
+    }
+    return false;
+  }
   /** @param {unknown} raw */
   function decodeRaw(raw) {
     if (typeof raw != "string") {
@@ -4794,10 +5139,10 @@ Ship.fromMSObject = function (o) {
       return new Block("__unknown__", [0, 0, 0], [0, !1, 0]);
     }
     if (raw[0] !== "{" || raw.slice(-1)[0] !== "}") {
-      var prop = OC(), part = raw.split("|"), rot = part[2].split(",");
+      var part = raw.split("|"), rot = part[2].split(",");
       part[part.length - 1] = part[part.length - 1].split(";")[0];
       /** @type {number|undefined} */
-      var id = Block.ID[part[0]];
+      var id = Block.ID[part[0]], prop = properties = OC();
       if (typeof id != "number") {
         id = part[0] in Block.NAME ? +part[0] : Block.ID["__unknown__"];
         prop.invalidName = part[0];
@@ -4810,24 +5155,53 @@ Ship.fromMSObject = function (o) {
       r[2] =
         /** @type {0|1|2|3} */
         (+rot[0] / 90 + +(+rot[2] < 0) * 2 + 4.5 & 3);
-      part.length > 3 ?
-        prop.connectionGroup = +part[3] :
-        handleColor(part[3], prop);
-      //-if (part.length > 5)
-      //-  handleSettings(part, prop);
-      var propsDef = Block.Properties.VALUE[id] || [], isDefaultE = 0;
-      for (var i = propsDef.length; i-- > 0;) {
-        var item = propsDef[i];
-        isDefaultE |= +(item instanceof Block.Properties.CheckBox &&
-          item.name === "Default enabled");
+      // v.0.2.37 decoding according to \Scripts\Utilites\Utilites.cs:760
+      if ((part[3] || "")[0] === 'c') {
+        handleColor(part[3].slice(1));
+        if (/"significantVersion":/.test(part[4]))
+          prop.significantVersion = /-?(?:\d*.)?\d+$/.exec(part[4]);
+      } else
+        prop.connectionGroup = +part[3];
+      //-var propsDef = Block.Properties.VALUE[id] || [];
+      //-for (var i = propsDef.length; i-- > 0;) {
+      //-  var item = propsDef[i];
+      //-  isDefaultE |= +(item instanceof Block.Properties.CheckBox &&
+      //-    item.name === "Default enabled");
+      //-}
+      /** @type {(number|string|undefined)[]} */
+      var settings = [], indentified = true, index = 4;
+      if (/,/.test(part[index]))
+        prop.controls = part[index++].split(",").map(Number);
+      for (var i = 3, number; i-- > 0; settings[i] = +number)
+        if (!(number = part[index + i]) || isNaN(+number))
+          indentified = false;
+      if (indentified) {
+        index += 4;
+        (prop.settings = settings).push("" + part[index - 1]);
+        number = Number(settings[0]);
+        // v.0.2.37 (in MS v.0.11+ it is: defEn. = n & 1, nonInt. = n & 4)
+        // 0 - created before 0.9, 1 - enabled by default, 2 - disabled
+        // by default, 4 - interaction disabled (always 0 by default)
+        // (Google translate of "0 - \u0441\u043e\u0437\u0434\u0430\u043d\u0430 \u0434\u043e 0.9, 1 - \u0432\u043a\u043b\u044e\u0447\u0435\u043d\u0430 \u043f\u043e \u0443\u043c\u043e\u043b\u0447\u0430\u043d\u0438\u044e, 2 - \u0432\u044b\u043a\u043b\u044e\u0447\u0435\u043d\u0430 \u043f\u043e\u0443\u043c\u043e\u043b\u0447\u0430\u043d\u0438\u044e, 4 - \u0437\u0430\u043f\u0440\u0435\u0449\u0435\u043d\u043e \u0432\u0437\u0430\u0438\u043c\u043e\u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435 (\u0432\u0441\u0435\u0433\u0434\u0430 0 \u043f\u043e \u0443\u043c\u043e\u043b\u0447\u0430\u043d\u0438\u044e")
+        prop.defaultEnabled = settings[0] === 0 ?
+          handleDefaultUnset(id) :
+          !!(number & 1);
+        prop.nonInteractable = !!(number & 4);
       }
-      // part[4].split(",");
-      // part[5];
-      // part[6];
-      // part[7];
-      // defaultEnabled turned on few other blocks without such setting
-      if (id > 1280 && id < 2048)
-        prop.defaultEnabled = isDefaultE ? !!part[8] : true;
+      if (/\d-/.test(part[index]) && !/~/.test(part[index]))
+        part[index++].split(",").forEach(function (e) {
+          var ag = e.split("-"), n = (+ag[1] & 3) << +ag[0] * 2;
+          prop.actionGroups = n | +(prop.actionGroups || 0);
+        });
+      if (/~/.test(part[index]))
+        prop.logicInputs = part[index++].split(",").map(function (e) {
+          var vec2 = e.split("~");
+          return e ? [+vec2[0], +vec2[1]] : UDF;
+        });
+      // TODO: aplly LogicInputs as Ship Logic nodes
+      //- defaultEnabled turned on few other blocks without such setting
+      //-if (id > 1279 && id < 2048)
+      //-  prop.defaultEnabled = isDefaultE ? !!part[8] : true;
       return new Block(part[0], [0, +pos[0], +pos[1]], r, prop);
     }
     try {
@@ -4840,8 +5214,26 @@ Ship.fromMSObject = function (o) {
     }
     return decodePart(obj);
   }
+  /** @param {string} key @param {(number[]|undefined)[]} logicInputs */
+  function handleNewLogic(key, logicInputs) {
+    var p = key.slice(0, -7);
+    if (p.slice(-7) !== "_@logic" && !(p in inputNames))
+      return false;
+    var value = properties[key],
+      vec2 = value ? (";" + value).split(";") : [];
+    if (!isNaN(+vec2[0] + +vec2[1]) && +vec2[0] !== -1 && +vec2[1])
+      logicInputs[inputNames[p]] = [+vec2[0], +vec2[1]];
+    return true;
+  }
+  var warn = Block.creator.msWarns, propertyNames = new RegExp("^(ID|x|y|X|Y\
+|rotation|flip|color|actionGroups|connectionGroup|defaultEnabled|layer|nonIn\
+teractable|ComponentSettings|rotIndex|rotFlip|rotMirVert|rotMirVert)$");
+  // what about putting this to Block NS, when it will be utilized why not?
   /** @param {safe} obj @param {boolean} [adjust] 0.11 positions */
   function decodePart(obj, adjust) {
+    for (var p in obj)
+      if (warn && !propertyNames.test(p) && warn--)
+        console.warn("Unknown part property: " + JSON.stringify(p));
     var name = typeof obj.ID == "number" ?
         Block.NAME[obj.ID + 1280] :
         ("" + obj.ID) in Block.ID ? "" + obj.ID : "__unknown__",
@@ -4855,40 +5247,77 @@ Ship.fromMSObject = function (o) {
           +(obj.Rotation || 0) / 90 + +rotMirVert * 2 + 4.5 & 3),
       rotFlip = typeof obj.flip == "boolean" ?
         obj.flip :
-        +(obj.MirHor || 0) < 0 ? !rotMirVert : rotMirVert,
+        +(obj.rotMirVert || 0) < 0 ? !rotMirVert : rotMirVert,
       /** @type {Rotation} */
       rotation = [0, rotFlip, rotIndex],
+      /** @type {safe|undefined} */
+      optional,
       settings = obj.ComponentSettings;
+    properties = (typeof settings == "function" ||
+      typeof settings == "object") && settings || {};
     if (adjust) {
-      var x = position[1], y = position[2], rot = rotation[2];
-      var size = Block.Size.VALUE[Block.ID[name]];
+      var size = Block.Size.VALUE[Block.ID[name]], rot = rotation[2];
       if (size) {
         rot & 1 ? position[1] += size.t / 2 : position[2] += size.t / 2;
         rot & 1 ? position[2] += size.l / 2 : position[1] += size.l / 2;
       }
     }
+    // v.0.2.37 options for decoding Uncprs parts proof of concept
+    // var isUncompressed = false;
+    // if (obj.ActionGroups instanceof Array) {
+    //   ...;
+    //   isUncompressed = true;
+    // }
+    // for (var i = 4; i-- > 1;)
+    //   if (("Control/LogicInput" + i) in obj)
+    //     ...;
     if ("ComponentSettings" in obj) {
-      /** @type {safe} */
-      var properties = (typeof settings == "function" ||
-        typeof settings == "object") && settings || {};
+      var controls = [], logicInputs = [], config = [];
+      for (p in properties)
+        if (p in configNames) {
+          var index = configNames[p];
+          config[index] = (index < 3 ? Number : String)(properties[p]);
+        } else if (p in inputNames)
+          controls[inputNames[p]] = Number(properties[p]);
+        else if (!handleNewLogic(p, logicInputs) && warn && warn--)
+          console.warn("Unknown ComponentSetting: " + JSON.stringify(
+            p) + " on block: " + JSON.stringify(obj.ID));
+      /** @see {MsBlockProps} */
+      config.length && (properties.settings = config);
+      controls.length && (properties.controls = controls);
+      logicInputs.length && (properties.logicInputs = logicInputs);
       properties.actionGroups = obj.actionGroups;
       properties.connectionGroup = obj.connectionGroup;
       properties.defaultEnabled = obj.defaultEnabled;
       properties.layer = obj.layer;
       properties.nonInteractable = obj.nonInteractable;
-      handleColor(obj.color || properties.color, properties);
-      return new Block(name, position, rotation, properties);
     }
-    return new Block(name, position, rotation);
+    if (name === "__unknown__")
+      (optional = properties).invalidName = obj.ID;
+    "color" in obj ? handleColor(obj.color) : "color" in properties &&
+        handleColor(properties.color);
+    return "ComponentSettings" in obj ?
+      new Block(name, position, rotation, properties) :
+      new Block(name, position, rotation, optional);
   }
   var name = typeof o.Name == "string" ? o.Name : "Modular Spaceship",
     allParts = o.Parts instanceof Array ? o.Parts.map(decodeRaw) : [],
     moreParts = o.UncompressedParts,
     /** @type {{p:XYZPosition,r:Rotation}} */
     refs = {p: [0, 0, 0], r: [0, !1, 0]};
+  // v.0.2.37 reading more widely compatible DBVE significantVersion
+  if (allParts.length)
+    allParts.slice(-1)[0].properties.significantVersion instanceof
+      RegExp && allParts.length--;
   if (moreParts instanceof Array)
     moreParts.forEach(function (item) {
-      allParts.push(new Block("__unknown__", refs.p, refs.r, item));
+      try {
+        allParts.push(decodePart(item instanceof Object ? item :
+          JSON.parse(item)));
+      } catch (err) {
+        var prop = {error: err, originalData: item};
+        allParts.push(new Block("__unknown__", refs.p, refs.r, prop));
+      }
     });
   if ("CompressedParts" in o)
     try {
@@ -4896,9 +5325,10 @@ Ship.fromMSObject = function (o) {
         gzip = Bin.Gzip.decode(data);
       if (gzip.error)
         throw gzip.error;
-      //@ts-expect-error v.0.2.35 gzip.result is enough as ArrayLike
-      // this is still within try catch, better than duplicating big data
-      moreParts = JSON.parse(Ship.utf8ToString(gzip.result))
+      moreParts = JSON.parse(test_log.saveparts =
+      //@ts-expect-error v.0.2.35 gzip.result is enough as ArrayLike, even
+      //then this is still within try catch, better than duplicating big data
+        Ship.utf8ToString(gzip.result))
       if (moreParts instanceof Array)
         moreParts.forEach(function (item) {
           allParts.push(decodePart(item, true));
@@ -4906,7 +5336,9 @@ Ship.fromMSObject = function (o) {
     } catch (err) {
       console.error("Decoding CompressedParts:", err);
     }
-  var spaceship = new Ship(name, [], Ship.dateTime(), allParts);
+  var spaceship = new Ship(name, [0, -1], Ship.dateTime(), allParts);
+  if ("BuildCost" in spaceship)
+    spaceship.prop = {BuildCost: spaceship.BuildCost};
   spaceship.setSelected();
   Edit.Primitive.rotate(spaceship, 2);
   spaceship.setSelected([]);
@@ -4921,7 +5353,7 @@ Ship.fromMSSSS = function (mssss) {
       return Ship.fromMSObject(mssss);
     for (var i = mssss.byteLength; i-- > 0;)
       mssss[i] ^= 19;
-    mssss = "" + Ship.utf8ToString(mssss);
+    test_log.savefile = mssss = "" + Ship.utf8ToString(mssss);
   }
   var string = mssss.trim();
   if (string[0] !== "{")
@@ -5450,8 +5882,13 @@ B64Key.wMSBfirst = function (l, n) {
     buffer[--i1] = n & 255;
   return n;
 };
-B64Key.wVersion = function (arr) {
+/** @param {number[]} arr signed int[], empty array decodes as [0] */
+B64Key.wVersion = function (arr) {//3h_
   for (var l = 0, m = 0, n = 64, buffer = B64Key.buffer; !0;) {
+    if (arr[l] < 1 && 1 / arr[l] < 0) {
+      buffer[B64Key.i++] = 64;
+      (arr = arr.slice())[l] *= -1;
+    }
     while (arr[l] >= n--)
       n = 64 << (m += 6);
     buffer[B64Key.i++] = arr[l] >> m;
@@ -5707,14 +6144,16 @@ B64Key.encode = function encodeCmprsShip(ship) {
 };
 /** v.0.2.35+ binaray get (read) functions were moved to @see {Bin.rBit} */
 B64Key.gVersion = function gVersion() {
-  var version = [], n = 0, buffer = B64Key.buffer;
+  /** @type {number[]} int[] */
+  var version = [], n = 0, buffer = B64Key.buffer, negative = 0;
   B64Key.i--;
   do {
-    version.push(0);
+    version.push(negative = 0);
     do {
       version[n] = (version[n] << 6) + (buffer[++B64Key.i] & 63);
+      negative |= +!version[n] | (negative & 1) << 1;
     } while (buffer[B64Key.i] & 64);
-    n++;
+    negative === 3 ? version[n++] *= -1 : n++;
   } while (buffer[B64Key.i] & 128);
   B64Key.i++;
   return version;
