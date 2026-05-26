@@ -1,19 +1,7 @@
 //@ts-check
 "use strict";
 /** @readonly */
-var version_workshop_js = "v.0.2.11";
-/** @param {any} v number, string any element ID *///@ts-ignore
-function GE
-(v){return document.getElementById(+v===v?(GE.i=v+1)-1:
-  v===void 0?v=GE.i++:v)}GE.i=0;
-/**
- * @overload @returns {HTMLDivElement}
- * @template {keyof N} K @overload @param {K} e @returns {N[K]}
- * @overload @param {string} e @returns {HTMLElement}
- * @param {string} [e] */
-function EL(e) {
-  return document.createElement(typeof e == "string" ? e : "div");
-}
+var version_workshop_js = "v.0.2.38";
 /** @param {string} data */
 var tN = function (data) {
   return document.createTextNode(data);

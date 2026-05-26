@@ -2,7 +2,7 @@
 /// <reference path="./editor.html.ts" />
 "use strict";
 /** @readonly */
-var version__k_api_js = "v.0.2.36";
+var version__k_api_js = "v.0.2.38";
 /** 3h_ @TODO check @see {Actions.API_VERSION} */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -21,6 +21,7 @@ var canvas = function (canvas) {
 }(GE()),
   ctx = canvas.getContext("2d") || new CanvasRenderingContext2D();
 
+/** @type {any[]&{savefile?:string,saveparts?:string}} */
 var test_log = [];
 if (/http:..localhost:815[89]/.test(location.href))
   (function test_alphalunar() {

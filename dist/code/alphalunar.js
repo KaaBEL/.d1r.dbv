@@ -1,7 +1,7 @@
 /// <reference path="editor.js"/>
 "use strict";
 /** @readonly *///@ts-expect-error
-var version_alphalunar_js = "v.0.2.31";
+var version_alphalunar_js = "v.0.2.38";
 var test_ship = {"name":"Starter Droneboi","gameVersion":[],"dateTime":"05.05.2024 21:12:18","blocks":[{"internalName":"__placeholder856__","position":[0,-9,-52],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-50],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-48],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
 {"internalName":"__placeholder856__","position":[0,-9,-46],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-44],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-42],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-40],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
 {"internalName":"__placeholder856__","position":[0,-9,-38],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-52],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-50],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-48],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-46],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-44],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
@@ -199,56 +199,16 @@ backgHangarInit.ready++ && (function () {
   };
 });
 Command.push("Evil Addon", function (items, collapsed) {
-  if (/https/.test(location.protocol))
-    return void items.push(tN("Eval addon is disabled for HTTPS."));
-  if (/content/.test(location.protocol))
-    return void items.push(tN("Eval addon is disabled for content://"));
-  var input = document.createElement("textarea"), exec = EL("button");
-  var result = EL("div"), value, breakAll = EL("input"), examp = EL("button");
-  input.id = "evil_input";
-  typeof test_evil == "string" && (input.value = test_evil);
-  exec.id = "evil_exec";
-  exec.appendChild(tN("Do evil"));
-  exec.onclick = function () {
-    if (typeof Actions == "function" && Actions.logLivevil) {
-      Actions.logLivevil = false;
-      input.value = "//GE(\"evil_input\").value =\n  " +
-        JSON.stringify(input.value) + ";";
-    }
-    try {
-      result.style.color = "#ccc";
-      value = eval.call(window, input.value);
-      if (typeof value == "object" && value)
-        result.innerText = Object.getPrototypeOf(value).constructor.name +
-          ": " + value;
-      else
-        result.innerText = typeof value + ": " + value;
-    } catch (e) {
-      result.style.color = "#f33";
-      result.innerText = e;
-    }
-  };
-  result.id = "evil_result";
-  result.style.color = "#ccc";
+  var out = EL("div"), lastTexted = +Date(), tO = 0;
+  out.style.color = "#ccc";
   if ("test_log" in window) {
-    result.innerText = window.test_log.join("\n") + "[logged]";
+    out.innerText = window.test_log.join("\n") + "[logged]";
     window.test_log.length = 0;
   }
-  breakAll.type = "checkbox";
-  breakAll.oninput = function () {
-    result.style.wordBreak = breakAll.checked ? "break-all" : "";
-  };
-  breakAll.id = "evil_breakAll";
-  examp.appendChild(tN("document.body.style.textSizeAdjust = '100%';"));
-  examp.onclick = function () {
-    input.value = "document.body.style.textSizeAdjust = '100%';";
-  };
-  items.push(input, exec, examp, {name: "break-all", inp: breakAll}, result);
-  var lastTexted = +Date(), tO = 0;
-  function evilPrint() {
+  var print = function printLog() {
     if (!(window.test_log instanceof Array))
       return window.test_log = [];
-    var sibling = result.nextSibling || EL();
+    var sibling = out.nextSibling || EL();
     var arr = [].concat(window.test_log);
     for (var i = 0; sibling && i < arr.length; i++)
       ('' + arr[i]).split("\n").forEach(function (e) {
@@ -260,10 +220,12 @@ Command.push("Evil Addon", function (items, collapsed) {
   function text(str) {
     if (!(window.test_log instanceof Array))
       return window.test_log = [];
-    window.test_log.push("" + str);
+    [].push.call(window.test_log, "" + str);
+    if (!document.contains(out))
+      return print = F;
     var time = +Date();
     clearTimeout(tO);
-    time < lastTexted + 50 ? tO = setTimeout(evilPrint, 50) : evilPrint();
+    time < lastTexted + 50 ? tO = setTimeout(print, 50) : print();
     lastTexted = time;
   }
   var isPC = /http:..localhost:5500/.test(location.href);
@@ -287,6 +249,9 @@ Command.push("Evil Addon", function (items, collapsed) {
     // var e = (document.body.querySelector(".items") || {}).lastChild;
     // e && (e.data += "\nError: " + args);
   };
+  console.addon = function () {
+    text("" + arguments[0]);
+  };
   var content = document.querySelector("#commandsTab .content") ||
       EL("" + alert("alphalunar.js could not QrySelect commandsTab")),
     /** @type {Text|null} */
@@ -309,14 +274,72 @@ Command.push("Evil Addon", function (items, collapsed) {
     }
     descriptionText.data += "\n[w.err]" + err;
   };
-}, "Gives access to eval.");
+
+  if (/https/.test(location.protocol))
+    return items.push(tN("Eval addon is disabled for HTTPS."), out);
+  if (/content/.test(location.protocol))
+    return items.push(tN("Eval addon is disabled for content://"), out);
+  out.id = "evil_result";
+  var input = document.createElement("textarea"), exec = EL("button");
+  var value, breakAll = EL("input"), examp = EL("button");
+  input.id = "evil_input";
+  typeof test_evil == "string" && (input.value = test_evil);
+  exec.id = "evil_exec";
+  exec.appendChild(tN("Do evil"));
+  exec.onclick = function () {
+    if (typeof Actions == "function" && Actions.logLivevil) {
+      Actions.logLivevil = false;
+      input.value = "//GE(\"evil_input\").value =\n  " +
+        JSON.stringify(input.value) + ";";
+    }
+    try {
+      out.style.color = "#ccc";
+      value = eval.call(window, input.value);
+      if (typeof value == "object" && value)
+        out.innerText = Object.getPrototypeOf(value).constructor.name +
+          ": " + value;
+      else
+        out.innerText = typeof value + ": " + value;
+    } catch (e) {
+      out.style.color = "#f33";
+      out.innerText = e;
+    }
+  };
+  breakAll.type = "checkbox";
+  breakAll.oninput = function () {
+    out.style.wordBreak = breakAll.checked ? "break-all" : "";
+  };
+  breakAll.id = "evil_breakAll";
+  examp.appendChild(tN("document.body.style.textSizeAdjust = '100%';"));
+  examp.onclick = function () {
+    input.value = "document.body.style.textSizeAdjust = '100%';";
+  };
+  items.push(input, exec, examp, {name: "break-all", inp: breakAll}, out);
+}, "Gives access to eval, or shows console warns, logs, and errors if disabl\
+ed.");
 setTimeout(function () {
   var ch = (document.querySelector("#commandsTab .content") || EL()).childNodes;
-  for (var i = ch.length, button = null; i-- > 0;) {
+  var regRes = /[?&]debug_feature=([^&]+)/.exec(location.href) || [];
+  var search = regRes[1] ?
+    new RegExp(regRes[1].replace(/%\d\d/g, function (m) {
+        return String.fromCharCode(+("0x" + m.slice(1)));
+      }).replace(/[\[{+(\\\/]/g, function (m) {
+        return "\\" + m;
+      })) :
+    /^Evil Addon$/;
+  for (var i = Tool.list.length, button = null; i-- > 0;)
+    if (search.test(Tool.list[i].name)) {
+      (DefaultUI.blockBars[0] = DefaultUI.blockBars[0] ||
+        DefaultUI.createFolder(0)).unshift(Tool.list[i]);
+      DefaultUI.selectedFolder = 0;
+      DefaultUI.setSelectedTile(0 << 2 | 1);
+      return render();
+    }
+  for (i = ch.length; i-- > 0;) {
     for (var node = ch[i]; node.firstChild; node = node.firstChild)
       if (node instanceof HTMLButtonElement)
         button = node;
-    if (node instanceof Text && node.data === "Evil Addon") {
+    if (node instanceof Text && search.test(node.data)) {
       /** @type {()=>void} */
       ((button || node.parentNode || {click: null}).onclick || F)();
       break;
