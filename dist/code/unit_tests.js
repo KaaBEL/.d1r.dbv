@@ -2,7 +2,7 @@
 /// <reference path="./editor.js" />
 "use strict";
 /** global version of project when last changes were done */
-var version_unit_tests_js = "0.2.35";
+var version_unit_tests_js = "0.2.39";
 /** @TODO rename this file to bug_tests.js */
 var utst_ = true;
 function BError (message) {
@@ -124,6 +124,7 @@ lABtAAZAAAAJwAAJAUAGQAAACcAAAARAAAKDUALkAEAAADgBABAFU6AFgBABgAAwAkAgDiAAJACZ\
 AAATgAAyAsARgAAAECMCo1BIxEAhBAhQAYAYAQAAGCFWBVOg1Oig7gALoAMAMAJsTCcCCcphBAXw\
 AWQAQA4IRawCAkiYWQQhUABUAAQaEQiAwBBoBAoxSIDyABKAAIlTviFogQ="))));
   utst_testCommands();
+  expensiveRenderer();
   Logic.rend = !1;
   if (utst_arr2.length)
     utst_ = new BError("Unpresent error(s) 0x02", utst_arr2);
@@ -134,6 +135,8 @@ AWQAQA4IRawCAkiYWQQhUABUAAQaEQiAwBBoBAoxSIDyABKAAIlTviFogQ="))));
 console.error = utst_consoleError;
 // TEST: Ship.toDBV //
 /** @TODO the test for ^ */
+// TEST: Ship.fromMSSSS Ship.toMSSSS //
+/** @TODO the test for fragile ^ */
 // TEST: Edit.historyAt //
 try {
   ship = Edit.save(Ship.fromObject({n: "UndoRedoTest", "ls": 0}));

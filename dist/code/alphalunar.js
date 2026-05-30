@@ -1,7 +1,7 @@
 /// <reference path="editor.js"/>
 "use strict";
 /** @readonly *///@ts-expect-error
-var version_alphalunar_js = "v.0.2.38";
+var version_alphalunar_js = "v.0.2.39";
 var test_ship = {"name":"Starter Droneboi","gameVersion":[],"dateTime":"05.05.2024 21:12:18","blocks":[{"internalName":"__placeholder856__","position":[0,-9,-52],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-50],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-48],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
 {"internalName":"__placeholder856__","position":[0,-9,-46],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-44],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-42],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-40],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
 {"internalName":"__placeholder856__","position":[0,-9,-38],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-52],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-50],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-48],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-46],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-44],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
@@ -346,4 +346,108 @@ setTimeout(function () {
     }
   }
 }, 300);
+/**
+ * @typedef EncodingOptions
+ * @property {boolean} [oldNames] uses keeps MS 0.10.0.0 names
+ * @property {boolean} [compatibleBlocks=true] uses IDs for old blocks
+ * @property {boolean} [version=true] adds significantVersion block */
+/** @param {Ship} ship @param {EncodingOptions} o */
+Ship.toMSSSSVersioned = function (ship, o) {
+  /** @param {(number[]|undefined)[]} inputs  */
+  function buildInputs(inputs) {
+    for (var i = inputs.length, li = "", inp; i-- > 0; li = "," + li)
+      if ((inp = inputs[i]) && +inp[0] !== -1 && +inp[1] !== -1)
+        li = +inp[0] + "~" + +inp[1] + li;
+    return li === ",,,," ? "" : li.slice(1);
+  }
+  // v.0.2.38 the decalayers in new version are not numbered in name
+  // but have "layer" key with int value, 0: non-deco, 1...3: which layer
+  /** @param {string} name @param {BlockProps} prop */
+  function buildName(name, prop) {
+    name = name === "__unknown__" && "invalidName" in prop ?
+      "" + prop.invalidName : name;
+    if (name.slice(0, 9) === "Decolayer") {
+      var layer = Number(prop.layer);
+      if (layer > 1 && name[9] !== ("" + layer))
+        return name.slice(0, 9) + layer + name.slice(9);
+    }
+    return name;
+  }
+  var selection = ship.selection, warn = Block.creator.msWarns;
+  ship.selection = ship.blocks.slice();
+  Edit.Primitive.rotate(ship, 2);
+  var arrNum = [0, 0, 0, 0], arrSp = [0, 0, 0, ""], mssss = {
+    Name: ship.name,
+    // New versions of MS0.11 and later disallow loadoing clipped ships
+    Parts: ship.blocks.map(function (block) {
+      var prop = block.properties, name = block.internalName;
+      var id = Block.ID[name], s = "", ag = "";
+      // v.0.2.38.1 dumbness majesty KaaBEL used crossversion compatible
+      // OldID 403... wait 403??!! There isn't even that many blocks in MS
+      if (id in Block.OLD && id > 1279 && id < 2048)
+        if (o.oldNames)
+          name = Block.OLD[id];
+        else if (o.compatibleBlocks !== false)
+          return "{\"ID\":" + (id - 1280) + ",\"X\":" +
+            block.position[1] + ",\"Y\":" + block.position[2] +
+            ",\"Rotation\":" + (block.rotation[2] * 90) +
+            ",\"MirHor\":" + (block.rotation[1] ? -1 : 1) +
+            ",\"MirVert\":1}";
+      // v.0.2.38 MS v.0.10.0.0 requires properties present
+      var isOld = id < 1345 ||
+        [212, 242, 312, 338, 403].indexOf(id - 1280) !== -1;
+      // DBVE ID range for MS blocks, (MS part OldIDs are shifted by +1280)
+      if (id > 1279 && id < 2048) {
+        var group = prop.connectionGroup, weld = prop.weldGroup;
+        s += group !== UDF ? group : weld !== UDF ? 1 << weld : 1;
+        if (prop.controls && (prop.controls[0] || prop.controls[1] ||
+            prop.controls[2] || prop.controls[3]) || isOld)
+          s += "|" + arrNum.map(function (e, i) {
+            return prop.controls && prop.controls[i] || e;
+          }).join(",");
+        if (prop.defaultEnabled || prop.nonInteractable || isOld ||
+            prop.settings &&
+            (prop.settings[1] || prop.settings[2] || prop.settings[3]))
+          s += "|" + arrSp.map(function (e, i) {
+            return i ? prop.settings && prop.settings[i] || e : 
+              // WARNING: properties.settings[0] is ignored
+              (+!!prop.defaultEnabled | +!!prop.nonInteractable << 2) ||
+                0;
+          }).join("|");
+        if (prop.actionGroups)
+          for (var n = prop.actionGroups, i = -1; ++i < 10; n >>= 2)
+            n & 3 ? ag = (ag && ag + ",") + i + "-" + (n & 3) : 0;
+        s += (ag && "|" + ag);
+        // TODO: somehow extract logic nodes from Ship instead of this:
+        if (prop.logicInputs instanceof Array)
+          s += "|" + buildInputs(prop.logicInputs);
+        if (prop.color || "invalidColor" in prop && prop.layer !== 0)
+          warn && warn-- &&
+            console.warn("For MS1, only Decolayers can have color");
+      } else if (prop.color) {
+        var colorId = Color.NOW[prop.color] || Color.ID[prop.color];
+        s += "c" + (colorId === UDF ? -1 : colorId - 128);
+      } else
+        s += "invalidColor" in prop ? "c" + prop.invalidColor : "c-1";
+      return buildName(name, prop) + "|" +
+        block.position[1] + "," + block.position[2] + "|" +
+        (block.rotation[2] * 90) + "," + (block.rotation[1] ? -1 : 1) +
+        ",1|" + s + ";";
+    }).concat(o.version !== false ? [
+      "DecoLayer3_Half1|999,999|" +
+      version_code_js.replace(/^v[^\d]*(\d+(?:\.\d+)+).*$/, function (m, g1) {
+        return (g1 + ".0.0").split(".").slice(0, 3).join(",");
+      }) + "|c" + Ship.VERSION +
+      "|\"significantVersion\":" + Ship.VERSION + ";"
+    ] : []),
+    UncompressedParts: [],
+    BuildCost: [],
+    FuelCost: [],
+    SizeX: 0,
+    SizeY: 0,
+  };
+  Edit.Primitive.rotate(ship, 2);
+  ship.selection = selection;
+  return mssss;
+};
 document.head.querySelector("link[rel=\"icon\"]").href = "./favicon.png";

@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.37";
+var version_editor_js = "v.0.2.39";
 /** 3h_ @TODO check @see {Editor} for assignment without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -43,18 +43,10 @@ else if (/https?/.test(location.protocol) && navigator.serviceWorker)
   } catch (e) {
     console.log(e, "sw_js");
   }
-if (/^http:\/\/(?:\d+\.\d+\.\d+\.\d+|localhost:\d+)/.exec(location.href))
-  +function (globalWebSocket) {
-    try {
-      sessionStorage =
-      window.WebSocket =
-        /** @type {any} disables VS code live server live reload */
-        (function WebSocket() {
-          this.onmessage = function juhus() {};
-          window.WebSocket = globalWebSocket;
-        });
-    } catch (e) {}
-  }(WebSocket);
+
+if ("WebSocket" in window && "originalClass" in WebSocket)
+  // @ts-expect-error
+  window.WebSocket = WebSocket.originalClass;
 
 /**
  * @typedef {HTMLImageElement|HTMLVideoElement|HTMLCanvasElement} IMGElement
@@ -3057,7 +3049,7 @@ Command.push("Current version", function(items, collapsed) {
         / v(?:\.[0-9a-zA-Z]+)+/.exec(xhr.responseText.slice(0,1024));
       version_sw.data = res ? "[service-worker.js]:" + res[0] : "";
     } catch (e) {
-      console.error(xhr.responseText ? e : "xhr empty response");
+      console.error(xhr.responseText ? e : "xhr empty response0x0");
     }
     xhr.onreadystatechange = null;
   };
@@ -5268,8 +5260,8 @@ var rend_backgHangar = F, init_started = false;
     return;
   }
   var xhr = new XMLHttpRequest();
-  xhr.open("GET",
-    "https://kaabel.github.io/.d1r.dbv/assets/AlphaLunar.json", true);
+  // v.0.2.38 why not relative path if it's not SEO related?
+  xhr.open("GET", "./assets/AlphaLunar.json", true);
   xhr.onreadystatechange = function () {
     if (xhr.readyState !== 4)
       return;
@@ -5280,7 +5272,7 @@ var rend_backgHangar = F, init_started = false;
         JSON.parse(xhr.responseText));
       backgHangarInit.ready++ && backgHangarInit();
     } catch (e) {
-      console.error(xhr.responseText ? e : "xhr empty response");
+      console.error(xhr.responseText ? e : "xhr empty response0x1");
     }
     xhr.onreadystatechange = null;
   };
@@ -5872,141 +5864,7 @@ init = function loadedEditorInit() {
   imgBackg.src = "" + imgBackg.getAttribute("data-src");
   check_contentScript();
   Block.creator.msWarns = 69;
+  
+  if (/[?&]no=info$|[?&]no=info&/.test(location.href))
+    console.groupEnd();
 };
-//-"devToolInterval" in window ? devToolInterval() : test_log.savefile &&
-//-(console.debug( test_log.savefile, "\n\n",
-//-JSON.stringify(Ship.toMSSSS(ship))), test_log.savefile = "");
-/** //- @TODO remove in v.0.2.38 */
-//-"use strict";
-//-//.d1r.dbv DBVE icon v4 (favicon v.4.1)
-//-// requires executing at twice ot thrice for ms_background fill
-//-var size = 512, maskable = 0, filled;
-//-// maskable
-//-[size = 128, maskable = 192, filled = false];
-//-// Deltarealm fanclub
-//-[size = 416, maskable = 512, filled = false];
-//-// apple touch
-//-//[size = 180, maskable = 0, filled];
-//-/** @type {HTMLImageElement} */
-//-var msBg = window.msBg || EL("img");
-//-if (!msBg.src) {
-//-  msBg.src = "../../deltarealm/.d1r.dbv/dist/assets/_ms_background.jpg";
-//-  msBg.onerror = function () {
-//-    msBg.src = "https://kaabel.github.io/.d1r.dbv/assets/_ms_background.png";
-//-    msBg.onerror = null;
-//-  };
-//-}
-//-WH(ctx, size, size);
-//-ctx.scale(size / 16, size / 16);
-//-ctx.imageSmoothingEnabled = false;
-//-// WH(ctx, 16, 16);
-//-ctx.fillStyle = "#ffffff";
-//-ctx.fillRect(0, 0, 16, 16);
-//-ctx.fillStyle = "#" + (16737894).toString(16);
-//-ctx.fillStyle = "#ff3333";
-//-ctx.fillRect(5, 5, 6, 6);
-//-// ctx.globalAlpha = 51 / 255;
-//-ctx.strokeStyle = "#191919";
-//-ctx.strokeStyle = "#cccccc";
-//-ctx.strokeRect(.5, .5, 15, 15);
-//-ctx.strokeStyle = "#470000";
-//-ctx.strokeStyle = "#cc2929";
-//-ctx.strokeRect(5.5, 5.5, 5, 5);
-//-ctx.globalAlpha = 1;
-//-// ctx.drawImage(IMG(0), 0, 0);
-//-var rc = sShot.getContext("2d");
-//-WH(rc, ctx.canvas);
-//-rc.setTransform(ctx.getTransform());
-//-rc.lineWidth = 1.3;
-//-rc.lineJoin = "round";
-//-rc.lineCap = "round";
-//-rc.strokeStyle = "#9f9f8f";
-//-rc.strokeStyle = "#6E7069";
-//-rc.beginPath();
-//-rc.moveTo(8, 14);
-//-rc.lineTo(8, 15.5 - 7.5 / 3);
-//-rc.lineTo(.5, .5 + 7.5 / 2 + 15 / 3);
-//-rc.lineTo(.5, 15.5 - 7.5 / 2);
-//-rc.lineTo(8, 15.5);
-//-rc.lineTo(15.5, 15.5 - 7.5 / 2);
-//-rc.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
-//-rc.lineTo(8 + 7.5 / 6, 15.5 - 37.5 / 12);
-//-rc.moveTo(15.5, .5 + 7.5 / 2 + 15 / 3);
-//-rc.lineTo(15.5 - 30 / 19, .5 + 7.5 / 2 + 15 / 3 - 15 / 19);
-//-rc.stroke();
-//-rc.strokeStyle = "#030e2f";
-//-rc.beginPath();
-//-rc.moveTo(.5 + 46 / 12, .5 + 52 / 12);
-//-// rc.moveTo(.5 + 37.5 / 6, .5 + 37.5 / 12);
-//-rc.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
-//-rc.lineTo(8, .5);
-//-rc.lineTo(.5, .5 + 7.5 / 2);
-//-rc.lineTo(.5 + 7.5 / 3, .5 + 15 / 3);
-//-rc.lineTo(.5 + 7.5 / 3 + 37.5 * 4 / 24, .5 + 15 / 3 + 31 * 4 / 24);
-//-// rc.lineTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
-//-rc.moveTo(8 + 7.5 / 3, .5 + 7.5 / 6);
-//-rc.lineTo(8 + 7.5 / 3 + 15 * 4 / 29, .5 + 7.5 / 6 + 52.5 * 4 / 29);
-//-rc.moveTo(.5, 5.9);
-//-rc.lineTo(.5, 7.7);
-//-rc.stroke();
-//-ctx.globalCompositeOperation = "destination-in";
-//-ctx.drawImage(rc.canvas, 0, 0, 16, 16);
-//-ctx.globalCompositeOperation = "destination-over";
-//-// ctx.globalAlpha = .5;
-//-// ctx.fillStyle = "#000000";
-//-// ctx.fillRect(5, 5, 6, 6);
-//-// ctx.globalAlpha = 51 / 255;
-//-// ctx.strokeStyle = "#000000";
-//-// ctx.strokeRect(5.5, 5.5, 5, 5);
-//-// ctx.globalAlpha = 1;
-//-ctx.fillStyle = "#" + (16737894).toString(16);
-//-ctx.strokeStyle = "#470000";
-//-ctx.strokeRect(5.5, 5.5, 5, 5);
-//-ctx.fillRect(5, 5, 6, 6);
-//-ctx.fillStyle = ctx.createPattern(msBg, "no-repeat") || "#030e2f";
-//-ctx.beginPath();
-//-ctx.moveTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
-//-ctx.lineTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 3 - 15 / 6);
-//-ctx.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
-//-ctx.lineTo(8, .5);
-//-ctx.lineTo(0, .5 + 7.5 / 2);
-//-ctx.lineTo(0, .5 + 7.5 / 2 + 15 / 3);
-//-ctx.lineTo(.5 - 7.5 / 3 + 7.5, .5 + 22.5 / 2);
-//-// ctx.moveTo(8 + 7.5 / 3, 15.5 - 7.5 / 2);
-//-// ctx.lineTo(8, 15.5 - 7.5 / 3);
-//-// ctx.lineTo(8, 15.5);
-//-// ctx.lineTo(8 + 7.5 / 3, 15.5 - 7.5 / 6);
-//-// ctx.moveTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 3 - 15 / 6);
-//-// ctx.lineTo(15.5 - 7.5 / 3, 15.5 - 7.5 / 2 + 7.5 / 6);
-//-// ctx.lineTo(15.5, 15.5 - 7.5 / 2);
-//-// ctx.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
-//-// ctx.moveTo(.5 + 7.5 / 3, .5 + 15 / 3);
-//-// ctx.lineTo(8 + 7.5 / 3, .5 + 7.5 / 6);
-//-// ctx.lineTo(8 + 7.5 / 3 + 15 * 4 / 29, .5 + 7.5 / 6 + 52.5 * 4 / 29);
-//-// ctx.lineTo(.5 + 7.5 / 3 + 37.5 * 4 / 24, .5 + 15 / 3 + 31 * 4 / 24);
-//-ctx.closePath();
-//-// ctx.globalCompositeOperation = "source-over";
-//-ctx.setTransform(.8, 0, 0, .81, -259, 27);
-//-ctx.fill();
-//-// ctx.globalCompositeOperation = "destination-over";
-//-ctx.fillStyle = "#707070";
-//-ctx.setTransform(rc.getTransform());
-//-ctx.beginPath();
-//-ctx.moveTo(15.5 - 15 / 4, .5 + 7.5 / 2 + 15 / 3 - 15 / 8);
-//-ctx.lineTo(.5, .5 + 7.5 / 2 + 15 / 3);
-//-ctx.lineTo(.5, 15.5 - 7.5 / 2);
-//-ctx.lineTo(8, 15.5);
-//-ctx.lineTo(15.5, 15.5 - 7.5 / 2);
-//-ctx.lineTo(15.5, .5 + 7.5 / 2 + 15 / 3);
-//-ctx.closePath();
-//-ctx.fill();
-//-ctx.lineWidth = 1;
-//-ctx.strokeStyle = "#000000";
-//-ctx.strokeRect(.5, .5, 15, 15);
-//-if (maskable) {
-//-  WH(rc, maskable, maskable);
-//-  rc.fillStyle = ctx.strokeStyle;
-//-  filled && rc.fillRect(0, 0, maskable, maskable);
-//-  var padding = (maskable - size) / 2;
-//-  rc.drawImage(ctx.canvas, padding, padding);
-//-}

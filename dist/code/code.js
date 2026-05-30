@@ -2,7 +2,7 @@
 /// <reference path="./defs.d.ts" />
 "use strict";
 /** @readonly */
-var version_code_js = "v.0.2.38";
+var version_code_js = "v.0.2.39";
 /** 3h_  @TODO check @see {Ship.VERSION}  Read FUN FACTS below: */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
@@ -1782,9 +1782,38 @@ Bin.sgByte = function (bin, index) {
 /** create Huffman codes tree
  * @param {number[]} arr generator input @returns {HuffmanResult} */
 Bin.createHuffman = function (arr) {
+  // just bit depths, example arr: [0, 1, 3, 3, 2]
+  function f0() {
+    v++;
+    if (arr[p] === i)
+      rNextBitCodes = function f0ToTree() {
+        n++;
+        if (arr[p] !== i) {
+          addCodesToTree();
+          rNextBitCodes = f0;
+        }
+      };
+  }
+  // pairs bit depths and amount of repeats, ex. arr: [1, 1, 1, 3, 2, 2, 1]
+  function f1() {
+    v += arr[p - 1];
+    if (arr[p++] === i)
+      rNextBitCodes = function f1ToTree() {
+        n += arr[p - 1];
+        if (arr[p++] !== i) {
+          addCodesToTree();
+          rNextBitCodes = f1;
+        }
+      };
+  }
+  function aCodesLength(a) {
+    var b = bitLengths[arr[i]];
+    bitLengths[arr[i++]] = b ? b + a : a;
+  }
+  // n = nodes, p = position in arr +calculation of summed resulting tree
+  // and bitLenghts length
   var bitLengths = [], i = 1, n = 0, p = 0, rNextBitCodes;
-  //+calculation of summed resultibg tree and bitLenghts length
-  if (arr[0]) { // n = nodes, p = position in arr
+  if (arr[0]) { 
     for (; i < arr.length; i++)
       aCodesLength(arr[i + 1]);
     rNextBitCodes = f1;
@@ -1794,10 +1823,9 @@ Bin.createHuffman = function (arr) {
     rNextBitCodes = f0;
   }
   bitLengths[0] = 0;
-  //+calculating sum of nodes, max 8192
+  // calculating sum of nodes, max 8192
   for (i = bitLengths.length; i > 0;)
-    //+if (bitLengths[--i] === UDF)
-    if (typeof bitLengths[--i] === "undefined")
+    if (bitLengths[--i] === UDF)
       n += p = (p + 1 >> 1) + (bitLengths[i] = 0);
     else
       n += p = (p + 1 >> 1) + bitLengths[i];
@@ -1806,69 +1834,52 @@ Bin.createHuffman = function (arr) {
     return new Error("tripped over number_of_nodes check");
   var tree = new Bin.huffmanConstructor(n),
     path = new Bin.huffmanConstructor(bitLengths.length),
-    v, // v = value for path ends
-    d = 0, // d = depth in path, n = values of code length in row
-    l, // l = actual last node, 
-    pos = 0; // pos = current position in tree
+    /** value for path ends */
+    v,
+    /** depth in path */
+    d = 0,
+    /** current last node */
+    l,
+    /** current position in tree */
+    pos = 0;
   bitLengths.push(0);
-  var aCodesToTree = function () { // add codes to tree
+  var addCodesToTree = function () {
     while (pos < i)
       path[++d] = pos++;
-    tree[pos - 1] |= 32768; // reference to next
+    // reference to next
+    tree[pos - 1] |= 0x8000;
     tree[pos] = v++;
     l = pos + 1;
     n--;
-    aCodesToTree = function () {
+    addCodesToTree = function () {
       while (n-- > 0) {
-        while (path[d] & 32768) // go back while needed
+        // go back while needed
+        while (path[d] & 0x8000)
           d--;
         if (d === 0)
           return !1;
         tree[path[d]] |= l;
-        path[d] |= 32768; // set to 1
-        while (d < i) // forward while needed
-          path[++d] = l++; // (adds 0s to tree)
-        if ((pos = path[d]) & 32768) // if set to 1
-          tree[pos & 16383] |= 16384 | l;
+        // set to 1
+        path[d] |= 0x8000;
+        // forward while needed (adds 0s to tree)
+        while (d < i)
+          path[++d] = l++;
+        // if set to 1
+        if ((pos = path[d]) & 0x8000)
+          tree[pos & 0x3fff] |= 0x4000 | l;
         else
-          tree[pos & 16383] = 32768;
+          tree[pos & 0x3fff] = 0x8000;
         tree[l++] = v++;
       }
       n = 0;
     };
-    aCodesToTree();
+    addCodesToTree();
   };
   for (i = 1; i < bitLengths.length; i++)
     if (bitLengths[i] > 0) {
       for (v = -1, p = 0, n = 0; ++p <= arr.length;)
         rNextBitCodes();
     }
-  function f0() { // for arr [0, 1, 3, 3, 2] just bit depths
-    v++;
-    if (arr[p] === i)
-      rNextBitCodes = function f0ToTree() {
-        n++;
-        if (arr[p] !== i) {
-          aCodesToTree();
-          rNextBitCodes = f0;
-        }
-      };
-  }               // bit depths with number of them
-  function f1() { // for arr [1, 1, 1, 3, 2, 2, 1]
-    v += arr[p - 1];
-    if (arr[p++] === i)
-      rNextBitCodes = function f1ToTree() {
-        n += arr[p - 1];
-        if (arr[p++] !== i) {
-          aCodesToTree();
-          rNextBitCodes = f1;
-        }
-      };
-  }
-  function aCodesLength(a) {
-    var b = bitLengths[arr[i]];
-    bitLengths[arr[i++]] = b ? b + a : a;
-  }
   return tree;
 };
 /** read Huffman code @param {Binary} bin @param {HuffmanTree} tree */
@@ -1912,11 +1923,7 @@ Bin.readInflated = function (bin, LitLen, Dist) {
       } else if (n === 285)
         l = 258;
       else
-        throw new Error("without error message");
-      //?test→ for (var n = 286; --n > 256;) {if (n < 265) console.log
-      //?(n - 254); else if (n < 285) {var n0 = n - 261 >> 2; l = 4 + 
-      //?(255 >> 6 - n0) + (1 << n0) * (n - 1 & 3); console.log(l, n0);
-      //?} else console.log(l = 258);}
+        return new Error("without error message");
       d = Bin.readHuffman(bin, Dist);
       if (d < 4)
         d++;
@@ -1932,7 +1939,7 @@ Bin.readInflated = function (bin, LitLen, Dist) {
     } else if (n === 256)
       break;
     else
-      throw new Error("without error message");
+      return new Error("without error message");
   }
 };
 /** @param {Bin} bin */
@@ -1987,55 +1994,42 @@ Bin.readDynamicHuffmanCodes = function (bin) {
     return Dist;
   return {LitLen: LitLen, Dist: Dist};
 };
-/** @param {Bin} bin */
+/** legacy code from the my early days of js programming, true spaghetti code
+ * (especially createHuffman!) but it works! ...for now. @param {Bin} bin */
 Bin.readDEFLATECompression = function (bin) {
-  var notBFINAL = !0, BTYPE = {
-    0: Bin.readUncompressed,
-    /** @param {Bin} bin */
-    1: function (bin) {
-      if (!(Bin.huffmanLitLen instanceof Bin.huffmanConstructor)) {
-        var tree = Bin.createHuffman([1, 8, 144, 9, 112, 7, 24, 8, 8]);
-        if ((Bin.huffmanLitLen = tree) instanceof Error)
-          return tree;
-      }
-      if (!(Bin.huffmanDist instanceof Bin.huffmanConstructor)) {
-        tree = Bin.createHuffman([1, 5, 32]);
-        if ((Bin.huffmanDist = tree) instanceof Error)
-          return tree;
-      }
-      return Bin.readInflated(bin, Bin.huffmanLitLen, Bin.huffmanDist);
-    },
-    /** @param {Bin} bin */
-    2: function (bin) {
-      var trees = Bin.readDynamicHuffmanCodes(bin);
-      if (trees instanceof Error)
-        return trees;
-      return Bin.readInflated(bin, trees.LitLen, trees.Dist);
-    },
-    3: function (bin) {
-      return new Error("invalid BTYPE=3 in compressed data");
-    }
-  };
-
-  while (notBFINAL) {
+  for (var notBFINAL = !0, error; notBFINAL;) {
     notBFINAL = !Bin.rBit(bin);
-    /** @type {unknown} */
-    var result = BTYPE[Bin.rMsbfBits(bin)](bin);
-    if (result instanceof Error)
-      return result;
+    switch (Bin.rMsbfBits(bin)) {
+      case 0:
+        Bin.readUncompressed(bin);
+        break;
+      case 1:
+        var litLen = Bin.huffmanLitLen, dist = Bin.huffmanDist;
+        if (!(litLen instanceof Bin.huffmanConstructor))
+          litLen = Bin.createHuffman([1, 8, 144, 9, 112, 7, 24, 8, 8]);
+        if (litLen instanceof Error)
+          return litLen;
+        Bin.huffmanLitLen = litLen;
+        if (!(dist instanceof Bin.huffmanConstructor))
+          dist = Bin.createHuffman([1, 5, 32]);
+        if (dist instanceof Error)
+          return dist;
+        Bin.huffmanDist = dist;
+        if (error = Bin.readInflated(bin, litLen, dist))
+          return error;
+        break;
+      case 2:
+        var trees = Bin.readDynamicHuffmanCodes(bin);
+        if (trees instanceof Error)
+          return trees;
+        if (error = Bin.readInflated(bin, trees.LitLen, trees.Dist))
+          return error;
+        break;
+      case 3:
+        return new Error("invalid BTYPE=3 in compressed data");
+        break;
+    }
   }
-  //+  switch (gBitsMSBF()) {
-  //+    case 0b00:
-  //+      Bin.readUncompressed(bin);
-  //+      break;
-  //+    case 0b01:
-  //+      break;
-  //+    case 0b10:
-  //+      break;
-  //+    case 0b11:
-  //+      break;
-  //+  }
-  //+}
 };
 /** @param {Bin} bin */
 Bin.Gzip = function (bin) {
@@ -2118,6 +2112,94 @@ Bin.Gzip.Subfield = function (SI1, SI2, data) {
   this.data = data;
   Object.seal(this);
 };
+/** @param {Bin} bin */
+Bin.Utf8 = function (bin) {
+  this.data = bin;
+  /** @type {Error|null} */
+  this.error = null;
+  /** @type {Error[]} */
+  this.warnings = [];
+  this.result = "";
+  Object.seal(this);
+};
+Bin.Utf8.prototype.toString = function (buffer) {
+  if (buffer instanceof Array)
+    buffer = new Bin(new Uint8Array(buffer).buffer);
+  if (buffer.buffer instanceof ArrayBuffer)
+    return Bin.Utf8.decode(new Bin(buffer.buffer)).result;
+  if ("buffer" in this && this.buffer instanceof ArrayBuffer)
+    return Bin.Utf8.decode(new Bin(this.buffer)).result;
+  return "[Error:Mostly likely an error. At Bin.Utf8.toString.]";
+};
+/** @param {Bin} bin */
+Bin.Utf8.decode = function (bin) {
+  /** i as in intellingent */
+  var i = bin.i, j = i + 1, bytes = bin.buffer, u8 = new Bin.Utf8(bin);
+  // check BOM ([j] is shortened for joke, otherwise it's too long line):
+  if (bytes[i] === 0xEF && bytes[j] === 0xBB && bytes[i + 2] === 0xBF)
+    i += 3;
+  // lb = lower boundary, ub = upper boundary, cp = code point, more
+  var n = 0, lb = 128, ub = 191, cp = 0, more = 0;
+  for (; i < bytes.length; u8.result += String.fromCharCode(cp)) {
+    if ((cp = bytes[i++]) < 128)
+      continue;
+    if (cp < 194) {
+      cp = 0xFFFD;
+      continue;
+    }
+    if (cp < 224) {
+      cp = cp - 192 << 6;
+      more = 1;
+    } else if (cp < 240) {
+      cp === 224 ?
+        lb = 160 :
+        cp === 239 && (ub = 191);
+      cp = cp - 224 << 12;
+      more = 2;
+    } else if (cp < 245) {
+      cp === 240 ?
+        lb = 144 :
+        cp === 244 && (ub = 143);
+      cp = cp - 240 << 18;
+      more = 3;
+    } else if (cp < 256) {
+      cp = 0xFFFD;
+      continue;
+    } else {
+      debugger;
+      u8.warnings.push(new Error("debugger HuHh!?"));
+    }
+    while (more) {
+      if (i >= bytes.length) {
+        cp = 0xFFFD;
+        continue;
+      }
+      n = bytes[i++];
+      n < lb || n > ub ? more = 0 : 0;
+      lb = 128;
+      ub = 191;
+      if (!more) {
+        i--;
+        more = 0;
+        cp = 0xFFFD;
+        continue;
+      }
+      cp = cp + (n - 128 << --more * 6);
+    }
+    if (0xff000000 & cp) {
+      u8.error = new Error("[v.0.2.27]Code point out of Unicode range");
+      cp = 0xFFFD;
+    } else if (0xffff0000 & cp) {
+      cp -= 0x10000;
+      u8.result += String.fromCharCode((cp >> 10) + 0xD800);
+      cp = (cp & 0x3FF) + 0xDC00;
+    }
+  }
+  return u8;
+};
+/** (v.0.2.39) simple usage experiment
+ * @method @type {(this:{},buffer:Array|Binary|Uint8Array)=>string} */
+Bin.Utf8.toString = Bin.Utf8.prototype.toString;
 
 /** letter case of block names doesn't matter when loaded by game,
  * Block name definitions require strict letter cases here */
@@ -2132,6 +2214,7 @@ Bin.Gzip.Subfield = function (SI1, SI2, data) {
  * settings?:[unknown,number,number,string]}} MsBlockProps
  * @typedef {{customParameter?:(number|string|[number,number,number,number]
  * )[],nodeIndex?:number[],weldGroup?:number}&MsBlockProps} BlockProps
+ * type for block MS and db properties utilised, not @see {BlockProperties}
  * @param {string} name
  * @param {XYZPosition} pos DBV to DR: [-: 0, x: p[0] * 2, y: p[1] * 2]
  * @param {Rotation} rot DBV to DR: [-: 0, f: f, r: Math.floor(r / 90)]
@@ -2369,7 +2452,7 @@ s|c|ni|invalidName|getPhysics|logicPosition|logicBlockIndex)$");
           extractLogic(o.prop.customParameter);
       Logic.addLogic(name, o.prop, rawLogics, r);
     }
-    // v.0.2.37 range of db blocks from Ship.checkDBV
+    // v.0.2.38 range of db blocks from Ship.checkDBV
     if (Block.ID[name] > 689 && Block.ID[name] < 959)
       // (v.0.1.64T14) was it really impossible to load wgs from JSON?
       o.prop.weldGroup = o.weld || o.prop.weldGroup || 0;
@@ -2672,7 +2755,7 @@ Block.Mirror.VALUE = {
   11: new Block.Mirror("WEDGE"),
 };
 
-/** JSDoc syntax for ts Conditional Type
+/** JSDoc syntax for ts Conditional Type example:
  * @template {readonly any[]|any[]} A @typedef {{[K in keyof A as
  * K extends keyof any[] ?never : K]:A[K]}} ArrayElements
  */
@@ -2680,13 +2763,14 @@ Block.Mirror.VALUE = {
  * @typedef {BlockPropertiesConstructor[K] extends
  * abstract new(args:infer P)=>any?P:never} PorpParameter
  * @template {keyof BlockPropertiesConstructor} K */
-/** Arguments typedefs for Properties Items generator
+/** part of rguments typedefs for Properties Items generator
  * @typedef {PorpParameter<"Slider">|PorpParameter<"Dropdown">|PorpParameter<
  * "IntegerSlider">|PorpParameter<"NumberInputs">|PorpParameter<"TextInputs">
  * |PorpParameter<"WeldGroups">|PorpParameter<"CheckBox">|
  * PorpParameter<"MsInput">} PropsArg
  * @typedef {typeof Block.Properties} BlockPropertiesConstructor
  * @typedef {BlockPropertiesConstructor["instances"]} BlockProperties
+ * do not confuse with BlockProps, @see {BlockProps}
  * @typedef {BlockProperties[keyof BlockProperties]} Prop */
 /** @namespace @typedef {never} Block.Properties @returns {never} */
 Block.Properties = function () {
@@ -3152,15 +3236,6 @@ Block.Properties.VALUE = Block.Properties.generate({
 });
 /** @deprecated obsolete since BlockProperties VALUE definition is shorter */
 Block.PROP = Block.Properties.VALUE;
-//-/** @template T @param {T} propsDef @returns {T extends Prop?T:Prop|null} */
-//-Block.Properties.isBlockPorperties = function (propsDef) {
-//-  var result = null, source = Block.Properties.instances;
-//-  for (var p in source)
-//-    if (propsDef instanceof Object.getPrototypeOf(source[p]).constructor)
-//-      (result = propsDef);
-//-  //@ts-expect-error
-//-  return result;
-//-};
 /** @param {string|number} name @param {safe} property */
 Block.Properties.addProperty = function (name, property) {
   var propsDef = Block.Properties.VALUE[
@@ -4336,13 +4411,10 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.history = [];
   /** @type {ShipBlock[]} */
   this.selection = [];
-  /** to track Droneboi Vehicles editor version in its JSON savefiles
-   * @type {number} */
-  this.significantVersion = Ship.VERSION;
   Object.seal(this);
 }
-/** @readonly @type {51} significantVersion: 51 (integer) */// @ts-ignore
-Ship.VERSION = 51;
+/** @readonly @type {52} significantVersion: 52 (integer) */// @ts-ignore
+Ship.VERSION = 52;
 Ship.prototype.edit = Edit.Ship;
 Ship.prototype.selectRect = (
   /**
@@ -4650,7 +4722,7 @@ Ship.prototype.fixPositionAdjustment = function (fixSlab) {
   for (var i = 0; i < this.blocks.length; i++) {
     var block = this.blocks[i], rot = block.rotation[2];
     var id = Block.ID[block.internalName], size = Block.Size.VALUE[id];
-    // v.0.2.37 range of unaffected blocks + special case slabs
+    // v.0.2.38 range of unaffected blocks + special case slabs
     if (id < 690 || id > 853 || size === slabsFix)
       continue;
     if (size && ((size.w | size.h) & 16)) {
@@ -4830,7 +4902,10 @@ Ship.prototype.toJSON = function (noHistory) {
             obj[p] = prop[p];
       return obj;
     } (this.prop),
-    history: noHistory ? [] : this.history
+    history: noHistory ? [] : this.history,
+    /** to track Droneboi Vehicles editor version in its JSON savefiles
+     * @type {number} v.0.2.39 D: NOOOOO! THISHIT WAS MISSING ALL ALONG */
+    significantVersion: Ship.VERSION
   };
 };
 // (v.0.2.8) major refactor after limiting use of type any
@@ -5010,6 +5085,19 @@ Ship.toMSSSS = function (ship) {
         li = +inp[0] + "~" + +inp[1] + li;
     return li === ",,,," ? "" : li.slice(1);
   }
+  // v.0.2.39 the decalayers in new version are not numbered in name
+  // but have "layer" key with int value, 0: non-deco, 1...3: which layer
+  /** @param {string} name @param {BlockProps} prop */
+  function buildName(name, prop) {
+    name = name === "__unknown__" && "invalidName" in prop ?
+      "" + prop.invalidName : name;
+    if (name.slice(0, 9) === "Decolayer") {
+      var layer = Number(prop.layer);
+      if (layer > 1 && name[9] !== ("" + layer))
+        return name.slice(0, 9) + layer + name.slice(9);
+    }
+    return name;
+  }
   var selection = ship.selection, warn = Block.creator.msWarns;
   ship.selection = ship.blocks.slice();
   Edit.Primitive.rotate(ship, 2);
@@ -5019,7 +5107,10 @@ Ship.toMSSSS = function (ship) {
     Parts: ship.blocks.map(function (block) {
       var prop = block.properties, name = block.internalName;
       var id = Block.ID[name], s = "", ag = "";
-      if (id in Block.OLD && id > 1279 && id < 2048)
+      // v.0.2.39 dumbness majesty KaaBEL used crossversion compatible
+      // OldID 403... wait 403??!! There isn't even that many blocks in MS,
+      // now uses ids only for blocks in range of MS OldIDs
+      if (id in Block.OLD && id > 1279 && id < 1345)
         return "{\"ID\":" + (id - 1280) + ",\"X\":" +
           block.position[1] + ",\"Y\":" + block.position[2] +
           ",\"Rotation\":" + (block.rotation[2] * 90) +
@@ -5027,10 +5118,13 @@ Ship.toMSSSS = function (ship) {
           ",\"MirVert\":1}";
       // DBVE ID range for MS blocks, (MS part OldIDs are shifted by +1280)
       if (id > 1279 && id < 2048) {
-        var l = 0, group = prop.connectionGroup, weld = prop.weldGroup;
+        var group = prop.connectionGroup, weld = prop.weldGroup;
+        var isLegacy = id < 1345 ||
+          [212, 242, 312, 338, 403].indexOf(id - 1280) !== -1;
         s += group !== UDF ? group : weld !== UDF ? 1 << weld : 1;
         if (prop.controls && (prop.controls[0] || prop.controls[1] ||
-            prop.controls[2] || prop.controls[3]))
+            // v.0.2.39 MS v.0.10.0.0 requires this to be present)
+            prop.controls[2] || prop.controls[3]) || isLegacy)
           s += "|" + arrNum.map(function (e, i) {
             return prop.controls && prop.controls[i] || e;
           }).join(",");
@@ -5041,7 +5135,9 @@ Ship.toMSSSS = function (ship) {
             return i ? prop.settings && prop.settings[i] || e : 
               // WARNING: properties.settings[0] is ignored
               (+!!prop.defaultEnabled | +!!prop.nonInteractable << 2) ||
-                2;
+                // v.0.2.39 MS v.0.10.0.0 configs do not work otherwise,
+                // but 2 is proper value for false def.Enabled, nonTnteract.
+                isLegacy ? 0 : 2;
           }).join("|");
         if (prop.actionGroups)
           for (var n = prop.actionGroups, i = -1; ++i < 10; n >>= 2)
@@ -5058,8 +5154,7 @@ Ship.toMSSSS = function (ship) {
         s += "c" + (colorId === UDF ? -1 : colorId - 128);
       } else
         s += "invalidColor" in prop ? "c" + prop.invalidColor : "c-1";
-      return (name === "__unknown__" && "invalidName" in prop ?
-        prop.invalidName : name) + "|" +
+      return buildName(name, prop) + "|" +
         block.position[1] + "," + block.position[2] + "|" +
         (block.rotation[2] * 90) + "," + (block.rotation[1] ? -1 : 1) +
         ",1|" + s + ";";
@@ -5087,11 +5182,19 @@ Ship.fromMSObject = function (o) {
     solarPanel: 0, shield: 0, activate: 0, weapon: 0, piston1: 0,
     piston2: 1, rotor1: 0, rotor2: 1, transfer: 0, void: 0, display: 0,
     magnet: 0, dockport: 1, source: 0, msp: 0, converter: 0};
-  var properties = OC(), configNames = {torque: 1, controlPriority: 2,
+  /** v.0.2.39 MS version 0.10.0.0 didn't have connectionGroup, all were 0.
+   * `1 = NOT_REFUTED, 2 = CERTAINLY_IS` */
+  var is0_10_0_0 = 1, properties = OC(), configNames = {
     scopeSpeed: 1, scopeRange: 2, engineThrust: 1, targetRes: 3,
     containerRes: 3, flip: 1, selectedShip: 3, magnetForce: 1,
     magnetRadius: 2, rotorSpeed: 1, maxAngle1: 2, maxAngle2: 3,
-    convMode: 1};
+    convMode: 1, invert: 2, torque: 1, controlPriority: 2};
+  /** @type {{[key:string]:(v:unknown,controls:any[],config:any[])=>void}} */
+  var specialCases = {targetAngle1: function (value, _c, config) {
+    config[3] = value + ":" + (("" + config[3]).split(":")[1] || "0");
+  }, targetAngle2: function (value, _c, config) {
+    config[3] = (("" + config[3]).split(":")[1] || "0") + ":" + value;
+  }};
   /** @param {unknown} color @param {number} [n] */
   function handleColor(color, n) {
     properties.color = ("" + color) in Color.ID ?
@@ -5127,7 +5230,8 @@ Ship.fromMSObject = function (o) {
         id = part[0] in Block.NAME ? +part[0] : Block.ID["__unknown__"];
         prop.invalidName = part[0];
         part[0] = Block.NAME[id];
-      }
+      } else if (part[0] in Block.OLD)
+        is0_10_0_0 |= 2;
       /** @type {Rotation} */
       var r = [0, +rot[1] < 0, 0], pos = part[1].split(",");
       if (+rot[2] < 0)
@@ -5137,13 +5241,14 @@ Ship.fromMSObject = function (o) {
         (+rot[0] / 90 + +(+rot[2] < 0) * 2 + 4.5 & 3);
       // v.0.2.37 decoding according to \Scripts\Utilites\Utilites.cs:760
       if ((part[3] || "")[0] === 'c') {
+        is0_10_0_0 &= 2;
         handleColor(part[3].slice(1));
         if (/"significantVersion":/.test(part[4]))
           prop.significantVersion = /-?(?:\d*.)?\d+$/.exec(part[4]);
-      } else
-        prop.connectionGroup = +part[3];
+      } else if (prop.connectionGroup = +part[3])
+        is0_10_0_0 &= 2;
       /** @type {(number|string|undefined)[]} */
-      var settings = [], indentified = true, index = 4;
+      var settings = [], indentified = true, index = 4, stopped = 0;
       if (/,/.test(part[index]))
         prop.controls = part[index++].split(",").map(Number);
       for (var i = 3, number; i-- > 0; settings[i] = +number)
@@ -5162,7 +5267,7 @@ Ship.fromMSObject = function (o) {
           !!(number & 1);
         prop.nonInteractable = !!(number & 4);
       }
-      if (/\d-/.test(part[index]) && !/~/.test(part[index]))
+      if (/\d-/.test(part[stopped = index]) && !/~/.test(part[index]))
         part[index++].split(",").forEach(function (e) {
           var ag = e.split("-"), n = (+ag[1] & 3) << +ag[0] * 2;
           prop.actionGroups = n | +(prop.actionGroups || 0);
@@ -5172,9 +5277,12 @@ Ship.fromMSObject = function (o) {
           var vec2 = e.split("~");
           return e ? [+vec2[0], +vec2[1]] : UDF;
         });
+      if (index !== stopped)
+        is0_10_0_0 &= 2;
       // TODO: aplly LogicInputs as Ship Logic nodes
       return new Block(part[0], [0, +pos[0], +pos[1]], r, prop);
     }
+    is0_10_0_0 &= 2;
     try {
       var result = JSON.parse(raw),
         /** @type {safe} */
@@ -5250,6 +5358,8 @@ teractable|ComponentSettings|Rotation|rotFlip|MirVert|MirHor)$");
           config[index] = (index < 3 ? Number : String)(properties[p]);
         } else if (p in inputNames)
           controls[inputNames[p]] = Number(properties[p]);
+        else if (p in specialCases)
+          specialCases[p](properties[p], controls, config);
         else if (!handleNewLogic(p, logicInputs) && warn && warn--)
           console.warn("Unknown ComponentSetting: " + JSON.stringify(
             p) + " on block: " + JSON.stringify(obj.ID));
@@ -5280,6 +5390,12 @@ teractable|ComponentSettings|Rotation|rotFlip|MirVert|MirHor)$");
   if (allParts.length)
     allParts.slice(-1)[0].properties.significantVersion instanceof
       RegExp && allParts.length--;
+  if (is0_10_0_0 & 1)
+    allParts.map(function (block) {
+      block.properties.connectionGroup = 1;
+    });
+  else if (is0_10_0_0 & 2)
+    console.warn("detected historical parts in otherwise > 0.10.3?");
   if (moreParts instanceof Array)
     moreParts.forEach(function (item) {
       try {
@@ -5333,7 +5449,7 @@ Ship.fromMSSSS = function (mssss) {
       return Ship.fromMSObject(mssss);
     for (var i = mssss.byteLength; i-- > 0;)
       mssss[i] ^= 19;
-    test_log.savefile = mssss = "" + Ship.utf8ToString(mssss);
+    test_log.savefile = mssss = Bin.Utf8.toString(mssss);
     if (test_debug) {
       "oldLog" in console && typeof console.oldLog == "function" &&
         console.oldLog(test_log.savefile);
@@ -5502,71 +5618,14 @@ Ship.dateTime = function (t, f) {
  * @param {Uint8Array|ArrayBuffer} buffer @param {number} [i=0]
  * @throws {Error} */
 Ship.utf8ToString = function (buffer, i) {
-  var bytes = buffer instanceof Uint8Array ?
-    buffer :
-    new Uint8Array(buffer);
-  // check BOM
-  i = i || 0;
-  if (bytes[i] === 0xEF && bytes[i + 1] === 0xBB && bytes[i + 2] === 0xBF)
-    i += 3;
-  // lb = lower boundary, ub = upper boundary, cp = code point, more
-  var n = 0, lb = 128, ub = 191, cp = 0, more = 0, s = "";
-  for (n = 0; i < bytes.length; s += String.fromCharCode(cp)) {
-    if ((cp = bytes[i++]) < 128)
-      continue;
-    if (cp < 194) {
-      cp = 0xFFFD;
-      continue;
-    }
-    if (cp < 224) {
-      cp = cp - 192 << 6;
-      more = 1;
-    } else if (cp < 240) {
-      cp === 224 ?
-        lb = 160 :
-        cp === 239 && (ub = 191);
-      cp = cp - 224 << 12;
-      more = 2;
-    } else if (cp < 245) {
-      cp === 240 ?
-        lb = 144 :
-        cp === 244 && (ub = 143);
-      cp = cp - 240 << 18;
-      more = 3;
-    } else if (cp < 256) {
-      cp = 0xFFFD;
-      continue;
-    } else {
-      debugger;
-      console.error("debugger HuHh!?");
-    }
-    while (more) {
-      if (i >= bytes.length) {
-        cp = 0xFFFD;
-        continue;
-      }
-      n = bytes[i++];
-      n < lb || n > ub ? more = 0 : 0;
-      lb = 128;
-      ub = 191;
-      if (!more) {
-        i--;
-        more = 0;
-        cp = 0xFFFD;
-        continue;
-      }
-      cp = cp + (n - 128 << --more * 6);
-    }
-    if (0xffff0000 & cp)
-    {
-      if (0xff000000 & cp)
-        throw new Error("[v.0.2.27]Code point out of Unicode range!?");
-      cp -= 0x10000;
-      s += String.fromCharCode((cp >> 10) + 0xD800);
-      cp = (cp & 0x3FF) + 0xDC00;
-    }
-  }
-  return s;
+  var bin = new Bin(buffer instanceof Uint8Array ?
+    buffer.buffer : 
+    "length" in buffer ? new Uint8Array(buffer).buffer : buffer);
+  bin.i = Number(i) || 0;
+  var utf8 = Bin.Utf8.decode(bin);
+  if (utf8.error)
+    throw utf8.error;
+  return utf8.result;
 };
 /** @param {string} name @param {number} type */
 Ship.CustomInput = function CustomInput(name, type) {

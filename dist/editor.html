@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.2.37 -->
+<!-- v.0.2.39 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -114,6 +114,19 @@
 
       h && h.appendChild(document.createComment(navigator.userAgent +
         JSON.stringify(navigator["userAgent" + "Data"] || {})));
+
+      if (/[?&]no=logs$|[?&]no=logs&/.test(location.href))
+        console.groupCollapsed("[initialization logs]");
+      var globalWebSocket = window.WebSocket;
+      try {
+        (window.WebSocket =
+          /** @type {any} disables VS code live server live reload */
+          (function WebSocket() {
+            this.onmessage = function juhus() {};
+            console.debug("live reload disabled");
+            window.WebSocket = globalWebSocket;
+          })).originalClass = globalWebSocket;
+      } catch (e) {}
     })(document.head);
   </script>
 </head>
@@ -212,7 +225,7 @@
     <a href="https://discord.gg/Nb2jAgVHm5">
       Deltarealm fanclub
     </a>.
-    <footer id="info_auth" itemprop="dateModified" content="2026-05-25" datetime="2026-05-25">Made by:
+    <footer id="info_auth" itemprop="dateModified" content="2026-05-30" datetime="2026-05-30">Made by:
       <!-- link is unproperly displayed when whitespace is outside svg and pre -->
       <a href="https://github.com/KaaBEL"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="16" height="16" viewBox="0,0,16,16">
           <g data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill-rule="nonzero" stroke="none" style="mix-blend-mode: normal">
@@ -220,7 +233,7 @@
             <path d="M3,2h5v4h4v-4h1v5h-2l2,7h-1.3l-2,-7h-1.7v7h-5z" fill="#000" />
           </g>
       </svg><pre>KaaBEL</pre></a>
-      <time itemprop="dateModified" content="2026-05-25" datetime="2026-05-25">Last updated May 25, 2026</time>
+      <time itemprop="dateModified" content="2026-05-30" datetime="2026-05-30">Last updated May 30, 2026</time>
     </footer>
     <div class="space" data="bottom_margin_workaround">0</div>
   </article>
