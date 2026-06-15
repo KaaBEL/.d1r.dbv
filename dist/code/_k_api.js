@@ -2,7 +2,7 @@
 /// <reference path="./editor.html.ts" />
 "use strict";
 /** @readonly */
-var version__k_api_js = "v.0.2.38";
+var version__k_api_js = "v.0.2.41";
 /** 3h_ @TODO check @see {Actions.API_VERSION} */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -68,7 +68,7 @@ if (/http:..localhost:815[89]/.test(location.href))
 // pR = pixel ratio (computed)
 // mouseStamp = press start
 var vX = 0, vY = 64, fX, fY, gX, gY, sc = 64, pR = 1;
-/**
+/** main#8 element
  * @type {HTMLElement&{onmousewheel?:(this: GlobalEventHandlers,
  * ev:WheelEvent&{wheelDelta?:number})=>any}|null}
  */
@@ -122,7 +122,7 @@ if (window.MouseWheelEvent === UDF)
 if (typeof EventTarget != "function")
   //@ts-expect-error IE11 compatibility
   var EventTarget = Node;
-
+/** enabled by ?debug URL parameter */
 var test_debug = false;
 
 /**
@@ -155,12 +155,13 @@ var test_debug = false;
  * claimed by the API `get("claim").length === 4`
  * @property {boolean} [touchIndex0] fires events only for first finger
  * gestures, respectively mousebutton for MouseEvent
- * @property {EventTarget|null} [target] TODO descriptions
+ * @property {EventTarget|null} [target] the top canvas element used for
+ * display of the editor, handles canvas internally
  * @property {boolean} [wheelException] also todo description
  * @property {boolean} [mouseButton] fires events only for left clicks,
  * respectively touchIndex0 for TouchEvent
- * @property {EventTarget|null} [preventTarget] also todo description
- */
+ * @property {EventTarget|null} [touchesTarget] serves for a special case for
+ * touch event requiting deeper element then body */
 /** @callback ActionsHandler @param {ActionsEvent} ev @this {HTMLElement} */
 /** UI API class/namespace, support either use of mouse or touches
  * @param {ActionsEvent} event @param {number} index
@@ -222,7 +223,8 @@ function Actions(event, index, state, previous, touch) {
   this.moveX = previous ? this.x - previous.x : 0;
   this.moveY = previous ? this.y - previous.y : 0;
   /** **state is essential** gesture property, backbone of K API.
-   * options should be "<single|double> <short|long|move|longmove>" */
+   * options should be "<single|double> <short|long|move|longmove>"
+   * ...short before ...move caused bug test move gestures carefully */
   this.state = Actions.updateState(this, event, state, previous);
   /** @TODO it is possible for extra touches to exist due to missing touchend
    * event (v.0.2.33 or rather agents aren't always firing touch-cancels/ends
@@ -416,6 +418,8 @@ Actions.init = function (root, options) {
   var identifiers = [];
   /** @type {(Actions|null)[]} */
   var temp = [];
+  temp[-1] = null;
+  temp[-2] = null;
   /** @type {(Actions|null)[]&{count:number}} */
   var all = function () {
     /** @type {(Actions|null)[]&{count:number}} *///@ts-expect-error
@@ -488,8 +492,8 @@ Actions.init = function (root, options) {
       options.passive = passive;
       return handler;
     }
-    if (type.slice(0, 5) === "touch" && state.preventTarget)
-      target = state.preventTarget;
+    if (type.slice(0, 5) === "touch" && state.touchesTarget)
+      target = state.touchesTarget;
     target = target || root;
     listeners ?
       target.addEventListener(type, eventHandler, listeners) :
@@ -641,7 +645,7 @@ Actions.init = function (root, options) {
       state.claim = "unclaimed";
   }));
   addEvent("mousedown", addEvent("mouseenter", function mousedowne(ev) {
-    var action = all[-1] = source.source = immutable ?
+    var action = temp[-1] = all[-1] = source.source = immutable ?
       Object.freeze(new Actions(ev, -1, state, null)) :
       mutable[-1] ?
         Actions.update(mutable[-1], -1, state, ev, null) :
@@ -656,9 +660,10 @@ Actions.init = function (root, options) {
       console.error("very strange error, action is null3");
     state.endButtons = action.buttons;
     Actions.log(temp, ev, "dwn", state, source);
+    temp[-1] = null;
   }));
   addEvent("mousemove", function mousemove(ev) {
-    var action = all[-1] = source.source = immutable ?
+    var action = temp[-1] = all[-1] = source.source = immutable ?
       Object.freeze(new Actions(ev, -1, state, all[-1])) :
       mutable[-1] ?
         Actions.update(mutable[-1], -1, state, ev, all[-1]) :
@@ -683,9 +688,10 @@ Actions.init = function (root, options) {
       console.error("very strange error, action is null4");
     state.endButtons = action.buttons;
     Actions.log(temp, ev, "hvr", state, source);
+    temp[-1] = null;
   });
   addEvent("mouseup", addEvent("mouseleave", function mouseupl(ev) {
-    var action = all[-1] = source.source = immutable ?
+    var action = temp[-1] = all[-1] = source.source = immutable ?
       Object.freeze(new Actions(ev, -1, state, all[-1])) :
       mutable[-1] ?
         Actions.update(mutable[-1], -1, state, ev, all[-1]) :
@@ -702,6 +708,7 @@ Actions.init = function (root, options) {
     if (action.buttons === 0)
       if (action.type !== "mouseleave" || state.claim !== "move")
         state.claim = "unclaimed";
+    temp[-1] = null;
   }));
   addEvent("onwheel" in root ? "wheel" : "mousewheel", 
     function wheel(ev) {
@@ -752,7 +759,7 @@ Actions.init = function (root, options) {
     for (var el = e.target; el instanceof Node;)
       if (!(el = el.parentNode))
         return;
-      else if (el === state.preventTarget)
+      else if (el === state.touchesTarget)
         break;
     if (!(e instanceof MouseEvent))
       return;
@@ -762,9 +769,21 @@ Actions.init = function (root, options) {
     var x = (e.pageX - offset.offsetLeft) * pR,
       y = (e.pageY - offset.offsetTop) * pR;
     contextmenu(x, y, e);
+    // v.0.2.41 it seems contextmenu already dispatches mousemove in browsers
+    //-var action = all[-1] = source.source = immutable ?
+    //-  Object.freeze(new Actions(e, -1, state, all[-1])) :
+    //-  mutable[-1] ?
+    //-    Actions.update(mutable[-1], -1, state, e, all[-1]) :
+    //-    mutable[-1] = new Actions(e, -1, state, all[-1]);
+    //-action ?
+    //-  !(state.filterClaimed && state.claim.length === 4) &&
+    //-    !(state.mouseButton && action.buttons !== 1) &&
+    //-    state.onmove(action.x, action.y, source) :
+    //-  console.error("very strange error, action is null4");
+    //-Actions.log(temp, e, "cxm", state, source);
   }, window);
 
-  state.preventTarget && !(listeners && listeners.passive === false) &&
+  state.touchesTarget && !(listeners && listeners.passive === false) &&
     console.log("fixd touches", root.addEventListener("touchstart", F, {
       passive: false
     }));
@@ -852,6 +871,7 @@ Actions.State = function (options) {
   /** "grab" properies refer to Actions.touchGrab, this is its mode */
   this.grabAction = "";
   this.grabScore = 0;
+  /** no idea why it's called endBut... it isn't in use yet so... */
   this.endButtons = 0;
   /** stores the last Date.now() of (mouse)wheel event */
   this.wheelTime = 0;
@@ -874,7 +894,7 @@ Actions.State = function (options) {
   /** onwheel and onmousewheel root exception because passive scrolling */
   this.wheelException = checkOptions("wheelException", true);
   /** lucky magic with main#8 element, prevents touchscreen zoom/scroll */
-  this.preventTarget = checkOptions("preventTarget", null);
+  this.touchesTarget = checkOptions("touchesTarget", null);
   Object.seal(this);
 };
 /** @this {Actions.State} @param {typeof F} destroy */
@@ -969,6 +989,7 @@ Actions.log = function (tem, evt, typ, stat, src) {
   //}
   Actions.logX = src.source.x;
   Actions.logY = src.source.y;
+  // console.log(typ, src.source.state);
 };
 //utilities.rend_UI = function () {
 //  for (var i = test_log.length; i-- > 0;) {
@@ -993,7 +1014,7 @@ var juhus = Actions.init(document, {
   immutable: Actions.logImmutable,
   filterClaimed: true,
   touchIndex0: true,
-  preventTarget: bd
+  touchesTarget: bd
 });
 // v.0.2.16 for acode stuff
 

@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.39";
+var version_editor_js = "v.0.2.41";
 /** 3h_ @TODO check @see {Editor} for assignment without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -2948,6 +2948,7 @@ Command.push("Change editor background", function (items, collapsed) {
   backgImg.onchange = function () {
     if (!(this instanceof HTMLInputElement))
       return;
+    //-canvas.style.backgroundImage = "url(favicon.png)";
     rend_background =
       (Editor.background = this.checked) ?
         rend_backgPattern :
@@ -3253,7 +3254,8 @@ Tool.unsubscribed = function () {
  * true;preventClaim:(custom?:string)=>void;})=>boolean}
  */
 Tool.subscribedClaim = Tool.unsubscribed;
-/** @type {(x:number,y:number,actions:AllActions)=>boolean} */
+/** fires actions for any Event target
+ * @type {(x:number,y:number,actions:AllActions)=>boolean} */
 Tool.subscribedStart = Tool.unsubscribed;
 /** @type {typeof Tool.subscribedStart} ?what to name this type?  */
 Tool.subscribedMove = Tool.unsubscribed;
@@ -3261,6 +3263,7 @@ Tool.subscribedMove = Tool.unsubscribed;
 Tool.subscribedEnd = Tool.unsubscribed;
 /** @type {typeof F} */
 Tool.selectAllInit = F;
+Tool.loadInit = F;
 Tool.rend = F;
 (Tool.replacing = new Tool("Rplc", "z", F, F, F)).color = "#ff5533";
 /** @param {Tool} tool @param {number} [size] */
@@ -3330,16 +3333,27 @@ Tool.execClick = function (execMain) {
     }, 75);
   };
 };
+//-/** @param {"End"|"Claim"|"Move"|"Start"} subscribe @returns {boolean} */
+//-Tool.execClaim = function (subscribe) {
+//-  var func = Tool["subscribed" + subscribe];
+//-  if (typeof func != "function")
+//-    return false;
+//-  try {
+//-    return func();
+//-  } catch (err) {
+//-    console.error(err);
+//-  }
+//-};
 /**
  * @typedef Tool.Tab.Options
  * @type {{[key:string]:unknown,text?:string}} */
 /** @callback @param {Tool.Tab} setup @returns {void} */
 Tool.Tab = function () {
-  /** @type {ToolExec} */
+  /** @type {Tool["init"]} @see {Tool} */
   this.init = F;
-  /** @type {ToolExec} */
+  /** @type {Tool["exec"]} @see {Tool} */
   this.exec = F;
-  /** @type {ToolExec} */
+  /** @type {Tool["destroy"]} */
   this.destroy = F;
   /** @type {Node[]} */
   this.elements = [];
@@ -3519,6 +3533,7 @@ Tool.Tab.addCss = function (styles, selector) {
 Tool.selectionBased = "Move,Rotate,Rotate90,Flip,Flip180,Select,Clone,Paint,\
 Erase,".split(",");
 
+//-320px;height: 500px;padding: 7px;border: 2px solid " + Editor.outlineBlue +
 Tool.Tab.addCss("position: absolute;top: 7px;right: " + 7 / pR + "px;width: \
 320px;height: 500px;padding: 7px;border: 2px solid #5577aa;border-radius: 7p\
 x;font-family: segoe-ui, sans-serif;background-color: rgba(13, 33, 55, .8);c\
@@ -3659,6 +3674,8 @@ Tool.list.push(new Tool("Clone", "M2ba5a,2bab5 vda5e c0,33ca,-29fc,5dc6,-5dc\
 f3 ld5ec,1a6 cba6,-76,175b,-a4c,17d6,-1935 l-61,-1f52a c-5,-f8c,-a81,-17f3,-\
 146b,-17a5 z", function init (_x, _y) {
   Tool.subscribedStart = function (x, y, actions) {
+    if (actions.source.target !== canvas)
+      return false;
     if (DefaultUI.handleGUIArea(x, y, new DefaultUI.Drag()))
       return false;
     var found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
@@ -3708,9 +3725,10 @@ c-6b6,0,-d69e,0,-de2d,0 c-1052,0,-1d8e,d3b,-1d8e,1d8e c0,80c,0,1b1a5,0,1b629\
  c0,1052,d3b,1d8e,1d8e,1d8e c5e9,0,d9f1,0,de2d,0 c1052,0,1d8e,-d3b,1d8e,-1d8\
 e c0,-754,0,-1b5c7,0,-1b629 z"));
 var test_handler = 0, css = Tool.Tab.addCss("width: 68px;height: 68px;border\
-: 2px solid #5577aa;border-radius: 7px;margin: 5px;background-size: 64px;bac\
-kground-image: url(" + imgColor.src + ");font-weight: bold;-webkit-text-stro\
-ke: thin #000;color: #fff;", ".logic-group-disabled,.logic-group-enabled");
+: 2px solid " + Editor.outlineBlue + ";border-radius: 7px;margin: 5px;backgr\
+ound-size: 64px;background-image: url(" + imgColor.src + ");font-weight: bol\
+d;-webkit-text-stroke: thin #000;color: #fff;", ".logic-group-disabled,.logi\
+c-group-enabled");
 Tool.Tab.addCss("opacity: 0.4;border-color: #0d2137;", ".logic-group-disable\
 d:not(:active)");
 Tool.Tab.addItem("Node", function setup(methods, _x, _y) {
@@ -4011,6 +4029,8 @@ Tool.list.push(new Tool("Move", "M25a0c,1a6e9 v-b7a4 c30fe,0,57ba,0,57ba,0 c\
 // TODO: figure out some way to combine this with Clone - left attemps: 2
 function init (_x, _y) {
   Tool.subscribedStart = function (x, y, actions) {
+    if (actions.source.target !== canvas)
+      return false;
     if (DefaultUI.handleGUIArea(x, y, new DefaultUI.Drag()))
       return false;
     var found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
@@ -4076,6 +4096,36 @@ af,a4c,-1f7,f1f z M2fff2,762e c3f09,1946,719d,4b08,8bf8,8983 l37e8,-c102 l-c\
 1e,487,1b6,943,1b6,e22 c0,2068,-1a45,3aae,-3aae,3aae c-53a,0,-a4c,-af,-f1f,-\
 1f7 z M38d4e,30133 c-1946,3f09,-4b08,719d,-8983,8bf8 lc102,37e8 l-377f,-c3e0\
  z", Tool.selectAllInit));
+// MUSIC: Ori 12...
+// Tool.list.push(new Tool"Inventory2.0"), "M21138,ddb7 c405c,0,198d6,0,198d6
+/** @TODO make this a Tool.Tab and add inventory openable with single long */
+Tool.list.push(new Tool("Toad", "M21138,ddb7 c405c,0,198d6,0,198d6,0 c2f6d,0\
+,55df,2672,55df,55df v201fe c0,2f6d,-2672,55df,-55df,55df l-35423,-2f4 c-2f6\
+d,0,-55df,-2672,-55df,-55df v-26631 c0,-2f6d,2672,-55df,55df,-55df h130cd c1\
+83a,0,2e1d,a08,3dba,1a2c z M1166b,30809 c766,4be,fb1,77e,1923,77e ca27,0,139\
+1,-32e,1b4b,-899 cc45,-89b,937e,-4ec7,9bdf,-5623 c9ee,-8b8,1033,-1583,1033,-\
+23c5 c0,-ec7,f6,-b075,f6,-bb6d c0,-12cf,-ae9,-2312,-1ac1,-2acc c-64b,-311,-8\
+935,-3cba,-96b7,-451f c-748,-486,-fe1,-724,-1916,-724 c-91a,0,-119c,28e,-18d\
+7,6fd c-da5,85e,-8cc1,4292,-9382,4640 c-ecf,811,-18db,17c5,-18db,29d2 c0,bc6\
+,-f6,ae15,-f6,bb6d c0,10bd,8a4,1f75,15b5,27f1 c773,4d6,8c5a,4a9d,998e,5313 z\
+ M28b44,1d9ff c105a,0,f7e0,0,103b5,0 c1a48,0,2f97,-154e,2f97,-2f97 c0,-1a48,\
+-154e,-2f97,-2f97,-2f97 c-b76,0,-f28d,0,-103b5,0 c-1a48,0,-2f97,154e,-2f97,2\
+f97 c0,1a48,154e,2f97,2f97,2f97 z M28e83,2da75 c100a,0,a0f9,0,af4d,0 c1a48,0\
+,2f97,-154e,2f97,-2f97 c0,-1a48,-154e,-2f97,-2f97,-2f97 c-821,0,-a32f,0,-af4\
+d,0 c-1a48,0,-2f97,154e,-2f97,2f97 c0,1a48,154e,2f97,2f97,2f97 z M28e83,2659\
+7 cac2,0,6f98,0,719f,0 c1a48,0,2f97,-154e,2f97,-2f97 c0,-1a48,-154e,-2f97,-2\
+f97,-2f97 c-aed,0,-6270,0,-719f,0 c-1a48,0,-2f97,154e,-2f97,2f97 c0,1a48,154\
+e,2f97,2f97,2f97 z", Tool.loadInit = (function init() {
+  DefaultUI.inventoryOpened = !DefaultUI.inventoryOpened;
+  render();
+})));
+Tool.list.push(new Tool("Load", "M21142,dd0f c405c,0,198d6,0,198d6,0 c2f6d,0\
+,55df,2672,55df,55df v201fe c0,2f6d,-2672,55df,-55df,55df l-35423,-2f4 c-2f6\
+d,0,-55df,-2672,-55df,-55df v-26631 c0,-2f6d,2672,-55df,55df,-55df h130cd c1\
+83a,0,2e1d,a08,3dba,1a2c z M19042,2454a$ins; M19042,13370$ins; M7d6e,2454a$i\
+ns; M7d6e,13370$ins;".replace(/\$ins;/g, " c-15a4,0,-272f,118b,-272f,272f v9\
+005 c0,15a4,118b,272f,272f,272f h8e1d c15a4,0,272f,-118b,272f,-272f v-9005 c\
+0,-15a4,-118b,-272f,-272f,-272f z"), Tool.loadInit));
 
 // db3 styled icon (cardboard box)
 // https://www.flaticon.com/free-icon/package_7625482?term=time+product&page=2&position=30&origin=search&related_id=7625482
@@ -4169,9 +4219,9 @@ function devt_bug_testing() {
 }
 var devt_debugger = false;
 
-/** @typedef {Block|LogicBlock|Tool|null} TileType (tile variable name) */
+/** (tile variable name) 
+ * @typedef {Block|LogicBlock|Tool|Ship|null} TileType */
 /** @see {initDefaultUI} @namespace @typedef {never} @returns {never} */
-/** @TODO FIX blocks being grabbed from behind inof message */
 function DefaultUI() {
   throw new TypeError("Illegal constructor");
 }
@@ -4228,18 +4278,12 @@ DefaultUI.createTile = function () {
   };
 }();
 /** @type {TileType[]} */
-DefaultUI.toolBar = [
-  DefaultUI.createTile("Rotate90"),
-  DefaultUI.createTile("Redo"),
-  DefaultUI.createTile("Undo"),
-  DefaultUI.createTile("Move"),
-  DefaultUI.createTile("Flip"),
-  DefaultUI.createTile("Rotate"),
-  DefaultUI.createTile("Select"),
-  DefaultUI.createTile("Classic"),
-  DefaultUI.createTile("Erase"),
-  DefaultUI.createTile("Node")
-];
+DefaultUI.toolBar = ("Load,Toad,Node," +
+  "Erase,Classic,Select," +
+  "Rotate,Flip,Move," +
+  "Undo,Redo,Rotate90").split(",").reverse().map(function (e) {
+    return DefaultUI.createTile(e);
+  });
 /**
  * @see {DefaultUI.getDefaultFolders}
  * @type {(TileType[]&{type:TileType})[]} */
@@ -4318,8 +4362,12 @@ DefaultUI.hotbarScrollSide = 0;
 DefaultUI.selectionBased = false;
 /** @TODO
  * event ends in toolbar area cause tile execs or Tools disabling hotbars
- * (fixes Tool.subscribeEnd being ignored due to handle GUI preceeding) */
+ * (fixes Tool.subscribedEnd being ignored due to handle GUI preceeding) */
 DefaultUI.isEventUsed = false;
+/** prevents displaying ship */
+DefaultUI.inventoryOpened = false;
+/** inventory panel opened @type {0|1|2|3} 0=def.,1=blocks,2=ships,3=set. */
+DefaultUI.panel = 2;
 /** for last property @see {DefaultUI.shipPress} */
 /** @param {number|string} type @param {unknown[]} [tiles=[]] */
 DefaultUI.createFolder = function (type, tiles) {
@@ -4337,11 +4385,10 @@ DefaultUI.setSelectedTile = function (item, x, y) {
   if (tile instanceof Tool && tile.clickType) {
     DefaultUI.clickedTile = item;
     tile.init(x, y);
-  } else if (
-    DefaultUI.selectedFolder !== DefaultUI.openedFolder ||
-      DefaultUI.selectedTile !== item
-  ) {
-    var old = DefaultUI.getSelectedTile();
+    return;
+  }
+  var old = DefaultUI.getSelectedTile();
+  if (tile !== old) {
     old instanceof Tool && old.destroy(x, y);
     DefaultUI.selectedTile = item;
     DefaultUI.selectedFolder = DefaultUI.openedFolder;
@@ -4366,6 +4413,8 @@ DefaultUI.selectInHotbars = function (type) {
  * @param {number} x @param {number} y @param {DefaultUI.Drag} [reference]
  * @returns {boolean} over GUI area */
 DefaultUI.handleGUIArea = function (x, y, reference) {
+  // UI is supposed to be able to function on selected size of canvas later
+  var w = canvas.width, h = canvas.height;
   /** number position of tile @see {DefaultUI.selectedTile} */
   var item = -1, fraction = 0.5;
   if (reference)
@@ -4375,19 +4424,19 @@ DefaultUI.handleGUIArea = function (x, y, reference) {
     // toolBar area of canvas: static tile slots
     // v.0.2.10 74 = distance between origins of neighbour toolBar tiles
     // v.0.2.35 11, 231 = toolBar right bottom coords where icons start
-    var row = (canvas.height - y - 11) / 74 | 0,
+    var row = (h - y - 11) / 74 | 0,
       column = (231 - x) / 74 | 0;
     // v.0.2.12.K84 uses the same constants as right above
     fraction = (231 - x) % 74 / 74;
     /** @see {DefaultUI.selectedTile} for tile indexing */
-    if (y > canvas.height - 237)
+    if (y > h - 237)
       item = (row > 2 ? 2 : row) * 3 + (column > 2 ? 2 : column) << 2;
     else
       return false;
-  } else if (y > canvas.height - 103) {
+  } else if (y > h - 103) {
     // items for blockBar rect area of canvas: dynamic tile slots
     // v.0.2.10 103 = width of inventoryTile interactable area
-    if (DefaultUI.inventoryTile && x > canvas.width - 103)
+    if (DefaultUI.inventoryTile && x > w - 103)
       item = 2;
     else if (
       x - 237 < (DefaultUI.blockBars[DefaultUI.openedFolder] ||
@@ -4402,7 +4451,7 @@ DefaultUI.handleGUIArea = function (x, y, reference) {
   } else if (
     x - 237 + DefaultUI.offsetsFolders <
       // v.0.2.10 57 = distance between origin points of folders
-      DefaultUI.blockBars.length * 57 && y > canvas.height - 170
+      DefaultUI.blockBars.length * 57 && y > h - 170
   ) {
     // folders for blockBar rect part of canvas:
     // resizes with folders amount changed
@@ -4410,12 +4459,12 @@ DefaultUI.handleGUIArea = function (x, y, reference) {
     if (reference) {
       reference.folder = folder;
       // v.0.2.21 293 = end of first tile selection for moving to previous
-      reference.arrows = +(x < 294) + 2 * +(x > canvas.width - 61);
+      reference.arrows = +(x < 294) + 2 * +(x > w - 61);
       return true;
     }
     if (DefaultUI.previousFolders && x < 294)
       DefaultUI.offsetsFolders -= 57;
-    else if (DefaultUI.nextFolders && x > canvas.width - 61)
+    else if (DefaultUI.nextFolders && x > w - 61)
       DefaultUI.offsetsFolders += 57;
     else
       DefaultUI.openedFolder = folder;
@@ -4434,12 +4483,12 @@ DefaultUI.handleGUIArea = function (x, y, reference) {
   return true;
 };
 /** extends handleGUIArea by utilising its getactionArea for long Actions
- * @param {number} x @param {number} y @param {Actions} actions */
-DefaultUI.handleHotbar = function (x, y, actions) {
-  // @TODO now there's also bug where going from arrow position can select block
+ * @param {number} x @param {number} y @param {Actions} action */
+DefaultUI.handleHotbar = function (x, y, action) {
+  // bug where going from arrow position can select block is a feature
   // maybe putting this inside Drag.detect and Drag.finish would simplify it
   if (juhus.get("claim") !== "scrollhotbar") {
-    var over = new DefaultUI.Drag(), time = actions.startTimeStamp;
+    var over = new DefaultUI.Drag(), time = action.startTimeStamp;
     DefaultUI.handleGUIArea(x, y, over);
     if (over.arrows < 1)
       return;
@@ -4447,11 +4496,12 @@ DefaultUI.handleHotbar = function (x, y, actions) {
       (over.arrows === 1 ? -1 : over.arrows === 2 ? 1 : 0);
     juhus.set("claim", "scrollhotbar");
   } else
-    time = actions.oldTimeStamp;
-  /** @TODO FIX probably in renderHotbars folders jumping with slow scroll
-   * and going pass the boundaries, and this sh*t DOESN'T WORK ON MOBILE! */
-  DefaultUI.offsetsFolders = Math.max(0, DefaultUI.offsetsFolders +
-    (actions.timeStamp - time) * DefaultUI.hotbarScrollSide);
+    time = action.oldTimeStamp;
+  action.event.preventDefault();
+  // v.0.2.41 hopefully fixed all of the scrollhotbar Todo
+  DefaultUI.offsetsFolders = Math.min(Math.max(0, DefaultUI.offsetsFolders +
+    (action.timeStamp - time) * DefaultUI.hotbarScrollSide),
+    DefaultUI.blockBars.length * 57 - canvas.width + 245);
   render();
 };
 /** @param {TileType|undefined} tile */
@@ -4520,7 +4570,7 @@ DefaultUI.reflowBlockBars = function (w) {
   }
 
   if (DefaultUI.offsetsFolders > (i = updated.length * 57))
-    DefaultUI.offsetsFolders = 0;
+    DefaultUI.offsetsFolders = i - w + 237 + 8;
   DefaultUI.previousFolders = DefaultUI.offsetsFolders > 0;
   // v.0.2.10 237 = interactable witdh/height for toolBar
   DefaultUI.nextFolders = 237 + i - DefaultUI.offsetsFolders > w - 8;
@@ -4535,7 +4585,7 @@ DefaultUI.getSelectedTile = function (item) {
     (DefaultUI.blockBars[DefaultUI.selectedFolder] || [])[select >> 2] :
     (select & 3) === 0 ?
       DefaultUI.toolBar[select >> 2] :
-      select === 2 ? DefaultUI.createTile("Inventory") : null;
+      select === 2 ? Tool.get("Load") : null;
 };
 /** @param {number} [item] uses @see {DefaultUI.openedFolder} */
 DefaultUI.getClickedTile = function (item) {
@@ -4544,7 +4594,7 @@ DefaultUI.getClickedTile = function (item) {
     (DefaultUI.blockBars[DefaultUI.openedFolder] || [])[select >> 2] :
     (select & 3) === 0 ?
       DefaultUI.toolBar[select >> 2] :
-      select === 2 ? DefaultUI.createTile("Inventory") : null;
+      select === 2 ? Tool.get("Load") : null;
 };
 /** Warning: resets DefaultUI.selectedTile!, ...you know, ... (xD)
  * @param {boolean} logicOnly */
@@ -4560,14 +4610,12 @@ DefaultUI.getDefaultFolders = function (logicOnly) {
     yk[i] = DefaultUI.createFolder(the.type || "unknown", tiles);
   }
   yk.push(DefaultUI.createFolder("Tune", Tool.list.map(function (e) {
-    return DefaultUI.createTile(e.name);
+    return Tool.get(e.name);
   })));
   return yk;
 };
-/** render both toolBar and blockBar: all hotbar tile slots
- * @param {number} w @param {number} h */
-DefaultUI.renderHotBars = function (w, h) {
-  var radius = Editor.renderSharp ? 0 : 5;
+/** @param {TileType} type @param {number} size */
+DefaultUI.drawIconRc = function (type, size) {
   /** @param {Block|LogicBlock} block */
   function drawBlockRc(block) {
     var id = Block.ID[block.internalName], size = Block.Size.VALUE[id];
@@ -4600,40 +4648,64 @@ DefaultUI.renderHotBars = function (w, h) {
     rc.globalCompositeOperation = "source-over";
     rc.drawImage(Editor.imgOverlay, size.x, size.y, w, h, x, y, w, h);
   }
-  /** @param {TileType} type @param {number} size */
-  function drawIconRc(type, size) {
-    if (type instanceof Tool)
-      Tool.drawPathRc(type, size);
-    if (type instanceof Block)
-      drawBlockRc(type);
-  }
-  /**
-   * @param {TileType} tile @param {unknown} selected boolean
-    @param {boolean} [isToolBar=false] */
-  function drawTileCtx(tile, selected, isToolBar) {
-    if (!tile)
+  /** @param {Ship} ship */
+  function drawShipRc(ship) {
+    if (!ship.thumbnail)
       return;
-    var tRight = isToolBar ? tx + 64 : tx + 78,
-      tTop = isToolBar ? ty - 64 : ty - 78,
-      size = isToolBar ? 46 : 60;
-    ctx.strokeStyle = "color" in tile ? tile.color : Editor.outlineBlue;
-    ctx.beginPath();
-    // 16 = greater than radius, lower then side - 2 * radius
-    ctx.moveTo(tx, ty - 16);
-    ctx.arcTo(tx, ty, tRight, ty, radius);
-    ctx.arcTo(tRight, ty, tRight, tTop, radius);
-    ctx.arcTo(tRight, tTop, tx, tTop, radius);
-    ctx.arcTo(tx, tTop, tx, ty, radius);
-    ctx.closePath();
-    ctx.stroke();
-    if (selected) {
-      ctx.fillStyle = ctx.strokeStyle;
-      ctx.fill();
+    var img = ship.thumbnail,
+      height = "naturalHeight" in img ? img.naturalHeight : img.height,
+      width = "naturalWidth" in img ? img.naturalWidth : img.width,
+      side = width > height ? width : height,
+      x = (side - width) / 2,
+      y = (side - height) / 2;
+    helpCanvas.width = helpCanvas.height = side || size;
+    try {
+      rc.drawImage(img, x, y);
+    } catch (err) {
+      rc.fillStyle = "#dbecfe";
+      rc.font = size + "px monospace";
+      rc.fillText("-\\|/"[Date.now() >> 10 & 3], 5, size);
     }
-    drawIconRc(tile, size);
-    tTop = isToolBar ? ty - 55 : ty - 69;
-    ctx.drawImage(helpCanvas, tx + 9, tTop, size, size);
   }
+  if (type instanceof Tool)
+    Tool.drawPathRc(type, size);
+  if (type instanceof Block)
+    drawBlockRc(type);
+  if (type instanceof Ship)
+    drawShipRc(type);
+}
+/**
+ * @param {number} x tile x @param {number} y tile y @param {number} r radus
+ * @param {TileType} tile @param {unknown} selected boolean
+ * @param {boolean} [isToolBar=false] */
+DefaultUI.drawTileCtx = function(x, y, r, tile, selected, isToolBar) {
+  if (!tile)
+    return;
+  var tRight = isToolBar ? x + 64 : x + 78,
+    tTop = isToolBar ? y - 64 : y - 78,
+    size = isToolBar ? 46 : 60;
+  ctx.strokeStyle = "color" in tile ? tile.color : Editor.outlineBlue;
+  ctx.beginPath();
+  // 16 = greater than radius, lower then side - 2 * radius
+  ctx.moveTo(x, y - 16);
+  ctx.arcTo(x, y, tRight, y, r);
+  ctx.arcTo(tRight, y, tRight, tTop, r);
+  ctx.arcTo(tRight, tTop, x, tTop, r);
+  ctx.arcTo(x, tTop, x, y, r);
+  ctx.closePath();
+  ctx.stroke();
+  if (selected) {
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.fill();
+  }
+  DefaultUI.drawIconRc(tile, size);
+  tTop = isToolBar ? y - 55 : y - 69;
+  ctx.drawImage(helpCanvas, x + 9, tTop, size, size);
+}
+/** render both toolBar and blockBar: all hotbar tile slots
+ * @param {number} w @param {number} h */
+DefaultUI.renderHotBars = function (w, h) {
+  var radius = Editor.renderSharp ? 0 : 5;
   /** is drawn relatively to local var tfx and tfy @param {TileType} type */
   function drawFolderCtx(type) {
     ctx.globalAlpha = b ? .8 : .7;
@@ -4646,7 +4718,7 @@ DefaultUI.renderHotBars = function (w, h) {
     ctx.closePath();
     ctx.fillStyle = b ? "#0c243c" : "#000c1c";
     ctx.fill();
-    drawIconRc(type || [][0], 40);
+    DefaultUI.drawIconRc(type || [][0], 40);
     ctx.globalAlpha = 1;
     ctx.drawImage(helpCanvas, tfx - 47, h - (b ? 161 : 146), 40, 40);
   }
@@ -4677,11 +4749,16 @@ DefaultUI.renderHotBars = function (w, h) {
   ctx.globalAlpha = 1;
   ctx.lineWidth = 2;
   /** contains fix for reselected item after reflow, later reused! */
-  var b = i !== -1 && i < bars.length;
+  var b = i !== -1 && i < bars.length,
+    clicked = DefaultUI.getClickedTile(),
+    selected = DefaultUI.getSelectedTile();
+  // see v.0.2.41 for option of highlighting
+  //-if (!DefaultUI.inventoryOpened)
+  //-  clicked = selected = new Tool("__NULL__", "", F, F, F);
   for (var j = 0, tx = 247, ty = h - 15; b && j < bars[i].length; j++) {
-    drawTileCtx(bars[i][j], DefaultUI.selectedTile === (j << 2) + 1 &&
-      DefaultUI.selectedFolder === DefaultUI.openedFolder ||
-      DefaultUI.clickedTile === (1 | j << 2));
+    var tile = bars[i][j];
+    DefaultUI.drawTileCtx(tx, ty, radius, tile,
+      tile === clicked || tile === selected);
     tx += 87;
   }
   /** here #SeeRenderingFolders */
@@ -4701,29 +4778,23 @@ DefaultUI.renderHotBars = function (w, h) {
   tfy = 153;
   if (DefaultUI.previousFolders) {
     tfx = 239;
-    drawFolderCtx(DefaultUI.createTile("Previous"));
+    drawFolderCtx(Tool.get("Previous"));
   }
   if (DefaultUI.nextFolders) {
     tfx = w - 7 - 54;
-    drawFolderCtx(DefaultUI.createTile("Next"));
+    drawFolderCtx(Tool.get("Next"));
   }
   if (DefaultUI.inventoryTile) {
     tx = w - 93;
-    drawTileCtx(
-      DefaultUI.createTile("Inventory"),
-      (DefaultUI.clickedTile & 3) === 2
-    );
+    DefaultUI.drawTileCtx(tx, ty, radius, tile = Tool.get("Load"),
+      tile === selected || DefaultUI.inventoryOpened);
   }
   radius = Math.max(0, radius - 1);
   // v.0.2.10 14 = offset to tile origin
   ty = h - 15;
   for (var j = 0, tx = 163; j < DefaultUI.toolBar.length; j++) {
-    drawTileCtx(
-      DefaultUI.toolBar[j],
-      DefaultUI.selectedTile === (j << 2) ||
-        DefaultUI.clickedTile === (j << 2),
-      true
-    );
+    DefaultUI.drawTileCtx(tx, ty, radius, tile = DefaultUI.toolBar[j],
+      tile === clicked || tile === selected, true);
     // v.0.2.10 69 = detects drawn 3 tiles of the row
     if (tx < 69) {
       // v.0.2.10 74 = distance between origins of neighbour toolBar tiles
@@ -4732,21 +4803,75 @@ DefaultUI.renderHotBars = function (w, h) {
     } else
       tx -= 74;
   }
-  var dragged = DefaultUI.Drag.dragged;
-  tx = dragged.x;
-  ty = dragged.y;
+};
+/** @param {number} h height */
+DefaultUI.renderDragged = function (h) {
+  var item = DefaultUI.replacingTile, dragged = DefaultUI.Drag.dragged;
+  var x = dragged.x, y = dragged.y, r = Editor.renderSharp ? 0 : 5;
   if (DefaultUI.Drag.isPreview)
     ctx.lineWidth = 1E-11;
-  drawTileCtx(dragged.tile, false);
-  if ((i = DefaultUI.replacingTile) !== -1) {
+  DefaultUI.drawTileCtx(x, y, r, dragged.tile, false);
+  if (item !== -1) {
     console.assert(!DefaultUI.Drag.isPreview, "lineWidth = 0");
-    b = (i & 3) === 0;
+    var b = (item & 3) === 0;
     // v.0.2.16 constants same as ones for calculating
     // tile coordinates for: (b ? toolBar : blockBar)
-    tx = b ? 163 - (i >> 2) % 3 * 74 : 247 + (i >> 2) * 87;
-    ty = b ? h - 15 - ((i >> 2) / 3 | 0) * 74 : h - 15;
-    drawTileCtx(Tool.replacing, false, b);
+    x = b ? 163 - (item >> 2) % 3 * 74 : 247 + (item >> 2) * 87;
+    y = b ? h - 15 - ((item >> 2) / 3 | 0) * 74 : h - 15;
+    DefaultUI.drawTileCtx(x, y, r, Tool.replacing, false, b);
   }
+};
+/** @param {number} w @param {number} h 3h_ */
+DefaultUI.renderInventory = function (w, h) {
+  // MUSIC: (my loop for) Goat Simulator OST - Engage Hyper Goat
+  // v.0.2.41 239 = start og blockbars
+  var radius = Editor.renderSharp ? 0 : 5, x = w > 730 ? 239 : 7;
+  ctx.globalAlpha = .8;
+  ctx.beginPath();
+  //-ctx.strokeStyle = Editor.outlineBlue;
+  //-ctx.lineWidth = 2; // 309, 171
+  // start of outline left bottom
+  ctx.moveTo(x, h - 180 - 4);
+  ctx.arcTo(x, h - 168 - 4, x + 12, h - 168 - 4, radius);
+  ctx.arcTo(w - 302 - 4, h - 168 - 4, w - 302 - 4, h - 180 - 4, radius);
+  ctx.arcTo(w - 302 - 4, 53, w - 314 - 4, 53, radius);
+  ctx.lineTo(x, 53);
+  ctx.closePath();
+  ctx.fillStyle = "#0c243c";
+  ctx.strokeStyle = Editor.outlineBlue;
+  ctx.fill();
+  //-ctx.stroke();
+  ctx.font = "32px segoe-ui, sans-serif";
+  if (!DefaultUI.panel)
+    DefaultUI.panel = 2;
+  for (var i = 1, left = x, top = 53; i < 4; i++) {
+    var text = ["", "Blocks", "Ships", "Settings"][i],
+      b = DefaultUI.panel === i,
+      l = ctx.measureText(text).width + (b ? 21 : 7);
+    ctx.globalAlpha = b ? .8 : .7;
+    ctx.beginPath();
+    ctx.moveTo(left + l, 53);
+    ctx.arcTo(left + l, 7, left + l - 12, 7, radius);
+    ctx.arcTo(left, 7, left, 19, radius);
+    ctx.lineTo(left, 53);
+    ctx.closePath();
+    ctx.fillStyle = b ? "#0c243c" : "#000c1c";
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#d9ecfd";
+    ctx.fillText(text, left + (b ? 9 : 3), 39);
+    left += l + 3;
+  }
+  // MUSIC: from ms#music channel
+  // then went through whole codebase before continuing here with da music
+  left = x += 4;
+  var clicked = DefaultUI.getClickedTile(),
+    selected = DefaultUI.getSelectedTile();
+  Ship.blueprints.forEach(function (tile) {
+    b = tile === clicked || tile === selected;
+    DefaultUI.drawTileCtx(left, top, radius, tile, b);
+    left += 87;
+  });
 };
 /** generator for press action bind handling
  * @param {(x:number,y:number,tile:ShipBlock)=>void} [blockPlacing]
@@ -4804,9 +4929,17 @@ DefaultUI.previewPlacing = function (x, y, block, offset) {
 DefaultUI.Drag = function () {
   this.x = 0;
   this.y = 0;
+  //-this._item = -1;
+  //-var self = this;
   this.item = -1;
+  //-this.__defineSetter__("item", function (e) {
+  //-  DefaultUI.Drag.dragged === self && console.error("here");
+  //-  return self._item = e;
+  //-});
+  //-this.__defineGetter__("item", function () {return self._item;});
   this.fraction = .5;
   this.folder = -1;
+  /** (1) = left, (2) = right (> 2) = other */
   this.arrows = -1;
   /** @type {TileType|null} */
   this.tile = null;
@@ -4831,7 +4964,8 @@ DefaultUI.Drag.isPreview = false;
 /** @param {number} from @param {number} to @param {TileType[]} hotbar */
 DefaultUI.Drag.shiftDragged = function (from, to, hotbar) {
   var dragged = DefaultUI.Drag.dragged;
-  if (to !== -1 && to !== from) {
+  // v.0.2.41 added length check to fix toolbar inserting moved/cloned tiles
+  if (to !== -1 && to !== from && hotbar.length) {
     if (from > to)
       for (; from-- > to;)
         hotbar[from + 1] = hotbar[from] || null;
@@ -4939,6 +5073,12 @@ DefaultUI.Drag.detect = function (x, y, action) {
   DefaultUI.Drag.reset();
   if (!DefaultUI.handleGUIArea(action.startX, action.startY, dragged))
     return false;
+  if (dragged.arrows > 0) {
+    console.log(dragged);
+    // v.0.2.41 a very painful bug, PC was fine due to ...short before ..move
+    DefaultUI.handleHotbar(x, y, action);
+    return true;
+  }
   action.event.cancelable && action.event.preventDefault();
   DefaultUI.Drag.original = dragged.item;
   hotbar = (dragged.item & 3) === 1 ?
@@ -4956,7 +5096,8 @@ juhus.set("onclaim", function (x, y, source) {
     return source.preventClaim();
   if (DefaultUI.Drag.detect(x, y, source.source))
     return source.preventClaim();
-  if (Tool.subscribedClaim && Tool.subscribedClaim(x, y, source))
+  // v.0.2.39 Tool.subscribed's weren't nullable, why the condition lol
+  if (!DefaultUI.inventoryOpened && Tool.subscribedClaim(x, y, source))
     return source.preventClaim();
 });
 juhus.set("onstart", function onstart(x, y, source) {
@@ -4966,7 +5107,7 @@ juhus.set("onstart", function onstart(x, y, source) {
     var style = Command.el.style;
     style["" + "webkitUserSelect"] = style.userSelect = "none";
   }
-  if (Tool.subscribedStart && Tool.subscribedStart(x, y, source))
+  if (!DefaultUI.inventoryOpened && Tool.subscribedStart(x, y, source))
     return;
 });
 juhus.set("onmove", function onmove(x, y, source) {
@@ -4983,7 +5124,7 @@ juhus.set("onmove", function onmove(x, y, source) {
     return;
   if (DefaultUI.Drag.detect(x, y, action))
     return;
-  if (Tool.subscribedMove && Tool.subscribedMove(x, y, source))
+  if (!DefaultUI.inventoryOpened && Tool.subscribedMove(x, y, source))
     return;
   DefaultUI.handleHotbar(x, y, action);
 });
@@ -5000,7 +5141,7 @@ juhus.set("onend", function onend(x, y, source) {
     return;
   if (!DefaultUI.isEventUsed && DefaultUI.handleGUIArea(x, y))
     return action.event.cancelable && action.event.preventDefault();
-  if (Tool.subscribedEnd && Tool.subscribedEnd(x, y, source))
+  if (!DefaultUI.inventoryOpened && Tool.subscribedEnd(x, y, source))
     return;
   if (action.state.slice(-5) === "short") {
     action.event.cancelable && action.event.preventDefault();
@@ -5047,6 +5188,9 @@ function enableShipEditing() {
     // }
     DefaultUI.reflowBlockBars(canvas.width);
     DefaultUI.renderHotBars(canvas.width, canvas.height);
+    DefaultUI.renderDragged(canvas.height);
+    if (DefaultUI.inventoryOpened)
+      DefaultUI.renderInventory(canvas.width, canvas.height);
   };
   var tile = DefaultUI.getSelectedTile();
   if (tile instanceof Tool)
@@ -5182,6 +5326,9 @@ function enableLogicEditing() {
     }
     DefaultUI.reflowBlockBars(canvas.width);
     DefaultUI.renderHotBars(canvas.width, canvas.height);
+    DefaultUI.renderDragged(canvas.height);
+    if (DefaultUI.inventoryOpened)
+      DefaultUI.renderInventory(canvas.width, canvas.height);
   };
   // v.0.2.34 did fix what was fixed in enableShipEditing for fun
   DefaultUI.blockBars = DefaultUI.getDefaultFolders(true);
@@ -5447,9 +5594,10 @@ devt__share.log = function () {
 };
 contextmenu = function (x, y, e) {
   var el = GE("info");
-  if (el instanceof HTMLElement && el.onclick)
-    //@ts-expect-error
-    el.onclick();
+  if (el && el.onclick)
+    el.onclick(e);
+  if (DefaultUI.handleGUIArea(x, y, new DefaultUI.Drag()))
+    return (Tool.get("Load") || {exec: F}).exec(x, y);
   (DefaultUI.contextmenu = contextmenu = commands)(x, y, e);
 };
 
@@ -5612,16 +5760,16 @@ function expensiveRenderer() {
     (ship.prop && ship.prop.nodeList || [UDF]);
   if (Logic.rend)
     ctx.globalAlpha = Editor.logicPreviewAlpha;
-  var mult = sc / 16;
-  for (var i = 0, id = 0, pos = [0, 0, 0]; i < objs.length; i++) {
+  var scale = sc / 16, i = DefaultUI.inventoryOpened ? objs.length : 0;
+  for (var id = 0, pos = [0, 0, 0]; i < objs.length; i++) {
     pos = objs[i].position;
     if ((id = Block.ID[objs[i].internalName]) < 12) {
       ctx.save();
       B64Key.drawBlock(rc, objs[i]);
       ctx.globalAlpha = .7;
-      ctx.scale(mult + 1E-7, mult + 1E-7);
-      ctx.drawImage(rc.canvas,
-        -pos[0] * 16 + vX / mult - 24, pos[2] * 16 + vY / mult - 24);
+      ctx.scale(scale + 1E-7, scale + 1E-7);
+      ctx.drawImage(rc.canvas, -pos[0] * 16 + vX / scale - 24,
+        pos[2] * 16 + vY / scale - 24);
       ctx.restore();
       continue;
     }
@@ -5655,11 +5803,11 @@ function expensiveRenderer() {
     } else {
       // position correction for db tiny blocks and rotations
       dy -= rot === (objs[i].rotation[1] ? 1 : 3) ?
-        (w - 32) * sc / 16 :
-        rot === 0 ? (h - 32) * sc / 16 : 0;
+        (w - 32) * scale :
+        rot === 0 ? (h - 32) * scale : 0;
       dx -= rot === (objs[i].rotation[1] ? 0 : 2) ?
-        (w - 32) * sc / 16 :
-        rot === 3 ? (h - 32) * sc / 16 : 0;
+        (w - 32) * scale :
+        rot === 3 ? (h - 32) * scale : 0;
       helpCanvas.width = dw = rot & 1 ? h : w;
       helpCanvas.height = dh = rot & 1 ? w : h;
     }
@@ -5711,7 +5859,7 @@ function expensiveRenderer() {
       rc.globalCompositeOperation = "source-over";
     }
     rc.drawImage(Editor.imgOverlay, size.x, size.y, w, h, 0, 0, w, h);
-    ctx.drawImage(helpCanvas, dx, dy, dw * sc / 16, dh * sc / 16);
+    ctx.drawImage(helpCanvas, dx, dy, dw * scale, dh * scale);
     if (Physics.rend.reporter && objs[i] instanceof LogicBlock) {
       var str = objs[i].getPhysics().reporter;
       ctx.save();
@@ -5857,9 +6005,9 @@ init = function loadedEditorInit() {
   ship.blocks = clean;
   rend_collisions = true;
   ship.setSelected([]);
-  (DefaultUI.blockBars[0] || []).push(DefaultUI.createTile("SelectAll"),
-    Tool.get("Expand"));
-  (DefaultUI.blockBars[0] || [])[5] = DefaultUI.createTile("Flip180");
+  (DefaultUI.blockBars[0] || []).push(Tool.get("SelectAll"),
+    Tool.get("Expand"), Tool.get("Inventory"));
+  (DefaultUI.blockBars[0] || [])[5] = Tool.get("Flip180");
   imgColor.onload && rend_checkColors();
   imgBackg.src = "" + imgBackg.getAttribute("data-src");
   check_contentScript();

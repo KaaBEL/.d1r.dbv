@@ -2,7 +2,7 @@
 /// <reference path="./defs.d.ts" />
 "use strict";
 /** @readonly */
-var version_code_js = "v.0.2.39";
+var version_code_js = "v.0.2.41";
 /** 3h_  @TODO check @see {Ship.VERSION}  Read FUN FACTS below: */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
@@ -16,7 +16,7 @@ var OP = Object.prototype.hasOwnProperty,
   OC = function () {
     return {};
   };
-if (typeof F != "function" || typeof UDF !== "undefined")
+if (typeof F != "function" || typeof UDF != "undefined")
   /** @readonly */
   var F = function () {}, UDF = void 0;
 // inheritance's gonna go brrrrrrrrrrrrrrrr (taken standard ES5 extending)
@@ -4376,6 +4376,9 @@ Edit.Ship.rotateBlock = function () {};
 Edit.Ship.flipBlock = function () {};
 Data.nameMethods(Edit);
 
+// v.0.2.41 for use in nodejs
+// var Dbve = require("./dist/code/code.js"), Ship = Dbve.Ship,
+// Block = Dbve.Block, Data =...
 /**
  * @typedef {Block[]&{target?:Ship,id:number}} EditSelection
  * @TODO BlockSelection can be used only with its target
@@ -4411,6 +4414,24 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.history = [];
   /** @type {ShipBlock[]} */
   this.selection = [];
+  //-MUSIC: Timo Boll vs. KUKA Robot
+  //-/** @this {Ship} @returns {HTMLCanvasElement|HTMLImageElement} */
+  //-this.getThumbnail = function thumb() {
+  //-  var doc = typeof globalThis == "object" ?
+  //-      globalThis.document || {createElement: OC} :
+  //-      document,
+  //-    thumbnail = "createElement" in doc ?
+  //-      doc.createElement("img") :
+  //-      document.createElement("canvas") ;
+  //-  if (this instanceof Ship) {
+  //-    var ship = this;
+  //-    ship.getThumbnail = __private(thumbnail);
+  //-  }
+  //-  return thumbnail;
+  //-};
+  // ^ wasted too much time on when it could also be just this:
+  /** @type {HTMLCanvasElement|HTMLImageElement|null} */
+  this.thumbnail = null;
   Object.seal(this);
 }
 /** @readonly @type {52} significantVersion: 52 (integer) */// @ts-ignore
@@ -4908,6 +4929,8 @@ Ship.prototype.toJSON = function (noHistory) {
     significantVersion: Ship.VERSION
   };
 };
+/** @type {Ship[]} */
+Ship.blueprints = [];
 // (v.0.2.8) major refactor after limiting use of type any
 /** @readonly @param {safe} object @see {Block.arrayFromObjects} */
 Ship.fromObject = function fromObject(object) {
@@ -5261,7 +5284,6 @@ Ship.fromMSObject = function (o) {
         // v.0.2.37 (in MS v.0.11+ it is: defEn. = n & 1, nonInt. = n & 4)
         // 0 - created before 0.9, 1 - enabled by default, 2 - disabled
         // by default, 4 - interaction disabled (always 0 by default)
-        // (Google translate of "0 - \u0441\u043e\u0437\u0434\u0430\u043d\u0430 \u0434\u043e 0.9, 1 - \u0432\u043a\u043b\u044e\u0447\u0435\u043d\u0430 \u043f\u043e \u0443\u043c\u043e\u043b\u0447\u0430\u043d\u0438\u044e, 2 - \u0432\u044b\u043a\u043b\u044e\u0447\u0435\u043d\u0430 \u043f\u043e\u0443\u043c\u043e\u043b\u0447\u0430\u043d\u0438\u044e, 4 - \u0437\u0430\u043f\u0440\u0435\u0449\u0435\u043d\u043e \u0432\u0437\u0430\u0438\u043c\u043e\u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435 (\u0432\u0441\u0435\u0433\u0434\u0430 0 \u043f\u043e \u0443\u043c\u043e\u043b\u0447\u0430\u043d\u0438\u044e")
         prop.defaultEnabled = settings[0] === 0 ?
           handleDefaultUnset(id) :
           !!(number & 1);
