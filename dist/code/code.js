@@ -2,7 +2,7 @@
 /// <reference path="./defs.d.ts" />
 "use strict";
 /** @readonly */
-var version_code_js = "v.0.2.41";
+var version_code_js = "v.0.2.42";
 /** 3h_  @TODO check @see {Ship.VERSION}  Read FUN FACTS below: */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
@@ -2122,11 +2122,22 @@ Bin.Utf8 = function (bin) {
   this.result = "";
   Object.seal(this);
 };
-Bin.Utf8.prototype.toString = function (buffer) {
-  if (buffer instanceof Array)
-    buffer = new Bin(new Uint8Array(buffer).buffer);
-  if (buffer.buffer instanceof ArrayBuffer)
-    return Bin.Utf8.decode(new Bin(buffer.buffer)).result;
+(function () {
+  // decoding % escaped strings within URLs
+  "?debug&http:=.localhost:8158&debug_feature=none&%F0%9F%A6%86=%F0%9F%85%B1\
+%EF%B8%8F".replace(/(?:%[a-fA-F0-9]{2})+/g, function(m) {
+    var arr = m.slice(1).split("%").map(function (e) {
+      return +("0x" + e);
+    });
+    console.log(arr);
+    return Bin.Utf8.toString(arr);
+  });
+});
+Bin.Utf8.prototype.toString = function (bufferOrArray) {
+  if (bufferOrArray instanceof Array)
+    bufferOrArray = new Uint8Array(bufferOrArray);
+  if (bufferOrArray.buffer instanceof ArrayBuffer)
+    return Bin.Utf8.decode(new Bin(bufferOrArray.buffer)).result;
   if ("buffer" in this && this.buffer instanceof ArrayBuffer)
     return Bin.Utf8.decode(new Bin(this.buffer)).result;
   return "[Error:Mostly likely an error. At Bin.Utf8.toString.]";
@@ -4387,11 +4398,12 @@ Data.nameMethods(Edit);
 /**
  * @typedef {{nodeList:(Logic|undefined)[],nodeConnections:number[][],
  * customInputs:Ship.CustomInput[],launchpadSize:number,gridSize:
- * Ship.Grid,fileName:string}} KnownShipProperties
+ * Ship.Grid,fileName:string,thumbImg?:ShipThumbnail}} KnownShipProperties
  * @typedef {{[key:string]:unknown}&{[K in keyof KnownShipProperties]?:
  * KnownShipProperties[K]}} ShipProperties
  * @see {Logic} @see {Ship.CustomInput}
- * @typedef {"Ship"|"Logic"|"Save"} EditMode */
+ * @typedef {"Ship"|"Logic"|"Save"} EditMode
+ * @typedef {HTMLCanvasElement|HTMLImageElement|null} ShipThumbnail */
 /** class is frozen, toJSON methods in use
  * @param {string} name
  * @param {number[]} version
@@ -4414,23 +4426,7 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.history = [];
   /** @type {ShipBlock[]} */
   this.selection = [];
-  //-MUSIC: Timo Boll vs. KUKA Robot
-  //-/** @this {Ship} @returns {HTMLCanvasElement|HTMLImageElement} */
-  //-this.getThumbnail = function thumb() {
-  //-  var doc = typeof globalThis == "object" ?
-  //-      globalThis.document || {createElement: OC} :
-  //-      document,
-  //-    thumbnail = "createElement" in doc ?
-  //-      doc.createElement("img") :
-  //-      document.createElement("canvas") ;
-  //-  if (this instanceof Ship) {
-  //-    var ship = this;
-  //-    ship.getThumbnail = __private(thumbnail);
-  //-  }
-  //-  return thumbnail;
-  //-};
-  // ^ wasted too much time on when it could also be just this:
-  /** @type {HTMLCanvasElement|HTMLImageElement|null} */
+  /** @type {ShipThumbnail} */
   this.thumbnail = null;
   Object.seal(this);
 }
@@ -4931,6 +4927,8 @@ Ship.prototype.toJSON = function (noHistory) {
 };
 /** @type {Ship[]} */
 Ship.blueprints = [];
+/** @type {string[]} */
+Ship.blueprintNames = [];
 // (v.0.2.8) major refactor after limiting use of type any
 /** @readonly @param {safe} object @see {Block.arrayFromObjects} */
 Ship.fromObject = function fromObject(object) {

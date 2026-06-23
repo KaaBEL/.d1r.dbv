@@ -1,9 +1,10 @@
-// v.0.2.40
+// v.0.2.42
 using System;
 using System.Net;
+using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 #if UNITY_2017_1_OR_NEWER
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,7 +12,7 @@ using UnityEngine.UI;
 
 namespace Localhost_Mod
 {
-    public class Localhost
+     public class Localhost
     {
         public static readonly string s_DbveDir = "/.d1r.dbv";
 
@@ -20,8 +21,18 @@ namespace Localhost_Mod
 
         private static HttpListener s_listener = new();
         private static Task s_task = new(() => { });
+        private static readonly Regex s_UrlEscapeSeqence =
+            new Regex("(?:%[a-fA-F0-9]{2})+");
+        //-private static readonly Regex s_PathName =
+        //-    new Regex("^[^?#]*\\/([^?#]*)");
 
-        public static bool IsLive { get { return s_listener.IsListening; } }
+        public static bool IsLive {
+            get { return s_listener.IsListening; }
+        }
+        public static Func<int> PreloadSettings
+        {
+            get { return SaveFile.PreloadSettings; }
+        }
 
 #if UNITY_2017_1_OR_NEWER
         public static void SetupUnityObject()
@@ -29,7 +40,7 @@ namespace Localhost_Mod
             GameObject gameObject = GameObject.Find("menu_startlocalhost");
             if (gameObject == null)
             {
-                Logging.Log("I haven't got menu_startlocalhost :(");
+                Logging.Warn("I haven't got menu_startlocalhost :(");
                 return;
             }
             gameObject.GetComponent<Button>().onClick.AddListener(delegate
@@ -39,6 +50,7 @@ namespace Localhost_Mod
             string localized = Localization.LocalizeText("menu_" +
                 (s_listener.IsListening ? "stop" : "start") + "localhost");
             gameObject.GetComponentInChildren<Text>().text = localized;
+            Logging.Log("menu_startlocalhost seems successfuly set up");
         }
         public static void ToggleSetting(GameObject gameObject)
         {
@@ -46,7 +58,7 @@ namespace Localhost_Mod
             if (turnOn) Start();
             else Stop();
             string localized = Localization.LocalizeText("menu_" +
-                (s_listener.IsListening ? "stopstart" : "") + "localhost");
+                (s_listener.IsListening ? "stop" : "start") + "localhost");
             gameObject.GetComponentInChildren<Text>().text = localized;
         }
 #endif
@@ -54,10 +66,6 @@ namespace Localhost_Mod
         {
             if (!HttpListener.IsSupported) return false;
 
-            //-if (System.Threading.Thread.CurrentThread.Name != null)
-            //-    Logging.Log(System.Threading.Thread.CurrentThread.Name);
-            //-else
-            //-    Logging.Warn("null");
             s_task = AsyncListener();
 
             return true;
@@ -97,10 +105,6 @@ namespace Localhost_Mod
         }
         private static void RespondAsync(Task<HttpListenerContext> task)
         {
-            //-if (System.Threading.Thread.CurrentThread.Name != null)
-            //-    Logging.Log(System.Threading.Thread.CurrentThread.Name);
-            //-else
-            //-    Logging.Warn("null");
             if (task.IsFaulted)
             {
                 Logging.Warn("Faulted task, halting localhost.");
@@ -115,6 +119,11 @@ namespace Localhost_Mod
             {
                 Logging.Log(request.Url);
                 path = request.Url.AbsolutePath;
+                if (path.Contains('%'))
+                {
+                    // decoding % escaped strings within URLs
+                    path = s_UrlEscapeSeqence.Replace(path, FixPath);
+                }     
                 if (path.StartsWith(s_DbveDir))
                 {
                     HandleDbveDomain(task);
@@ -125,10 +134,7 @@ namespace Localhost_Mod
                     string[] split = path.Split('/');
                     if (split.Length > 0) name = split[^1];
                 }
-                //    split = request.Url.ToString().Split('?', '#');
             }
-            //if (split.Length > 0) split = split[0].Split('/', '\\');
-            //if (split.Length > 0) ship = split[^1];
             Logging.Log("Ship file name: " + name);
 
             HttpListenerResponse response = context.Response;
@@ -138,12 +144,35 @@ namespace Localhost_Mod
             response.AddHeader("Access-Control-Allow-Methods", "GET, POST," +
                 " DELETE, OPTIONS");
             response.AddHeader("Access-Control-Allow-Origin", s_CorsOrigin);
-//new byte[13] { 87, 84, 70, 32, 109, 111, 109, 101, 110, 46, 46, 46, 33 };
 
             try
             {
-                byte[] buffer = SaveFile.LoadShip(name);
-                //-Logging.Log("IS NOT FINISHED! (v.75)");
+                byte[] buffer = SaveFile.LoadShip(name, out LoadOptions o);
+                if ((o & LoadOptions.Error) > 0)
+                {
+                    response.StatusCode = 500;
+                }
+                else if ((o & LoadOptions.Missing) > 0)
+                {
+                    response.StatusCode = 404;
+                }
+                else if ((o & LoadOptions.TooLarge) > 0)
+                {
+                    response.StatusCode = 406;
+                    buffer = Array.Empty<byte>();
+                }
+                switch (o & LoadOptions.FileType)
+                {
+                    case LoadOptions.IsImage:
+                        response.AddHeader("Vary", "accept-length");
+                        // TODO: Add response header for Encoding
+                        //response.AddHeader("Encoding", "");
+                        break;
+                    //case LoadOptions.IsJSON:
+                    //response.AddHeader("Encoding", "application/json");
+                    //break;
+                    //...
+                }
                 response.ContentLength64 = buffer.Length;
                 response.Close(buffer, false);
 
@@ -155,6 +184,30 @@ namespace Localhost_Mod
             {
                 Logging.Warn(e);
             }
+        }
+        private static string FixPath(Match match)
+        {
+            try
+            {
+                //-Console.WriteLine(match.Value);
+                //-char[] test = { Convert.ToChar(
+                //-    Convert.ToInt32(match.Value.Substring(1), 16)) };
+                //-byte[] text = { Convert.ToByte(
+                //-    match.Value.Substring(1), 16) };
+                //-Console.Write(", Test0: " + new string(test));
+                //-Console.Write(", Text1: " +
+                //-    System.Text.Encoding.UTF8.GetString(text));
+                byte[] text = new byte[match.Value.Length / 3];
+                for (int i = text.Length; i-- > 0;)
+                    text[i] = Convert.ToByte(
+                        match.Value.Substring(i * 3 + 1, 2), 16);
+                return Encoding.UTF8.GetString(text);
+            }
+            catch (Exception e)
+            {
+                Logging.Warn(e);
+            }
+            return "";
         }
         private static void HandleDbveDomain(Task<HttpListenerContext> task)
         {
@@ -229,7 +282,7 @@ namespace Localhost_Mod
             string responseString = "<html><body><style>body{background-c" +
                 "olor:black;color:#777;font-size:32px;}</style> Hello, di" +
                 "s is a little test!</body></html>";
-            byte[] buffer = System.Text.Encoding.UTF8.GetBytes(responseString);
+            byte[] buffer = Encoding.UTF8.GetBytes(responseString);
             // Get a response stream and write the response to it.
             response.ContentLength64 = buffer.Length;
             System.IO.Stream output = response.OutputStream;

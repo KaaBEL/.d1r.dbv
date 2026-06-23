@@ -1,7 +1,8 @@
 {
   "name": "d1r",
-  "version": "0.2.10",
+  "version": "0.2.42",
   "main": "./dist/code/code.js",
   "license": "UNLICENSED",
-  "type": "module"
+  "type": "commonjs",
+  "types": "./dist/code/code.d.ts"
 }

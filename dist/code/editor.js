@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.41";
+var version_editor_js = "v.0.2.42";
 /** 3h_ @TODO check @see {Editor} for assignment without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -23,19 +23,15 @@ if (storage.getItem("D1R_DBV_no_offline") !== null)
   console.info("Service Worker registration is disabled.");
 else if (/https?/.test(location.protocol) && navigator.serviceWorker)
   try {
-    // @type {ServiceWorkerContainer}
+    /** @type {ServiceWorkerContainer} */
     var swc = navigator.serviceWorker, sw = swc.controller;
     // is it good to have completely relative path for ServiceWorker?
     sw || swc.register("./service-worker.js",
       {scope: "./"}).then(function (swr) {
         sw = (swr.installing || swr.waiting || swr.active);
         (sw || OC()).onstatechange = function () {
-          console.log.apply(console, Array.prototype.map.call(
-            arguments,
-            function (e) {
-              return e;
-            }
-          ).concat("sw_change"));
+          console.log.apply(console, [""].slice.call(arguments
+            ).concat("sw_change"));
         };
       }).catch(function (reason) {
         console.log(reason, "sw_js");
@@ -463,6 +459,7 @@ wxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNiwwLDE2LDAsMTYsMCwxNl0sIntcImNvbG\
       break;
     case "123897b6":
       console.info("Debug mode (8)");
+      Block.creator.msWarns = 69;
       test_debug = !0;
       break;
     case "b6f47340":
@@ -588,6 +585,14 @@ if (test_debug || /http:..localhost:\d\d\d\d/.test(location.href))
   Data.checkTitles();
 else
   Data.dispose();
+
+// /** namespace for orginized resources loading and for file loading related
+//  * methods */
+// function Load() {
+//   throw new TypeError("Illegal constructor");
+// }
+// Load.loadBlueprints = function ?
+// ^ nah, the naming doesn't sound right, #RIPLoad
 
 Editor.imgOverlay.style.display = "none";
 Editor.imgOverlay.ariaHidden = "true";
@@ -2237,21 +2242,21 @@ Command.importExport = (function (items, collapsed) {
   items.push(elBtn, div);
 });
 Command.push("Import/Export DBV", Command.importExport, "IMPORTANT: Since us\
-ing explits in-game is bannable! DBVE was keeping users safe by not allowing\
- invalid vehicles, however the unfinished safeguard feature just disallowed \
-exporting completely. As a replacement the vehicles arequired to be saved as\
- Small grid instead of minimally Medium from exporting. The red error messag\
-e shows that the vehicle would not export previously.\n\nExport and Import a\
-re functions using displayed vehicle as target.\nExporting creates JSON key \
-of ship and puts it in text input, the key doesn't include nonexistent or bl\
-ocks unavailable in game.\nJSON key is the cont\ent of .dbv savefile. It con\
-tains textual data and can be opened using text \editor.\nImporting displays\
- vehicle of JSON key from text input.\n\nUpload from file/files button and t\
-he rest below is used for operations with other fomats, the input doesn't al\
-ways show full vehicle, as the JSON formats used in it are filling the eleme\
-nt up too much. Vehicles spaceships and drones are shown upon loading correc\
-t file, otherise this part is highly undocumented and keeps changing current\
-ly.");
+ing exploits in-game is bannable! DBVE was keeping users safe by not allowin\
+g invalid vehicles, however the unfinished safeguard feature just disallowed\
+ exporting completely. As a replacement the vehicles are required to be save\
+d as Small grid instead of minimally Medium from exporting. The red error me\
+ssage shows that the vehicle would not export previously.\n\nExport and Impo\
+rt are functions using displayed vehicle as target.\nExporting creates JSON \
+key of ship and puts it in text input, the key doesn't include nonexistent o\
+r blocks unavailable in game.\nJSON key is the content of .dbv savefile. It \
+contains textual data and can be opened using text editor.\nImporting displa\
+ys vehicle of JSON key from text input.\n\nUpload from file/files button and\
+ the rest below is used for operations with other formats, the input doesn't\
+ always show full vehicle, as the JSON formats used in it are filling the el\
+ement up too much. Vehicles spaceships and drones are shown upon loading cor\
+rect file, otherwise this part is highly undocumented and keeps changing cur\
+rently.");
 Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
   var inp = EL("input"), elBtn = EL("button"), error = EL();
   items.push({name: "Base64 key", inp: inp});
@@ -2948,7 +2953,6 @@ Command.push("Change editor background", function (items, collapsed) {
   backgImg.onchange = function () {
     if (!(this instanceof HTMLInputElement))
       return;
-    //-canvas.style.backgroundImage = "url(favicon.png)";
     rend_background =
       (Editor.background = this.checked) ?
         rend_backgPattern :
@@ -3327,23 +3331,89 @@ Tool.execClick = function (execMain) {
     setTimeout(function () {
       var tile = DefaultUI.getClickedTile();
       if (tile instanceof Tool && tile === thisTile) {
-        DefaultUI.clickedTile = -1;
+        DefaultUI.clicked = null;
         render();
       }
     }, 75);
   };
 };
-//-/** @param {"End"|"Claim"|"Move"|"Start"} subscribe @returns {boolean} */
-//-Tool.execClaim = function (subscribe) {
-//-  var func = Tool["subscribed" + subscribe];
-//-  if (typeof func != "function")
-//-    return false;
-//-  try {
-//-    return func();
-//-  } catch (err) {
-//-    console.error(err);
-//-  }
-//-};
+Tool.blueprintsXhr = new XMLHttpRequest();
+Tool.mssssRegExp = /([^\0-\x1f\x7f-\xff]*\.mssss)(?:\n|$)/g;
+Tool.loadingLogs = test_debug;
+Tool.loadingList = [""];
+Tool.errorTexture = EL("canvas").getContext("2d") || rc;
+Tool.loadNextBlueprint = function () {
+  if (!Tool.loadingList.length)
+    return console.log("Finshed recieving blueprint files.");
+  var name = Tool.loadingList.pop() || "", xhr = Tool.blueprintsXhr;
+  var keys = Ship.blueprintNames, index = keys.indexOf(name), w, h;
+  if (index !== -1) {
+    var blueprint = Ship.blueprints[index], prop = blueprint.prop || {},
+      img = prop.thumbImg || blueprint.thumbnail || OC();
+    w = "naturalWidth" in img ? img.naturalWidth : img.width;
+    h = "naturalHeight" in img ? img.naturalHeight : img.height;
+  }
+  Tool.loadingLogs && console.log("requestig: " + name);
+  xhr.open("GET", "http://localhost:5501/Ships/" + name, true);
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState !== xhr.DONE)
+      return;
+    try {
+      var data = xhr.responseText, blueprint = Ship.fromMSSSS(data);
+      if (!blueprint) {
+        for (var s = "", i = 0; i < data.length; i++)
+          s += String.fromCharCode(data.charCodeAt(i) ^ 19);
+        blueprint = Ship.fromMSSSS(s);
+      }
+      if (blueprint) {
+        var prop = (blueprint.prop || (blueprint.prop = OC()));
+        if (+(w || 0) < 1024 || +(h || 0) < 1024) {
+          (img = prop.thumbImg = EL("img")).crossOrigin = "Anonymous";
+          img.onload = Renderer.initThumbnail;
+          img.onerror = Renderer.errorThumbnail;
+          img.src = "http://localhost:5501/Ships/" +
+            name.slice(0, -5) + "png";
+        } else
+          console.log("  Refused to reload: " + name);
+        prop.fileName =
+          keys[index !== -1 ? index : index = keys.length] = name;
+        Ship.blueprints[index] = blueprint;
+      } else {
+        //-debugger;
+        //-Ship.fromMSSSS(xhr.responseText);
+        console.error("Did not load: " + name);
+      }
+    } catch (err) {
+      if (err && typeof err["message"] == "string")
+        err["message"] += " for ship: " + name;
+      console.error(err);
+    }
+    Tool.loadNextBlueprint();
+    DefaultUI.inventoryOpened && render();
+  };
+  xhr.send();
+};
+Tool.loadBlueprints = function () {
+  var xhr = Tool.blueprintsXhr;
+  xhr.onreadystatechange = null;
+  xhr = new XMLHttpRequest();
+  xhr.open("GET", "http://localhost:5501/Ships/", true);
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState !== xhr.DONE)
+      return;
+    if (!xhr.responseText)
+      return console.error("No response, xhr.status:" + xhr.status);
+    if (!xhr.status || xhr.status > 399)
+      console.error("Bad status:", xhr.status, xhr.statusText);
+    try {
+      Tool.loadingList = JSON.parse(xhr.responseText).map(String);
+      Tool.loadNextBlueprint();
+    } catch (e) {
+      console.error(xhr.responseText ? e : "xhr empty response0x1");
+    }
+  };
+  xhr.send();
+};
 /**
  * @typedef Tool.Tab.Options
  * @type {{[key:string]:unknown,text?:string}} */
@@ -3398,7 +3468,7 @@ Tool.Tab.prototype.append = (
  * @this {Tool.Tab} @param {Node|string} [element]
  * @param {string} [query] @param {Function&{name?:string}} [handler]
  * @param {Tool.Tab.Options} [options] @returns {any} */
- function (element, query, handler, options) {
+function (element, query, handler, options) {
   var handlerNext = false, argsCopy = [].slice.call(arguments);
   if (argsCopy[0] instanceof Node)
     element = argsCopy[0];
@@ -3429,7 +3499,7 @@ Tool.Tab.prototype.append = (
       string = string.replace(/\./g, " ");
     string = string.slice(+!isName).replace(Tool.Tab.cssEscapeRegExp,
       function (match) {
-        match[0] !== "\\" && console.error("CSS escape sequence");
+        console.assert(match[0] === "\\", "CSS escape sequence");
         return String.fromCharCode(+("0x" + match.trim().slice(1)));
       });
     return isName ? string : el[property] = string;
@@ -3530,15 +3600,24 @@ Tool.Tab.addCss = function (styles, selector) {
     selector) + "{" + styles + "}";
   return cssText;
 };
+Tool.Tab.setTile = function (item) {
+  var tile = DefaultUI.getClickedTile(item), load = Tool.get("Load");
+  if (tile === load) {
+    DefaultUI.inventoryOpened = false;
+    DefaultUI.selected = null;
+    return (load || new Tool("", "")).destroy(-1, -1);
+  }
+  DefaultUI.selected = tile;
+  render();
+  // CONTINUE displaying ship info 3h_
+};
 Tool.selectionBased = "Move,Rotate,Rotate90,Flip,Flip180,Select,Clone,Paint,\
 Erase,".split(",");
-
-//-320px;height: 500px;padding: 7px;border: 2px solid " + Editor.outlineBlue +
+ 
 Tool.Tab.addCss("position: absolute;top: 7px;right: " + 7 / pR + "px;width: \
-320px;height: 500px;padding: 7px;border: 2px solid #5577aa;border-radius: 7p\
-x;font-family: segoe-ui, sans-serif;background-color: rgba(13, 33, 55, .8);c\
-olor: #bbccdd;overflow-y: scroll;scrollbar-width: none;-ms-overflow-style: n\
-one;font-size: 20px;", "");
+320px;padding: 7px;border-radius: 7px;font-family: segoe-ui, sans-serif;back\
+ground-color: rgba(13, 33, 55, .8);color: #bbccdd;overflow-y: scroll;scrollb\
+ar-width: none;-ms-overflow-style: none;font-size: 20px;", "");
 Tool.Tab.addCss("width: 0px;background: transparent;", ".tool-tab::-webkit-s\
 crollbar");
 Tool.list.push(new Tool("Tune", "M4a4,24265 c51,2f0,273,ad3,931,f85 c8da,714\
@@ -4096,9 +4175,8 @@ af,a4c,-1f7,f1f z M2fff2,762e c3f09,1946,719d,4b08,8bf8,8983 l37e8,-c102 l-c\
 1e,487,1b6,943,1b6,e22 c0,2068,-1a45,3aae,-3aae,3aae c-53a,0,-a4c,-af,-f1f,-\
 1f7 z M38d4e,30133 c-1946,3f09,-4b08,719d,-8983,8bf8 lc102,37e8 l-377f,-c3e0\
  z", Tool.selectAllInit));
-// MUSIC: Ori 12...
 // Tool.list.push(new Tool"Inventory2.0"), "M21138,ddb7 c405c,0,198d6,0,198d6
-/** @TODO make this a Tool.Tab and add inventory openable with single long */
+/** @TODO make inventory openable with single long */
 Tool.list.push(new Tool("Toad", "M21138,ddb7 c405c,0,198d6,0,198d6,0 c2f6d,0\
 ,55df,2672,55df,55df v201fe c0,2f6d,-2672,55df,-55df,55df l-35423,-2f4 c-2f6\
 d,0,-55df,-2672,-55df,-55df v-26631 c0,-2f6d,2672,-55df,55df,-55df h130cd c1\
@@ -4116,20 +4194,28 @@ d,0 c-1a48,0,-2f97,154e,-2f97,2f97 c0,1a48,154e,2f97,2f97,2f97 z M28e83,2659\
 7 cac2,0,6f98,0,719f,0 c1a48,0,2f97,-154e,2f97,-2f97 c0,-1a48,-154e,-2f97,-2\
 f97,-2f97 c-aed,0,-6270,0,-719f,0 c-1a48,0,-2f97,154e,-2f97,2f97 c0,1a48,154\
 e,2f97,2f97,2f97 z", Tool.loadInit = (function init() {
-  DefaultUI.inventoryOpened = !DefaultUI.inventoryOpened;
+  DefaultUI.setSelectedTile(2, 0, 0);
   render();
 })));
-Tool.list.push(new Tool("Load", "M21142,dd0f c405c,0,198d6,0,198d6,0 c2f6d,0\
+Tool.Tab.addItem("Load", function setup(methods, _x, _y) {
+  methods.init = function () {
+    DefaultUI.inventoryOpened = true;
+    Tool.loadBlueprints();
+  };
+  methods.destroy = function () {
+    DefaultUI.inventoryOpened = false;
+  };
+}, "M21142,dd0f c405c,0,198d6,0,198d6,0 c2f6d,0\
 ,55df,2672,55df,55df v201fe c0,2f6d,-2672,55df,-55df,55df l-35423,-2f4 c-2f6\
 d,0,-55df,-2672,-55df,-55df v-26631 c0,-2f6d,2672,-55df,55df,-55df h130cd c1\
 83a,0,2e1d,a08,3dba,1a2c z M19042,2454a$ins; M19042,13370$ins; M7d6e,2454a$i\
 ns; M7d6e,13370$ins;".replace(/\$ins;/g, " c-15a4,0,-272f,118b,-272f,272f v9\
 005 c0,15a4,118b,272f,272f,272f h8e1d c15a4,0,272f,-118b,272f,-272f v-9005 c\
-0,-15a4,-118b,-272f,-272f,-272f z"), Tool.loadInit));
-
+0,-15a4,-118b,-272f,-272f,-272f z"));
+ 
 // db3 styled icon (cardboard box)
 // https://www.flaticon.com/free-icon/package_7625482?term=time+product&page=2&position=30&origin=search&related_id=7625482
-
+ 
 /** May throw error, use asynchronously! @throws {TypeError} */
 function check_contentScript() {
   var contentScript = GE("contentScript"), data = "";
@@ -4210,7 +4296,7 @@ test_debugbox2collisions = function (rend) {
     devt_debugger = oDD;
   })(rend);
 };
-
+ 
 function devt_bug_testing() {
   // devt_... stands for dev tools functions and variables
   var scr = EL("script");
@@ -4218,10 +4304,16 @@ function devt_bug_testing() {
   document.body.appendChild(scr);
 }
 var devt_debugger = false;
-
+ 
 /** (tile variable name) 
- * @typedef {Block|LogicBlock|Tool|Ship|null} TileType */
-/** @see {initDefaultUI} @namespace @typedef {never} @returns {never} */
+ * @typedef {Block|LogicBlock|Tool|Ship|null} TileType
+ * @typedef {typeof DefaultUI.selectedTile} DefaultUI.clickedTile */
+/** namespace for the full versioned DBVE UI
+ * the state of UI elements for display with @see {DefaultUI.rend} is stored
+ * in properties on this namespace which are mutable
+ * @see {DefaultUI.handleGUIArea} used to retrieve information about which
+ * element (action area) is being interacted with
+ * @see {initDefaultUI} @namespace @typedef {never} @returns {never} */
 function DefaultUI() {
   throw new TypeError("Illegal constructor");
 }
@@ -4244,16 +4336,14 @@ DefaultUI.openedFolder = 0;
  * enum `value & 3` where 0 = selected in toolBar, 1 = selected in blockBar,
  * 2 = selected inventoryTile, 3 = reserved for selected in inventory,
  * `value >> 2` gives index of selected tile,
- * if `value === -1` it means no tile is selected; */
+ * if `value === -1` it means no tile is selected; @deprecated legacy */
 DefaultUI.selectedTile = -1;
 /** the folder in where is selectedTile points to currently selected */
 DefaultUI.selectedFolder = 0;
-/** The position (item variable/property name) of clicked tile consists of:
- * enum `value & 3` where 0 = selected in toolBar, 1 = selected in blockBar,
- * 2 = selected inventoryTile, 3 = reserved for selected in inventory,
- * `value >> 2` gives index of selected tile,
- * if `value === -1` it means no tile is selected; */
-DefaultUI.clickedTile = -1;
+/** @type {TileType} the new variant of @see {DefaultUI.selectedTile} */
+DefaultUI.selected = null;
+/** @type {TileType} better version of @see {DefaultUI.selectedTile} */
+DefaultUI.clicked = null;
 DefaultUI.inventoryTile = !Editor.hideInventoryTile;
 DefaultUI.createTile = function () {
   /** @type {XYZPosition} */
@@ -4288,6 +4378,8 @@ DefaultUI.toolBar = ("Load,Toad,Node," +
  * @see {DefaultUI.getDefaultFolders}
  * @type {(TileType[]&{type:TileType})[]} */
 DefaultUI.blockBars = [];
+/** @type {TileType[]} */
+DefaultUI.inventory = [];
 //** used at #SeeRenderingFolders */
 DefaultUI.offsetsFolders = 0;
 /** previousFolders and nextFolders: are displaying Next and Previous
@@ -4368,6 +4460,7 @@ DefaultUI.isEventUsed = false;
 DefaultUI.inventoryOpened = false;
 /** inventory panel opened @type {0|1|2|3} 0=def.,1=blocks,2=ships,3=set. */
 DefaultUI.panel = 2;
+DefaultUI.inventoryHeight = 0;
 /** for last property @see {DefaultUI.shipPress} */
 /** @param {number|string} type @param {unknown[]} [tiles=[]] */
 DefaultUI.createFolder = function (type, tiles) {
@@ -4377,55 +4470,63 @@ DefaultUI.createFolder = function (type, tiles) {
   folder.type = DefaultUI.createTile(type);
   return folder;
 };
-/** @param {number} item @param {number} [x] @param {number} [y] */
+/** @param {number|TileType} item @param {number} [x] @param {number} [y] */
 DefaultUI.setSelectedTile = function (item, x, y) {
   typeof x != "number" ? x = 0 : 0;
   typeof y != "number" ? y = 0 : 0;
-  var tile = DefaultUI.getClickedTile(item) || {};
+  var tile = DefaultUI.getClickedTile(item) || null;
   if (tile instanceof Tool && tile.clickType) {
-    DefaultUI.clickedTile = item;
+    DefaultUI.clicked = tile;
     tile.init(x, y);
     return;
   }
   var old = DefaultUI.getSelectedTile();
   if (tile !== old) {
     old instanceof Tool && old.destroy(x, y);
-    DefaultUI.selectedTile = item;
+    DefaultUI.selected = tile;
     DefaultUI.selectedFolder = DefaultUI.openedFolder;
     tile instanceof Tool && tile.init(x, y);
   } else {
-    DefaultUI.selectedTile = -1;
+    DefaultUI.selected = null;
     tile instanceof Tool && tile.destroy(x, y);
   }
 };
 /** renders if found @type {typeof DefaultUI.createTile} */
 DefaultUI.selectInHotbars = function (type) {
-  var i = 0, UI = DefaultUI, tile = UI.createTile(type);
-  // one line saved thanks to DefaultUI named UI ...UhmGHh,it's a comment now
-  if ((i = UI.blockBars[UI.openedFolder].indexOf(tile)) !== -1)
-    UI.setSelectedTile(i << 2 | 1);
-  else if ((i = UI.toolBar.indexOf(tile)) !== 1)
-    UI.setSelectedTile(i << 2 | 0);
-  i !== -1 && render();
-  return tile;
+  return DefaultUI.selected = DefaultUI.createTile(type);
 };
 /** handles interactions with DefaultUI hotbars and inventory
  * @param {number} x @param {number} y @param {DefaultUI.Drag} [reference]
  * @returns {boolean} over GUI area */
 DefaultUI.handleGUIArea = function (x, y, reference) {
+  /** @NOTE since inventory renders with drawTileCtx I could've  used just
+   * array with Blocks/Ships(bps)/Tools(settings), but there'll be also
+   * cathegorising, which may end up with different implementaition */
   // UI is supposed to be able to function on selected size of canvas later
   var w = canvas.width, h = canvas.height;
   /** number position of tile @see {DefaultUI.selectedTile} */
   var item = -1, fraction = 0.5;
   if (reference)
     reference.item = reference.folder = reference.arrows = -1;
-  // v.0.2.10 237 = interactable witdh/height for toolBar
-  if (x < 237) {
+  function checkInventoryArea() {
+    // v.0.2.42 170 = interactable height for blockBars
+    // ^ 730 = minimal size for full inventory, 237 = same as next
+    return (w > 730 ? x > 237 && y < h - 170 : y < h - 170) &&
+      x < w - 304;
+  }
+  if (DefaultUI.inventoryOpened && checkInventoryArea()) {
+    var row = (y - 57) / 87 | 0, vertical = w > 730 ? x - 243 : x - 10;
+    var column = vertical / 87 | 0,
+      max = (w - (w > 730 ? 239 : 7) - 314) / 87 - 1 | 0;
+    fraction = vertical % 87 / 87;
+    item = row * (max + 1) + (column > max ? max : column) << 2 | 3;
+    // v.0.2.10 237 = interactable witdh/height for toolBar
+  } else if (x < 237) {
     // toolBar area of canvas: static tile slots
     // v.0.2.10 74 = distance between origins of neighbour toolBar tiles
     // v.0.2.35 11, 231 = toolBar right bottom coords where icons start
-    var row = (h - y - 11) / 74 | 0,
-      column = (231 - x) / 74 | 0;
+    row = (h - y - 11) / 74 | 0;
+    column = (231 - x) / 74 | 0;
     // v.0.2.12.K84 uses the same constants as right above
     fraction = (231 - x) % 74 / 74;
     /** @see {DefaultUI.selectedTile} for tile indexing */
@@ -4478,7 +4579,9 @@ DefaultUI.handleGUIArea = function (x, y, reference) {
     reference.fraction = fraction;
     return true;
   }
-  DefaultUI.setSelectedTile(item);
+  DefaultUI.inventoryOpened ?
+    Tool.Tab.setTile(item) :
+    DefaultUI.setSelectedTile(item);
   render();
   return true;
 };
@@ -4515,8 +4618,6 @@ DefaultUI.getCode = function tileCode(tile) {
 /** usually used before @see {DefaultUI.renderHotBars} @param {number} w */
 DefaultUI.reflowBlockBars = function (w) {
   function checkFoldersAddSameTiles() {
-    if (trackingSelected && i === DefaultUI.selectedFolder)
-      item = sameTiles.length + (DefaultUI.selectedTile >> 2);
     if (trackingOpened && i === DefaultUI.openedFolder)
       opened = sameTiles.length;
     sameTiles = sameTiles.concat(initial[i] || []);
@@ -4524,7 +4625,6 @@ DefaultUI.reflowBlockBars = function (w) {
   var i = 0,
     /** v.0.2.16 340 = distance to the end of first tile + distance */
     maxTiles = ((w - 340) / 87 | 0) - +DefaultUI.inventoryTile + 1,
-    trackingSelected = (DefaultUI.selectedTile & 3) === 1,
     /** the selected one */
     item = -1,
     trackingOpened = true,
@@ -4546,9 +4646,7 @@ DefaultUI.reflowBlockBars = function (w) {
     else {
       for (var j = 0; j < sameTiles.length; j += maxTiles) {
         if (item !== -1 && j + maxTiles > item) {
-          DefaultUI.selectedTile = item % maxTiles << 2 | 1;
           DefaultUI.selectedFolder = updated.length;
-          trackingSelected = false;
           item = -1;
         }
         if (opened !== -1 && j + maxTiles > opened) {
@@ -4560,7 +4658,7 @@ DefaultUI.reflowBlockBars = function (w) {
           /** @type {TileType[]&{type:TileType}} */
           (sameTiles.slice(j, j + maxTiles));
         folder.type = prevTile;
-
+ 
         updated.push(folder);
       }
       sameTiles = [];
@@ -4568,7 +4666,7 @@ DefaultUI.reflowBlockBars = function (w) {
     }
     prevTile = tiles.type || null;
   }
-
+ 
   if (DefaultUI.offsetsFolders > (i = updated.length * 57))
     DefaultUI.offsetsFolders = i - w + 237 + 8;
   DefaultUI.previousFolders = DefaultUI.offsetsFolders > 0;
@@ -4578,28 +4676,30 @@ DefaultUI.reflowBlockBars = function (w) {
 /** live expression used for debugging:
 @see https://github.com/KaaBEL/.d1r.dbv/blob/fb90bf5/code/editor.js#L2706-L2726
  * blob/fb90bf5e0ce42dd2bcbcb00f8a6e64b4a2242da7/code/editor.js#L2706-L2726 */
-/** @param {number} [item] uses @see {DefaultUI.selectedFolder} */
+/** @param {number|TileType} [item] uses @see {DefaultUI.selectedFolder} */
 DefaultUI.getSelectedTile = function (item) {
-  var select = item === UDF ? DefaultUI.selectedTile : item;
-  return (select & 3) === 1 ?
-    (DefaultUI.blockBars[DefaultUI.selectedFolder] || [])[select >> 2] :
-    (select & 3) === 0 ?
-      DefaultUI.toolBar[select >> 2] :
-      select === 2 ? Tool.get("Load") : null;
+  if (typeof item != "number")
+    return item || DefaultUI.selected;
+  return (item & 3) === 1 ?
+    (DefaultUI.blockBars[DefaultUI.selectedFolder] || [])[item >> 2] :
+    (item & 3) === 0 ?
+      DefaultUI.toolBar[item >> 2] :
+      item === 2 ? Tool.get("Load") : DefaultUI.inventory[item >> 2];
 };
-/** @param {number} [item] uses @see {DefaultUI.openedFolder} */
+/** @param {number|TileType} [item] uses @see {DefaultUI.openedFolder} */
 DefaultUI.getClickedTile = function (item) {
-  var select = item === UDF ? DefaultUI.clickedTile : item;
-  return (select & 3) === 1 ?
-    (DefaultUI.blockBars[DefaultUI.openedFolder] || [])[select >> 2] :
-    (select & 3) === 0 ?
-      DefaultUI.toolBar[select >> 2] :
-      select === 2 ? Tool.get("Load") : null;
+  if (typeof item != "number")
+    return item || DefaultUI.clicked;
+  return (item & 3) === 1 ?
+    (DefaultUI.blockBars[DefaultUI.openedFolder] || [])[item >> 2] :
+    (item & 3) === 0 ?
+      DefaultUI.toolBar[item >> 2] :
+      item === 2 ? Tool.get("Load") : DefaultUI.inventory[item >> 2];
 };
 /** Warning: resets DefaultUI.selectedTile!, ...you know, ... (xD)
  * @param {boolean} logicOnly */
 DefaultUI.getDefaultFolders = function (logicOnly) {
-  DefaultUI.selectedTile = -1;
+  DefaultUI.selected = null;
   for (var i = DefaultUI.defaultFoldersData.length, yk = []; i-- > 0;) {
     var the = DefaultUI.defaultFoldersData[i], tiles = [];
     for (var j = 0, range = the.range || []; j < the.tiles.length; j++)
@@ -4634,6 +4734,7 @@ DefaultUI.drawIconRc = function (type, size) {
       x = (a - w) / 2,
       y = (a - h) / 2;
     helpCanvas.width = helpCanvas.height = a;
+    rc.imageSmoothingEnabled = ctx.msImageSmoothingEnabled = false;
     var rot = 10 - block.rotation[2] & 3;
     rc.rotate(rot * Math.PI / 2);
     if (block.rotation[1]) {
@@ -4650,22 +4751,36 @@ DefaultUI.drawIconRc = function (type, size) {
   }
   /** @param {Ship} ship */
   function drawShipRc(ship) {
+    helpCanvas.width = helpCanvas.height = size;
+    rc.imageSmoothingEnabled = ctx.msImageSmoothingEnabled = false;
+    rc.fillStyle = "#dbecfe";
+    rc.font = (size / 2) + "px monospace";
     if (!ship.thumbnail)
-      return;
-    var img = ship.thumbnail,
-      height = "naturalHeight" in img ? img.naturalHeight : img.height,
-      width = "naturalWidth" in img ? img.naturalWidth : img.width,
-      side = width > height ? width : height,
-      x = (side - width) / 2,
-      y = (side - height) / 2;
-    helpCanvas.width = helpCanvas.height = side || size;
+      return rc.fillText("null", 0, size / 1.5);
+    var img = ship.thumbnail, dw = size, dh = size;
+    var sw = "naturalWidth" in img ? img.naturalWidth : img.width,
+      sh = "naturalHeight" in img ? img.naturalHeight : img.height;
+      //-side = width > height ? width : height;
+    sw > sh ? dh = sh * size / sw : dw = sw * size / sh;
+    if (sw > 0x3fff || sh > 0x3fff)
+      return rc.fillText("NOPE", 0, size / 1.5);
+    var t = Date.now(), key = sw + "x" + sh + " ";
+    key += ship.prop && ship.prop.fileName || ship.name;
     try {
-      rc.drawImage(img, x, y);
+      // v.0.2.42 for ship.prop.thumbImg.onload will be thrusted to fire
+      // to signal image is loading unitl better fallback gets decided
+      //-if (img instanceof HTMLImageElement && !img.dataset.loaded)
+      //-  /** @TODO FIX add Interval class to handle these */
+      //-  throw console.debug("~" + setTimeout(function () {
+      //-    Renderer.initThumbnail.call(img);
+      //-  }));
+      rc.drawImage(img, (size - dw) / 2, (size - dh) / 2, dw, dh);
     } catch (err) {
-      rc.fillStyle = "#dbecfe";
       rc.font = size + "px monospace";
       rc.fillText("-\\|/"[Date.now() >> 10 & 3], 5, size);
     }
+    var dbg = (Renderer.diagnoseThumbnails || {});
+    (dbg[key] || (dbg[key] = [])).push({img: img, dT: Date.now() - t});
   }
   if (type instanceof Tool)
     Tool.drawPathRc(type, size);
@@ -4673,7 +4788,7 @@ DefaultUI.drawIconRc = function (type, size) {
     drawBlockRc(type);
   if (type instanceof Ship)
     drawShipRc(type);
-}
+};
 /**
  * @param {number} x tile x @param {number} y tile y @param {number} r radus
  * @param {TileType} tile @param {unknown} selected boolean
@@ -4701,7 +4816,7 @@ DefaultUI.drawTileCtx = function(x, y, r, tile, selected, isToolBar) {
   DefaultUI.drawIconRc(tile, size);
   tTop = isToolBar ? y - 55 : y - 69;
   ctx.drawImage(helpCanvas, x + 9, tTop, size, size);
-}
+};
 /** render both toolBar and blockBar: all hotbar tile slots
  * @param {number} w @param {number} h */
 DefaultUI.renderHotBars = function (w, h) {
@@ -4749,16 +4864,12 @@ DefaultUI.renderHotBars = function (w, h) {
   ctx.globalAlpha = 1;
   ctx.lineWidth = 2;
   /** contains fix for reselected item after reflow, later reused! */
-  var b = i !== -1 && i < bars.length,
-    clicked = DefaultUI.getClickedTile(),
-    selected = DefaultUI.getSelectedTile();
+  var b = i !== -1 && i < bars.length;
   // see v.0.2.41 for option of highlighting
-  //-if (!DefaultUI.inventoryOpened)
-  //-  clicked = selected = new Tool("__NULL__", "", F, F, F);
   for (var j = 0, tx = 247, ty = h - 15; b && j < bars[i].length; j++) {
     var tile = bars[i][j];
     DefaultUI.drawTileCtx(tx, ty, radius, tile,
-      tile === clicked || tile === selected);
+      tile === DefaultUI.clicked || tile === DefaultUI.selected);
     tx += 87;
   }
   /** here #SeeRenderingFolders */
@@ -4787,14 +4898,14 @@ DefaultUI.renderHotBars = function (w, h) {
   if (DefaultUI.inventoryTile) {
     tx = w - 93;
     DefaultUI.drawTileCtx(tx, ty, radius, tile = Tool.get("Load"),
-      tile === selected || DefaultUI.inventoryOpened);
+      tile === DefaultUI.selected || DefaultUI.inventoryOpened);
   }
   radius = Math.max(0, radius - 1);
   // v.0.2.10 14 = offset to tile origin
   ty = h - 15;
   for (var j = 0, tx = 163; j < DefaultUI.toolBar.length; j++) {
     DefaultUI.drawTileCtx(tx, ty, radius, tile = DefaultUI.toolBar[j],
-      tile === clicked || tile === selected, true);
+      tile === DefaultUI.clicked || tile === DefaultUI.selected, true);
     // v.0.2.10 69 = detects drawn 3 tiles of the row
     if (tx < 69) {
       // v.0.2.10 74 = distance between origins of neighbour toolBar tiles
@@ -4823,37 +4934,38 @@ DefaultUI.renderDragged = function (h) {
 };
 /** @param {number} w @param {number} h 3h_ */
 DefaultUI.renderInventory = function (w, h) {
-  // MUSIC: (my loop for) Goat Simulator OST - Engage Hyper Goat
   // v.0.2.41 239 = start og blockbars
   var radius = Editor.renderSharp ? 0 : 5, x = w > 730 ? 239 : 7;
   ctx.globalAlpha = .8;
   ctx.beginPath();
-  //-ctx.strokeStyle = Editor.outlineBlue;
-  //-ctx.lineWidth = 2; // 309, 171
   // start of outline left bottom
+  // v.0.2.42 180 = 12pixels before invenrory edge, 4 = bars gap
   ctx.moveTo(x, h - 180 - 4);
+  // v.0.2.42 168 = horizontal space taken by blockbars
   ctx.arcTo(x, h - 168 - 4, x + 12, h - 168 - 4, radius);
   ctx.arcTo(w - 302 - 4, h - 168 - 4, w - 302 - 4, h - 180 - 4, radius);
+  // v.0.2.42 53 = top of inventory body
   ctx.arcTo(w - 302 - 4, 53, w - 314 - 4, 53, radius);
   ctx.lineTo(x, 53);
   ctx.closePath();
   ctx.fillStyle = "#0c243c";
   ctx.strokeStyle = Editor.outlineBlue;
   ctx.fill();
-  //-ctx.stroke();
   ctx.font = "32px segoe-ui, sans-serif";
   if (!DefaultUI.panel)
     DefaultUI.panel = 2;
   for (var i = 1, left = x, top = 53; i < 4; i++) {
     var text = ["", "Blocks", "Ships", "Settings"][i],
       b = DefaultUI.panel === i,
+      // v.0.2.42 21 & 7 = padding before + after text
       l = ctx.measureText(text).width + (b ? 21 : 7);
     ctx.globalAlpha = b ? .8 : .7;
     ctx.beginPath();
-    ctx.moveTo(left + l, 53);
+    ctx.moveTo(left + l, top);
+    // v.0.2.42 7 = margin to canvas edge, 12 = radius pixels before edge
     ctx.arcTo(left + l, 7, left + l - 12, 7, radius);
     ctx.arcTo(left, 7, left, 19, radius);
-    ctx.lineTo(left, 53);
+    ctx.lineTo(left, top);
     ctx.closePath();
     ctx.fillStyle = b ? "#0c243c" : "#000c1c";
     ctx.fill();
@@ -4861,17 +4973,24 @@ DefaultUI.renderInventory = function (w, h) {
     ctx.fillStyle = "#d9ecfd";
     ctx.fillText(text, left + (b ? 9 : 3), 39);
     left += l + 3;
-  }
-  // MUSIC: from ms#music channel
-  // then went through whole codebase before continuing here with da music
-  left = x += 4;
-  var clicked = DefaultUI.getClickedTile(),
-    selected = DefaultUI.getSelectedTile();
-  Ship.blueprints.forEach(function (tile) {
-    b = tile === clicked || tile === selected;
+  } 
+  left = x += 8;
+  top += 86;
+  if (DefaultUI.panel === 2)
+    DefaultUI.inventory = Ship.blueprints;
+  for (i = 0; i < DefaultUI.inventory.length; i++) {
+    if (left > w - 393) {
+      left = x;
+      top += 87;
+      // if (outside of inventory)
+      //   break;
+    }
+    var tile = DefaultUI.inventory[i];
+    b = tile === DefaultUI.clicked || tile === DefaultUI.selected;
     DefaultUI.drawTileCtx(left, top, radius, tile, b);
     left += 87;
-  });
+  };
+  DefaultUI.inventoryHeight = top + 69;
 };
 /** generator for press action bind handling
  * @param {(x:number,y:number,tile:ShipBlock)=>void} [blockPlacing]
@@ -4929,14 +5048,7 @@ DefaultUI.previewPlacing = function (x, y, block, offset) {
 DefaultUI.Drag = function () {
   this.x = 0;
   this.y = 0;
-  //-this._item = -1;
-  //-var self = this;
   this.item = -1;
-  //-this.__defineSetter__("item", function (e) {
-  //-  DefaultUI.Drag.dragged === self && console.error("here");
-  //-  return self._item = e;
-  //-});
-  //-this.__defineGetter__("item", function () {return self._item;});
   this.fraction = .5;
   this.folder = -1;
   /** (1) = left, (2) = right (> 2) = other */
@@ -4959,7 +5071,7 @@ DefaultUI.Drag.pointed = new DefaultUI.Drag();
 /** @see {DefaultUI.selectedTile} original item placement */
 DefaultUI.Drag.original = -1;
 DefaultUI.Drag.isPreview = false;
-// v.0.2.32 this is utility for shifting tiles in horbar, as for rest of Drag
+// v.0.2.32 this is utility for shifting tiles in hotbar, as for rest of Drag
 // static methods, I have very littlie idea what's going on, it's fragile
 /** @param {number} from @param {number} to @param {TileType[]} hotbar */
 DefaultUI.Drag.shiftDragged = function (from, to, hotbar) {
@@ -5052,6 +5164,8 @@ DefaultUI.Drag.detect = function (x, y, action) {
     var from = dragged.item >> 2, hotbar = (dragged.item & 3) === 1 ?
       DefaultUI.blockBars[DefaultUI.openedFolder] || [] :
       (dragged.item & 3) === 0 ? DefaultUI.toolBar : [];
+    // (dragged.item & 3) === 0 ? DefaultUI.toolBar : (dragged.item &
+    // 3) === 0 ? DefaultUI.inventory : [];
     if (DefaultUI.Drag.isPreview = pointed.item === -1) {
       if (dragged.tile instanceof Block)
         DefaultUI.previewPlacing(x + Editor.placingOffsetX, y +
@@ -5089,7 +5203,7 @@ DefaultUI.Drag.detect = function (x, y, action) {
   juhus.set("claim", "movetile");
   return true;
 };
-
+ 
 DefaultUI.shipPress = DefaultUI.basePress(UDF);
 juhus.set("onclaim", function (x, y, source) {
   if (source.source.startTarget !== canvas)
@@ -5358,12 +5472,17 @@ var edit_logicmove = function (x, y, e) {
 
 function rend_backgPattern() {
   if (Editor.backgroundImage === 0) {
-    canvas.style.backgroundImage = "url(./assets/_ms_background.jpg)";
+    if (canvas.style.backgroundColor) {
+      canvas.style.backgroundColor = "";
+      return render();
+    }
     canvas.style.backgroundSize = "cover";
     canvas.style.backgroundPosition = "center center";
+    canvas.style.backgroundImage = "url(./assets/_ms_background.jpg)";
     Editor.backgroundStage && rend_backgHangar();
     return;
   }
+  // v.0.2.41 ms background style staying after canging bckgImg is a feature
   try {
     var width = imgBackg.naturalWidth || imgBackg.offsetWidth;
     ctx.fillStyle = ctx.createPattern(imgBackg, "repeat") || "";
@@ -5422,6 +5541,7 @@ var rend_backgHangar = F, init_started = false;
       console.error(xhr.responseText ? e : "xhr empty response0x1");
     }
     xhr.onreadystatechange = null;
+    Tool.loadBlueprints();
   };
   xhr.send();
 }();
@@ -5645,6 +5765,11 @@ function Renderer() {
   throw new Error("Unimplemented");
   this.logíc = false;
 }
+/** @type {{[key:string]:number}} key is length in ms it took to render
+ * a frame, nunmber value records amount of frames with this time */
+Renderer.delays = {};
+/** @type {{[key:string]:{img:ShipThumbnail,dT:number}[]|void}|undefined} */
+Renderer.diagnoseThumbnails = {};
 Renderer.queue = function () {
   var rq = -1;
   return function requestRendering() {
@@ -5718,6 +5843,90 @@ Renderer.drawBlock = function (block) {
     ctx.fillRect(-pos[1] * sc + vX - 7, pos[2] * sc + vY - 7, 14, 14);
   }
 };
+/**
+ * @param {CanvasRenderingContext2D} rc2d @param {number} x @param {number} y
+ * @param {Ship} ship @param {number} [t] start time @returns {unknown} */
+Renderer.paintThumbnail = function (ship, rc2d, x, y, t) {
+  var prop = ship.prop || {}, image = prop.thumbImg;
+  if (!(image instanceof HTMLImageElement))
+    return;
+  t = typeof t == "number" ? t : Date.now();
+  Tool.loadingLogs && console.time(ship.name);
+  var w = image.naturalWidth / 60, h = image.naturalHeight / 60;
+  try {
+    for (; x-- > 0; y = 60)
+      while (y-- > 0) {
+        rc2d.drawImage(image, w / x | 0, h / y | 0, 1, 1, y, x, 1, 1);
+        if (Date.now() - t > 3) {
+          Tool.loadingLogs && console.timeEnd(ship.name);
+          setTimeout(function () {
+            Renderer.paintThumbnail(ship, rc2d, x, y);
+          }, 10);
+          return; 
+        }
+      }
+  } catch (error) {
+    console.warn(error);
+  }
+  ship.thumbnail = rc2d.canvas;
+  Tool.loadingLogs && console.timeEnd(ship.name);
+};
+/** @this {GlobalEventHandlers} @returns {void} */
+Renderer.initThumbnail = function () {
+  if (!(this instanceof HTMLImageElement))
+    return;
+  for (var x = Ship.blueprints.length, image = this; x-- > 0;) {
+    var ship = Ship.blueprints[x], prop = ship.prop || {};
+    if (prop.thumbImg !== image)
+      continue;
+    var timeName = (prop.fileName || ship.name).toUpperCase();
+    Tool.loadingLogs && console.time(timeName);
+    image.dataset.loaded = "true";
+    var w = image.naturalWidth, h = image.naturalHeight;
+    if (w <= 512 && h <= 512) {
+      ship.thumbnail = image;
+      return Tool.loadingLogs ? console.timeEnd(timeName) : UDF;
+    }
+    var rc2d = EL("canvas").getContext("2d") || rc, t = Date.now();
+    rc2d.canvas.width = rc2d.canvas.height = 60;
+    rc2d.imageSmoothingEnabled = rc2d.msImageSmoothingEnabled = false;
+    try {
+      throw "Unimplemented xD @TODO implement pls?";
+      rc.canvas.width = w;
+      rc.canvas.height = h;
+      rc.drawImage(image, 0, 0);
+      var data = rc.getImageData(0, 0, w, h).data,
+        buffer = new Uint8ClampedArray(60 * 60 * 4);
+      rc2d.putImageData(new ImageData(buffer, 60, 60), 0, 0);
+    } catch (_e) {
+      w > 4096 || h > 4096 ?
+        setTimeout(function () {
+            Renderer.paintThumbnail(ship, rc2d, 60, 60);
+          }, 64) :
+        Renderer.paintThumbnail(ship, rc2d, 60, 60, t);
+    }
+    return Tool.loadingLogs ? console.timeEnd(timeName) : UDF;
+  }
+};
+/** @this {GlobalEventHandlers} @returns {void} */
+Renderer.errorThumbnail = function () {
+  if (!(this instanceof HTMLImageElement))
+    return;
+  for (var x = Ship.blueprints.length, image = this; x-- > 0;) {
+    var ship = Ship.blueprints[x], prop = ship.prop || {};
+    if (prop.thumbImg !== image)
+      continue;
+    image.dataset.loaded = "true";
+    var rc2d = Tool.errorTexture;
+    if (!(ship.thumbnail = rc2d.canvas).dataset.loaded) {
+      rc2d.canvas.width = rc2d.canvas.height = 60;
+      rc2d.fillStyle = "#dbecfe";
+      rc2d.font = "32px monospace";
+      rc2d.fillText("ERR", 0, 50);
+      rc2d.canvas.dataset.loaded = "true";
+    }
+  }
+};
 
 render = Renderer.queue;
 
@@ -5747,9 +5956,9 @@ function rend_vehiclePoint(x, y) {
   ctx.fill(new Path2D("M" + (x - 3) + "," + y + "l-18,3v-6z"));
 }
 
-var rend_speeeeed = {}, rend_logs = 69, rend_collisions = false;
+var rend_logs = 69, rend_collisions = false, test_collisions = "";
 /** @type {{[key:string]:ShipBlock|Box2dPath}|null} */
-var test_bugged = null, test_collisions = "";
+var test_bugged = null, rend_speeeeed = Renderer.delays;
 function expensiveRenderer() {
   var t = Date.now(), AT = ", at expensiveRenderer();";
   canvas.width = canvas.width;
@@ -5956,8 +6165,12 @@ blocks to display collisions");
     ctx.globalCompositeOperation = "copy";
     ctx.drawImage(canvas, 0, 0);
   }
-  var t = Date.now() - t | 0;
-  rend_speeeeed[t] = rend_speeeeed[t] + 1 || 0;
+  var deltaT = Date.now() - t | 0, sped = Renderer.delays;
+  sped[deltaT] = sped[deltaT] + 1 || 0;
+  // if (deltaT < 17) {
+  //   deltaT = ((Date.now() - t) * 100 | 0) / 100;
+  //   sped["s" + deltaT] = sped["s" + deltaT] + 1 || 0;
+  // }
 }
 /** @type {Block.Box2d.Visualize} */
 Block.Box2d.visualize = function (path, x, y, green) {
@@ -6011,7 +6224,6 @@ init = function loadedEditorInit() {
   imgColor.onload && rend_checkColors();
   imgBackg.src = "" + imgBackg.getAttribute("data-src");
   check_contentScript();
-  Block.creator.msWarns = 69;
   
   if (/[?&]no=info$|[?&]no=info&/.test(location.href))
     console.groupEnd();
