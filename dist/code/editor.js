@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.42";
+var version_editor_js = "v.0.2.43";
 /** 3h_ @TODO check @see {Editor} for assignment without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -25,12 +25,11 @@ else if (/https?/.test(location.protocol) && navigator.serviceWorker)
   try {
     /** @type {ServiceWorkerContainer} */
     var swc = navigator.serviceWorker, sw = swc.controller;
-    // is it good to have completely relative path for ServiceWorker?
-    sw || swc.register("./service-worker.js",
+    swc.register("./service-worker.js",
       {scope: "./"}).then(function (swr) {
         sw = (swr.installing || swr.waiting || swr.active);
         (sw || OC()).onstatechange = function () {
-          console.log.apply(console, [""].slice.call(arguments
+          console.debug.apply(console, [""].slice.call(arguments
             ).concat("sw_change"));
         };
       }).catch(function (reason) {
@@ -41,7 +40,7 @@ else if (/https?/.test(location.protocol) && navigator.serviceWorker)
   }
 
 if ("WebSocket" in window && "originalClass" in WebSocket)
-  // @ts-expect-error
+  //@ts-expect-error
   window.WebSocket = WebSocket.originalClass;
 
 /**
@@ -53,7 +52,7 @@ if ("WebSocket" in window && "originalClass" in WebSocket)
 function Editor() {
   console.error("open new Window/browser tab for more editors dumass/j");
   throw new TypeError("Illegal constructor");
-};
+}
 /** (default) true: image pattern, false: color */
 Editor.background = typeof DOMMatrix == "function";
 /** mumst be in #xxxxxx hex color format */
@@ -581,18 +580,10 @@ mal;}"));
   }
 })(/\/[0-9a-zA-Z._+\-:]+\/editor(?:\.html)?(?:#[^?]*)?($|\?[^=]*)/);
 
-if (test_debug || /http:..localhost:\d\d\d\d/.test(location.href))
+if (test_debug || /http:..localhost:\d\d\d\d/.test(location.href)) {
   Data.checkTitles();
-else
   Data.dispose();
-
-// /** namespace for orginized resources loading and for file loading related
-//  * methods */
-// function Load() {
-//   throw new TypeError("Illegal constructor");
-// }
-// Load.loadBlueprints = function ?
-// ^ nah, the naming doesn't sound right, #RIPLoad
+}
 
 Editor.imgOverlay.style.display = "none";
 Editor.imgOverlay.ariaHidden = "true";
@@ -1054,6 +1045,44 @@ imgBackg.setAttribute("data-src", "./assets/_" + [
   "dbc"
 ][Editor.backgroundImage] + "_background.png");
 
+/** because File class is defined, Save is the name of namespace for
+ * functions to handle files */
+function Save() {
+  this.file = null;
+}
+/** @type {Error|null} */
+Save.error = null;
+/** @param {(content:string)=>void} [callback] @param {File|number} [curr] */
+Save.getStringContent = function (callback, curr) {
+  if (!(curr instanceof File)) {
+    var index = Number(curr) || 0, found;
+    while (!file.files[index] && index < file.files.length)
+      index++;
+    if (!(found = file.files[index]))
+      return Save.error = new Error("No file picked");
+    curr = found;
+  }
+  var reader = new FileReader();
+  reader.onloadend = function () {
+    (callback || F)(test_log.savefile = "" + reader.result);
+  };
+  reader.readAsText(curr);
+};
+Save.getError = function () {
+  var err = Save.error;
+  Save.error = null;
+  return err;
+};
+/** @param {ArrayBuffer|string} content @param {string} [name] */
+Save.downloadContent = function (content, name) {
+  var a = EL("a");
+  a.download = name || "download.json";
+  a.href = URL.createObjectURL(new Blob([content],
+    {type: typeof content == "string" ?
+      "text/plain" :
+      "application/octet-stream"}));
+  a.click();
+};
 /** @this {any} */
 function del(i) {
   if (i < 0)
@@ -2157,7 +2186,7 @@ Command.importExport = (function (items, collapsed) {
       /** @type {safe} */
       var obj = JSON.parse(s) || OC(), version = obj.significantVersion;
       ship = Ship.fromObject(obj);
-      "filename" in (ship.prop = ship.prop || {}) ||
+      "fileName" in (ship.prop = ship.prop || {}) ||
         file instanceof File && (ship.prop.fileName = file.name);
       // v.0.2.35 do not 
       (Number(version) <= 15) && ship.fixPositionAdjustment(!0);
@@ -2265,7 +2294,7 @@ Command.push("Base64 key EXPERIMENTAL", function (items, collapsed) {
     var bs = ship.blocks;
     try {
       ship.withPositionAdjustment(function (temp) {
-        // @ts-expect-error inside try catch for a reason mr. ts?
+        //@ts-expect-error inside try catch for a reason mr. ts?
         inp.value = B64Key.u8arrToB64(B64Key.encode(temp));
       });
       render();
@@ -3414,9 +3443,7 @@ Tool.loadBlueprints = function () {
   };
   xhr.send();
 };
-/**
- * @typedef Tool.Tab.Options
- * @type {{[key:string]:unknown,text?:string}} */
+/** @typedef TabOptions @type {{[key:string]:unknown,text?:string}} */
 /** @callback @param {Tool.Tab} setup @returns {void} */
 Tool.Tab = function () {
   /** @type {Tool["init"]} @see {Tool} */
@@ -3427,17 +3454,24 @@ Tool.Tab = function () {
   this.destroy = F;
   /** @type {Node[]} */
   this.elements = [];
+  /** not implemented or used yet @TODO consider Tabs implementing this */
   this.reuse = true;
   this.class = "";
   Object.seal(this);
 };
+//-/** @typedef Juhus useless test
+//- * @property {number} idk identifier depending on
+//- * alignment of stars and average tempreture in
+//- * Poland at time of your yestrday's breakfast */
+//-/** @type {Juhus} */
+//-var xd = {idk: 1356};
 /** Uses global flag! */
 Tool.Tab.cssEscapeRegExp = (/\\[0-9A-Fa-f]{1,5} |\\[0-9A-Fa-f]{6}/g);
 Tool.Tab.cssQueryRegExp = (function (nameRegExp, escape) {
   return new RegExp(/(<name>)?(#<name>)?((?:\.<name>)+)?/.source.replace(
     /<name>/g, nameRegExp.source.replace(/<esc>/g, escape.source)));
 })(/(?:[^#.:\[\]= +<>]|<esc>)+/, Tool.Tab.cssEscapeRegExp);
-/** @param {Node} element @param {Tool.Tab.Options} options */
+/** @param {Node} element @param {TabOptions} options */
 Tool.Tab.prototype.setElementProperties = function (element, options) {
   if (options.text)
     ("" + options.text).split("\n").forEach(function (e, i, arr) {
@@ -3457,17 +3491,17 @@ Tool.Tab.prototype.append = (
  * @template {keyof HTMLElementTagNameMap} P
  * @overload append from node @param {Node} node
  * @param {string} query @param {Function&{name?:string}} handler
- * @param {Tool.Tab.Options} [options] @returns {Node}
+ * @param {TabOptions} [options] @returns {Node}
  * @overload no css selector @param {P} element
  * @param {Function&{name?:string}} handler
- * @param {Tool.Tab.Options} [options] @returns {P extends keyof
+ * @param {TabOptions} [options] @returns {P extends keyof
  *   HTMLElementTagNameMap?HTMLElementTagNameMap[P]:Node}
  * @overload using css selector only for compact arguments list
  * @param {string} query @param {Function&{name?:string}} handler
- * @param {Tool.Tab.Options} [options] @returns {Node}
+ * @param {TabOptions} [options] @returns {Node}
  * @this {Tool.Tab} @param {Node|string} [element]
  * @param {string} [query] @param {Function&{name?:string}} [handler]
- * @param {Tool.Tab.Options} [options] @returns {any} */
+ * @param {TabOptions} [options] @returns {any} */
 function (element, query, handler, options) {
   var handlerNext = false, argsCopy = [].slice.call(arguments);
   if (argsCopy[0] instanceof Node)
@@ -3519,12 +3553,16 @@ function (element, query, handler, options) {
   this.elements.push(el);
   return el;
 });
-/** unsafe method
+/** @param {number} _item @see {DefaultUI.selectedTile} */
+Tool.Tab.setTile = function (_item) {};
+Tool.Tab.lastWidth = 380;
+/** unsafe method! bindInit adds abstraction on top of Tool's init,exec,...
  * @description uses GE(9) = ToolTab nav element, GE(8) = main element
  * @param {Tool.Tab} tab @param {ToolSetup} setup */
 Tool.Tab.bindInit = function (tab, setup) {
   var toolTab = GE(9);
   return {
+    /** @type {ToolExec} */
     init: function (x, y) {
       tab.elements = [];
       setup(tab, x, y);
@@ -3565,23 +3603,34 @@ Tool.Tab.bindInit = function (tab, setup) {
       toolTab.style.transform = ratio < 1 ?
         translate + scale :
         scale + translate;
+      Tool.Tab.lastWidth = toolTab.offsetWidth;
       tab.init(x, y);
     },
-    exec: function (x, y) {
-      tab.exec(x, y);
-    },
+    /** @type {ToolExec} */
+    exec: tab.exec,
+    /** @type {ToolExec} */
     destroy: function (x, y) {
       tab.destroy(x, y);
       tab.elements = [];
-      if (toolTab)
+      if (toolTab) {
         toolTab.style.display = "none";
+        while (!tab.reuse && toolTab.lastChild)
+          toolTab.removeChild(toolTab.lastChild);
+      }
     }
   };
 };
 /**
- * @callback ToolSetup @param {Tool.Tab} setup
+ * @callback ToolSetup gtdht @param {Tool.Tab} tab
  * @param {number} x @param {number} y */
-/** @param {string} name @param {ToolSetup} setup @param {string} icon */
+/** v.0.2.43 can't see docmentation for callback argument
+ * @description `setup` callback is given `tab` struct with properties
+ * used as interface provided and handled by Tool.Tab. After calling
+ * setup all `tab.elements` are added into the tool tab element, this
+ * can by done easier using `tab.append()`. After that `tab.init` is
+ * executed. The `tab.exec` property works the same as Tool one.
+ * @param {string} name @param {ToolSetup} setup the first param/argument
+ * `tab` is Tool.Tab instance @param {string} icon */
 Tool.Tab.addItem = function (name, setup, icon) {
   // "so I will name that variable... uhm..., uhm it is then."
   var tab = new Tool.Tab(), uhm = Tool.Tab.bindInit(tab, setup);
@@ -3595,21 +3644,11 @@ Tool.Tab.addCss = function (styles, selector) {
   var cssText = (css ?
     css :
     css = fallback.appendChild(EL("style"))).appendChild(tN(""));
+  css.id = css.id || "style";
   cssText.data = (selector.indexOf(".tool-tab") === -1 ?
     ".tool-tab " + selector.replace(/,/g, ",.tool-tab ") :
     selector) + "{" + styles + "}";
   return cssText;
-};
-Tool.Tab.setTile = function (item) {
-  var tile = DefaultUI.getClickedTile(item), load = Tool.get("Load");
-  if (tile === load) {
-    DefaultUI.inventoryOpened = false;
-    DefaultUI.selected = null;
-    return (load || new Tool("", "")).destroy(-1, -1);
-  }
-  DefaultUI.selected = tile;
-  render();
-  // CONTINUE displaying ship info 3h_
 };
 Tool.selectionBased = "Move,Rotate,Rotate90,Flip,Flip180,Select,Clone,Paint,\
 Erase,".split(",");
@@ -3810,8 +3849,8 @@ d;-webkit-text-stroke: thin #000;color: #fff;", ".logic-group-disabled,.logi\
 c-group-enabled");
 Tool.Tab.addCss("opacity: 0.4;border-color: #0d2137;", ".logic-group-disable\
 d:not(:active)");
-Tool.Tab.addItem("Node", function setup(methods, _x, _y) {
-  function handler(group) {
+Tool.Tab.addItem("Node", function setup(tab, _x, _y) {
+  function handler(_group) {
     var onclick = function () {
       if (!(this instanceof HTMLButtonElement))
         return;
@@ -3824,22 +3863,22 @@ Tool.Tab.addItem("Node", function setup(methods, _x, _y) {
   }
   Logic.rend = true;
   for (var i = 0; i < Color.NAME.length; i++)
-    methods.append("button", handler(i), {
+    tab.append("button", handler(i), {
       id: "g" + i,
       className: "logic-group-enabled",
       text: "Group " + new Array(Math.max(0, ("" + Color.NAME.length
         ).length - ("" + i).length + 1)).join("0") + i
     // v.0.2.11 96 = background-size (px)
     }).style.backgroundPositionY = (-i * 64) + "px";
-  methods.exec = function (_x, _y) {
+  tab.exec = function (_x, _y) {
     try {
       throw new Error("can not push tool with existing name");
     } catch (e) {
       if (e instanceof Object && "stack" in e)
-        console.debug('exec '+test_handler+':'+e.stack);
+        console.debug("exec " + test_handler + ":" + e.stack);
     }
   };
-  methods.destroy = function () {
+  tab.destroy = function () {
     Logic.rend = false;
   };
 }, ("Mf70a,34a28 c0,f1b,0,7296,0,8060 c0,1e09,-1859,3663,-3663,3663 c-fa9,0,\
@@ -4197,21 +4236,42 @@ e,2f97,2f97,2f97 z", Tool.loadInit = (function init() {
   DefaultUI.setSelectedTile(2, 0, 0);
   render();
 })));
-Tool.Tab.addItem("Load", function setup(methods, _x, _y) {
-  methods.init = function () {
+Tool.Tab.addCss("width: 90%;border: 2px solid #5577aa;border-radius: 4px;background-color: #0000;font-size: 24px;}", "input");
+Tool.Tab.addItem("Load", function setup(tab, _x, _y) {
+  /** @type {TileType} */
+  var tile, name = EL("input"), fileName = EL("input");
+  tab.elements.push(fileName, name);
+  Tool.Tab.setTile = function (item) {
+    tile = DefaultUI.getClickedTile(item);
+    if (tile === Tool.get("Load")) {
+      DefaultUI.inventoryOpened = false;
+      DefaultUI.selected = null;
+      return (Tool.get("Load") || new Tool("", "")).destroy(-1, -1);
+    }
+    if (DefaultUI.selected = tile) {
+      if (tile instanceof Ship) {
+        fileName.style.display = name.style.display = "";
+        fileName.value = tile.prop && tile.prop.fileName || "";
+        name.value = tile.name;
+      } else
+        fileName.style.display = name.style.display = "none";
+    }
+    render();
+  };
+  tab.init = function () {
     DefaultUI.inventoryOpened = true;
     Tool.loadBlueprints();
   };
-  methods.destroy = function () {
+  tab.destroy = function () {
     DefaultUI.inventoryOpened = false;
   };
-}, "M21142,dd0f c405c,0,198d6,0,198d6,0 c2f6d,0\
-,55df,2672,55df,55df v201fe c0,2f6d,-2672,55df,-55df,55df l-35423,-2f4 c-2f6\
-d,0,-55df,-2672,-55df,-55df v-26631 c0,-2f6d,2672,-55df,55df,-55df h130cd c1\
-83a,0,2e1d,a08,3dba,1a2c z M19042,2454a$ins; M19042,13370$ins; M7d6e,2454a$i\
-ns; M7d6e,13370$ins;".replace(/\$ins;/g, " c-15a4,0,-272f,118b,-272f,272f v9\
-005 c0,15a4,118b,272f,272f,272f h8e1d c15a4,0,272f,-118b,272f,-272f v-9005 c\
-0,-15a4,-118b,-272f,-272f,-272f z"));
+}, "M21142,dd0f c405c,0,198d6,0,198d6,0 c2f6d,0,55df,2672,55df,55df v201fe c\
+0,2f6d,-2672,55df,-55df,55df l-35423,-2f4 c-2f6d,0,-55df,-2672,-55df,-55df v\
+-26631 c0,-2f6d,2672,-55df,55df,-55df h130cd c183a,0,2e1d,a08,3dba,1a2c z M1\
+9042,2454a$ins; M19042,13370$ins; M7d6e,2454a$ins; M7d6e,13370$ins;".replace(
+/\$ins;/g, " c-15a4,0,-272f,118b,-272f,272f v9005 c0,15a4,118b,272f,272f,27\
+2f h8e1d c15a4,0,272f,-118b,272f,-272f v-9005 c0,-15a4,-118b,-272f,-272f,-27\
+2f z"));
  
 // db3 styled icon (cardboard box)
 // https://www.flaticon.com/free-icon/package_7625482?term=time+product&page=2&position=30&origin=search&related_id=7625482
@@ -4361,7 +4421,7 @@ DefaultUI.createTile = function () {
       return new Block(name, pos, Block.isFlippable(id) ?
           DefaultUI.tilesFlippableRotation :
           DefaultUI.tilesRotation,
-        0, Color.default(name));
+        0, Color.getDefault(name));
     if (val instanceof Tool)
       return val;
     return null;
@@ -6037,7 +6097,7 @@ function expensiveRenderer() {
             "nodes" + AT);
           break;
         }
-        // @ts-expect-error
+        //@ts-expect-error
         logic[j] || (logic[j] = {x: j / 3, y: j / 3});
         // facepalm No.1: works now actually
         var x = logic[j].x - (id > 1279 ? ow & 16 : 0) / size.res,

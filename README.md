@@ -1,12 +1,19 @@
-<!-- v.0.2.37 -->
-.d1r and .dbv are file extensions of the two main file formats supported by DroneBoi Vehicles Editor. DBV (Droneboi vehicle) are game files for creations of Droneboi: Conquest game, D1R (Deltarealm 1.0, which doesn't exist) is modular file format for compressing droneboi like games space ship creations into binary data, uint8 byte array, inspired by PNG format.
+<!-- v.0.2.43 -->
+.d1r and .dbv are file extensions of the two main file formats which DroneBoi Vehicles Editor was based on, howerver .mssss file format for Modular Spaceships gets more support as of June 2026.  
+DBV (Droneboi vehicle) are game files for creations of Droneboi: Conquest game,  
+.D1R file extension (Drobo1Realm, which doesn't exist) is proposed modular file format for compressing droneboi like games space ship creations into binary data, uint8 byte array, inspired by PNG format. Possibly implemented as a network protocol with tooling and support to aid in multiplayer challenges, just like it was actively 'maintained' relativly to its usage.  
 
 Let me know (on Discord or) by creating issue in case you are interested in custom modification of editor or contributing to the project. 
 
-### Currently in progress:
+## Currently in progress:
+### Fixing DBVE
+This tool not being used is old news. Since I just screw around, the editor as well is used only for screwing around, this time I'll keep screwing around till specific significant features are functional. I don't know what will happen to DBVE development afterward.
+
+The acronym is DBVE because this tool started in Droneboi community presented as an .DBV Editor. For consistency this acronym now remains as the most recognized short name for this project despite not supporting Droneboi games actively anymore.
+
 ### Advanced editor features for DBVE
-`Edit: Due to current unpopularity I decided to merge it with and work simultaneously on Default UI update.`  
-**Transform tool**: (not completed, buggy)  
+`Edit: Edit: This is so outdated for quite some time...`  
+**Transform tool**: (not completed, buggy, funcional with Classic Tool)  
 https://discord.com/channels/749233290241769473/1142927384023154760/1142927384023154760  
 https://discord.com/channels/749233290241769473/1192697437190623353  
 https://discord.com/channels/749233290241769473/1222745899755901019  
@@ -45,7 +52,7 @@ https://discord.com/channels/749233290241769473/1225047342357549066
 \- weapons range, DPS  
 ? acceleration time  
 
-**Logic connections tool**: (work in progress)  
+**Logic connections tool**: (work in progress without progress)  
 https://discord.com/channels/749233290241769473/1148385350503383140  
 https://discord.com/channels/749233290241769473/1149657447762497599  
 https://discord.com/channels/749233290241769473/1168177352338051184  

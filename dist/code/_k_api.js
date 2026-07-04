@@ -2,7 +2,7 @@
 /// <reference path="./editor.html.ts" />
 "use strict";
 /** @readonly */
-var version__k_api_js = "v.0.2.41";
+var version__k_api_js = "v.0.2.43";
 /** 3h_ @TODO check @see {Actions.API_VERSION} */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -223,7 +223,8 @@ function Actions(event, index, state, previous, touch) {
   this.moveX = previous ? this.x - previous.x : 0;
   this.moveY = previous ? this.y - previous.y : 0;
   /** **state is essential** gesture property, backbone of K API.
-   * options should be "<single|double> <short|long|move|longmove>"
+   * codes should be "<single|double> <short|long|move|longmove>":
+   * @see {Actions.State.SHORT} see static properties of Actions.State
    * ...short before ...move caused bug test move gestures carefully */
   this.state = Actions.updateState(this, event, state, previous);
   /** @TODO it is possible for extra touches to exist due to missing touchend
@@ -233,7 +234,7 @@ function Actions(event, index, state, previous, touch) {
   // It may be possible that my seals/freezes madness might not be performant
 }
 /** @readonly *///@ts-expect-error
-Actions.API_VERSION = "0.3.11";
+Actions.API_VERSION = "0.3.13";
 Actions.default = Object.freeze(
   /** @type {{[K in ActionsDefault]:(MouseEvent|ScrollWheel|PointerEvent)[K]}} */
   ({
@@ -527,9 +528,6 @@ Actions.init = function (root, options) {
     }
     // #tstart beggining of created touches handling
     function canMovezoom() {
-      //- because of DefaultUI moving inventory tiles claim can prevent
-      //- grab from starting, now it needs to be allowed through claimable
-      //- names set from outside the API and ending existing event
       return /^move$|^unclaimed$|^claim/.test(state.claim) &&
         all.length > 1 && all[0] && all[1] &&
         Date.now() < state.grabTime + state.touch.shortTime &&
@@ -761,7 +759,7 @@ Actions.init = function (root, options) {
         return;
       else if (el === state.touchesTarget)
         break;
-    if (!(e instanceof MouseEvent))
+    if (!(e instanceof PointerEvent))
       return;
     var offset = state.root instanceof HTMLElement ?
       state.root :
@@ -770,17 +768,6 @@ Actions.init = function (root, options) {
       y = (e.pageY - offset.offsetTop) * pR;
     contextmenu(x, y, e);
     // v.0.2.41 it seems contextmenu already dispatches mousemove in browsers
-    //-var action = all[-1] = source.source = immutable ?
-    //-  Object.freeze(new Actions(e, -1, state, all[-1])) :
-    //-  mutable[-1] ?
-    //-    Actions.update(mutable[-1], -1, state, e, all[-1]) :
-    //-    mutable[-1] = new Actions(e, -1, state, all[-1]);
-    //-action ?
-    //-  !(state.filterClaimed && state.claim.length === 4) &&
-    //-    !(state.mouseButton && action.buttons !== 1) &&
-    //-    state.onmove(action.x, action.y, source) :
-    //-  console.error("very strange error, action is null4");
-    //-Actions.log(temp, e, "cxm", state, source);
   }, window);
 
   state.touchesTarget && !(listeners && listeners.passive === false) &&
@@ -911,7 +898,7 @@ Actions.State.prototype.generateAccessors = function (destroy) {
     set: function (key, value) {
       self[key] = value;
     },
-    /** @type {()=>(keyof Actions.State)[]} */
+    /** @type {()=>(keyof Actions.State)[]} @see {Actions.State} 'docs' */
     keys: function () {
       /** @type {(keyof Actions.State)[]} */
       var keys = [], p = keys[0];
@@ -925,6 +912,13 @@ Actions.State.prototype.generateAccessors = function (destroy) {
   }, self = this;
     return Object.freeze(accessors);
 };
+/** "... short": simple click, haven't moved and didn't last long */
+Actions.State.SHORT = / short$/;
+/** "... ": a new interaction starts only as single/double */
+Actions.State.NONE = / $/;
+/** "double ...": the previous interaction ended faster then short */
+Actions.State.DOUBLE = /^double /;
+/** ... */
 /** @param {number} time @param {number} move @param {number} doubleTime */
 Actions.State.Allowed = function (time, move, doubleTime) {
   /** allowed time for active (started) action to get state...short" */
@@ -941,6 +935,15 @@ Actions.State.Allowed.prototype.toString = function () {
   return "st:" + this.shortTime + "sm:" + this.shortMove + "dt:" +
     this.doubleTime + "dm:" + this.doubleMove + ";";
 };
+/** @namespace @typedef {never} Actions.Claim @returns {never} */
+Actions.Claim = function () {
+  throw new TypeError("Illegal constructor");
+};
+/** grab/move/poin move camera with mouse, touchscreen or other pointer */
+Actions.Claim.ANY_MOVE = /^(?:grab|move)$/;
+/** resizing and moving with two finger internal gesture */
+Actions.Claim.GRAB = /^grab$/;
+/** ... @TODO expand this ^ concept into testing in practing */
 Actions.logX = 0;
 Actions.logY = 0;
 Actions.logMax = 32;

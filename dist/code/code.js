@@ -2,7 +2,7 @@
 /// <reference path="./defs.d.ts" />
 "use strict";
 /** @readonly */
-var version_code_js = "v.0.2.42";
+var version_code_js = "v.0.2.43";
 /** 3h_  @TODO check @see {Ship.VERSION}  Read FUN FACTS below: */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
@@ -51,17 +51,18 @@ if (typeof Initial != "function")
 var Data = (function () {
   /** @TODO fix string/number access of generated ids, names */
   /**
+   * @typedef {[number,number,number]} SizeXYZ
    * @typedef {number|[number,number]} UseData
    * @typedef {{id:number,weight?:number,strength?:number,cost?:number,
    * energy_use?:UseData,energy_store?:number,fuel_use?:UseData,
    * fuel_store?:number,cargo_use?:UseData,cargo_store?:number,
    * draw?:number[],now?:number,bitmap?:ShortDef|SizeDef,editor?:
-   * string,old?:string,new?:string}} BlockData
+   * string,old?:string,new?:string,box3d?:SizeXYZ}} BlockData
    * @typedef {{id:number,weight?:number,strength?:number,cost?:number,
    * energy_use?:number|number[],energy_store?:number,
    * fuel_use?:number|number[],fuel_store?:number,cargo_use?:number|
    * number[],cargo_store?:number,draw?:number[],now?:number,
-   * bitmap:number|(number|string)[]}} BlockDataSimple
+   * bitmap:number|(number|string)[],box3d?:SizeXYZ}} BlockDataSimple
    * @typedef {{colors:typeof colors,blocks:typeof blocks}} DataData
    */
   /** @typedef {never} Data @returns {never} */
@@ -138,10 +139,15 @@ var Data = (function () {
     "96,164,96,2,1]"
   ];
   // #data.xmltodbve v.0.2.27 was used to show ts errors where block IDs
-  // weren't assigned (case of new blocks), but still can be tested in browser
+  // were missing (case of new blocks), but still can be tested in browser
 
   // search / ?([^]{20,74}[,{;]) ?/ replace "  $1\n "
   // search /\["\d+ \d+"\]|"\d+ \d+"/ replace <number with texture index>
+  /** for other unlisted block properties check their at place definition
+   * data @see {Logic.VALUE} @see {Color.getDefault} @see {Block.db1ToDb3}
+   * @see {Block.Mirror.VALUE} @see {Block.Properties.VALUE}
+   * @see {Block.Box2d.VALUE} @see {Ship.Grid.VALUE}
+   * @see {Editor.imgOverlay} @see {Editor.imgMask.src} @see {imgColor} */
   var blocks =
     /** @type {const} @satisfies {{[key:string]:BlockData}} */
     ({block: {id: 0, draw: [14, 14, 14, 14, 14, 14]},
@@ -156,6 +162,27 @@ var Data = (function () {
     rocket_thruster_small: {id: 9, draw: [8, 8, 5, 8, 8, 6]},
     cockpit_fighter: {id: 10, draw: [9, 10, 11, 9, 12, 13]},
     cockpit_cruiser: {id: 11, draw: [26, 27, 28, 26, 29, 30]},
+    dr0_3cube: {id: 32},
+    dr0_3wedge: {id: 33},
+    dr0_3pyr: {id: 34},
+    dr0_3inv_pyr: {id: 35},
+    dr0_3pilot_seat: {id: 36},
+    dr0_3thruster: {id: 37, box3d: [.25, .25, .25]},
+    dr0_3re_wh: {id: 38},
+    dr0_3window: {id: 39},
+    dr0_3wedge_window: {id: 40},
+    dr0_3pyr_window: {id: 41},
+    dr0_3door: {id: 42},
+    dr0_3plate: {id: 43},
+    dr0_3wedge_plate: {id: 44},
+    dr0_3light: {id: 45},
+    dr0_3air_vent: {id: 46},
+    dr0_3airlock_controller: {id: 47},
+    dr0_3oxygen_refill_station: {id: 48},
+    dr0_3sm_hy_thr: {id: 49, box3d: [.75, .75, 1.75]},
+    dr0_3me_hy_thr: {id: 50, box3d: [1.25, 1.25, 2.75]},
+    dr0_3lg_hy_thr: {id: 51, box3d: [1.75, 1.75, 3.75]},
+    dr0_3hy_tank: {id: 52},
     __unknown__: {id: 511, bitmap: ["111,2905"]},
     Core: {id: 690, weight: 2, strength: 10, cost: -1, cargo_store: 5,
     bitmap: 128}, Block: {id: 691, weight: 1, strength: 10, cost: 100,
@@ -509,6 +536,27 @@ var Data = (function () {
     9: "rocket_thruster_small",
     10: "cockpit_fighter",
     11: "cockpit_cruiser",
+    32: "Cube",
+    33: "Wedge",
+    34: "Pyramid",
+    35: "Inverse Pyramid",
+    36: "Pilot Seat",
+    37: "Thruster",
+    38: "Reaction Wheel",
+    39: "Window",
+    40: "Wedge Window",
+    41: "Pyramid Window",
+    42: "Door",
+    43: "Plate",
+    44: "Wedge Plate",
+    45: "Light",
+    46: "Air Vent",
+    47: "Airlock Controller",
+    48: "Oxygen Refill Station",
+    49: "Small Hydrolox Thruster",
+    50: "Medium Hydrolox Thruster",
+    51: "Large Hydrolox Thruster",
+    52: "Hydrolox Tank",
     511: "__unknown__",
     690: "Core",
     691: "Block",
@@ -909,9 +957,9 @@ var Data = (function () {
     1767: "1*3 Indestructible wedge",
     1768: "1*4 Indestructible wedge",
     1769: "1*5 Indestructible wedge"
-  });
-  /** @type {any} */
-  Data.temp = {};
+  });;
+  /** @type {{[key:number]:string|undefined}} */
+  Data.games = {0: "", 1: "dr0_3"};
   /** @template {"colors"|"blocks"} T @param {T} src */
   Data.generateNames = function (src) {
     var names =
@@ -951,7 +999,7 @@ var Data = (function () {
   };
   /** @template {keyof BlockData} T @param {T} type */
   Data.generateValues = function (type) {
-    /** @type {{[key:string]:BlockData[T]|undefined}} Values by Name */
+    /** @type {{[key:number]:BlockData[T]|undefined}} Values by Name */
     var values = {},
       data = type === "now" ? colors : blocks,
       /** @type {BlockDataSimple[keyof BlockData&"bitmap"]} */
@@ -1020,7 +1068,7 @@ var Data = (function () {
       if (OP.call(blocks, p))
         delete blocks[p];
     Data.generateIDs = Data.generateNames = Data.generateValues =
-      function outdatedGenerator() {
+      Data.getData = function outdatedGenerator() {
         throw new Error("Too late, use data extracted in Block class");
       };
     Data.checkTitles = function outdatedDataCheck() {
@@ -1065,10 +1113,16 @@ var Data = (function () {
       if (!defined[l] && l in Data.titles)
         console.warn("title of undefined block id:" + l + " !");
   };
+  /** @deprecated gives acces to private blocks and colors data, not for
+   * producton @param {"color"|"blocks"} [src] @param {unknown} [noWarn]
+   * @throws {Error} */
+  Data.getData = function (src, noWarn) {
+    noWarn || console.warn("Modifying Data sources has no effect on " +
+      "already initialized data. This is for modders convenience");
+    return src === "color" ? colors : blocks;
+  };
   return Data;
 })();
-/** @TODO remove Data.dispose use from editor.js, Block.Box2d is twive more
- * the size in V8 anyway */
 
 /** @typedef {Block|LogicBlock} ShipBlock */
 /**
@@ -1572,7 +1626,7 @@ Color.db1ToDb3 = Object.freeze({
   17: "Pink", 18: "Festive Green", 19: "Festive Duck"
 });
 /** @param {string} name @returns {Colors} */
-Color.default = function getColor(name) {
+Color.getDefault = function getColor(name) {
   if (/Hydrogen Thruster/.test(name))
     return "Yellow";
   if (/Wheel|Battery|__placeholder84[456]__|Dynamo/.test(name))
@@ -2133,6 +2187,7 @@ Bin.Utf8 = function (bin) {
     return Bin.Utf8.toString(arr);
   });
 });
+/** @type {Utf8ToString} */
 Bin.Utf8.prototype.toString = function (bufferOrArray) {
   if (bufferOrArray instanceof Array)
     bufferOrArray = new Uint8Array(bufferOrArray);
@@ -2211,6 +2266,7 @@ Bin.Utf8.decode = function (bin) {
 /** (v.0.2.39) simple usage experiment
  * @method @type {(this:{},buffer:Array|Binary|Uint8Array)=>string} */
 Bin.Utf8.toString = Bin.Utf8.prototype.toString;
+/*** @typedef {typeof Bin.Utf8.toString} Utf8ToString */
 
 /** letter case of block names doesn't matter when loaded by game,
  * Block name definitions require strict letter cases here */
@@ -2224,7 +2280,8 @@ Bin.Utf8.toString = Bin.Utf8.prototype.toString;
  * defaultEnabled?:boolean,nonInteractable?:boolean,controls?:number[],
  * settings?:[unknown,number,number,string]}} MsBlockProps
  * @typedef {{customParameter?:(number|string|[number,number,number,number]
- * )[],nodeIndex?:number[],weldGroup?:number}&MsBlockProps} BlockProps
+ * )[],nodeIndex?:number[],weldGroup?:number,dr0_3size?:number[]}&
+ * MsBlockProps} BlockProps
  * type for block MS and db properties utilised, not @see {BlockProperties}
  * @param {string} name
  * @param {XYZPosition} pos DBV to DR: [-: 0, x: p[0] * 2, y: p[1] * 2]
@@ -2258,8 +2315,7 @@ Block.TITLE = Object.freeze(Data.titles);
 /** @readonly @type {{[key:number]:number|undefined}} (Mass) */
 //@ts-expect-error 799: 1, Inversed Dock?
 Block.WEIGHT = Data.generateValues("weight");
-/** @readonly @type {{[key:number]:number|undefined}} (Integrity) */
-//@ts-expect-error
+/** @readonly (Integrity) *///@ts-expect-error
 Block.STRENGTH = Data.generateValues("strength");
 /** number = Electricity Units per second
  * and in case of thruster when they are set to 1 000 000 (1M) force,
@@ -2267,8 +2323,7 @@ Block.STRENGTH = Data.generateValues("strength");
  * second @type {{[key:number]:number|[number,number]|undefined}}
  * @readonly (Electricity) *///@ts-expect-error
 Block.ENERGY_USE = Data.generateValues("energy_use");
-/** number = contained units
- * @readonly @type {{[key:number]:number|undefined}} (Electricity) */
+/** number = contained units @readonly (Electricity) */
 //@ts-expect-error
 Block.ENERGY_STORE = Data.generateValues("energy_store");
 /** number = Liters of Fuel per second,
@@ -2277,8 +2332,7 @@ Block.ENERGY_STORE = Data.generateValues("energy_store");
  * @type {{[key:number]:number|[number,number]|undefined}} (Fuel)
  * @readonly *///@ts-expect-error
 Block.FUEL_USE = Data.generateValues("fuel_use");
-/** number = contained liters
- * @readonly @type {{[key:number]:number|undefined}} (Fuel) */
+/** number = contained liters @readonly (Fuel) */
 //@ts-expect-error 754: was 20 before fuel buff
 // 755: was 100 before fuel buff
 // 375: was 250 before fuel buff
@@ -2288,9 +2342,7 @@ Block.FUEL_STORE = Data.generateValues("fuel_store");
  * @type {{[key:number]:number|[number,number]|undefined}} (Cargo) */
 //@ts-expect-error
 Block.CARGO_USE = Data.generateValues("cargo_use");
-/** number = items capacity
- * @readonly @type {{[key:number]:number|undefined}} (Cargo) */
-//@ts-expect-error
+/** number = items capacity (Cargo) @readonly *///@ts-expect-error
 Block.CARGO_STORE = Data.generateValues("cargo_store");
 /** positive = buy price of block, -1 = block isn't purchasable
  * @readonly (MarketValue) *///@ts-expect-error
@@ -2314,14 +2366,16 @@ Block.db1ToDb3 = Object.freeze({
   Connector: "Dock", Explosive: "__placeholder776__",
   "Station Block": "__placeholder846__"
 });
+/** Deltarealm 0.3+ box3d size of internally nonscalable blocks */
+Block.BOX3D = Data.generateValues("box3d");
 /** @readonly settings for @see {Block.arrayFromObjects} *///@ts-expect-error
 Block.creator = {warns: 3, msWarns: 3};
 // #mslogics now MS blocks are second time parsed in Block.arrayFromObjects 
 // if performance will suffer, Block instances can be handled more loosely
 /**
- * @readonly @param {any[]|any} blocks
- * @param {Logic<any>[]&{nc?:any}} [logics] */
-Block.arrayFromObjects = function (blocks, logics) {
+ * @see {Ship.fromObject} @readonly @param {any[]|any} blocks
+ * @param {Logic<any>[]&{nc?:any}} [logics] @param {number} [game=0] */
+Block.arrayFromObjects = function (blocks, logics, game) {
   var warn = Block.creator.warns,
     bs = blocks instanceof Array ? blocks : [blocks];
   /** nodeIndex (DBV "ni") property of a block is number[] type:
@@ -2376,10 +2430,10 @@ Block.arrayFromObjects = function (blocks, logics) {
   /**  @type {XYZPosition[]} */
   var logicBlockPositions = [], propertyNames = new RegExp("^(internalName|n\
 ame|n|position|pos|p|rotation|rot|r|properties|prop|f|flipped|wg|weld|color|\
-s|c|ni|invalidName|getPhysics|logicPosition|logicBlockIndex)$");
+s|c|ni|invalidName|getPhysics|logicPosition|logicBlockIndex|i)$");
   for (var i = 0, r = []; i < bs.length; i++) {
-    var block = bs[i], o = {
-      name: block.internalName || block.name || block.n,
+    var gamePrefix = Data.games[game || 0] || "", block = bs[i], o = {
+      name: block.internalName || block.i || block.name || block.n,
       pos: block.position || block.pos || block.p,
       rot: block.rotation || block.rot || block.r || 0,
       prop: block.properties || block.prop || {},
@@ -2387,20 +2441,27 @@ s|c|ni|invalidName|getPhysics|logicPosition|logicBlockIndex)$");
       weld: block.wg || block.weld,
       lpos: block.logicPosition
     };
+    // (v.0.1.64T14) hasOwnProperty check for "for ... in ..." ?
+    if (warn) {
+      for (var p in block)
+        propertyNames.test(p) || warn-- && console.warn("Unknown bloc" +
+          "k property: " + JSON.stringify(p) + " at: " + i);
+      // v.0.2.43 for (var p in o.prop)
+      //   propertyNames.test(p) || warn-- && console.warn("Unknown prop" +
+      //     "erties property: " + JSON.stringify(p) + " at: " + i);
+    }
+    // v.0.2.43 moved code, 
+    if (game && "s" in block) {
+      o.prop.dr0_3size = block.s;
+      delete block.s;
+    }
     // (v.0.1.64T14) color is nullable so null as deafault for DBV detected
-    // uses later Color.default to set it
+    // uses later Color.getDefault to set it
     var color = block.color || block.s || o.prop.color;
     o.prop.color = typeof color == "string" ? color : null;
-    // (v.0.1.64T14) hasOwnProperty check for "for ... in ..." ?
-    for (var p in block)
-      if (warn)
-        propertyNames.test(p) || warn-- && console.warn("Unknown prop" +
-          "erty name: " + JSON.stringify(p) + " at: " + i);
-      else
-        break;
     var name = (typeof o.name == "string" ?
         o.name !== "__unknown__" ?
-          o.name :
+          gamePrefix + o.name :
           (o.prop.invalidName || "") + "" :
         "") || "__unknown__",
       pos = (o.pos instanceof Array && o.pos.length !== 2 ?
@@ -2431,13 +2492,14 @@ s|c|ni|invalidName|getPhysics|logicPosition|logicBlockIndex)$");
       control = block.c || o.prop.customParameter ||
         o.prop.control || o.prop.custom;
     if (Block.ID[name] === UDF) {
+      /** @TODO finish game prefixed names to have properties.game = game */
       o.prop.invalidName = name;
       name = "__unknown__";
     }
     if (o.pos instanceof Array && o.pos.length === 2) {
       if (typeof o.prop.color != "string")
         // NOTE that defaulting color requires DBV like position ^
-        o.prop.color = Color.default(name);
+        o.prop.color = Color.getDefault(name);
       if (typeof o.rot != "number" && warn && warn--)
         console.warn("incorrect array position length or wrong rota" +
           "tion? at: Block.arrayFromObjects, blocks: ", bs, " i: ", i);
@@ -2752,19 +2814,21 @@ Block.Mirror.PYRAMID = Block.Mirror.generateRotations("8,11,10,9,12,15,14,13\
 ,0,3,2,1,4,7,6,5,17,16,19,18,23,22,21,20", "PYRAMID");
 Block.Mirror.WEDGE = Block.Mirror.generateRotations("6,5,4,7,2,1,0,3,8,11,10\
 ,9,12,15,14,13,16,19,18,17,20,23,22,21", "WEDGE");
-/** @type {{[key:number]:Block.Mirror<"PYRAMID"|"WEDGE">|undefined}} */
-Block.Mirror.VALUE = {
-  1: new Block.Mirror("WEDGE"),
-  2: new Block.Mirror("WEDGE"),
-  3: new Block.Mirror("PYRAMID"),
-  4: new Block.Mirror("PYRAMID"),
-  5: new Block.Mirror("PYRAMID"),
-  6: new Block.Mirror("PYRAMID"),
-  8: new Block.Mirror("PYRAMID"),
-  9: new Block.Mirror("PYRAMID"),
-  10: new Block.Mirror("WEDGE"),
-  11: new Block.Mirror("WEDGE"),
+/** @param {(number|"P"|"W"|"PYRAMID"|"WEDGE")[]} arg */
+Block.Mirror.generate = function (arg) {
+  /** @type {{[key:number]:Block.Mirror<"PYRAMID"|"WEDGE">|undefined}} */
+  var mirrors = {}, value = arg[0];
+  for (var i = 0, index = 0; i < arg.length; i++)
+    typeof (value = arg[i]) == "number" ?
+      index = value :
+      mirrors[index++] =
+        new Block.Mirror(value[0] === "P" ? "PYRAMID" : "WEDGE");
+  return mirrors;
 };
+Block.Mirror.VALUE = Block.Mirror.generate(["W", "W", "P", "P",
+  "P", "P", "P", "P", "W", "W", 33, "W", "P", "P", "W", "W", "W",
+  /** FLAT */ "P", "W", "P", "P", /** FLAT */ "P", "W", "W", "W",
+  "W", "W", "W", "W", "W"]);
 
 /** JSDoc syntax for ts Conditional Type example:
  * @template {readonly any[]|any[]} A @typedef {{[K in keyof A as
@@ -4219,6 +4283,10 @@ Edit.changeSelection = function (target, block, subtract) {
     return console.error("Selected ShipBlock was not found:", block);
   Edit.applyCommand(cmd, target, subtract ? -1 - index : index);
 };
+// /** @param {Ship} target */
+// Edit.mirror = function (target) {
+//   Edit.applyCommand(Edit.Primitive.mirror, target);
+// };
 // taken from: https://stackoverflow.com/a/47593316
 /** @param {number} seed @see {Ship.dateTime} */
 Edit.randSFC32 = function (seed) {
@@ -4327,7 +4395,7 @@ Edit.Primitive.paint = function (target, color) {
   var colorName = Color.NAME[color] || null;
   target.selection.forEach(color === -1 ?
     function (e) {
-      e.properties.color = Color.default(e.internalName);
+      e.properties.color = Color.getDefault(e.internalName);
     } :
     function (e) {
       e.properties.color = colorName;
@@ -4378,6 +4446,10 @@ Edit.Primitive.changeSelection = function (target, index) {
     ship.selection.splice(selected, 1) :
     ship.selection.push(block) : 0;
 };
+// /** @param {Ship} target @param {number} _mode */
+// Edit.Primitive.mirror = function (target, _mode) {
+//   ;
+// };
 /** class for old Deltarealm base64 prototype keys code
  * @namespace @typedef {never} Edit.Ship @returns {never} */
 Edit.Ship = function EditShip() {
@@ -4430,8 +4502,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.thumbnail = null;
   Object.seal(this);
 }
-/** @readonly @type {52} significantVersion: 52 (integer) */// @ts-ignore
-Ship.VERSION = 52;
+/** @readonly @type {53} significantVersion: 53 (integer) *///@ts-ignore
+Ship.VERSION = 53;
 Ship.prototype.edit = Edit.Ship;
 Ship.prototype.selectRect = (
   /**
@@ -4540,13 +4612,6 @@ Ship.prototype.replaceRect = function (x0, y0, z0, x1, y1, z1) {
         blocks.push(pushBlock(this));
   return blocks;
 };
-Ship.prototype.fillRect = function () {
-  throw new Error("Unimplemented");
-  var x = 0, x0 = 0, y = 0, y0 = 0, z = 0, z0 = 0;
-  // width, height, length (not implemented yet placing with collsisions)
-  var w = x - x0 + 1, h = y - y0 + 1, l = z - z0 + 1;
-  var b;
-};
 /**
  * @this {Ship} @param {number} x @param {number} y @param {number} z */
 Ship.prototype.paste = function (x, y, z) {
@@ -4622,28 +4687,6 @@ Ship.prototype.paste = function (x, y, z) {
       newNode.pairs = -1;
   };
 };
-Ship.prototype.mirror = (
-  /**
-   * @overload @returns {void}
-   * @overload @param {number} x0 @param {number} x1 @param {number} y0
-   * @param {number} y1 @param {number} z0 @param {number} z1
-   * @returns {void} @this {Ship}
-   * @param {number} [x0] @param {number} [x1] @param {number} [y0]
-   * @param {number} [y1] @param {number} [z0] @param {number} [z1] */
-  /** @type {()=>void} */
-  function (x0, y0, z0, x1, y1, z1) {
-    throw new Error("Unimplemented");
-    // what was selected and all
-    var x = x0, y = y0, z = z0, selected = [];
-    if (typeof x == "number") {
-      var all = this.blocks;
-      x1 > x0 ? x0 = x1 : x = x1;
-      y1 > y0 ? y0 = y1 : y = y1;
-      z1 > z0 ? z0 = z1 : z = z1;
-    } else
-      selected = this.blocks.concat(all = []);
-  }
-);
 Ship.prototype.mirror2d = (
   /**
    * @overload @returns {void}
@@ -4939,7 +4982,7 @@ Ship.fromObject = function fromObject(object) {
     name: object.name || object.n || spaceship.name,
     ver: object.gameVersion || object.version || object.gv,
     time: object.dateTime || object.time || object.dt,
-    blocks: object.blocks || object.b,
+    blocks: object.blocks || object.p || object.b,
     props: object.properties || object.prop,
     add: object.ls || object.nc || object.ci ? {
       size: object.ls,
@@ -4978,7 +5021,7 @@ Ship.fromObject = function fromObject(object) {
       return arr;
     }(),
     blocks = o.blocks instanceof Array ?
-      Block.arrayFromObjects(o.blocks, logics) :
+      Block.arrayFromObjects(o.blocks, logics, +("p" in object)) :
       Block.generateArray(("" + o.blocks).toUpperCase() ===
         "PAZIK" ? -7 : -69, logics);
   // v.0.2.34 copy properties decoded from MS object before logic connections
@@ -5077,7 +5120,7 @@ Ship.fromDBKey = function (key) {
     var ctrl = [+o[3] || 0],
       color = +o[5] === +o[5] ?
         Color.db1ToDb3[+o[5]] :
-        Color.default(name) || "White",
+        Color.getDefault(name) || "White",
     // o[6] [Use rotation, Up, Down, Left, Right]
       flip = !!+o[7];
     o = (o[1] || "").split("~");
