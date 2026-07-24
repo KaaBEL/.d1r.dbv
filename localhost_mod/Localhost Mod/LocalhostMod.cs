@@ -1,4 +1,4 @@
-// v.0.2.42
+// v.0.2.44
 using System;
 using System.Net;
 using System.Reflection;
@@ -12,7 +12,7 @@ using UnityEngine.UI;
 
 namespace Localhost_Mod
 {
-     public class Localhost
+    public class Localhost
     {
         public static readonly string s_DbveDir = "/.d1r.dbv";
 
@@ -142,28 +142,55 @@ namespace Localhost_Mod
             response.AddHeader("Access-Control-Allow-Headers", "Accept, X-" +
                 "Access-Token, X-Application-Name, X-Request-Sent-Time");
             response.AddHeader("Access-Control-Allow-Methods", "GET, POST," +
-                " DELETE, OPTIONS");
+                " PUT, DELETE, OPTIONS");
             response.AddHeader("Access-Control-Allow-Origin", s_CorsOrigin);
+
+            if (request.HttpMethod == "POST" || request.HttpMethod == "PUT")
+            {
+                try
+                {
+                    byte[] buffer = ReadAllBytes(request);
+                    FileOptions o = SaveFile.SaveShip(name, buffer);
+                    if ((o & FileOptions.Error) > 0)
+                    {
+                        response.StatusCode = 500;
+                    }
+                    else if ((o & FileOptions.Created) > 0)
+                    {
+                        response.StatusCode = 201;
+                    }
+                    response.ContentLength64 = 0;
+                    response.Close();
+                }
+                catch (Exception e)
+                {
+                    Logging.Warn(e);
+                }
+                if (s_listener == null) return;
+                task = s_listener.GetContextAsync();
+                task.ContinueWith(RespondAsync);
+                return;
+            }
 
             try
             {
-                byte[] buffer = SaveFile.LoadShip(name, out LoadOptions o);
-                if ((o & LoadOptions.Error) > 0)
+                byte[] buffer = SaveFile.LoadShip(name, out FileOptions o);
+                if ((o & FileOptions.Error) > 0)
                 {
                     response.StatusCode = 500;
                 }
-                else if ((o & LoadOptions.Missing) > 0)
+                else if ((o & FileOptions.Missing) > 0)
                 {
                     response.StatusCode = 404;
                 }
-                else if ((o & LoadOptions.TooLarge) > 0)
+                else if ((o & FileOptions.TooLarge) > 0)
                 {
                     response.StatusCode = 406;
                     buffer = Array.Empty<byte>();
                 }
-                switch (o & LoadOptions.FileType)
+                switch (o & FileOptions.Type)
                 {
-                    case LoadOptions.IsImage:
+                    case FileOptions.IsImage:
                         response.AddHeader("Vary", "accept-length");
                         // TODO: Add response header for Encoding
                         //response.AddHeader("Encoding", "");
@@ -176,14 +203,14 @@ namespace Localhost_Mod
                 response.ContentLength64 = buffer.Length;
                 response.Close(buffer, false);
 
-                if (s_listener == null) return;
-                task = s_listener.GetContextAsync();
-                task.ContinueWith(RespondAsync);
             }
             catch (Exception e)
             {
                 Logging.Warn(e);
             }
+            if (s_listener == null) return;
+            task = s_listener.GetContextAsync();
+            task.ContinueWith(RespondAsync);
         }
         private static string FixPath(Match match)
         {
@@ -245,6 +272,20 @@ namespace Localhost_Mod
             {
                 Logging.Warn(e);
             }
+        }
+        private static byte[] ReadAllBytes(HttpListenerRequest request)
+        {
+            int end = request.ContentLength64 > 0x7fffffff ?
+                0x7fffffff :
+                Convert.ToInt32(request.ContentLength64), loops = 6969;
+            var buffer = new byte[end];
+            for (int start = 0; start < end && loops-- > 0;)
+            {
+                int count = end - start;
+                start += request.InputStream.Read(buffer, start, count);
+            }
+            if (loops < 0) Logging.Warn("infinite loop probably");
+            return buffer;
         }
 
         // https://learn.microsoft.com/en-us/dotnet/api/system.net.httplistenerrequest?view=net-10.0#examples

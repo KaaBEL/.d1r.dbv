@@ -1,7 +1,7 @@
 /// <reference path="editor.js"/>
 "use strict";
 /** @readonly *///@ts-expect-error
-var version_alphalunar_js = "v.0.2.42";
+var version_alphalunar_js = "v.0.2.44";
 var test_ship = {"name":"Starter Droneboi","gameVersion":[],"dateTime":"05.05.2024 21:12:18","blocks":[{"internalName":"__placeholder856__","position":[0,-9,-52],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-50],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-48],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
 {"internalName":"__placeholder856__","position":[0,-9,-46],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-44],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-42],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-9,-40],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
 {"internalName":"__placeholder856__","position":[0,-9,-38],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-52],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-50],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-48],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-46],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},{"internalName":"__placeholder856__","position":[0,-11,-44],"rotation":[0,false,0],"properties":{"color":"Station Floor 1","control":[],"nodeIndex":[],"weldGroup":0}},
@@ -452,4 +452,49 @@ Ship.toMSSSSVersioned = function (ship, o) {
   ship.selection = selection;
   return mssss;
 };
+/** @param {BlobPart} [origin] @param {BlobPart} [change] */
+function devt_compare_ships(origin, change) {
+  if ("webkitShowOpenFilePicker" in window)
+    window.showOpenFilePicker = window.webkitShowOpenFilePicker;
+  if (!("showOpenFilePicker" in window))
+    return;
+  var files = devt_compare_ships.files;
+  /** @param {BlobPart} source @param {FileSystemFileHandle} handle */
+  function updateFile(source, handle) {
+    if (!source)
+      return;
+    if (!handle)
+      return console.warn(new TypeError("file handle is missing"));
+    handle.createWritable().then(function (stream) {
+      stream.truncate(source.length).then(function () {
+        stream.write(source).catch(console.warn);
+        stream.close()
+      }, console.error);
+    }, console.error);
+    // if (source && handle)
+    //   handle.queryPermission({mode: "write"}).then(function (res) {
+    //     if (res !== "granted")
+    //       ;
+    // });
+  }
+  if ((origin || change) && devt_compare_ships.files.length > 1) {
+    updateFile(origin, files[0]);
+    return updateFile(change, files[1]);
+  }
+  var options = {multiple: true, startIn: "downloads"};
+  showOpenFilePicker(options).then(function (response) {
+    (response.length > 2 ?
+      files = response.slice(-2) :
+      files = devt_compare_ships.files.concat(response)).sort();
+    if (files[2] === response[0])
+      files = files.slice(1, 3);
+    else
+      files.length = 2;
+    devt_compare_ships.files = files;
+    updateFile(origin, files[0]);
+    updateFile(change, files[1]);
+  }, console.error);
+};
+/** @type {FileSystemFileHandle[]} */
+devt_compare_ships.files = [];
 document.head.querySelector("link[rel=\"icon\"]").href = "./favicon.png";

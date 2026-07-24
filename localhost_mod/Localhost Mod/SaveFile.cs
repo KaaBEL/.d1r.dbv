@@ -1,4 +1,4 @@
-﻿// v.0.2.42
+﻿// v.0.2.44
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -7,15 +7,17 @@ using System.Text.RegularExpressions;
 
 namespace Localhost_Mod
 {
-    enum LoadOptions
+    enum FileOptions
     {
+        None = 0,
         Missing = 1,
         TooLarge = 2,
         Error = 4,
+        Created = 8,
         IsImage = 16,
         IsJSON,
         IsMSSSS,
-        FileType = 240
+        Type = 240
     };
     internal class SaveFile
     {
@@ -28,9 +30,9 @@ namespace Localhost_Mod
         {
             return LoadShip(name, out _);
         }
-        public static byte[] LoadShip(string name, out LoadOptions status)
+        public static byte[] LoadShip(string name, out FileOptions status)
         {
-            status = 0;
+            status = FileOptions.None;
             if (name.Length == 0) return LoadShip(out status);
             string path = GetPath();
             try
@@ -44,30 +46,31 @@ namespace Localhost_Mod
                 if (!File.Exists(path + name))
                 {
                     Logging.Warn("Not found: " + path + name);
-                    status |= LoadOptions.Missing;
+                    status |= FileOptions.Missing;
                     return Array.Empty<byte>();
                 }    
                 byte[] content = File.ReadAllBytes(path + name);
                 if (isImage && content.Length > 1024 * 1024)
                 {
-                    status |= LoadOptions.TooLarge;
+                    status |= FileOptions.TooLarge;
                 }
-                if (isImage) status |= LoadOptions.IsImage;
+                if (isImage) status |= FileOptions.IsImage;
                 Logging.Log("Path: " + path);
                 return content;
             }
             catch (Exception error)
             {
                 Logging.Warn(error);
+                status |= FileOptions.Error;
             }
             return Array.Empty<byte>();
         }
-        public static byte[] LoadShip(out LoadOptions status)
+        public static byte[] LoadShip(out FileOptions status)
         {
             status = 0;
             if (!Directory.Exists(GetPath() + "/Ships"))
             {
-                status |= LoadOptions.Missing;
+                status |= FileOptions.Missing;
                 return Encoding.UTF8.GetBytes("[ ]\n");
             }
             FileInfo[] info;
@@ -78,7 +81,7 @@ namespace Localhost_Mod
             catch (Exception error)
             {
                 Logging.Warn(error);
-                status |= LoadOptions.Error;
+                status |= FileOptions.Error;
                 return Array.Empty<byte>();
             }
             StringBuilder ships = new();
@@ -88,6 +91,32 @@ namespace Localhost_Mod
             }
             if (ships.Length > 0) ships.Length--;
             return Encoding.UTF8.GetBytes("[" + ships + "]");
+        }
+        public static FileOptions SaveShip(string name, byte[] content)
+        {
+            FileOptions status = FileOptions.None;
+            if (!name.Contains("(mod).") && !name.Contains("(modded)."))
+            {
+                int index = name.LastIndexOf('.');
+                name = name[0..index] + "(mod)" + name[index..];
+            }
+            bool isImage = s_ImageReg.IsMatch(name);
+            if (isImage) status |= FileOptions.IsImage;
+            string path = GetPath();
+            path += isImage ? "/ShipImages/" : "/Ships/";
+            if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+            if (!File.Exists(path + name)) status |= FileOptions.Created;
+            try
+            {
+                Logging.Log(content.Length + " New file name: " + name);
+                File.WriteAllBytes(path + name, content);
+            }
+            catch (Exception error)
+            {
+                Logging.Warn(error);
+                status |= FileOptions.Error;
+            }
+            return status;
         }
         private static string GetPath()
         {

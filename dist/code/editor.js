@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.43";
+var version_editor_js = "v.0.2.44";
 /** 3h_ @TODO check @see {Editor} for assignment without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -3454,7 +3454,8 @@ Tool.Tab = function () {
   this.destroy = F;
   /** @type {Node[]} */
   this.elements = [];
-  /** not implemented or used yet @TODO consider Tabs implementing this */
+  /** not used yet, experimental implementation keeps 
+   * @TODO consider Tabs implementing this */
   this.reuse = true;
   this.class = "";
   Object.seal(this);
@@ -3558,7 +3559,7 @@ Tool.Tab.setTile = function (_item) {};
 Tool.Tab.lastWidth = 380;
 /** unsafe method! bindInit adds abstraction on top of Tool's init,exec,...
  * @description uses GE(9) = ToolTab nav element, GE(8) = main element
- * @param {Tool.Tab} tab @param {ToolSetup} setup */
+ * @param {Tool.Tab} tab @param {ToolSetup} setup docs at Tool.Tab */
 Tool.Tab.bindInit = function (tab, setup) {
   var toolTab = GE(9);
   return {
@@ -3656,7 +3657,7 @@ Erase,".split(",");
 Tool.Tab.addCss("position: absolute;top: 7px;right: " + 7 / pR + "px;width: \
 320px;padding: 7px;border-radius: 7px;font-family: segoe-ui, sans-serif;back\
 ground-color: rgba(13, 33, 55, .8);color: #bbccdd;overflow-y: scroll;scrollb\
-ar-width: none;-ms-overflow-style: none;font-size: 20px;", "");
+ar-width: none;-ms-overflow-style: none;font-size: 24px;", "");
 Tool.Tab.addCss("width: 0px;background: transparent;", ".tool-tab::-webkit-s\
 crollbar");
 Tool.list.push(new Tool("Tune", "M4a4,24265 c51,2f0,273,ad3,931,f85 c8da,714\
@@ -3842,9 +3843,9 @@ e c0,-5a6,0,-35d59,0,-3643c c0,-1052,d3b,-1d8e,1d8e,-1d8e c88f,0,db66,0,de2d\
 c-6b6,0,-d69e,0,-de2d,0 c-1052,0,-1d8e,d3b,-1d8e,1d8e c0,80c,0,1b1a5,0,1b629\
  c0,1052,d3b,1d8e,1d8e,1d8e c5e9,0,d9f1,0,de2d,0 c1052,0,1d8e,-d3b,1d8e,-1d8\
 e c0,-754,0,-1b5c7,0,-1b629 z"));
-var test_handler = 0, css = Tool.Tab.addCss("width: 68px;height: 68px;border\
-: 2px solid " + Editor.outlineBlue + ";border-radius: 7px;margin: 5px;backgr\
-ound-size: 64px;background-image: url(" + imgColor.src + ");font-weight: bol\
+var test_handler = 0, css = Tool.Tab.addCss("width: 72px;height: 72px;border\
+: 2px solid " + Editor.outlineBlue + ";border-radius: 7px;margin: 4px;backgr\
+ound-size: 68px;background-image: url(" + imgColor.src + ");font-weight: bol\
 d;-webkit-text-stroke: thin #000;color: #fff;", ".logic-group-disabled,.logi\
 c-group-enabled");
 Tool.Tab.addCss("opacity: 0.4;border-color: #0d2137;", ".logic-group-disable\
@@ -3869,7 +3870,7 @@ Tool.Tab.addItem("Node", function setup(tab, _x, _y) {
       text: "Group " + new Array(Math.max(0, ("" + Color.NAME.length
         ).length - ("" + i).length + 1)).join("0") + i
     // v.0.2.11 96 = background-size (px)
-    }).style.backgroundPositionY = (-i * 64) + "px";
+    }).style.backgroundPositionY = (-i * 68) + "px";
   tab.exec = function (_x, _y) {
     try {
       throw new Error("can not push tool with existing name");
@@ -4236,33 +4237,112 @@ e,2f97,2f97,2f97 z", Tool.loadInit = (function init() {
   DefaultUI.setSelectedTile(2, 0, 0);
   render();
 })));
-Tool.Tab.addCss("width: 90%;border: 2px solid #5577aa;border-radius: 4px;background-color: #0000;font-size: 24px;}", "input");
+Tool.Tab.addCss("width: 90%;border: 2px solid #5577aa;border-radius: 4px;bac\
+kground-color: #0000;font-size: 24px;", "input,button");
+Tool.Tab.addCss("background-color: #000a1c;", "button");
 Tool.Tab.addItem("Load", function setup(tab, _x, _y) {
+  var tool = Tool.get("Load") || new Tool("", "");
   /** @type {TileType} */
-  var tile, name = EL("input"), fileName = EL("input");
-  tab.elements.push(fileName, name);
+  var tile, shipInfo = EL(), name = EL("input"), fileName = EL("input");
+  /** @type {ShipThumbnail&{}} */
+  var preview = EL("img"), load = EL("button"), save = EL("button");
+  var error = EL(), message = error.appendChild(tN(""));
+
+  shipInfo.style.display = "none";
+  tab.elements.push(tN("File name:"), fileName, tN("Ship name:"), name,
+    EL("br"), preview, error, load, save);
+  error.style.color = "red";
+  error.style.fontFamily = "monospace,sans-serif,Courier,Consolas";
+  load.appendChild(tN("Set as edited ship"));
+  load.onclick = function () {
+    if (tile instanceof Ship) {
+      ship = tile;
+      tool.destroy(-1, -1);
+      render();
+    }
+  };
+  /** @param {unknown} err */
+  // TODO: Tool.Tab.prototype.error =
+  function displayError(err) {
+    if (typeof err == "object" && err && "stack" in err)
+      console.error(err.stack);
+    message.data = "" + err;
+  }
+  function onStateChange() {
+    if (xhr.readyState !== 4)
+      return;
+    try {
+      if (xhr.status < 200 || xhr.status > 299)
+        throw new Error("unsuccessful save request");
+    } catch (err) {
+      displayError(err);
+    }
+    xhr.onreadystatechange = null;
+  }
+  var xhr = new XMLHttpRequest();
+  save.appendChild(tN("Save to game folder"));
+  save.id = "save-ship-xhr";
+  save.onclick = function () {
+    try {
+      var string = "http://localhost:5501/Ships/" + fileName.value;
+      xhr.open("PUT", string, true);
+      xhr.onreadystatechange = onStateChange;
+      string = JSON.stringify(Ship.toMSSSS(ship));
+      for (var i = string.length, raw = new Uint8Array(i); i-- > 0;)
+        raw[i] = string.charCodeAt(i) ^ 19;
+      xhr.send(raw);
+    } catch (err) {
+      displayError(err);
+    }
+  };
   Tool.Tab.setTile = function (item) {
+    
     tile = DefaultUI.getClickedTile(item);
     if (tile === Tool.get("Load")) {
       DefaultUI.inventoryOpened = false;
       DefaultUI.selected = null;
-      return (Tool.get("Load") || new Tool("", "")).destroy(-1, -1);
+      return tool.destroy(-1, -1);
     }
+    shipInfo.style.display = inventoryInfo.style.display = "none";
     if (DefaultUI.selected = tile) {
       if (tile instanceof Ship) {
-        fileName.style.display = name.style.display = "";
+        shipInfo.style.display = "";
         fileName.value = tile.prop && tile.prop.fileName || "";
         name.value = tile.name;
-      } else
-        fileName.style.display = name.style.display = "none";
+        var image = tile.prop && tile.prop.thumbImg;
+        if (image instanceof HTMLImageElement &&
+          image.naturalWidth < 512 && image.naturalHeight < 512) {
+          try {
+            rc.drawImage(image, 0, 0);
+          } catch (err) {
+            image = tile.thumbnail || EL("img");
+          }
+        } else
+          image = image || tile.thumbnail || EL("img");
+        image.style.imageRendering = "pixelated";
+        shipInfo.replaceChild(image, preview);
+        (preview = image).style.width = "300px";
+      }
     }
     render();
   };
+  for (var i = 0; i < tab.elements.length; i++)
+    shipInfo.appendChild(tab.elements[i]);
+  tab.elements.length = 0;
+
+  var inventoryInfo = EL();
+  inventoryInfo.appendChild(tN(""));
+  for (var i = 0; i < tab.elements.length; i++)
+    shipInfo.appendChild(tab.elements[i]);
+  tab.elements.length = 0;
+  tab.elements.push(shipInfo, inventoryInfo);
+
   tab.init = function () {
     DefaultUI.inventoryOpened = true;
     Tool.loadBlueprints();
   };
   tab.destroy = function () {
+    Tool.Tab.setTile = F;
     DefaultUI.inventoryOpened = false;
   };
 }, "M21142,dd0f c405c,0,198d6,0,198d6,0 c2f6d,0,55df,2672,55df,55df v201fe c\
@@ -4275,14 +4355,17 @@ Tool.Tab.addItem("Load", function setup(tab, _x, _y) {
  
 // db3 styled icon (cardboard box)
 // https://www.flaticon.com/free-icon/package_7625482?term=time+product&page=2&position=30&origin=search&related_id=7625482
- 
-/** May throw error, use asynchronously! @throws {TypeError} */
+
+/** for modders to be able to create browser extensions for DBVE */
 function check_contentScript() {
   var contentScript = GE("contentScript"), data = "";
-  if (contentScript && (data = contentScript.innerText)) {
-    //@ts-expect-error no problem if it throws error
-    contentScript.parentNode.removeChild(contentScript);
-    document.body.appendChild(EL("script")).appendChild(tN(data));
+  while (contentScript && (data = contentScript.innerText)) {
+    try {
+      //@ts-expect-error no problem if it throws error
+      contentScript.parentNode.removeChild(contentScript);
+      document.body.appendChild(EL("script")).appendChild(tN(data));
+      contentScript = GE("contentScript");
+    } catch (err) {}
   }
 }
 function test_blocks1_2_10() {

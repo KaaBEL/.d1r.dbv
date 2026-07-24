@@ -2,7 +2,7 @@
 /// <reference path="./defs.d.ts" />
 "use strict";
 /** @readonly */
-var version_code_js = "v.0.2.43";
+var version_code_js = "v.0.2.44";
 /** 3h_  @TODO check @see {Ship.VERSION}  Read FUN FACTS below: */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
@@ -4502,8 +4502,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.thumbnail = null;
   Object.seal(this);
 }
-/** @readonly @type {53} significantVersion: 53 (integer) *///@ts-ignore
-Ship.VERSION = 53;
+/** @readonly @type {54} significantVersion: 54 (integer) *///@ts-ignore
+Ship.VERSION = 54;
 Ship.prototype.edit = Edit.Ship;
 Ship.prototype.selectRect = (
   /**
@@ -5223,7 +5223,7 @@ Ship.toMSSSS = function (ship) {
         (block.rotation[2] * 90) + "," + (block.rotation[1] ? -1 : 1) +
         ",1|" + s + ";";
     }).concat([
-      "DecoLayer3_Half1|999,999|" +
+      "DecoLayer3_Half1|1,999|" +
       version_code_js.replace(/^v[^\d]*(\d+(?:\.\d+)+).*$/, function (m, g1) {
         return (g1 + ".0.0").split(".").slice(0, 3).join(",");
       }) + "|c" + Ship.VERSION +
@@ -5358,6 +5358,8 @@ Ship.fromMSObject = function (o) {
   }
   /** @param {string} key @param {(number[]|undefined)[]} logicInputs */
   function handleNewLogic(key, logicInputs) {
+    //@ts-expect-error disabling processing logics to MS bug
+    return false;
     var p = key.slice(0, -7);
     if (p.slice(-7) !== "_@logic" && !(p in inputNames))
       return false;
@@ -5397,6 +5399,8 @@ teractable|ComponentSettings|Rotation|rotFlip|MirVert|MirHor)$");
       settings = obj.ComponentSettings;
     properties = (typeof settings == "function" ||
       typeof settings == "object") && settings || {};
+    // v.0.2.44 when decolayers collide due to missing size for position
+    // adjust, the new versions won't load such ships
     if (adjust) {
       var size = Block.Size.VALUE[Block.ID[name]], rot = rotation[2];
       if (size) {
@@ -5436,8 +5440,13 @@ teractable|ComponentSettings|Rotation|rotFlip|MirVert|MirHor)$");
       properties.layer = obj.layer;
       properties.nonInteractable = obj.nonInteractable;
     }
-    if (name === "__unknown__")
+    if (name === "__unknown__") {
       (optional = properties).invalidName = obj.ID;
+      if (adjust && ("" + obj.ID).slice(0, 9) === "Decolayer" &&
+        "layer" in properties)
+        //@ts-expect-error I couldn't possible do more of a workaround
+        return allParts.pop();
+    }
     "color" in obj ? handleColor(obj.color) : "color" in properties &&
         handleColor(properties.color);
     return "ComponentSettings" in obj ?
