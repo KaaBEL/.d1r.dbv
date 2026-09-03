@@ -1,4 +1,4 @@
-// v.0.2.44
+// v.0.2.45
 using System;
 using System.Net;
 using System.Reflection;
@@ -23,8 +23,6 @@ namespace Localhost_Mod
         private static Task s_task = new(() => { });
         private static readonly Regex s_UrlEscapeSeqence =
             new Regex("(?:%[a-fA-F0-9]{2})+");
-        //-private static readonly Regex s_PathName =
-        //-    new Regex("^[^?#]*\\/([^?#]*)");
 
         public static bool IsLive {
             get { return s_listener.IsListening; }
@@ -43,10 +41,10 @@ namespace Localhost_Mod
                 Logging.Warn("I haven't got menu_startlocalhost :(");
                 return;
             }
-            gameObject.GetComponent<Button>().onClick.AddListener(delegate
-                {
-                    ToggleSetting(gameObject);
-                });
+            // v.0.2.45 damn the CSharp line lenghts (due to types verbosity)
+            var onClick = gameObject.GetComponent<Button>().onClick;
+            onClick.AddListener(delegate { ToggleSetting(gameObject); });
+
             string localized = Localization.LocalizeText("menu_" +
                 (s_listener.IsListening ? "stop" : "start") + "localhost");
             gameObject.GetComponentInChildren<Text>().text = localized;
@@ -123,10 +121,11 @@ namespace Localhost_Mod
                 {
                     // decoding % escaped strings within URLs
                     path = s_UrlEscapeSeqence.Replace(path, FixPath);
-                }     
+                }
                 if (path.StartsWith(s_DbveDir))
                 {
-                    HandleDbveDomain(task);
+                    task.ContinueWith(HandleDbveDomain,
+                        TaskScheduler.Default);
                     return;
                 }
                 if (path.StartsWith("/Ships/"))
@@ -136,6 +135,8 @@ namespace Localhost_Mod
                 }
             }
             Logging.Log("Ship file name: " + name);
+            string origin = request.Headers.Get("Access-Control-Allow-Orig" +
+                "in") ?? s_CorsOrigin;
 
             HttpListenerResponse response = context.Response;
             response.AddHeader("Access-Control-Allow-Credentials", "true");
@@ -143,7 +144,10 @@ namespace Localhost_Mod
                 "Access-Token, X-Application-Name, X-Request-Sent-Time");
             response.AddHeader("Access-Control-Allow-Methods", "GET, POST," +
                 " PUT, DELETE, OPTIONS");
-            response.AddHeader("Access-Control-Allow-Origin", s_CorsOrigin);
+            if (new Uri(s_CorsOrigin) == new Uri(origin))
+            {
+                response.AddHeader("Access-Control-Allow-Origin", origin);
+            }
 
             if (request.HttpMethod == "POST" || request.HttpMethod == "PUT")
             {
@@ -162,9 +166,9 @@ namespace Localhost_Mod
                     response.ContentLength64 = 0;
                     response.Close();
                 }
-                catch (Exception e)
+                catch (Exception error)
                 {
-                    Logging.Warn(e);
+                    Logging.Warn(error);
                 }
                 if (s_listener == null) return;
                 task = s_listener.GetContextAsync();
@@ -178,6 +182,7 @@ namespace Localhost_Mod
                 if ((o & FileOptions.Error) > 0)
                 {
                     response.StatusCode = 500;
+                    response.AddHeader("Encoding", "text/plain");
                 }
                 else if ((o & FileOptions.Missing) > 0)
                 {
@@ -188,25 +193,20 @@ namespace Localhost_Mod
                     response.StatusCode = 406;
                     buffer = Array.Empty<byte>();
                 }
-                switch (o & FileOptions.Type)
+                if ((o & FileOptions.IsImage) > 0)
                 {
-                    case FileOptions.IsImage:
-                        response.AddHeader("Vary", "accept-length");
-                        // TODO: Add response header for Encoding
-                        //response.AddHeader("Encoding", "");
-                        break;
-                    //case LoadOptions.IsJSON:
-                    //response.AddHeader("Encoding", "application/json");
-                    //break;
-                    //...
+                    response.AddHeader("Vary", "accept-length");
                 }
+                string type = SaveFile.BuildMimeType(o);
+                if (type.Length > 0) response.AddHeader("Encoding", type);
+
                 response.ContentLength64 = buffer.Length;
                 response.Close(buffer, false);
 
             }
-            catch (Exception e)
+            catch (Exception error)
             {
-                Logging.Warn(e);
+                Logging.Warn(error);
             }
             if (s_listener == null) return;
             task = s_listener.GetContextAsync();
@@ -216,23 +216,15 @@ namespace Localhost_Mod
         {
             try
             {
-                //-Console.WriteLine(match.Value);
-                //-char[] test = { Convert.ToChar(
-                //-    Convert.ToInt32(match.Value.Substring(1), 16)) };
-                //-byte[] text = { Convert.ToByte(
-                //-    match.Value.Substring(1), 16) };
-                //-Console.Write(", Test0: " + new string(test));
-                //-Console.Write(", Text1: " +
-                //-    System.Text.Encoding.UTF8.GetString(text));
                 byte[] text = new byte[match.Value.Length / 3];
                 for (int i = text.Length; i-- > 0;)
                     text[i] = Convert.ToByte(
                         match.Value.Substring(i * 3 + 1, 2), 16);
                 return Encoding.UTF8.GetString(text);
             }
-            catch (Exception e)
+            catch (Exception error)
             {
-                Logging.Warn(e);
+                Logging.Warn(error);
             }
             return "";
         }
@@ -245,7 +237,16 @@ namespace Localhost_Mod
             if (request.Url == null) return;
             string path = request.Url.AbsolutePath[s_DbveDir.Length..^0];
             Logging.Log("Dbve path: " + path);
+
 #if UNITY_2017_1_OR_NEWER
+            ResourceRequest srcRequest;
+            void HandleResourceLoaded(AsyncOperation operation)
+            {
+                var asset = srcRequest.asset;
+                //Logging.Log(response.ContentLength64 = asset.bytes.Length);
+                //response.Close(asset.bytes, false);
+            }
+
             string name;
             string[] split = path.Split('/');
             if (split.Length > 0) name = split[^1];
@@ -253,25 +254,33 @@ namespace Localhost_Mod
 
             try
             {
-                TextAsset asset = Resources.Load<TextAsset>("");
-
-                response.ContentLength64 = asset.bytes.Length;
-                response.Close(asset.bytes, false);
+                throw new Exception("Dbve localhost waits for some people " +
+                    "to care about Dbve's progress");
+                TaskScheduler.FromCurrentSynchronizationContext();
+                srcRequest = Resources.LoadAsync<TextAsset>(name);
+                srcRequest.completed += HandleResourceLoaded;
+                return;
 #else
-            Logging.Warn("Dbve localhost doesn't work with Console App");
             try
             {
-                response.StatusCode = 500;
-                response.Close();
+                throw new Exception("Dbve localhost doesn't work with Cons" +
+                    "ole App, use Modular Spaceships with this mod");
 #endif
-                if (s_listener == null) return;
-                task = s_listener.GetContextAsync();
-                task.ContinueWith(RespondAsync);
             }
-            catch (Exception e)
+            catch (Exception error)
             {
-                Logging.Warn(e);
+                Logging.Warn(error);
+
+                response.StatusCode = 500;
+                response.AddHeader("Encoding", "text/plain");
+                byte[] buffer = Encoding.UTF8.GetBytes((error.Message ??
+                    "") + ("\n" + error.StackTrace ?? "") + "\n");
+                response.ContentLength64 = buffer.Length;
+                response.Close(buffer, false);
             }
+            if (s_listener == null) return;
+            task = s_listener.GetContextAsync();
+            task.ContinueWith(RespondAsync);
         }
         private static byte[] ReadAllBytes(HttpListenerRequest request)
         {

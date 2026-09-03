@@ -1,4 +1,4 @@
-﻿// v.0.2.42
+﻿// v.0.2.45
 using Localhost_Mod;
 
 namespace ConsoleTest
@@ -13,9 +13,7 @@ namespace ConsoleTest
             Localhost.Start();
             Console.Write("(Start finished) it is async");
             Console.WriteLine(", because the method isn't blocking");
-#if !UniUNITY_2017_1_OR_NEWER
             Localhost.PreloadSettings();
-#endif
             Console.WriteLine("");
 
             Console.WriteLine("Press key to stop the program.");

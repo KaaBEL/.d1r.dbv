@@ -1,4 +1,4 @@
-﻿// v.0.2.44
+﻿// v.0.2.45
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -10,19 +10,26 @@ namespace Localhost_Mod
     enum FileOptions
     {
         None = 0,
-        Missing = 1,
-        TooLarge = 2,
-        Error = 4,
-        Created = 8,
-        IsImage = 16,
-        IsJSON,
-        IsMSSSS,
-        Type = 240
+        isJSON = 1,
+        isMSSSS,
+        isTXT,
+        isHTML,
+        isJS,
+        IsImage = 8,
+        isPNG,
+        isJPG,
+        isWEBM,
+        Type = 15,
+        Missing = 16,
+        TooLarge = 32,
+        Error = 64,
+        Created = 128
     };
     internal class SaveFile
     {
-        private static readonly Regex s_ImageReg =
-            new("\\.(?:PNG|JPG|WEBM)$", RegexOptions.IgnoreCase);
+        /// <summary>
+        /// Is set to unity path in private Localhost.AsyncListener
+        /// </summary>
         public static string s_dataPath =
             "C:/Users/" + System.Environment.UserName +
             "/AppData/LocalLow/Skyscraper Labs/Modular spaceships";
@@ -37,7 +44,8 @@ namespace Localhost_Mod
             string path = GetPath();
             try
             {
-                bool isImage = s_ImageReg.IsMatch(name);
+                status |= ParseImageFileOptions(name);
+                bool isImage = (status & FileOptions.IsImage) > 0;
                 path += isImage ?
                     File.Exists(path + "/ShipImagesLowRes/" + name) ?
                         "/ShipImagesLowRes/" :
@@ -48,13 +56,13 @@ namespace Localhost_Mod
                     Logging.Warn("Not found: " + path + name);
                     status |= FileOptions.Missing;
                     return Array.Empty<byte>();
-                }    
+                }
                 byte[] content = File.ReadAllBytes(path + name);
                 if (isImage && content.Length > 1024 * 1024)
                 {
                     status |= FileOptions.TooLarge;
                 }
-                if (isImage) status |= FileOptions.IsImage;
+                if (!isImage) status |= FileOptions.isMSSSS;
                 Logging.Log("Path: " + path);
                 return content;
             }
@@ -62,15 +70,18 @@ namespace Localhost_Mod
             {
                 Logging.Warn(error);
                 status |= FileOptions.Error;
+                return Encoding.UTF8.GetBytes((error.Message ?? "") +
+                     ("\n" + error.StackTrace ?? "") + "\n");
             }
-            return Array.Empty<byte>();
         }
         public static byte[] LoadShip(out FileOptions status)
         {
             status = 0;
             if (!Directory.Exists(GetPath() + "/Ships"))
             {
-                status |= FileOptions.Missing;
+
+                Logging.Log(GetPath() + "/Ships"); 
+                status |= FileOptions.Missing | FileOptions.isJSON;
                 return Encoding.UTF8.GetBytes("[ ]\n");
             }
             FileInfo[] info;
@@ -81,8 +92,9 @@ namespace Localhost_Mod
             catch (Exception error)
             {
                 Logging.Warn(error);
-                status |= FileOptions.Error;
-                return Array.Empty<byte>();
+                status |= FileOptions.Error | FileOptions.isTXT;
+                return Encoding.UTF8.GetBytes((error.Message ?? "") +
+                     ("\n" + error.StackTrace ?? "") + "\n");
             }
             StringBuilder ships = new();
             foreach (var file in info)
@@ -90,6 +102,7 @@ namespace Localhost_Mod
                 ships.Append('"').Append(file.Name).Append("\",");
             }
             if (ships.Length > 0) ships.Length--;
+            status |= FileOptions.isJSON;
             return Encoding.UTF8.GetBytes("[" + ships + "]");
         }
         public static FileOptions SaveShip(string name, byte[] content)
@@ -100,8 +113,8 @@ namespace Localhost_Mod
                 int index = name.LastIndexOf('.');
                 name = name[0..index] + "(mod)" + name[index..];
             }
-            bool isImage = s_ImageReg.IsMatch(name);
-            if (isImage) status |= FileOptions.IsImage;
+            status |= ParseImageFileOptions(name);
+            bool isImage = (status & FileOptions.IsImage) > 0;
             string path = GetPath();
             path += isImage ? "/ShipImages/" : "/Ships/";
             if (!Directory.Exists(path)) Directory.CreateDirectory(path);
@@ -142,6 +155,49 @@ namespace Localhost_Mod
 #endif
             path = path.Replace('\\', '/');
             return path[^1] == '/' ? path[0..^1] : path;
+        }
+
+        private static readonly Regex s_ImageReg =
+            new("\\.(?:PNG|JPG|JPEG|WEBM)$", RegexOptions.IgnoreCase);
+        private static FileOptions ParseImageFileOptions(string name)
+        {
+            Match result = s_ImageReg.Match(name);
+            if (!result.Success) return FileOptions.None;
+            switch (result.Value[0..].ToLower())
+            {
+                case "png":
+                    return FileOptions.isPNG;
+                case "jpg":
+                case "jpeg":
+                    return FileOptions.isJPG;
+                case "webm":
+                    return FileOptions.isWEBM;
+                default:
+                    return FileOptions.IsImage;
+            }
+        }
+        public static string BuildMimeType(FileOptions options)
+        {
+            if ((options & FileOptions.Type) == 0) return "";
+            switch (options & FileOptions.Type)
+            {
+                case FileOptions.isJSON:
+                    return "application/json";
+                case FileOptions.isTXT:
+                    return "text/plain";
+                case FileOptions.isHTML:
+                    return "text/plain";
+                case FileOptions.isJS:
+                    return "text/javascript";
+                case FileOptions.isPNG:
+                    return "image/png";
+                case FileOptions.isJPG:
+                    return "image/jpeg";
+                case FileOptions.isWEBM:
+                    return "image/webm";
+                default:
+                    return "application/octet-stream";
+            }
         }
         public static int PreloadSettings()
         {
