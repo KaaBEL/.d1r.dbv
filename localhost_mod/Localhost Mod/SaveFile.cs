@@ -1,4 +1,4 @@
-﻿// v.0.2.45
+﻿// v.0.2.46
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -25,7 +25,7 @@ namespace Localhost_Mod
         Error = 64,
         Created = 128
     };
-    internal class SaveFile
+    internal static class SavesManager
     {
         /// <summary>
         /// Is set to unity path in private Localhost.AsyncListener
@@ -37,6 +37,9 @@ namespace Localhost_Mod
         {
             return LoadShip(name, out _);
         }
+        public const string ShipDirectory = "/Ships/";
+        private const string ImagesDirectory = "/ShipImages/";
+        private const string LowResImagesDirectory = "/ShipImagesLowRes/";
         public static byte[] LoadShip(string name, out FileOptions status)
         {
             status = FileOptions.None;
@@ -47,10 +50,10 @@ namespace Localhost_Mod
                 status |= ParseImageFileOptions(name);
                 bool isImage = (status & FileOptions.IsImage) > 0;
                 path += isImage ?
-                    File.Exists(path + "/ShipImagesLowRes/" + name) ?
-                        "/ShipImagesLowRes/" :
-                        "/ShipImages/" :
-                    "/Ships/";
+                    File.Exists(path + LowResImagesDirectory + name) ?
+                        LowResImagesDirectory :
+                        ImagesDirectory :
+                    ShipDirectory;
                 if (!File.Exists(path + name))
                 {
                     Logging.Warn("Not found: " + path + name);
@@ -58,11 +61,13 @@ namespace Localhost_Mod
                     return Array.Empty<byte>();
                 }
                 byte[] content = File.ReadAllBytes(path + name);
-                if (isImage && content.Length > 1024 * 1024)
+                const int SafeImageSize = 1024 * 1024;
+                if (isImage && content.Length > SafeImageSize)
                 {
                     status |= FileOptions.TooLarge;
                 }
                 if (!isImage) status |= FileOptions.isMSSSS;
+
                 Logging.Log("Path: " + path);
                 return content;
             }
@@ -77,17 +82,17 @@ namespace Localhost_Mod
         public static byte[] LoadShip(out FileOptions status)
         {
             status = 0;
-            if (!Directory.Exists(GetPath() + "/Ships"))
+            if (!Directory.Exists(GetPath() + ShipDirectory))
             {
-
-                Logging.Log(GetPath() + "/Ships"); 
+                const string EmptyResponse = "[ ]\n";
+                Logging.Log(GetPath() + ShipDirectory); 
                 status |= FileOptions.Missing | FileOptions.isJSON;
-                return Encoding.UTF8.GetBytes("[ ]\n");
+                return Encoding.UTF8.GetBytes(EmptyResponse);
             }
             FileInfo[] info;
             try
             {
-                info = new DirectoryInfo(GetPath() + "/Ships").GetFiles();
+                info = new DirectoryInfo(GetPath() + ShipDirectory).GetFiles();
             }
             catch (Exception error)
             {
@@ -116,7 +121,7 @@ namespace Localhost_Mod
             status |= ParseImageFileOptions(name);
             bool isImage = (status & FileOptions.IsImage) > 0;
             string path = GetPath();
-            path += isImage ? "/ShipImages/" : "/Ships/";
+            path += isImage ? ImagesDirectory : ShipDirectory;
             if (!Directory.Exists(path)) Directory.CreateDirectory(path);
             if (!File.Exists(path + name)) status |= FileOptions.Created;
             try
@@ -131,13 +136,15 @@ namespace Localhost_Mod
             }
             return status;
         }
+
+        private const string SettingsFilePath = "./settings.txt";
         private static string GetPath()
         {
             string path = s_dataPath;
 #if !UNITY_2017_1_OR_NEWER
             try
             {
-                string[] lines = File.ReadAllLines("./settings.txt");
+                string[] lines = File.ReadAllLines(SettingsFilePath);
                 if (lines.Length > 0) path = lines[0];
                 if (lines.Length > 1) Localhost.s_CorsOrigin = lines[1];
                 if (path.Length == 0) throw new Exception();
@@ -149,7 +156,7 @@ namespace Localhost_Mod
                 Console.WriteLine("Missing MS data path in: " +
                     (current == null ?
                         "settings.txt" :
-                        new Uri(new Uri(current), "./settings.txt")) +
+                        new Uri(new Uri(current), SettingsFilePath)) +
                     " at line 1, using this path instead:\n" + path);
             }
 #endif
@@ -203,7 +210,7 @@ namespace Localhost_Mod
         {
             try
             {
-                string[] lines = File.ReadAllLines("./settings.txt");
+                string[] lines = File.ReadAllLines(SettingsFilePath);
                 if (lines.Length > 1) Localhost.s_CorsOrigin = lines[1];
             }
             catch

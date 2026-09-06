@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.44";
+var version_editor_js = "v.0.2.46";
 /** 3h_ @TODO check @see {Editor} for assignment without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -48,7 +48,7 @@ if ("WebSocket" in window && "originalClass" in WebSocket)
  * @typedef {{}|null} MSPaintTextureGenOptions */
 /** juss a lille wild experiment mixing settings into Editor class, any
  * property not typeof function is considered Editor setting (defaults)
- * @typedef {never} @returns {never} */
+ * @typedef {never} @returns {never} @TODO rename Editor to Settings */
 function Editor() {
   console.error("open new Window/browser tab for more editors dumass/j");
   throw new TypeError("Illegal constructor");
@@ -63,11 +63,13 @@ Editor.backgroundImage = 0;
 Editor.highlightRed = "#dd3333";
 Editor.highlightGreen = "#33bb33";
 Editor.highlightBlue = "#45b3ff";
-Editor.highlightYellow = "#db9725";
+Editor.highlightYellow = "#" + ((location.href.match(
+  /[?&]highlightYellow=(#?[0-9A-Fa-f]{3,8})/) || [])[1] || "db9725");
 Editor.highlightWidth = 2;
 Editor.logicPreviewAlpha = .5;
 Editor.outlineBlue = "#5577aa";
-Editor.outlineYellow = "#c08c2b";
+Editor.outlineYellow = "#" + ((location.href.match(
+  /[?&]outlineYellow=#?([0-9A-Fa-f]{3,8})/) || [])[1] || "c08c2b");
 Editor.buildReplace = !1;
 /** (default) 0: Lunar, 0: none, ... 31: unassigned */
 Editor.backgroundStage = 0;
@@ -3228,15 +3230,22 @@ Command.goHome = (function () {
 /** @callback ToolExec @param {number} x @param {number} y @returns {void} */
 /** @typedef {ToolExec|Tool.Tab} ToolMethods */
 /**
- * @param {string} name @param {string} icon @param {ToolExec} [init]
- * @param {ToolExec} [exec] @param {ToolExec} [destroy] */
-function Tool(name, icon, init, exec, destroy) {
-  var initialize = init || F;
+ * @param {string} name @param {string} icon
+ * @param {ToolExec} [init] callback for being clicked in hotbars
+ * @param {ToolExec} [exec] callback for usage in editor area
+ * @param {ToolExec} [destroy] callback when deselecting
+ * @param {ToolExec|null} [selectionBased] used to edit selections
+ * behaves like init, must handle clickType behaviour on its own
+ * EXPERIMENTAL IMPL. @param {boolean} [click] EXPERIMENTAL IMPL. */
+function Tool(name, icon, init, exec, destroy, selectionBased, click) {
   this.name = name;
   this.icon = icon;
-  this.init = destroy === UDF ? Tool.execClick(initialize) : initialize;
+  this.init = init || F;
   this.exec = exec || F;
   this.stop = destroy || F;
+  /** is used when DefaulUI.selectionBased is enabled */
+  this.edit = selectionBased || exec || init || F;
+  //-this.editClick = selectionBased || exec || init || F;
   /** @type {ToolExec} */
   this.preview = F;
   /** used to determim whether (true) the tile gets enebled instantly
@@ -3244,18 +3253,38 @@ function Tool(name, icon, init, exec, destroy) {
    * (false) the tile is enabled until deselected (selected in
    * DefaultUI.selectedTile property) */
   this.clickType = destroy === UDF;
+  //-aaactuallyy, this is more of a bug that with edits I added destroys too
+  /** similar to tool.clickType but for tool.edit instead of init */
+  this.editClickType = click || (click !== false && destroy === UDF);
   /** keeping proper stroke/fill color for Tool is in
    * hands of code for creation/control of tools */
   this.color = Editor.outlineBlue;
   Object.seal(this);
 }
+/** @param {number} x @param {number} y */
+Tool.prototype.initialize = function superviseInit(x, y) {
+  DefaultUI.selectionBased ? this.edit(x, y) : this.init(x, y);
+  if (this.getType()) {
+    var thisTile = this;
+    setTimeout(function () {
+      var tile = DefaultUI.getClickedTile();
+      if (tile instanceof Tool && tile === thisTile) {
+        DefaultUI.clicked = null;
+        render();
+      }
+    }, 75);
+  }
+};
 /** tool.reset @param {number} x @param {number} y */
-Tool.prototype.destroy = function (x, y) {
+Tool.prototype.destroy = function superviseStop(x, y) {
   this.stop(x, y);
-  DefaultUI.selectionBased = false;
   Tool.subscribedStart = Tool.subscribedMove =
     Tool.subscribedEnd = Tool.subscribedClaim = Tool.unsubscribed;
   Tool.rend = F;
+};
+/** @returns {boolean} */
+Tool.prototype.getType = function superviseClickType() {
+  return DefaultUI.selectionBased ? this.editClickType : this.clickType;
 };
 /** Has its own implementaion of push method @type {Tool[]} */
 Tool.list = [];
@@ -3349,23 +3378,6 @@ Tool.drawPathRc = function (tool, size) {
   });
   rc.fill();
 };
-/** @param {ToolExec} [execMain] */
-Tool.execClick = function (execMain) {
-  if (!execMain)
-    return F;
-  /** @this {Tool} @type {ToolExec} */
-  return function (x, y) {
-    execMain(x, y);
-    var thisTile = this;
-    setTimeout(function () {
-      var tile = DefaultUI.getClickedTile();
-      if (tile instanceof Tool && tile === thisTile) {
-        DefaultUI.clicked = null;
-        render();
-      }
-    }, 75);
-  };
-};
 Tool.blueprintsXhr = new XMLHttpRequest();
 Tool.mssssRegExp = /([^\0-\x1f\x7f-\xff]*\.mssss)(?:\n|$)/g;
 Tool.loadingLogs = test_debug;
@@ -3408,8 +3420,6 @@ Tool.loadNextBlueprint = function () {
           keys[index !== -1 ? index : index = keys.length] = name;
         Ship.blueprints[index] = blueprint;
       } else {
-        //-debugger;
-        //-Ship.fromMSSSS(xhr.responseText);
         console.error("Did not load: " + name);
       }
     } catch (err) {
@@ -3443,6 +3453,20 @@ Tool.loadBlueprints = function () {
   };
   xhr.send();
 };
+/** how much better would it be if @see {DefaultUI.renderHotBars} did
+ * all of the coloring instead? Just like it fills selected tiles.
+ * @overload @param {string} color @param {boolean} set @returns {void}
+ * @overload @param {string|boolean} color @returns {void} */
+/** @param {string|boolean} color @param {boolean} [set] */
+Tool.setSelectionBased = function (color, set) {
+  if (typeof color == "boolean")
+    color = (set = color) ? Editor.outlineYellow : Editor.outlineBlue;
+  if (typeof set == "boolean")
+    DefaultUI.selectionBased = set;
+  for (var i = Tool.selectionBased.length, tool; i-- > 0;)
+    if (tool = Tool.get(Tool.selectionBased[i]))
+      tool.color = color;
+};
 /** @typedef TabOptions @type {{[key:string]:unknown,text?:string}} */
 /** @callback @param {Tool.Tab} setup @returns {void} */
 Tool.Tab = function () {
@@ -3460,12 +3484,6 @@ Tool.Tab = function () {
   this.class = "";
   Object.seal(this);
 };
-//-/** @typedef Juhus useless test
-//- * @property {number} idk identifier depending on
-//- * alignment of stars and average tempreture in
-//- * Poland at time of your yestrday's breakfast */
-//-/** @type {Juhus} */
-//-var xd = {idk: 1356};
 /** Uses global flag! */
 Tool.Tab.cssEscapeRegExp = (/\\[0-9A-Fa-f]{1,5} |\\[0-9A-Fa-f]{6}/g);
 Tool.Tab.cssQueryRegExp = (function (nameRegExp, escape) {
@@ -3651,9 +3669,10 @@ Tool.Tab.addCss = function (styles, selector) {
     selector) + "{" + styles + "}";
   return cssText;
 };
-Tool.selectionBased = "Move,Rotate,Rotate90,Flip,Flip180,Select,Clone,Paint,\
-Erase,".split(",");
- 
+//                     Move,                Flip180,         
+Tool.selectionBased = "Rotate,Rotate90,Flip,Select,Clone,Paint,\
+Erase,SelectAll,Expand".split(",");
+
 Tool.Tab.addCss("position: absolute;top: 7px;right: " + 7 / pR + "px;width: \
 320px;padding: 7px;border-radius: 7px;font-family: segoe-ui, sans-serif;back\
 ground-color: rgba(13, 33, 55, .8);color: #bbccdd;overflow-y: scroll;scrollb\
@@ -3720,6 +3739,8 @@ a2 c78f,0,e71,2d2,1395,771 c6c,61,1e3a,1e85,1e42,1e7e c5b73,-5550,d631,-8984\
     found.block.rotation[2] =
       /** @type {0|1|2|3} */
       (found.block.rotation[2] + 1 & 3);
+}, UDF, function selectionEdit() {
+  Edit.rotate(ship, 1);
 }));
 Tool.list.push(new Tool("Skin", "M2b144,2d362 c0,0,-4d72,4e17,-4d7d,4e21 c-6\
 e7,65c,-1048,a45,-1a9c,a45 c-ab5,0,-1464,-433,-1b5c,-afc c-520,-4fd,-454c,-4\
@@ -3781,6 +3802,8 @@ ins;".replace(/\$ins;/g, " c0,142a,-1059,2483,-2483,2483 c-142a,0,-2483,-105\
   var found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
   if (found)
     found.block.rotation[1] = !found.block.rotation[1];
+}, UDF, function selectionEdit() {
+  Edit.applyCommand(ship, ship.mirror2d);
 }));
 Tool.list.push(new Tool("Clone", "M2ba5a,2bab5 vda5e c0,33ca,-29fc,5dc6,-5dc\
 6,5dc6 h-1fdbd c-33ca,0,-5dc6,-29fc,-5dc6,-5dc6 v-1fd62 c0,-33ca,29fc,-5dc6,\
@@ -3962,6 +3985,8 @@ function init() {
     found.block.rotation[2] =
       /** @type {0|1|2|3} */
       (found.block.rotation[2] + 3 & 3);
+}, UDF, function selectionEdit() {
+  Edit.rotate(ship, 3);
 }));
 Tool.list.push(new Tool("Erase", "M21cbd,3933e c-fa8,c27,-2353,1363,-38af,13\
 63 l-affd,11 c-16fe,0,-2c08,-863,-3c37,-1645 l-de68,-da2c c-f83,-108c,-1904,\
@@ -3973,9 +3998,11 @@ Tool.list.push(new Tool("Erase", "M21cbd,3933e c-fa8,c27,-2353,1363,-38af,13\
     ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
   if (!found)
     return;
-  ship.removeBlocks([found.index]);
+  Edit.applyCommand(ship, ship.removeBlocks, [found.index]);
   render();
-}, F));
+}, F, function selectionEdit() {
+  Edit.remove(ship);
+}, true));
 Tool.list.push(new Tool("Classic", "M4030e,2bac1 c-1838,-80aa,-8930,-e200,-1\
 10e4,-e200 c-7669,0,-db83,4a1d,-10372,b27c l-a7c8,-a v-2884d h1fd7a c693b,0,\
 be8b,554f,be8b,be8b z M33a,c1a9 l0,0 c0,-693b,554f,-be8b,be8b,-be8b h3299 l-\
@@ -4057,7 +4084,7 @@ c,-33d8,73cc,-73cc lbc,-30c6 c0,-212c,1ae4,-3c11,3c11,-3c11 l119a,0 c212c,0,\
   /** @BUG when (leaving)placing block with cursor over folders, the block
    * stays grabbed until clicking in editor area or somethins... */
   var selecting = false, t = Date.now(), area = {x: 0, y: 0, w: 0, h: 0};
-  DefaultUI.selectionBased = true;
+  Tool.setSelectionBased(Editor.outlineYellow, true);
   /**
    * @param {AllActions|AllActions&{claim:string,cancelable:
    * true,preventClaim:(custom?:string)=>void}} actions
@@ -4144,7 +4171,7 @@ Tool.list.push(new Tool("Move", "M25a0c,1a6e9 v-b7a4 c30fe,0,57ba,0,57ba,0 c\
 57ba c0,10c9,d9c,1e66,1e66,1e66 c86c,0,100b,-36d,158d,-8f5 lb13e,-b0c3 c5d2,\
 -589,973,-d5c,973,-1607 c0,-897,-390,-105a,-94c,-15e1 l-b1a9,-ad58 c-57b,-56\
 1,-cff,-8b2,-1549,-8b2 c-10c9,0,-1e66,d9c,-1e66,1e66 c0,0,0,2f8d,0,5325 z",
-/** @TODO FIX missing history for Flips and Rotates, aaaand Erase too! */
+/** @TODO FIX missing history for Flips and Rotates! */
 // TODO: figure out some way to combine this with Clone - left attemps: 2
 function init (_x, _y) {
   Tool.subscribedStart = function (x, y, actions) {
@@ -4349,9 +4376,9 @@ Tool.Tab.addItem("Load", function setup(tab, _x, _y) {
 0,2f6d,-2672,55df,-55df,55df l-35423,-2f4 c-2f6d,0,-55df,-2672,-55df,-55df v\
 -26631 c0,-2f6d,2672,-55df,55df,-55df h130cd c183a,0,2e1d,a08,3dba,1a2c z M1\
 9042,2454a$ins; M19042,13370$ins; M7d6e,2454a$ins; M7d6e,13370$ins;".replace(
-/\$ins;/g, " c-15a4,0,-272f,118b,-272f,272f v9005 c0,15a4,118b,272f,272f,27\
-2f h8e1d c15a4,0,272f,-118b,272f,-272f v-9005 c0,-15a4,-118b,-272f,-272f,-27\
-2f z"));
+/\$ins;/g, " c-15a4,0,-272f,118b,-272f,272f v9005 c0,15a4,118b,272f,272f,272\
+f h8e1d c15a4,0,272f,-118b,272f,-272f v-9005 c0,-15a4,-118b,-272f,-272f,-272\
+f z"));
  
 // db3 styled icon (cardboard box)
 // https://www.flaticon.com/free-icon/package_7625482?term=time+product&page=2&position=30&origin=search&related_id=7625482
@@ -4617,10 +4644,15 @@ DefaultUI.createFolder = function (type, tiles) {
 DefaultUI.setSelectedTile = function (item, x, y) {
   typeof x != "number" ? x = 0 : 0;
   typeof y != "number" ? y = 0 : 0;
-  var tile = DefaultUI.getClickedTile(item) || null;
-  if (tile instanceof Tool && tile.clickType) {
+  var tile = DefaultUI.getClickedTile(item);
+  if (!tile)
+    return;
+  if (DefaultUI.selectionBased)
+    if (!("name" in tile) || Tool.selectionBased.indexOf(tile.name) < 0)
+      Tool.setSelectionBased(false);
+  if (tile instanceof Tool && tile.getType()) {
     DefaultUI.clicked = tile;
-    tile.init(x, y);
+    tile.initialize(x, y);
     return;
   }
   var old = DefaultUI.getSelectedTile();
@@ -4628,8 +4660,9 @@ DefaultUI.setSelectedTile = function (item, x, y) {
     old instanceof Tool && old.destroy(x, y);
     DefaultUI.selected = tile;
     DefaultUI.selectedFolder = DefaultUI.openedFolder;
-    tile instanceof Tool && tile.init(x, y);
+    tile instanceof Tool && tile.initialize(x, y);
   } else {
+    Tool.setSelectionBased(false);
     DefaultUI.selected = null;
     tile instanceof Tool && tile.destroy(x, y);
   }
@@ -4903,7 +4936,6 @@ DefaultUI.drawIconRc = function (type, size) {
     var img = ship.thumbnail, dw = size, dh = size;
     var sw = "naturalWidth" in img ? img.naturalWidth : img.width,
       sh = "naturalHeight" in img ? img.naturalHeight : img.height;
-      //-side = width > height ? width : height;
     sw > sh ? dh = sh * size / sw : dw = sw * size / sh;
     if (sw > 0x3fff || sh > 0x3fff)
       return rc.fillText("NOPE", 0, size / 1.5);
@@ -4912,11 +4944,6 @@ DefaultUI.drawIconRc = function (type, size) {
     try {
       // v.0.2.42 for ship.prop.thumbImg.onload will be thrusted to fire
       // to signal image is loading unitl better fallback gets decided
-      //-if (img instanceof HTMLImageElement && !img.dataset.loaded)
-      //-  /** @TODO FIX add Interval class to handle these */
-      //-  throw console.debug("~" + setTimeout(function () {
-      //-    Renderer.initThumbnail.call(img);
-      //-  }));
       rc.drawImage(img, (size - dw) / 2, (size - dh) / 2, dw, dh);
     } catch (err) {
       rc.font = size + "px monospace";
@@ -5152,7 +5179,7 @@ DefaultUI.basePress = function (blockPlacing, canDefault) {
     if (tile instanceof Block)
       placing(x, y, tile);
     else if (tile instanceof Tool)
-      tile.exec(x, y);
+      (DefaultUI.selectionBased ? tile.edit : tile.exec)(x, y);
     else
       DefaultUI.canDefaultPress && DefaultUI.defaultPress(x, y);
     return false;
@@ -5258,12 +5285,17 @@ DefaultUI.Drag.finish = function (action) {
   var replacing = DefaultUI.replacingTile,
     dragged = DefaultUI.Drag.dragged;
   if (replacing === -1 || action.type === "mouseleave") {
-    var rect = DefaultUI.highlights[1];
+    var rect = DefaultUI.highlights[1], that = {blocks: ship.selection};
+    var x = (vX - action.x) / sc, y = (action.y - vY) / sc;
     // simple implementaition doesn't care where interaction started
     if (dragged.tile instanceof Block && rect && "block" in rect)
       ship.placeBlock(0, rect.positionX, rect.positionY, dragged.tile);
-    else if (dragged.tile instanceof Tool)
-      dragged.tile.exec(action.x, action.y);
+    else if (dragged.tile instanceof Tool) {
+      /** @type {Ship["blockAtPonit2d"]} */
+      (Ship.prototype.blockAtPonit2d).call(that, x, y) ?
+        dragged.tile.edit(action.x, action.y) :
+        dragged.tile.exec(action.x, action.y);
+    }
     return DefaultUI.Drag.reset();
   }
   // placing inventory tile over toolBar area
@@ -6034,12 +6066,18 @@ Renderer.initThumbnail = function () {
     rc2d.canvas.width = rc2d.canvas.height = 60;
     rc2d.imageSmoothingEnabled = rc2d.msImageSmoothingEnabled = false;
     try {
-      throw "Unimplemented xD @TODO implement pls?";
+      throw "Unimplemented xD @TODO just test and finish it pls?";
       rc.canvas.width = w;
       rc.canvas.height = h;
       rc.drawImage(image, 0, 0);
       var data = rc.getImageData(0, 0, w, h).data,
-        buffer = new Uint8ClampedArray(60 * 60 * 4);
+        srcView = new DataView(data.buffer),
+        buffer = new Uint8ClampedArray(60 * 60 * 4),
+        destView = new DataView(buffer.buffer);
+      for (var i = 60 * 60; i-- > 0;) {
+        var index = (h * i / 60 / 60 | 0) * w + (w * (i % 60) / 60 | 0);
+        destView.setUint32(i << 2, srcView.getUint32(index << 2));
+      }
       rc2d.putImageData(new ImageData(buffer, 60, 60), 0, 0);
     } catch (_e) {
       w > 4096 || h > 4096 ?
@@ -6284,7 +6322,7 @@ function expensiveRenderer() {
     }
   }
   ctx.globalAlpha = .3;
-  ctx.fillStyle = Editor.outlineBlue;
+  ctx.fillStyle = Editor.highlightYellow;
   for (j = 0; j < ship.selection.length; j++) {
     var rect = Block.Size.highlightBlock(ship.selection[j]);
     var x = rect.x * sc + vX, y = rect.y * sc + vY;
@@ -6356,11 +6394,11 @@ Block.Box2d.visualize = function (path, x, y, green) {
 /** for DefaultUI init and enableShipEditing @see {initDefaultUI} */
 init = function loadedEditorInit() {
   for (var i = ship.blocks.length, clean = []; i-- > 0;)
-    ship.blocks[i].internalName !== "__unknown__" &&
-      clean.push(ship.blocks[i]);
-  ship.blocks = clean;
+    ship.blocks[i].internalName === "__unknown__" &&
+      clean.push(i);
+  Edit.applyCommand(ship, ship.setSelected, clean);
+  Edit.remove(ship);
   rend_collisions = true;
-  ship.setSelected([]);
   (DefaultUI.blockBars[0] || []).push(Tool.get("SelectAll"),
     Tool.get("Expand"), Tool.get("Inventory"));
   (DefaultUI.blockBars[0] || [])[5] = Tool.get("Flip180");

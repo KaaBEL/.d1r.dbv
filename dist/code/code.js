@@ -2,7 +2,7 @@
 /// <reference path="./defs.d.ts" />
 "use strict";
 /** @readonly */
-var version_code_js = "v.0.2.44";
+var version_code_js = "v.0.2.46";
 /** 3h_  @TODO check @see {Ship.VERSION}  Read FUN FACTS below: */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
@@ -4287,8 +4287,13 @@ Edit.changeSelection = function (target, block, subtract) {
 // Edit.mirror = function (target) {
 //   Edit.applyCommand(Edit.Primitive.mirror, target);
 // };
-// taken from: https://stackoverflow.com/a/47593316
-/** @param {number} seed @see {Ship.dateTime} */
+/** @type {Edit.Primitive.remove} */
+Edit.remove = function (target) {
+  var cmd = Edit.Primitive.remove;
+  Edit.applyCommand(cmd, target);
+};
+/** taken from: https://stackoverflow.com/a/47593316
+ * @param {number} seed @see {Ship.dateTime} */
 Edit.randSFC32 = function (seed) {
   var a = seed, b = seed, c = seed, d = seed;
   return function() {
@@ -4443,13 +4448,27 @@ Edit.Primitive.changeSelection = function (target, index) {
   var block = target.blocks[index < 0 ? -1 - index : index];
   var selected = target.selection.indexOf(block);
   index < 0 === selected > -1 ? index < 0 ?
-    ship.selection.splice(selected, 1) :
-    ship.selection.push(block) : 0;
+    target.selection.splice(selected, 1) :
+    target.selection.push(block) : 0;
 };
 // /** @param {Ship} target @param {number} _mode */
 // Edit.Primitive.mirror = function (target, _mode) {
 //   ;
 // };
+/** does not completely erase target.selection, just removes them
+ * from blocks list @param {Ship} target */// @param {number[]} ids
+Edit.Primitive.remove = function (target) {
+  var all = target.blocks, selection = target.selection;
+  var block = all[0], logics = target.prop && target.prop.nodeList || [];
+  for (var i = 0, index = -1; i < selection.length; i++) {
+    // if (all[index = ids[i]] !== (block = selection[i]))
+    //   continue;
+    if ((index = all.indexOf(block = selection[i])) === -1)
+      continue;
+    Logic.removeLogic(block, logics);
+    all.splice(index, 1);
+  }
+};
 /** class for old Deltarealm base64 prototype keys code
  * @namespace @typedef {never} Edit.Ship @returns {never} */
 Edit.Ship = function EditShip() {
@@ -4502,8 +4521,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.thumbnail = null;
   Object.seal(this);
 }
-/** @readonly @type {54} significantVersion: 54 (integer) *///@ts-ignore
-Ship.VERSION = 54;
+/** @readonly @type {55} significantVersion: 55 (integer) *///@ts-ignore
+Ship.VERSION = 55;
 Ship.prototype.edit = Edit.Ship;
 Ship.prototype.selectRect = (
   /**
@@ -4751,8 +4770,9 @@ Ship.prototype.mirror2d = (
     }
   }
 );
-/** ignores __NULL__ blocks if nonull is true
- * @this {Ship} @param {number} x @param {number} y
+/** ignores __NULL__ blocks if nonull is true, requires position relative
+ * to blocks instead of raw interaction position on the canvas
+ * @this {{blocks:ShipBlock[]}} @param {number} x @param {number} y
  * @param {boolean} [nonull=true] @returns null if nothing found */
 Ship.prototype.blockAtPonit2d = function (x, y, nonull) {
   if (nonull === UDF)
@@ -5444,7 +5464,7 @@ teractable|ComponentSettings|Rotation|rotFlip|MirVert|MirHor)$");
       (optional = properties).invalidName = obj.ID;
       if (adjust && ("" + obj.ID).slice(0, 9) === "Decolayer" &&
         "layer" in properties)
-        //@ts-expect-error I couldn't possible do more of a workaround
+        //@ts-expect-error I couldn't possibly do more of a workaround
         return allParts.pop();
     }
     "color" in obj ? handleColor(obj.color) : "color" in properties &&
