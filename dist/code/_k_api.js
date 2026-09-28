@@ -2,7 +2,7 @@
 /// <reference path="./editor.html.ts" />
 "use strict";
 /** @readonly */
-var version__k_api_js = "v.0.2.43";
+var version__k_api_js = "v.0.2.47";
 /** 3h_ @TODO check @see {Actions.API_VERSION} */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -947,10 +947,34 @@ Actions.Claim.GRAB = /^grab$/;
 Actions.logX = 0;
 Actions.logY = 0;
 Actions.logMax = 32;
+/** @type {{temp:(Actions|null)[],type:string}[]} */
+Actions.logHistory = [];
+/** @param {string} typ */
+Actions.logGetEventS = function (typ) {
+  switch (typ) {
+    case "srt":
+    case "dwn":
+      return "onstart";
+    case "mov":
+    case "hvr":
+      return "onmove";
+    case "end":
+    case " up":
+      return "onend";
+  }
+  return "onerror";
+};
 /** spaghetti Actions debugging utility
  * @param {(Actions|null)[]} tem typeof temp @param {ActionsEvent} evt
  * @param {string} typ @param {Actions.State} stat @param {AllActions} src */
 Actions.log = function (tem, evt, typ, stat, src) {
+  // ...maybe try also recording vX, vY, sc at the moment
+  // Actions.logHistory.push({temp: function (temp) {
+  //   temp[-1] = tem[-1];
+  //   temp[-2] = tem[-2];
+  //   return temp;
+  // }(tem.slice()), type: Actions.logGetEventS(typ)});
+
   //for (var i = tem.length, obj; i-- > 0;)
   //  if (obj = tem[i])
   //    test_log.push({i: i, l: obj.identifier, x: obj.x, y: obj.y});

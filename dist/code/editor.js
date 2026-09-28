@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.46";
+var version_editor_js = "v.0.2.47";
 /** 3h_ @TODO check @see {Editor} for assignment without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -1349,7 +1349,8 @@ function Command(name, description, items, setting) {
 Command.list = [];
 Command.groupName = "";
 Command.listening = -1;
-Command.NAME = {"Setup Properties": "Setup Properties"};
+Command.NAME = {"Setup Properties": "Setup Properties",
+  "Vehicle stats": "Vehicle stats"};
 Command.el = EL("menu");
 Command.head = EL("h1");
 Command.x = 5;
@@ -2668,18 +2669,14 @@ Command.push("Vehicle stats", function (items, collapsed) {
     sums = JSON.parse(stringify);
     skipped = JSON.parse(stringify);
     texts[14].data = "";
-    for (var blocks = ship.blocks, i = blocks.length; i-- > 0;) {
+    for (var blocks = ship.blocks, i = blocks.length, xd = []; i-- > 0;) {
       var block = blocks[i], prop = block.properties || OC();
-      var id = Block.ID[block.internalName];
-      var rot = 10 - block.rotation[2] & 3, size = Block.Size.VALUE[id];
-      if (!size)
+      var rot = 10 - block.rotation[2] & 3, id = Block.ID[block.internalName];
+      var rect = Block.Size.highlightBlock(block);
+      if (!rect)
         continue;
-      var ow = size.w, oh = size.h, w = ow + (ow & 16), h = oh + (oh & 16);
-      var x = (ow & 16) / 32, y = (oh & 16) / 32;
-      /** @type {number[]} */
-      var xys = [x, y, -x, -y], position = block.position;
-      x = position[1] + (rot & 1 ? h / 32 : w / 32) + xys[rot];
-      y = position[2] + (rot & 1 ? w / 32 : h / 32) + xys[rot + 3 & 3];
+      var x = -rect.x - rect.w / 2, y = rect.y + rect.h / 2;
+      //-xd.push({x: x, y: y})
       // removed debugging code #rendlog from v.0.2.9
       checkStat("cost", Block.COST[id], function (val) {
         return val < 0 ? 0 : val;
@@ -2728,15 +2725,19 @@ Command.push("Vehicle stats", function (items, collapsed) {
     // after adding more text lines don't forget changing j < <texts.length>
     Command.utilities.rend_UI = function () {
       ctx.lineWidth = 1.5;
+      //-xd.forEach(function (e) {
+      //-  ctx.strokeStyle = "#F97";
+      //-  ctx.strokeRect(vX - e.x * sc - 1.5, vY + e.y * sc - 1.5, 3, 3);
+      //-});
       var weight = xWeight / sums.weight || 0,
         force = xForce / sums.xforce || 0;
       if (weight !== force) {
-        ctx.strokeStyle = "#33d";
-        ctx.strokeRect(vX + force * sc, 0, 0, canvas.height);
         ctx.strokeStyle = "#d33";
+        ctx.strokeRect(vX - force * sc, 0, 0, canvas.height);
+        ctx.strokeStyle = "#33d";
       } else
         ctx.strokeStyle = "#5b5";
-      ctx.strokeRect(vX + weight * sc, 0, 0, canvas.height);
+      ctx.strokeRect(vX - weight * sc, 0, 0, canvas.height);
       weight = yWeight / sums.weight || 0;
       force = yForce / sums.yforce || 0;
       if (weight !== force) {
@@ -3245,7 +3246,6 @@ function Tool(name, icon, init, exec, destroy, selectionBased, click) {
   this.stop = destroy || F;
   /** is used when DefaulUI.selectionBased is enabled */
   this.edit = selectionBased || exec || init || F;
-  //-this.editClick = selectionBased || exec || init || F;
   /** @type {ToolExec} */
   this.preview = F;
   /** used to determim whether (true) the tile gets enebled instantly
@@ -3253,7 +3253,6 @@ function Tool(name, icon, init, exec, destroy, selectionBased, click) {
    * (false) the tile is enabled until deselected (selected in
    * DefaultUI.selectedTile property) */
   this.clickType = destroy === UDF;
-  //-aaactuallyy, this is more of a bug that with edits I added destroys too
   /** similar to tool.clickType but for tool.edit instead of init */
   this.editClickType = click || (click !== false && destroy === UDF);
   /** keeping proper stroke/fill color for Tool is in
@@ -3466,6 +3465,31 @@ Tool.setSelectionBased = function (color, set) {
   for (var i = Tool.selectionBased.length, tool; i-- > 0;)
     if (tool = Tool.get(Tool.selectionBased[i]))
       tool.color = color;
+};
+/** @param {"move"|""|"clone"} which @returns {ToolExec} */
+Tool.initCloneMove = function (which) {
+  return function init (_x, _y) {
+    Tool.subscribedStart = function (x, y, actions) {
+      if (actions.source.target !== canvas)
+        return false;
+      if (DefaultUI.handleGUIArea(x, y, new DefaultUI.Drag()))
+        return false;
+      var found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
+      if (found) {
+        actions.source.event && actions.source.event.preventDefault();
+        if (which === "move")
+          Edit.applyCommand(ship, ship.removeBlocks, [found.index]);
+        DefaultUI.previewPlacing(x, y, DefaultUI.Drag.dragged.tile =
+          Block.arrayFromObjects(found.block)[0]);
+        DefaultUI.Drag.dragged.update(x, y);
+        juhus.set("claim", "claim" + which + "movetile");
+        render();
+      }
+      return !!found;
+    };
+    /** @TODO FIX breaking when canceled by grab */
+    Tool.subscribedEnd;
+  };
 };
 /** @typedef TabOptions @type {{[key:string]:unknown,text?:string}} */
 /** @callback @param {Tool.Tab} setup @returns {void} */
@@ -3814,22 +3838,8 @@ Tool.list.push(new Tool("Clone", "M2ba5a,2bab5 vda5e c0,33ca,-29fc,5dc6,-5dc\
 83,-1f5a7 c6,-de2,-7ef,-19b0,-16a8,-19a9 z M394a4,4b8f l-1fa26,-1ac c-e4d,70\
 ,-169d,c12,-16a6,1820 l-a3,d63a ld185,67 c3c14,9,66ad,2841,6729,5855 l-33,de\
 f3 ld5ec,1a6 cba6,-76,175b,-a4c,17d6,-1935 l-61,-1f52a c-5,-f8c,-a81,-17f3,-\
-146b,-17a5 z", function init (_x, _y) {
-  Tool.subscribedStart = function (x, y, actions) {
-    if (actions.source.target !== canvas)
-      return false;
-    if (DefaultUI.handleGUIArea(x, y, new DefaultUI.Drag()))
-      return false;
-    var found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
-    if (found) {
-      actions.source.event && actions.source.event.preventDefault();
-      DefaultUI.Drag.dragged.tile =
-        Block.arrayFromObjects(found.block)[0];
-      juhus.set("claim", "claimmovetile");
-    }
-    return !!found;
-  }
-}, function exec() {}, function destroy() {}));
+146b,-17a5 z", Tool.initCloneMove(""), function exec() {},
+  function destroy() {}));
 Tool.list.push(new Tool("Undo", "M3f6f3,19ab0 cc15,c15,c15,1fad,0,2bc2 c-c15\
 ,c15,-1fad,c15,-2bc2,0 c0,0,-334f,-32bd,-ba42,-2670 c-c4f3,ef0,-12d5f,89d9,-\
 12d5f,89d9 c42b1,42b1,7222,7222,732f,732f cc15,c15,c15,1fad,0,2bc2 c-4b5,4b5\
@@ -3856,7 +3866,14 @@ function init() {
 }));
 Tool.list.push(new Tool("Next", "M10200,0 L10200,40000 L40000,20000 z"));
 Tool.list.push(new Tool("Previous", "M2fc00,0 L0,20000 L2fc00,40000 z"));
-Tool.list.push(new Tool("Stats", "M2e6b3,388fc c0,1052,d3b,1d8e,1d8e,1d8e c1\
+Tool.Tab.addItem("Stats", function setup(tab, _x, _y) {
+  for (var i = Command.list.length; i-- > 0;)
+    if (Command.list[i].name === Command.NAME["Vehicle stats"]) {
+      var appendItems = Command.list[i].items;
+      if (typeof appendItems == "function")
+        return appendItems(tab.elements[0] = EL());
+    }
+}, "M2e6b3,388fc c0,1052,d3b,1d8e,1d8e,1d8e c1\
 13,0,da03,0,de2d,0 c1052,0,1d8e,-d3b,1d8e,-1d8e c0,-4f7,0,-287bf,0,-28dbc c0\
 ,-1052,-d3b,-1d8e,-1d8e,-1d8e c-5ba,0,-d6a7,0,-de2d,0 c-1052,0,-1d8e,d3b,-1d\
 8e,1d8e c0,35a,0,28a4a,0,28dbc z M19032,3a68a c-1052,0,-1d8e,-d3b,-1d8e,-1d8\
@@ -3865,7 +3882,7 @@ e c0,-5a6,0,-35d59,0,-3643c c0,-1052,d3b,-1d8e,1d8e,-1d8e c88f,0,db66,0,de2d\
 1d8e c-5a0,0,-d9c6,0,-de2d,0 z M11958,1d2d2 c0,-1052,-d3b,-1d8e,-1d8e,-1d8e \
 c-6b6,0,-d69e,0,-de2d,0 c-1052,0,-1d8e,d3b,-1d8e,1d8e c0,80c,0,1b1a5,0,1b629\
  c0,1052,d3b,1d8e,1d8e,1d8e c5e9,0,d9f1,0,de2d,0 c1052,0,1d8e,-d3b,1d8e,-1d8\
-e c0,-754,0,-1b5c7,0,-1b629 z"));
+e c0,-754,0,-1b5c7,0,-1b629 z");
 var test_handler = 0, css = Tool.Tab.addCss("width: 72px;height: 72px;border\
 : 2px solid " + Editor.outlineBlue + ";border-radius: 7px;margin: 4px;backgr\
 ound-size: 68px;background-image: url(" + imgColor.src + ");font-weight: bol\
@@ -4002,6 +4019,7 @@ Tool.list.push(new Tool("Erase", "M21cbd,3933e c-fa8,c27,-2353,1363,-38af,13\
   render();
 }, F, function selectionEdit() {
   Edit.remove(ship);
+  Edit.select(ship, []);
 }, true));
 Tool.list.push(new Tool("Classic", "M4030e,2bac1 c-1838,-80aa,-8930,-e200,-1\
 10e4,-e200 c-7669,0,-db83,4a1d,-10372,b27c l-a7c8,-a v-2884d h1fd7a c693b,0,\
@@ -4171,29 +4189,8 @@ Tool.list.push(new Tool("Move", "M25a0c,1a6e9 v-b7a4 c30fe,0,57ba,0,57ba,0 c\
 57ba c0,10c9,d9c,1e66,1e66,1e66 c86c,0,100b,-36d,158d,-8f5 lb13e,-b0c3 c5d2,\
 -589,973,-d5c,973,-1607 c0,-897,-390,-105a,-94c,-15e1 l-b1a9,-ad58 c-57b,-56\
 1,-cff,-8b2,-1549,-8b2 c-10c9,0,-1e66,d9c,-1e66,1e66 c0,0,0,2f8d,0,5325 z",
-/** @TODO FIX missing history for Flips and Rotates! */
-// TODO: figure out some way to combine this with Clone - left attemps: 2
-function init (_x, _y) {
-  Tool.subscribedStart = function (x, y, actions) {
-    if (actions.source.target !== canvas)
-      return false;
-    if (DefaultUI.handleGUIArea(x, y, new DefaultUI.Drag()))
-      return false;
-    var found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
-    if (found) {
-      actions.source.event && actions.source.event.preventDefault();
-      ship.removeBlocks([found.index]);
-      DefaultUI.previewPlacing(x, y, DefaultUI.Drag.dragged.tile =
-        Block.arrayFromObjects(found.block)[0]);
-      DefaultUI.Drag.dragged.update(x, y);
-      juhus.set("claim", "claimmovetile");
-      render();
-    }
-    return !!found;
-  };// 3h_
-  /** @TODO FIX breaking when canceled by grab */
-  Tool.subscribedEnd;
-}, function exec() {}, function destroy() {}));
+  /** @TODO FIX missing history for Flips and Rotates! */
+  Tool.initCloneMove("move"), function exec() {}, function destroy() {}));
 Tool.list.push(new Tool("SelectAll", "M3ff8e,f246 l105,535f c0,1bfc,-16c9,32\
 ad,-32e5,32ad c-1c1c,0,-32e5,-16b0,-32e5,-32ad l-f6,-4b72 c0,-5158,-46b7,-93\
 4a,-9df4,-934a l-3fef,-1d c-1bfc,0,-32ad,-16c9,-32ad,-32e5 c0,-1c1c,16b0,-32\
@@ -4260,8 +4257,8 @@ f97 c0,1a48,154e,2f97,2f97,2f97 z M28e83,2da75 c100a,0,a0f9,0,af4d,0 c1a48,0\
 d,0 c-1a48,0,-2f97,154e,-2f97,2f97 c0,1a48,154e,2f97,2f97,2f97 z M28e83,2659\
 7 cac2,0,6f98,0,719f,0 c1a48,0,2f97,-154e,2f97,-2f97 c0,-1a48,-154e,-2f97,-2\
 f97,-2f97 c-aed,0,-6270,0,-719f,0 c-1a48,0,-2f97,154e,-2f97,2f97 c0,1a48,154\
-e,2f97,2f97,2f97 z", Tool.loadInit = (function init() {
-  DefaultUI.setSelectedTile(2, 0, 0);
+e,2f97,2f97,2f97 z", Tool.loadInit = (function init(x, y) {
+  DefaultUI.setSelectedTile(2, x, y);
   render();
 })));
 Tool.Tab.addCss("width: 90%;border: 2px solid #5577aa;border-radius: 4px;bac\
@@ -4669,7 +4666,9 @@ DefaultUI.setSelectedTile = function (item, x, y) {
 };
 /** renders if found @type {typeof DefaultUI.createTile} */
 DefaultUI.selectInHotbars = function (type) {
-  return DefaultUI.selected = DefaultUI.createTile(type);
+  var tile = DefaultUI.createTile(type);
+  DefaultUI.setSelectedTile(tile);
+  return DefaultUI.selected = tile;
 };
 /** handles interactions with DefaultUI hotbars and inventory
  * @param {number} x @param {number} y @param {DefaultUI.Drag} [reference]
@@ -5281,16 +5280,23 @@ DefaultUI.Drag.reset = function (notTile) {
 DefaultUI.Drag.finish = function (action) {
   if (juhus.get("claim").slice(-8) !== "movetile")
     return false;
-  // placing inventory tile over building area
   var replacing = DefaultUI.replacingTile,
     dragged = DefaultUI.Drag.dragged;
   if (replacing === -1 || action.type === "mouseleave") {
     var rect = DefaultUI.highlights[1], that = {blocks: ship.selection};
     var x = (vX - action.x) / sc, y = (action.y - vY) / sc;
     // simple implementaition doesn't care where interaction started
-    if (dragged.tile instanceof Block && rect && "block" in rect)
-      ship.placeBlock(0, rect.positionX, rect.positionY, dragged.tile);
-    else if (dragged.tile instanceof Tool) {
+    if (dragged.tile instanceof Block) {
+      if (rect && "block" in rect)
+        Edit.applyCommand(ship, ship.placeBlock,
+          0, rect.positionX, rect.positionY, dragged.tile);
+      // to not keep moved block removed
+      else if (juhus.get("claim").slice(-12) === "movemovetile") {
+        //if (Array.last(ship.history).command === Edit.remove["methodName"])
+        ship.history.pop();
+        Edit.redo(ship);
+      }
+    } else if (dragged.tile instanceof Tool) {
       /** @type {Ship["blockAtPonit2d"]} */
       (Ship.prototype.blockAtPonit2d).call(that, x, y) ?
         dragged.tile.edit(action.x, action.y) :
@@ -5298,8 +5304,13 @@ DefaultUI.Drag.finish = function (action) {
     }
     return DefaultUI.Drag.reset();
   }
-  // placing inventory tile over toolBar area
+  if (!DefaultUI.inventoryOpened) {
+  //   DefaultUI.Drag.reset(true);
+    render();
+    return true;
+  }
   DefaultUI.highlights.length = 0;
+  // placing inventory tile over toolBar area
   if (replacing !== dragged.item)
     DefaultUI.Drag.reset(true);
   var hotbar = dragged.item !== -1 && (dragged.item & 3) === 1 ?
@@ -5335,7 +5346,11 @@ DefaultUI.Drag.detect = function (x, y, action) {
     // #whatsthisfor = prevents nulls being dragged around
     if (!dragged.tile)
       return true;
-    DefaultUI.replacingTile = pointed.item;
+    var pickingTile = dragged.item === -1 &&
+      !DefaultUI.getSelectedTile(pointed.item);
+    // to prevent replace hignhlight in toolBars outside inventory
+    if (DefaultUI.inventoryOpened || pickingTile)
+      DefaultUI.replacingTile = pointed.item;
     var from = dragged.item >> 2, hotbar = (dragged.item & 3) === 1 ?
       DefaultUI.blockBars[DefaultUI.openedFolder] || [] :
       (dragged.item & 3) === 0 ? DefaultUI.toolBar : [];
@@ -5348,7 +5363,10 @@ DefaultUI.Drag.detect = function (x, y, action) {
       else if (dragged.tile instanceof Tool)
         dragged.tile.preview(x + Editor.placingOffsetX, y +
           Editor.placingOffsetY);
-    } else if ((pointed.item & 3) !== (dragged.item & 3)) {
+    } else if (!DefaultUI.inventoryOpened)
+      // to prevents inventory tile shifts outside inventory
+      UDF;
+    else if ((pointed.item & 3) !== (dragged.item & 3)) {
       DefaultUI.Drag.shiftDragged(from, 0, hotbar);
     } else if (pointed.item < dragged.item)
       this.shiftDragged(from, (pointed.item >> 2) + 1, hotbar);
@@ -5369,6 +5387,7 @@ DefaultUI.Drag.detect = function (x, y, action) {
     return true;
   }
   action.event.cancelable && action.event.preventDefault();
+  DefaultUI.highlights.length = 0;
   DefaultUI.Drag.original = dragged.item;
   hotbar = (dragged.item & 3) === 1 ?
     DefaultUI.blockBars[dragged.folder = DefaultUI.openedFolder] || [] :
@@ -6399,8 +6418,8 @@ init = function loadedEditorInit() {
   Edit.applyCommand(ship, ship.setSelected, clean);
   Edit.remove(ship);
   rend_collisions = true;
-  (DefaultUI.blockBars[0] || []).push(Tool.get("SelectAll"),
-    Tool.get("Expand"), Tool.get("Inventory"));
+  (DefaultUI.blockBars[0] || []).push(Tool.get("Stats"),
+    Tool.get("SelectAll"), Tool.get("Expand"), Tool.get("Inventory"));
   (DefaultUI.blockBars[0] || [])[5] = Tool.get("Flip180");
   imgColor.onload && rend_checkColors();
   imgBackg.src = "" + imgBackg.getAttribute("data-src");
