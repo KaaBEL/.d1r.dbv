@@ -1,13 +1,13 @@
-<!-- v.0.2.43 -->
+<!-- v.0.2.48 -->
 .d1r and .dbv are file extensions of the two main file formats which DroneBoi Vehicles Editor was based on, howerver .mssss file format for Modular Spaceships gets more support as of June 2026.  
 DBV (Droneboi vehicle) are game files for creations of Droneboi: Conquest game,  
 .D1R file extension (Drobo1Realm, which doesn't exist) is proposed modular file format for compressing droneboi like games space ship creations into binary data, uint8 byte array, inspired by PNG format. Possibly implemented as a network protocol with tooling and support to aid in multiplayer challenges, just like it was actively 'maintained' relativly to its usage.  
 
-Let me know (on Discord or) by creating issue in case you are interested in custom modification of editor or contributing to the project. 
+You can now read about the codebase in [MODDING.md](https://github.com/KaaBEL/.d1r.dbv/blob/main/MODDING.md), or let me know (on Discord or) by creating issue in case you are interested in custom modification of editor or contributing to the project. 
 
 ## Currently in progress:
 ### Fixing DBVE
-This tool not being used is old news. Since I just screw around, the editor as well is used only for screwing around, this time I'll keep screwing around till specific significant features are functional. I don't know what will happen to DBVE development afterward.
+The active development of the editor has ended, however the updates have not ended yet, like MODDING.md addition. If you have some specific request, I might even implement new feature. Especially if it is about fixing or updating/degrading game version of ships/drones/vehicles.
 
 The acronym is DBVE because this tool started in Droneboi community presented as an .DBV Editor. For consistency this acronym now remains as the most recognized short name for this project despite not supporting Droneboi games actively anymore.
 

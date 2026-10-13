@@ -2,7 +2,7 @@
 /// <reference path="./editor.html.ts" />
 "use strict";
 /** @readonly */
-var version__k_api_js = "v.0.2.47";
+var version__k_api_js = "v.0.2.48";
 /** 3h_ @TODO check @see {Actions.API_VERSION} */
 /** @typedef {HTMLElementTagNameMap} N @overload @returns {HTMLDivElement} */
 /** @template {keyof N} K @overload @param {K} e @returns {N[K]} */
@@ -12,6 +12,10 @@ function EL(e) {
 }
 function GE(v){return document.getElementById(+v===v?(GE.i=v+1)-1:v===
   void 0?v=GE.i++:v)}GE.i=0;
+/** @readonly */
+var F = function () {},
+  /** @readonly */
+  UDF = void 0;
 // 7th generation GE (Get Element by id) starts with id 0
 /** @type {HTMLCanvasElement} */
 var canvas = function (canvas) {
@@ -57,28 +61,25 @@ if (/http:..localhost:815[89]/.test(location.href))
     NS.oldWarn = oldWarn;
     NS.oldError = oldError;
   })();
-// api v.0.0.29
 
-// press is touch or click
-
-// vX/vY = view x, y (position)
-// fX/fY = from x, y (start view position)
-// gX/gY = grab x, y (start press posistion)
-// sc = scale
-// pR = pixel ratio (computed)
-// mouseStamp = press start
-var vX = 0, vY = 64, fX, fY, gX, gY, sc = 64, pR = 1;
+/** global view x (position) */
+var vX = 0,
+  /** global view y (position) */
+  vY = 64,
+  /** view scale (position and size multyplier from base 1px grid) */
+  sc = 64,
+  /** pixel ratio (computed) */
+  pR = 1;
 /** main#8 element
  * @type {HTMLElement&{onmousewheel?:(this: GlobalEventHandlers,
  * ev:WheelEvent&{wheelDelta?:number})=>any}|null}
  */
 var bd = GE(8);
-// . mouseStamp = 0, tStart = 0, touch = null, touch_2 = null;
 
 /** @type {((click?:true)=>void)|null} */
 var touchdevice = null;
 
-/** @deprecated signals UI API click on canvas */
+/** @deprecated signals UI API click on canvas, old: press is touch or click */
 var press = function press(x, y) {
   return console.debug(x, y);
 };
@@ -104,9 +105,6 @@ var render = function render() {
 var init = function init() {
   return;
 };
-
-/** @readonly */
-var F = function () {}, UDF = void 0;
 
 if (typeof TouchEvent == "undefined")
   //@ts-expect-error
