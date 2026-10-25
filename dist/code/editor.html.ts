@@ -1,4 +1,4 @@
-// v.0.2.32
+// v.0.2.49
 window.onerror = function (m, s, l, c, e) {
   alert(m + " " + s + ":" + (l || "") + ":" + (c || "") + " " +
     (e && typeof e == "object" && e.stack || e));
@@ -6,7 +6,8 @@ window.onerror = function (m, s, l, c, e) {
 
 (function (h) {
   h || typeof document.querySelector == "function" &&
-    (h = document.querySelector("head") || EL("head"));
+    (h = document.querySelector("head") ||
+    document.createElement("head"));
   h && h.appendChild(document.createElement("style")).appendChild(
     document.createTextNode(".no-script{display:none;}")
   );

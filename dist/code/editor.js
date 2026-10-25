@@ -2,7 +2,7 @@
 /// <reference path="./code.js" />
 "use strict";
 /** @readonly */
-var version_editor_js = "v.0.2.47";
+var version_editor_js = "v.0.2.49";
 /** 3h_ @TODO check @see {Editor} for assignment without saveSettings */
 /** @param {string} data */
 var tN = function (data) {
@@ -343,10 +343,10 @@ Editor.addingStyles(
   "position: absolute;top: 0;left: 0;transition: .2s;}" +
   "#commandsTab .loading div:nth-child(2){position: relative;" +
   "z-index: 1;background-color: rgba(0, 0, 0, 0);text-align: center;}" +
-  "#commandsTab header h1" +
+  "#commandsTab header h1,#commandsTab header h2" +
   "{padding: 5px;margin: 0;flex-grow: 1;cursor: pointer;" +
   "font-size: inherit;font-weight: inherit;text-align: center;}" +
-  "#commandsTab header h1:active{cursor: grab;}" +
+  "#commandsTab header h1:active,#commandsTab header h2:active{cursor: grab;}" +
   "#commandsTab .content button, #commandsTab .items button" +
   "{display: block;position: relative;width: 333px;}" +
   "#commandsTab button div" +
@@ -1352,7 +1352,7 @@ Command.listening = -1;
 Command.NAME = {"Setup Properties": "Setup Properties",
   "Vehicle stats": "Vehicle stats"};
 Command.el = EL("menu");
-Command.head = EL("h1");
+Command.head = EL("h2");
 Command.x = 5;
 Command.y = 5;
 /**
@@ -2771,6 +2771,7 @@ Command.push("Rift Drive calculator", function (items, collapsed) {
   var riftCrystals = EL("input"), dist = tN("");
   riftCrystals.type = "number";
   riftCrystals.value = "4";
+  /** @this {void} */
   (riftCrystals.oninput = function () {
     var n = Number(riftCrystals.value) || 0;
     dist.data = "" + (10000 / weight * (n > drives * 4 ?
@@ -3307,7 +3308,7 @@ Tool.get = function (name) {
   var id = name in Tool.ids ? Tool.ids[name] : NaN;
   return typeof id == "number" && id === id ? Tool.list[id] : null;
 };
-Tool.unsubscribed = function () {
+Tool.unsubscribed = function unsub() {
   return false;
 };
 /**
@@ -3468,8 +3469,8 @@ Tool.setSelectionBased = function (color, set) {
 };
 /** @param {"move"|""|"clone"} which @returns {ToolExec} */
 Tool.initCloneMove = function (which) {
-  return function init (_x, _y) {
-    Tool.subscribedStart = function (x, y, actions) {
+  return function initCloneMove(_x, _y) {
+    Tool.subscribedStart = function cloneMoveStart(x, y, actions) {
       if (actions.source.target !== canvas)
         return false;
       if (DefaultUI.handleGUIArea(x, y, new DefaultUI.Drag()))
@@ -3477,8 +3478,10 @@ Tool.initCloneMove = function (which) {
       var found = ship.blockAtPonit2d((vX - x) / sc, (y - vY) / sc);
       if (found) {
         actions.source.event && actions.source.event.preventDefault();
-        if (which === "move")
+        if (which === "move") {
+          Edit.changeSelection(ship, found.block, true);
           Edit.applyCommand(ship, ship.removeBlocks, [found.index]);
+        }
         DefaultUI.previewPlacing(x, y, DefaultUI.Drag.dragged.tile =
           Block.arrayFromObjects(found.block)[0]);
         DefaultUI.Drag.dragged.update(x, y);
@@ -4610,7 +4613,7 @@ DefaultUI.canDefaultPress = true;
 /** @type {Block.Size.Highlight|null} temporary visualising */
 DefaultUI.found = null;
 /** used to visualise where DefaultUI.Drag.dragged will be placed, is
- * like @see {DefaultUI.clickedTile} @see {DefaultUI.selectedTile} */
+ * like @see {DefaultUI.selectedTile} */
 DefaultUI.replacingTile = -1;
 /** used for placing preview, second and following items is for placing
  * block, the first... idk @type {(Block.Size.Highlight|undefined)[]} */
@@ -4668,7 +4671,7 @@ DefaultUI.setSelectedTile = function (item, x, y) {
 DefaultUI.selectInHotbars = function (type) {
   var tile = DefaultUI.createTile(type);
   DefaultUI.setSelectedTile(tile);
-  return DefaultUI.selected = tile;
+  return tile;
 };
 /** handles interactions with DefaultUI hotbars and inventory
  * @param {number} x @param {number} y @param {DefaultUI.Drag} [reference]
@@ -5086,12 +5089,14 @@ DefaultUI.renderHotBars = function (w, h) {
 };
 /** @param {number} h height */
 DefaultUI.renderDragged = function (h) {
+  /** `item === -1`none, `(item & 3) === 3`in inventory, `(item & 3) === 0`
+   * in tool bar, `(item >> 2)`its index @see {DefaultUI.selectedTile} */
   var item = DefaultUI.replacingTile, dragged = DefaultUI.Drag.dragged;
   var x = dragged.x, y = dragged.y, r = Editor.renderSharp ? 0 : 5;
   if (DefaultUI.Drag.isPreview)
     ctx.lineWidth = 1E-11;
   DefaultUI.drawTileCtx(x, y, r, dragged.tile, false);
-  if (item !== -1) {
+  if (item !== -1 && (item & 3) !== 3) {
     console.assert(!DefaultUI.Drag.isPreview, "lineWidth = 0");
     var b = (item & 3) === 0;
     // v.0.2.16 constants same as ones for calculating
@@ -5282,6 +5287,12 @@ DefaultUI.Drag.finish = function (action) {
     return false;
   var replacing = DefaultUI.replacingTile,
     dragged = DefaultUI.Drag.dragged;
+  render();
+  if (DefaultUI.Drag.pointed.item !== -1 && !DefaultUI.inventoryOpened)
+    // branch for dissapearing dragged tile when placing over hotbars
+    if (replacing === -1)
+      return DefaultUI.Drag.reset();
+  // branch for placing the tile
   if (replacing === -1 || action.type === "mouseleave") {
     var rect = DefaultUI.highlights[1], that = {blocks: ship.selection};
     var x = (vX - action.x) / sc, y = (action.y - vY) / sc;
@@ -5294,6 +5305,7 @@ DefaultUI.Drag.finish = function (action) {
       else if (juhus.get("claim").slice(-12) === "movemovetile") {
         //if (Array.last(ship.history).command === Edit.remove["methodName"])
         ship.history.pop();
+        ship.history.pop();
         Edit.redo(ship);
       }
     } else if (dragged.tile instanceof Tool) {
@@ -5304,11 +5316,10 @@ DefaultUI.Drag.finish = function (action) {
     }
     return DefaultUI.Drag.reset();
   }
-  if (!DefaultUI.inventoryOpened) {
-  //   DefaultUI.Drag.reset(true);
-    render();
-    return true;
-  }
+  // if (!DefaultUI.inventoryOpened) {
+  //   dragged.item === -1 && DefaultUI.Drag.reset(true);
+  //   return true;
+  // }
   DefaultUI.highlights.length = 0;
   // placing inventory tile over toolBar area
   if (replacing !== dragged.item)
@@ -5329,7 +5340,6 @@ DefaultUI.Drag.finish = function (action) {
   // v.0.2.33 more reset because of move tile tool bug
   DefaultUI.replacingTile = dragged.item = -1;
   dragged.tile = null;
-  render();
   return true;
 };
 /** movetile claim start+move handler
@@ -5346,11 +5356,14 @@ DefaultUI.Drag.detect = function (x, y, action) {
     // #whatsthisfor = prevents nulls being dragged around
     if (!dragged.tile)
       return true;
+    /** when dragging tile from editor area onto empty slot it gets picked */
     var pickingTile = dragged.item === -1 &&
-      !DefaultUI.getSelectedTile(pointed.item);
+      !DefaultUI.getClickedTile(pointed.item);
     // to prevent replace hignhlight in toolBars outside inventory
-    if (DefaultUI.inventoryOpened || pickingTile)
-      DefaultUI.replacingTile = pointed.item;
+    // v.0.2.49 fixed bug with replaceTile kept shown at tiles, which
+    // were empty at moment of last initiation of Move Tool
+    DefaultUI.replacingTile =
+      DefaultUI.inventoryOpened || pickingTile ? pointed.item : -1;
     var from = dragged.item >> 2, hotbar = (dragged.item & 3) === 1 ?
       DefaultUI.blockBars[DefaultUI.openedFolder] || [] :
       (dragged.item & 3) === 0 ? DefaultUI.toolBar : [];

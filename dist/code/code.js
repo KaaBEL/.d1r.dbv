@@ -2,7 +2,7 @@
 /// <reference path="./defs.d.ts" />
 "use strict";
 /** @readonly */
-var version_code_js = "v.0.2.47";
+var version_code_js = "v.0.2.49";
 /** 3h_  @TODO check @see {Ship.VERSION}  Read FUN FACTS below: */
 // NOTE: 3 options to modify and/or contribute are:
 // A) download and edit source files localy
@@ -18,7 +18,9 @@ var OP = Object.prototype.hasOwnProperty,
   };
 if (typeof F != "function" || typeof UDF != "undefined")
   /** @readonly */
-  var F = function () {}, UDF = void 0;
+  var F = function () {},
+    /** @readonly */
+    UDF = void 0;
 // inheritance's gonna go brrrrrrrrrrrrrrrr (taken standard ES5 extending)
 /** @param {Function} _new_class @param {Function} _super */
 function __extends(_new_class, _super) {
@@ -57,22 +59,42 @@ if (typeof Initial != "function")
  * @typedef {number|[number,number]} UseData
  * @typedef {{type:string,usage?:UseData,force?:number,
  * storage?:number,capacity?:number,value?:number}[]} ResourceData
- * @typedef {{id:number,weight?:number,strength?:number,cost?:number,
- * energy_use?:UseData,energy_store?:number,fuel_use?:UseData,
- * fuel_store?:number,cargo_use?:UseData,cargo_store?:number,
- * draw?:number[],now?:number,bitmap?:ShortDef|SizeDef,editor?:
- * string,old?:string,new?:string,box3d?:SizeXYZ,
- * resources?:ResourceData,recepies?:ResourceData[]}} BlockData
+ * @typedef BlockData
+ * @property {number} id numerical DBVE ID, usually ordered by category
+ * @property {number} [weight] block mass in games units
+ * @property {number} [strength] block integrity/health in games units
+ * @property {number} [cost] price in games units
+ * @property {UseData} [energy_use] db usage per second or stated amount
+ * @property {number} [energy_store] db capacity for electric energy
+ * @property {UseData} [fuel_use]
+ * @property {number} [fuel_store]
+ * @property {UseData} [cargo_use]
+ * @property {number} [cargo_store]
+ * @property {number[]} [draw] DR rendering data
+ * @property {number} [now] alternative ID for ordering in inv./categories
+ * @property {ShortDef|SizeDef} [bitmap] atlas data per blok,
+ * used to determin block size (Block.Size) and other
+ * @property {string} [editor] MS part's Editor Name
+ * @property {string} [old]
+ * @property {string} [new]
+ * @property {SizeXYZ} [box3d] DR 0.3+ box3d size of nonscalable blocks
+ * @property {string} [manufacturer] db block manufacturer
+ * @property {ResourceData} [resources] newer productoin/usage
+ * @property {ResourceData[]} [recepies] newer productoin/usage
+ * @see {Block.ID} @see {Block.NAME} @see {Block.WEIGHT} @see {Block.STRENGTH}
+ * @see {Block.COST} @see {Color.NOW} @see {Block.Size.VALUE} @see {Block.OLD}
+ * @see {Block.BOX3D} @see {Block.RESOURCES}} @see {Block.TITLE}
  * @typedef {{id:number,weight?:number,strength?:number,cost?:number,
  * energy_use?:number|number[],energy_store?:number,
  * fuel_use?:number|number[],fuel_store?:number,cargo_use?:number|
  * number[],cargo_store?:number,draw?:number[],now?:number,
- * bitmap:number|(number|string)[],box3d?:SizeXYZ,
+ * bitmap:number|(number|string)[],box3d?:SizeXYZ,manufacturer?:string,
  * resources?:ResourceData,recepies?:ResourceData[]}} BlockDataSimple
  */
 var Data = (function () {
   /** @TODO fix string/number access of generated ids, names */
   /** @typedef {{colors:typeof colors,blocks:typeof blocks}} DataData */
+  /** @typedef {typeof Data.db1BuildDataOptions} db1DataOptions */
   /** @typedef {never} Data @returns {never} */
   function Data() {
     throw new TypeError("Illegal constructor");
@@ -91,7 +113,7 @@ var Data = (function () {
     "Station Floor 1": {id: 24, now: 30}, "Station Floor 0": {id: 23,
     now: 31}, "Gonb": {id: 28, now: 62}, "BREAD": {id: 21, now: 63},
     "Wood": {id: 26, now: 64}, "Festive Duck": {id: 27, now: 65},
-    "[custom color]": {id: 22, now: 127}});
+    "Container": {now: 66}, "[custom color]": {id: 22, now: 127}});
   Data.paths = [
     ["m,hv", 8, -8, -16, 32], ["m,hv", -8, -8, 16, 32], ["m,hv", -8, 8, 16,
     -16], ["m,hvh", -8, -8, 16, 16, -16], ["m,hvh", -8, -8, 16, 32, -16],
@@ -305,13 +327,59 @@ var Data = (function () {
     id: 853, bitmap: 163}, __placeholder854__: {id: 854, bitmap: [140, 4,
     1]}, __placeholder855__: {id: 855, bitmap: 182}, __placeholder856__: {
     id: 856, bitmap: 155}, __placeholder857__: {id: 857, bitmap: 154},
-    __NULL__: {id: 1023, bitmap: [-1, -1, -1]}, Afterburner: {id: 1035,
-    weight: 2, strength: 10, cost: 70, bitmap: 16}, "Dynamo Thruster": {
-    id: 1037, weight: 3, strength: 15, cost: 90, bitmap: 30}, "T1 Rammer": {
-    id: 1043, weight: 1, strength: 20, cost: 70, bitmap: 64},
-    "T1 Nano Healer": {id: 1060, weight: 1, strength: 10, cost: 130,
-    bitmap: 66}, __placeholder969__: {id: 969, weight: .169, cost: 6969,
-    bitmap: 82}, ControlBlock: {id: 1 + 1280, bitmap: 1071, weight: 1,
+    __NULL__: {id: 1023, bitmap: [-1, -1, -1]},
+    // Core:{id:1024,weight:2,strength:20,cost:50,manufacturer:"DIT"},
+    "T1 Block": {id: 1025, weight: 1, strength: 20, cost: 50,
+    manufacturer: "DIT"}, "T2 Block": {id: 1026, weight: 2, strength: 40,
+    cost: 80, manufacturer: "DIT"}, "T1 Wedge": {id: 1027, weight: .5,
+    strength: 20, cost: 50, manufacturer: "DIT"}, "T1 Wedge 1x2": {id: 1028,
+    weight: 1, strength: 20, cost: 50, manufacturer: "DIT"}, "T2 Wedge": {
+    id: 1029, weight: 1, strength: 20, cost: 80, manufacturer: "DIT"},
+    "Structure Block": {id: 1030, weight: 1, strength: 5, cost: 50,
+    manufacturer: "DIT"},
+    // "Glass Block": {id: 1031, weight: .5, strength: 5, cost: 50,
+    // manufacturer: "HammerheadIndustries"}, "Glass Wedge": {id: 1032,
+    // weight:.25,strength:5,manufacturer:"HammerheadIndustries",cost:50},
+    "Station Block": {id: 1033, weight: 4, strength: 80, cost: 150,
+    manufacturer: "DIT"}, "Simple Thruster": {id: 1034, weight: 2, strength:
+    10, cost: 50, manufacturer: "DIT"}, Afterburner: {id: 1035, weight: 2,
+    strength: 10, cost: 70, bitmap: 16, manufacturer: "FyrizeAerospace"},
+    "Ion Thruster": {id: 1036, weight: 3, strength: 15, cost: 90,
+    manufacturer: "FocusWorks"}, "Dynamo Thruster": {id: 1037, weight: 3,
+    strength: 15, cost: 90, bitmap: 30, manufacturer: "HammerheadIndustries"},
+    "Momentum Wheel": {id: 1038, weight: 2, strength: 10, cost: 50,
+    manufacturer: "DIT"}, "Small Fuel Tank": {id: 1039, weight: 2,
+    strength: 10, cost: 60, manufacturer: "DIT"}, "Medium Fuel Tank": {
+    id: 1040, weight: 8, strength: 40, cost: 180, manufacturer: "DIT"},
+    // "Small Battery": {id: 1041, weight: 3, strength: 10, cost: 60,
+    // manufacturer: "DIT"}, "Medium Battery": {id: 1042, weight: 12,
+    // strength: 40, cost: 180, manufacturer: "DIT"},
+    "T1 Rammer": {id: 1043, weight: 1, strength: 20, cost: 70, bitmap: 64,
+    manufacturer: "DIT"}, "T1 Blaster": {id: 1044, weight: 1, strength: 10,
+    cost: 110, manufacturer: "DIT"}, "T1 Pulse Laser": {id: 1045, weight: 1,
+    strength: 10, cost: 110, manufacturer: "DIT"}, "T1 Gatling Gun": {id: 1046,
+    weight: 1, strength: 10, cost: 110, manufacturer: "DIT"},
+    "T1 Rocket Launcher": {id: 1047, weight: 1, strength: 10, cost: 110,
+    manufacturer: "DIT"}, Explosive: {id: 1048, weight: 1, strength: 1,
+    cost: 60, manufacturer: "FyrizeAerospace"},
+    "T1 Drill": {id: 1049, weight: 2, strength: 10, cost: 100,
+    manufacturer: "DIT"}, "T1 Mining Laser": {id: 1050, weight: 3,
+    strength: 10, cost: 200, manufacturer: "JunoIndustries"}, "Small Crate": {
+    id: 1051, weight: 2, strength: 10, cost: 70, manufacturer: "DIT"},
+    "Medium Crate": {id: 1052, weight: 8, strength: 40, cost: 210,
+    manufacturer: "DIT"}, Connector: {id: 1053, weight: .5, strength: 10,
+    cost: 100, manufacturer: "DIT"}, "T1 Solar Panel": {id: 1054, weight: .5,
+    strength: 1, cost: 70, manufacturer: "FocusWorks"}, "T2 Solar Panel": {
+    id: 1055, weight: .5, strength: 1, cost: 100, manufacturer: "FocusWorks"},
+    // "Solar Block": {id: 1056, weight: 1, strength: 10, cost: 70,
+    // manufacturer: "FocusWorks"}, Hinge: {id: 1057, weight: 1, strength: 20,
+    // cost: 80, manufacturer: "DIT"}, "Camera Block": {id: 1059, weight: 1,
+    // strength: 20, cost: 100, manufacturer: "DIT"},
+    Seperator: {id: 1058,  weight: 1, strength: 10, cost: 80,
+    manufacturer: "DIT"}, "T1 Nano Healer": {id: 1060, weight: 1,
+    strength: 10, cost: 130, bitmap: 66, manufacturer: "FocusWorks"}, 
+    __placeholder969__: {id: 969, weight: .169, cost: 6969, bitmap: 82},
+    ControlBlock: {id: 1 + 1280, bitmap: 1071, weight: 1,
     resources: [{type: "Power", usage: -.1}, {type: "Power", capacity: 10}]},
     Gyro1: {id: 9 + 1280, bitmap: 1072, weight: 1, resources: [{type: "Power",
     usage: -.2}]}, Camera: {id: 20 + 1280, bitmap: 1073, weight: .5}, Scope: {
@@ -871,7 +939,7 @@ var Data = (function () {
     1056: "Solar Block",
     1057: "Hinge",
     1058: "Seperator",
-    1059: "Camera Block,",
+    1059: "Camera Block",
     1060: "T1 Nano Healer",
     1281: "Cockpit",
     1282: "Tiny hydrogen tank",
@@ -1131,8 +1199,8 @@ var Data = (function () {
     1768: "1*4 Indestructible wedge",
     1769: "1*5 Indestructible wedge"
   });;
-  /** @type {{[key:number]:string|undefined}} */
-  Data.games = {0: "", 1: "dr0_3"};
+  /** prefix per game @type {{[key:number]:string|undefined}} */
+  Data.prefixes = {0: "", 1: "dr0_3"};
   Data.categoriesMS = "cat_control cat_fuelandbatteries cat_engines cat_gene\
 rators cat_armor cat_weapons cat_utility cat_resources cat_logic cat_structu\
 ral cat_cheats !cat_decolayer Lcat_decolayer2 !cat_decolayer3 cat_editoronly\
@@ -1169,7 +1237,7 @@ ral cat_cheats !cat_decolayer Lcat_decolayer2 !cat_decolayer3 cat_editoronly\
     var data = src === "blocks" ? blocks : colors, ids =
       /** IDs by Name is missing the undefined case, isn't 100% type safe
        * @type {{[K in keyof DataData[T]]:DataData[T][
-       * K] extends {id:number}?DataData[T][K]["id"]:DataData[T][K]}}
+       * K] extends {id:number}?DataData[T][K]["id"]:never}}
        */
       ({});
     for (var p in data) {
@@ -1303,7 +1371,7 @@ ral cat_cheats !cat_decolayer Lcat_decolayer2 !cat_decolayer3 cat_editoronly\
     return src === "color" ? colors : blocks;
   };
   /** @param {number} firstID @param {number} [topID] */
-  Data.pickDataInRange = function (firstID, topID) {
+  Data.getDataInRange = function (firstID, topID) {
     var data = {}, source = Data.getData("blocks");
     topID = typeof topID === "number" ? topID : Number.MAX_SAFE_INTEGER;
     for (var p in source)
@@ -1316,12 +1384,6 @@ ral cat_cheats !cat_decolayer Lcat_decolayer2 !cat_decolayer3 cat_editoronly\
   };
   /** @param {unknown} data @param {number} [level=NaN] used for MS ids */
   Data.buildJSValue = function stringify(data, level) {
-    //-var json = "", scope = [data], keys = [], pos = [0];
-    //-for (var level = 0; level >= 0;) {
-    //-  for (var p in source)
-    //-  if (OP.call(source, p))
-    //-}
-    //-SCREW THIS I AM RECURSING IT D:
     /** @param {number} n */
     function toNumberNotation(n) {
       var s = "" + n, matched = /^(\-?)0(\.[0-9]+)$/.exec(s);
@@ -1348,7 +1410,7 @@ ral cat_cheats !cat_decolayer Lcat_decolayer2 !cat_decolayer3 cat_editoronly\
       json += "{";
       for (var p in data)
         if (OP.call(data, p)) {
-          json += level === 1 && p === "id" ?
+          json += level === 1 && p === "id" && !("new" in data) ?
             "id: " + (data[p] - 1280) + " + 1280, " :
             (identifier.test(p) ? p : toPrintable(p)) + ": " +
               stringify(data[p], level + 1) + ", ";
@@ -1413,8 +1475,8 @@ ral cat_cheats !cat_decolayer Lcat_decolayer2 !cat_decolayer3 cat_editoronly\
         title: (el.querySelector("EditorName") || {}).textContent,
         weight: (el.querySelector("Mass") || {}).textContent,
         storage: stored,
-        recepies: recepies,//-ies.length > 1 ? resouces : UDF,
-        resources: recepies[0]//-ies.length > 1 ? UDF : resouces[0]
+        recepies: recepies,
+        resources: recepies[0]
       });
     }
     return temp0.sort(function (a, b) {
@@ -1443,7 +1505,7 @@ ral cat_cheats !cat_decolayer Lcat_decolayer2 !cat_decolayer3 cat_editoronly\
     var prop = key || tag;
     if (!/^(weight|resources|recepies)$/.test(prop))
       console.warn("values are assinged as numbers");
-    data = data || Data.pickDataInRange(1280);
+    data = data || Data.getDataInRange(1280);
     Data.tempMS.forEach(function (e) {
       if (e[tag] !== UDF && e.name && e.name in data)
         switch (prop) {
@@ -1490,15 +1552,72 @@ ral cat_cheats !cat_decolayer Lcat_decolayer2 !cat_decolayer3 cat_editoronly\
     return function () {
       return generated;
     };
-  }
-  //-example usage of generating data for MS parts:
-  //-Data.generateMSData(function (data) {
-  //-  Data.tempMS = data;
-  //-  var generated = Data.pickDataInRange(1280);
-  //-  Data.addMSDataProperty(generated, "resources");
-  //-  Data.addMSDataProperty(generated, "recepies");
-  //-  return generated;
-  //-});
+  };
+  Data.db1BuildDataOptions = Object.freeze({
+    paintsAsString: true,
+    normalCaseNames: true,
+    fixAll: true,
+    fixManufacterer: true,
+    fixContainer: true
+  });
+  /** @param {{[K in keyof db1DataOptions]?:boolean}} [options] */
+  Data.buildDB1DataJSON = function (options) {
+    /** @param {number} n */
+    function formatFloat (n) {
+      var string = "" + n;
+      if (!/\./.test(string))
+        string += ".0";
+      return +string === n ? string : "" + n;
+    }
+    options = options && options.fixAll ?
+      Data.db1BuildDataOptions :
+      options || OC();
+    var blocksData = "{", names = [], colorToPAint = {"Light Blue": 2,
+      "White": -1, "Dark Gray": 1, "Orange": 3, "Red": 4, "Lime": 5,
+      "Yellow": 6, "Light Gray": 8, "Fuel": 11, "Wine": 12, "Wood": 13,
+      "Container": 14}, startingItems = {Connector: 1, Core: 1,
+      Hinge: 1, "Momentum Wheel": 1, Seperator: 1, "Simple Thruster": 2,
+      "Small Battery": 2, "Small Crate": 2, "Small Fuel Tank": 2,
+      "Structure Block": 1, "T1 Battery": 1, "T1 Block": 2,
+      "T1 Drill": 1, "T1 Gatling Gun": 1, "T1 Mining Laser": 1,
+      "T1 Nano Healer": 1, "T1 Pulse Laser": 1, "T1 Blaster": 1,
+      "T1 Rocket Launcher": 1, "T1 Solar Panel": 1, "T1 Wedge": 2};
+    // v.0.2.38 1024 up to 1060 is range of db1 blocks
+    if (Block.NAME.length < 1061)
+      return console.error("Block.data don't have range for db1");
+    for (var id = 1024; id < 1061; id++)
+      Block.NAME[id] ?
+        names.push(Block.NAME[id]) :
+        console.log("missing definition for " + Block.TITLE);
+    names.sort(function (a, b) {
+      return a > b ? 1 : a === b ? 0 : -1;
+    }).forEach(function (name) {
+      var id = Block.ID[name], color = name.slice(0, 5) === "Glass" ?
+        color = "Light Blue" :
+        name === "Camera Block" ?
+          color = "White" :
+          name === "Medium Battery" ?
+            color = "Dark Gray" :
+            Color.getDefault(name), category = Block.CATEGORY[id];
+      blocksData += JSON.stringify(options.normalCaseNames ?
+          name :
+          name.toLowerCase().replace(/ /g, "-")) +
+        ":{\"category\":" + JSON.stringify(!options.fixContainer &&
+          category === "containers" ? "container" : category) +
+        ",\"defaultPaint\":" + (options.paintsAsString ?
+          JSON.stringify(color) :
+          colorToPAint[color] || -1) +
+        ",\"description\":" + JSON.stringify(Block.DESCRIPTION[id]) +
+        ",\"integrity\":" + formatFloat(Block.STRENGTH[id] || 0) +
+        ",\"mass\":" + formatFloat(Block.WEIGHT[id] || 0) +
+        ",\"price\":" + (Block.COST[id] || 0) +
+        ",\"startingStock\":" + (startingItems[name] || 0) +
+        ",\"manufact" + "eu"[Number(options.fixManufacterer) || 0] +
+        "rer\":" +JSON.stringify(Block.MANUFACTURER[id]) + "},";
+    });
+    //-return JSON.stringify(blocksData);
+    return blocksData.slice(0, -1) + "}";
+  };
   return Data;
 })();
 
@@ -1999,26 +2118,32 @@ Color.NOW = Object.freeze(Data.generateValues("now"));
 Color.db1ToDb3 = Object.freeze({
   0: "White", 1: "Dark Gray", 3: "Light Blue", 4: "Orange", 5: "Red",
   6: "Lime", 7: "Yellow", 8: "Festive Red", 9: "Light Gray",
-  10: "Red Hazard Stripes", 11:  "Yellow Hazard Stripes", 12: "Fuel",
+  10: "Red Hazard Stripes", 11: "Yellow Hazard Stripes", 12: "Fuel",
   13: "Wine", 14: "Wood", 15: "White Hazard Stripes", 16: "Purple",
   17: "Pink", 18: "Festive Green", 19: "Festive Duck"
 });
 /** @param {string} name @returns {Colors} */
 Color.getDefault = function getColor(name) {
-  if (/Hydrogen Thruster/.test(name))
+  if (/Hydrogen Thruster|Simple Thruster|Momentum/.test(name))
     return "Yellow";
   if (/Wheel|Battery|__placeholder84[456]__|Dynamo/.test(name))
     return "Light Gray";
-  if (/Weight|Armou?r|Camera Block/.test(name))
+  if (/Weight|Armou?r|Camera Block|T2 [BW]/.test(name))
     return "Dark Gray";
-  if (/Hydrogen Tank/.test(name))
+  if (/Hydrogen Tank|Small Fuel/.test(name))
     return "Fuel";
-  if (/Drill|Storage Rack/.test(name))
+  if (/Drill|Storage Rack|Mining Laser/.test(name))
     return "Orange";
   if (/Ion Thruster/.test(name))
     return "Lime";
   if (/__placeholder776__|Afterburner/.test(name))
     return "Red";
+  if (/Medium Fuel/.test(name))
+    return "Wine";
+  if (/Medium Crate/.test(name))
+    return "Container";
+  if (/Small Crate/.test(name))
+    return "Wood";
   var id = Block.ID[name];
   if ((id > 1279 && id < 2048) || Color.colorlessRegexp.test(name))
     return null;
@@ -2768,6 +2893,56 @@ Block.db1ToDb3 = Object.freeze({
 });
 /** Deltarealm 0.3+ box3d size of internally nonscalable blocks */
 Block.BOX3D = Data.generateValues("box3d");
+/** db1 block categories @readonly *///@ts-expect-error
+Block.CATEGORY = (function () {
+  var categories = "basic 1034 movement 1039 containers 1043 weapon 1049 mini\
+ng 1051 containers 1053 gizmo 1061".split(" ");
+  for (var i = 0, id = 1024, data = OC(); i < categories.length; i++)
+    for (var jMax = +categories[i + 1]; id < jMax; id++)
+      if (id in Block.NAME)
+        data[id] = categories[i];
+      else if (id > Block.NAME.length)
+        return data;
+  return data;
+})();
+Block.MANUFACTURER = Data.generateValues("manufacturer");
+/** @readonly @type {{[key:number]:string|undefined}} *///@ts-expect-error
+Block.DESCRIPTION = (function () {
+  var descriptions = "The main control module of your vehicle. If it is dest\
+royed, your entire vehicle is disabled. \0Regular building block.\0Reinforce\
+d building block.\0Half a block.\0Tall wedge.\0Reinforced wedge.\0Structural\
+ piece that can attach diagonally and be placed underneath thrusters.\0Fragi\
+le transparent glass block that looks cool and reflects lasers.\0Half a glas\
+s block.\0Big block meant for building stations.\0Produces thrust using fuel\
+.\0Type of thruster that increases thrust the longer it is simultaneously us\
+ed.\0Creates thrust by accelerating ions using electricity. Low output power\
+ but high efficiency.\0Type of thruster that generates electricity, using fu\
+el.\0Creates torque using electricity, thus turning your drone.\0Contains 20\
+L of fuel. Can be refueled by docking at a fuel container.\0Contains 100L of\
+ fuel. Can be refueled by docking at a fuel container.\0Contains 20 units of\
+ electricity. Can be recharged using solar panels.\0Contains 100 units of el\
+ectricity. Can be recharged using solar panels.\0Rams other vehicles, deals \
+3x the impact damage upon collision.\0Fires a controlled energy burst dealin\
+g splash damage.\0Fires a laser beam dealing instant damage.\0Fires short bu\
+rsts of energy in a high firerate dealing splash damage.\0Launches a rocket-\
+propelled grenade dealing splash damage.\0Explodes on impact, dealing damage\
+ to nearby blocks.\0Drills through asteroids to gather minerals.\0Cuts throu\
+gh asteroids with a laser to gather minerals.\0Wooden crate that can store 5\
+ items. When destroyed, the cargo is lost.\0Stronger, metal crate that can s\
+tore 25 items. When destroyed, the cargo is lost.\0Allows you to dock at oth\
+er spacecraft and can transfer fuel & electricity between them. Click to tog\
+gle.\0Produces electricity, but are very vulnerable and can break while used\
+ at high speeds. Click to toggle.\0Produces more electricity, but are very v\
+ulnerable and can break while used at high speeds. Click to toggle.\0A compa\
+ct, more durable solar panel.\0Connected blocks can freely hinge arround it \
+in 360 degrees.\0Click to detach all connected blocks.\0Click to center your\
+ camera on it. Has a max range of 60 meters before losing signal.\0Fires a l\
+aser-like beam that will slowly heal blocks it comes in contact with.\nCanno\
+t heal destroyed blocks.\0".split("\0"), data = [];
+  for (var i = descriptions.length; i-- > 0;)
+    data[i + 1024] = descriptions[i];
+  return data;
+})();
 /** @readonly settings for @see {Block.arrayFromObjects} *///@ts-expect-error
 Block.creator = {warns: 3, msWarns: 3};
 // #mslogics now MS blocks are second time parsed in Block.arrayFromObjects 
@@ -2832,7 +3007,7 @@ Block.arrayFromObjects = function (blocks, logics, game) {
 ame|n|position|pos|p|rotation|rot|r|properties|prop|f|flipped|wg|weld|color|\
 s|c|ni|invalidName|getPhysics|logicPosition|logicBlockIndex|i)$");
   for (var i = 0, r = []; i < bs.length; i++) {
-    var gamePrefix = Data.games[game || 0] || "", block = bs[i], o = {
+    var gamePrefix = Data.prefixes[game || 0] || "", block = bs[i], o = {
       name: block.internalName || block.i || block.name || block.n,
       pos: block.position || block.pos || block.p,
       rot: block.rotation || block.rot || block.r || 0,
@@ -2925,7 +3100,7 @@ s|c|ni|invalidName|getPhysics|logicPosition|logicBlockIndex|i)$");
           extractLogic(o.prop.customParameter);
       Logic.addLogic(name, o.prop, rawLogics, r);
     }
-    // v.0.2.38 range of db blocks from Ship.checkDBV
+    // v.0.2.38 range of db3 blocks from Ship.checkDBV
     if (Block.ID[name] > 689 && Block.ID[name] < 959)
       // (v.0.1.64T14) was it really impossible to load wgs from JSON?
       o.prop.weldGroup = o.weld || o.prop.weldGroup || 0;
@@ -3116,12 +3291,17 @@ Block.Size.generate = function (arg) {
       nw instanceof Array && nw.push(v);
     }
   }
-  var Size = Block.Size, r = {690: new Size(0, 0, 2, 2, 32, 0, 0)};
+  var Size = Block.Size;
+  /** resulting sizes and blocks atlas data
+   * @type {{[key:number]:Block.Size|undefined}} */
   // by replacing nw = arg with nw = {} it will log sizes and do 'reflow'
-  var l = 0, nw = arg;
+  var r = {690: new Size(0, 0, 2, 2, 32, 0, 0)}, l = 0, nw = arg;
   arg[l = 511] && (arg[511] = void parseArg(arg[511], 13));
   for (var p in arg)
     Block.NAME[l = +p] && parseArg(arg[l], l > 1279 ? 13 : 32);
+  for (var id = 1024; id < 1061; id++)
+    if (!(id in r) && r[511])
+      r[id] = new Size(r[511].x, r[511].y, r[511].w, r[511].h, 13, 0, 0);
   nw instanceof Array &&
     console.log(JSON.stringify(nw).replace(/,/g, ", "));
   return r;
@@ -4921,8 +5101,8 @@ function Ship(name, version, time, blocks, properties, mode) {
   this.thumbnail = null;
   Object.seal(this);
 }
-/** @readonly @type {56} significantVersion: 56 (integer) *///@ts-ignore
-Ship.VERSION = 56;
+/** @readonly @type {57} significantVersion: 57 (integer) *///@ts-ignore
+Ship.VERSION = 57;
 Ship.prototype.edit = Edit.Ship;
 Ship.prototype.selectRect = (
   /**

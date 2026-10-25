@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- v.0.2.46 -->
+<!-- v.0.2.49 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -100,7 +100,8 @@
     "use strict";
     (function (h) {
       h || typeof document.querySelector == "function" &&
-        (h = document.querySelector("head") || EL("head"));
+        (h = document.querySelector("head") ||
+        document.createElement("head"));
       h && h.appendChild(document.createElement("style")).appendChild(
         document.createTextNode(".no-script{display:none;}")
       );
@@ -233,7 +234,7 @@
     <a href="https://discord.gg/Nb2jAgVHm5">
       Deltarealm fanclub
     </a>.
-    <footer id="info_auth" itemprop="dateModified" content="2026-09-05" datetime="2026-09-05">Made by:
+    <footer id="info_auth" itemprop="dateModified" content="2026-10-25" datetime="2026-10-25">Made by:
       <!-- link is unproperly displayed when whitespace is outside svg and pre -->
       <a href="https://github.com/KaaBEL"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="16" height="16" viewBox="0,0,16,16">
           <g data-paper-data="{&quot;isPaintingLayer&quot;:true}" fill-rule="nonzero" stroke="none" style="mix-blend-mode: normal">
@@ -241,7 +242,9 @@
             <path d="M3,2h5v4h4v-4h1v5h-2l2,7h-1.3l-2,-7h-1.7v7h-5z" fill="#000" />
           </g>
       </svg><pre>KaaBEL</pre></a>
-      <time itemprop="dateModified" content="2026-09-05" datetime="2026-09-05">Last updated September 5, 2026</time>
+      <time itemprop="dateModified" content="2026-10-25" datetime="2026-10-25">Last updated October 25, 2026</time>
+      <br><br>
+      <span>vast majority of textures and graphics used are not owned by me</span>
     </footer>
     <div class="space" data="bottom_margin_workaround">0</div>
   </article>
